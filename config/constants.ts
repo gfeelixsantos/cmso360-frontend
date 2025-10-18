@@ -1,0 +1,377 @@
+
+// ---------------------------------------------------------
+// NEST BACKEND
+// ---------------------------------------------------------
+const PORT=3333
+const NEST_URL_DEVELOP = `http://localhost:${PORT}/`
+
+export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
+
+const TICKETS_ENDPOINT = process.env.NEXT_PUBLIC_NEST_TICKET_ENDPOINT ?? "[.ENV] Ticket endpoint nulo"
+export const NEST_TICKETS_URL = NEST_URL + TICKETS_ENDPOINT
+
+const TICKET_QUERY = process.env.NEXT_PUBLIC_NEST_TICKET_QUERY ?? "[.ENV] Ticket query nulo"
+export const NEST_TICKET_QUERY = NEST_URL + TICKET_QUERY
+
+const SCHEDULINGS = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS ?? "[.ENV] Schedulings url nulo"
+export const NEST_SCHEDULINGS = NEST_URL + SCHEDULINGS
+
+const SCHEDULINGS_EXAM_UPDATE = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_EXAM_UPDATE ?? "[.ENV] Scheduling exam update nulo"
+export const NEST_SCHEDULINGS_EXAM_UPDATE = NEST_URL + SCHEDULINGS_EXAM_UPDATE
+
+const SCHEDULINGS_TODAY = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_TODAY ?? "[.ENV] Schedulings today nulo"
+export const NEST_SCHEDULINGS_TODAY = NEST_URL + SCHEDULINGS_TODAY
+
+const SCHEDULINGS_RECORDS = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_RECORDS ?? "[.ENV] URL scheduling records nulo"
+export const NEST_SCHEDULINGS_RECORDS = NEST_URL + SCHEDULINGS_RECORDS
+
+const SOC_COMPANIES = process.env.NEXT_PUBLIC_NEST_SOC_COMPANIES ?? "[.ENV] SOC Companies nulo"
+export const NEST_SOC_COMPANIES = NEST_URL + SOC_COMPANIES
+
+const SOC_PEDIDOEXAME = process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME ?? "[.ENV] SOC ASO Funcionário nulo"
+export const NEST_SOC_PEDIDOEXAME = NEST_URL + SOC_PEDIDOEXAME
+
+
+const NOTIFICATION_URL = process.env.NEXT_PUBLIC_NEST_NOTIFICATION_SUBSCRIBE ?? "[.ENV] Notification subscribe nulo"
+export const NEST_NOTIFICATION_URL= NEST_URL + NOTIFICATION_URL
+
+// ---------------------------------------------------------
+// NEXT APPLICATION
+// ---------------------------------------------------------
+export const API_REGISTER_URL="/api/register"
+export const SERVICES_KEY="123"
+
+export const PREFERENCIAL_OPTIONS = ["Gestante", "Criança de colo", "Idoso", "PCD", "Outros"]
+export const UNIDADES_ATENDIMENTO = ["ARARAS", "CORDEIRÓPOLIS", "RIO CLARO"]
+export const SALAS_RECEPCAO = ["BALCÃO", "FINALIZAÇÃO", "GUICHÊ 1", "GUICHÊ 2", "GUICHÊ 3", "RECEPÇÃO 1", "RECEPÇÃO 2", "RECEPÇÃO 3", "PREPARO AGENDA"]
+export const SALAS_EXAMES = ["SALA 1", "SALA 2", "SALA 3-A", "SALA 3-B", "SALA 4", "SALA 5-A", "SALA 5-B", "SALA 6-A", "SALA 6-B", "SALA 6-C", "SALA 7", "SALA 8", "SALA 9", "SALA 10", "SALA 11", "SALA 12", "SALA 13"]
+
+
+export const TIPOS_EXAME: Record<string, string> = {
+  "ADMISSIONAL": "ADMISSIONAL",
+  "PERIODICO": "PERIÓDICO",
+  "DEMISSIONAL": "DEMISSIONAL",
+  "RETORNO TRABALHO": "RETORNO TRABALHO",
+  "MUDANCA FUNCAO": "MUDANÇA DE RISCO",
+  "CONSULTA ASSISTENCIAL": "MONITORAÇÃO PONTUAL",
+};
+
+type ExamToogle = {
+  codigos: string[],
+  nome: string,
+}
+
+export const EXAMES_LIST: Record<string, ExamToogle[]> = {
+  "Exame Clínico": [
+    {
+      codigos: ["clinico", "11"],
+      nome: "Exame Clínico"
+    }, 
+  ],
+  "Audiometria": [
+    {
+      codigos: ['51.01.004-6', '50c', '10014'],
+      nome: "Audiometria"
+    }, 
+  ],
+  "Acuidade Visual": [
+    {
+      codigos: ['50.01.001-8', '20221407', '4447', '02002', '4445'],
+      nome: "Acuidade Visual"
+    },
+  ],
+  "Laboratório": [
+    {
+      codigos: ['2'],
+      nome: "2,5-hexanodiona urinária"
+    },
+    {
+      codigos: ['XX'],
+      nome: "Acetona urinária"
+    },
+    {
+      codigos: ['28.15.001-5'],
+      nome: "Ácido delta aminolevulínico - ALA-U"
+    },
+    {
+      codigos: ['28.15.003-1'],
+      nome: "Ácido fenilglioxílico"
+    },
+    {
+      codigos: ['28.15.004-0'],
+      nome: "Ácido hipúrico"
+    },
+    {
+      codigos: ['28.15.005-8'],
+      nome: "Ácido mandélico"
+    },
+    {
+      codigos: ['28.15.006-6'],
+      nome: "Ácido metilhipúrico"
+    },
+    {
+      codigos: ['5555'],
+      nome: "Ácido trans, trans-mucônico"
+    },
+    {
+      codigos: ['28010175'],
+      nome: "Ácido úrico"
+    },
+    {
+      codigos: ['1180'],
+      nome: "Antígeno específico prostático total (PSA)"
+    },
+    {
+      codigos: ['CÁDMIO'],
+      nome: "Cádmio Sanguíneo"
+    },
+    {
+      codigos: ['001234'],
+      nome: "Cádmio urinários"
+    },
+    {
+      codigos: ['28.15.009-0'],
+      nome: "Carboxihemoglobina"
+    },
+    {
+      codigos: ['28.15.012-0'],
+      nome: "Chumbo sanguíneo"
+    },
+    {
+      codigos: ['0012345'],
+      nome: "Chumbo urinário"
+    },
+    {
+      codigos: ['1332'],
+      nome: "Colesterol (HDL)"
+    },
+    {
+      codigos: ['1222'],
+      nome: "Colesterol (LDL)"
+    },
+    {
+      codigos: ['00000'],
+      nome: "Colesterol (VLDL)"
+    },
+    {
+      codigos: ['28010507'],
+      nome: "Colesterol total"
+    },
+    {
+      codigos: ['28.01.054-0'],
+      nome: "Creatinina"
+    },
+    {
+      codigos: ['02'],
+      nome: "Cromo sanguíneo"
+    },
+    {
+      codigos: ['28100239'],
+      nome: "Cultura nas fezes"
+    },
+    {
+      codigos: ['28.15.030-9'],
+      nome: "Etanol"
+    },
+    {
+      codigos: ['28.15.014-7'],
+      nome: "Fenol"
+    },
+    {
+      codigos: ['28.15.015-5'],
+      nome: "Fluoreto urinário"
+    },
+    {
+      codigos: ['002000'],
+      nome: "Fungos, pesquisa a fresco"
+    },
+    {
+      codigos: ['28.01.095-7'],
+      nome: "Gama-glutamil transferase (Gama-GT)"
+    },
+    {
+      codigos: ['28.01.097-3'],
+      nome: "Glicemia"
+    },
+    {
+      codigos: ['2336', '28040350'],
+      nome: "Grupo sanguíneo ABO, e fator Rho (inclui Du)"
+    },
+    {
+      codigos: ['28011023'],
+      nome: "Hemoglobina glicada (A1 total)"
+    },
+    {
+      codigos: ['28.04.048-1'],
+      nome: "Hemograma com contagem de plaquetas ou frações"
+    },
+    {
+      codigos: ['28.04.048-1', '28040562'],
+      nome: "Hemograma com contagem de plaquetas ou frações"
+    },
+    {
+      codigos: ['28060105'],
+      nome: "Hepatite A - HAV - IgG"
+    },
+    {
+      codigos: ['28060113'],
+      nome: "Hepatite A - HAV - IgM"
+    },
+    {
+      codigos: ['28060067'],
+      nome: "Hepatite B - HBCAC - IgG"
+    },
+    {
+      codigos: ['-'],
+      nome: "Hepatite B - HBeAC (anti HBE)"
+    },
+    {
+      codigos: ['144'],
+      nome: "Hepatite B - HBsAG"
+    },
+    {
+      codigos: ['1123'],
+      nome: "Hepatite B - HBsAC (anti-HBs)"
+    },
+    {
+      codigos: ['00022'],
+      nome: "Hepatite C - anti-HCV - IgG"
+    },
+    {
+      codigos: ['1125'],
+      nome: "Hepatite C - anti-HCV - IgM"
+    },
+    {
+      codigos: ['200'],
+      nome: "Hormônio gonodotrofico corionico"
+    },
+    {
+      codigos: ['28.15.018-0'],
+      nome: "Metanol"
+    },
+    {
+      codigos: ['1', '54778844'],
+      nome: "Metil Etil Cetona"
+    },
+    {
+      codigos: ['28030141'],
+      nome: "Parasitológico de fezes"
+    },
+    {
+      codigos: ['0101'],
+      nome: "Reticulócitos"
+    },
+    {
+      codigos: ['28.13.036-7', '47788855'],
+      nome: "Rotina de urina"
+    },
+    {
+      codigos: ['28061004'],
+      nome: "Sífilis - VDRL"
+    },
+    {
+      codigos: ['09022023'],
+      nome: "Tolueno urinário"
+    },
+    {
+      codigos: ['02020'],
+      nome: "Exame Toxicológico"
+    },
+    {
+      codigos: ['28.01.136-8'],
+      nome: "TGO"
+    },
+    {
+      codigos: ['28.01.137-6'],
+      nome: "TGP"
+    },
+    {
+      codigos: ['13012023'],
+      nome: "Tolueno sanguíneo"
+    },
+    {
+      codigos: ['09022023'],
+      nome: "Tolueno urinário"
+    },
+    {
+      codigos: ['28011392'],
+      nome: "Triglicerídeos"
+    },
+    {
+      codigos: ['28.01.141-4'],
+      nome: "Uréia"
+    },
+  ],
+  "ECG": [
+    {
+      codigos: ['20.01.001-0'],
+      nome: "ECG"
+    },
+  ],
+  "EEG": [
+    {
+      codigos: ['22010017'],
+      nome: "EEG"
+    },
+  ],
+  "Psicossocial": [
+    {
+      codigos: ['225588', '00123', '111114'],
+      nome: "Psicossocial"
+    },
+  ],
+  "Espirometria": [
+    {
+      codigos: ['19.01.029-0'],
+      nome: "Espirometria"
+    },
+  ],
+  "Raio-X": [
+    {
+      codigos: ['32050070', '14111'],
+      nome: "Radiografia de tórax (PA) Padrão OIT"
+    },
+    {
+      codigos: ['12200', '8998'],
+      nome: "Tomografia de tórax"
+    },
+    {
+      codigos: ['ex imagem'],
+      nome: "Radiografia de coluna total"
+    },
+    {
+      codigos: ['111', '1v1v', '254477'],
+      nome: "Radiografia de coluna lombo-sacra"
+    },
+    {
+      codigos: ['-0-'],
+      nome: "Radiografia de coluna dorsal"
+    },
+    {
+      codigos: ['0..'],
+      nome: "Radiografia de coluna cervical"
+    },
+    {
+      codigos: ['2221111'],
+      nome: "Métodos Diagnósticos por Imagem Coluna"
+    },
+  ],
+  "Dinamometria": [
+    {
+      codigos: ['20', '58877'],
+      nome: "Dinamometria"
+    },
+  ],
+  "Ultrassom": [
+    {
+      codigos: ['1444', '587744'],
+      nome: "Ultrassom"
+    },
+  ],
+  "Triagem": [
+    {
+      codigos: ["triagem"],
+      nome: "Triagem"
+    }
+  ]
+}

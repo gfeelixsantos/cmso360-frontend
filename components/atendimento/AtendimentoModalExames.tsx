@@ -1,0 +1,157 @@
+"use client";
+import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Spinner } from "@heroui/react";
+import { useEffect, useState } from "react";
+import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
+import FichaClinicaOcupacional from "../exames/FichaClinica";
+import { useUser } from "@/hooks/useUser";
+import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
+import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
+import { useEntityManager } from "@/hooks/useEntityManager";
+import { Socket } from "socket.io-client";
+
+
+interface AtendimentoModalExamesProps {
+  isOpen: boolean;
+  onClose: () => void;
+  funcionarioSelecionado: Scheduling | null;
+  exame: string;
+  sala: string;
+  codigosAtendimento: Set<string>
+  socket: Socket
+}
+
+const AtendimentoModalExames = ({
+  isOpen,
+  onClose,
+  exame,
+  sala,
+  codigosAtendimento,
+  funcionarioSelecionado,
+  socket,
+}: AtendimentoModalExamesProps) => {
+
+  const  user  = useUser();
+  const { executarAcao } = useEntityManager<Ticket>([]);
+  const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister>()
+
+  useEffect(() => {
+    // Encontra o código do exame que precisa ser atualizado
+    const exameEmAtendimento = funcionarioSelecionado?.EXAMES.find(e =>
+      codigosAtendimento.has(e.codigoExame)
+    );
+    console.log(exameEmAtendimento)
+    if(exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento)
+
+  }, [codigosAtendimento, funcionarioSelecionado])
+
+
+  const handleSaveExam = async (data: any) => {
+  if (!funcionarioSelecionado) return;
+
+  const isValidExamData = (data: any) => {
+    return data && typeof data === "object" && Object.keys(data).length > 0;
+  };
+
+  if (!isValidExamData(data)) {
+    console.error("Dados do exame inválidos:", data);
+    return;
+  }
+
+  if (!exameParaAtualizar) {
+    console.error("Exame não encontrado para atualização");
+    return;
+  }
+
+  const confirmResponse = confirm("Confirma a conclusão do exame ?")
+
+  if(confirmResponse){
+     try {
+      const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          funcionarioId: funcionarioSelecionado._id,
+          codigoExame: exameParaAtualizar.codigoExame,
+          formulario: data,
+          sala: sala, // pode ser variável do estado
+          profissional: user ?? "Desconhecido"
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        alert("Erro ao atualizar exame")
+        console.error("Erro ao atualizar exame:", result.message);
+        return;
+      }
+
+      executarAcao(
+        funcionarioSelecionado.TICKET.id, 
+        TicketActionType.RETORNAR, 
+        funcionarioSelecionado.UNIDADEATENDIMENTO, 
+        socket
+      ) 
+      alert("Exame atualizado com sucesso:");
+      onClose()
+      
+    } catch (error) {
+      alert("Erro ao chamar a API");
+      console.error("Erro ao chamar API:", error);
+    } 
+  }
+};
+
+
+  // ✅ Mapeamento dos tipos de exame para componentes de formulário
+  const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
+    "Exame Clínico": FichaClinicaOcupacional,
+    "Triagem": FichaClinicaOcupacional,
+    // "Acuidade Visual": FichaAcuidade,
+    // etc...
+  };
+
+  const Formulario = EXAME_FORM_MAP[exame];
+
+  // ✅ Protege contra mapeamento inexistente
+  if (!Formulario) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose} backdrop="blur" size="5xl">
+        <ModalContent>
+          <ModalHeader>{exame} em atendimento</ModalHeader>
+          <ModalBody>
+            <Spinner />
+            <p>O formulário para o exame "{exame}" ainda não foi implementado.</p>
+            <Button onPress={() =>handleSaveExam({ teste: "sem formularioo"})}>Finalizar</Button>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      disableAnimation={true}
+      backdrop="blur"
+      size="5xl"
+      scrollBehavior="outside"
+    >
+      <ModalContent>
+        <Formulario
+          onSave={handleSaveExam}
+          onClose={onClose}
+          atendimento={funcionarioSelecionado}
+          exame={exame}
+          formulario={exameParaAtualizar?.formulario}
+        />
+      </ModalContent>
+    </Modal>
+  );
+};
+
+export default AtendimentoModalExames;
