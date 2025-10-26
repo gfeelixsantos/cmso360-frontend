@@ -9,6 +9,12 @@ import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { Socket } from "socket.io-client";
+import AudiometriaOcupacional from "../exames/Audiometria";
+import AcuidadeVisual from "../exames/AcuidadeVisual";
+import Espirometria from "../exames/Espirometria";
+import Dinamometria from "../exames/Dinamometria";
+import Psicossocial from "../exames/Psicossocial";
+import ExamePadrao from "../exames/ExamePadrao";
 
 
 interface AtendimentoModalExamesProps {
@@ -40,12 +46,19 @@ const AtendimentoModalExames = ({
     const exameEmAtendimento = funcionarioSelecionado?.EXAMES.find(e =>
       codigosAtendimento.has(e.codigoExame)
     );
-    console.log(exameEmAtendimento)
+
     if(exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento)
 
   }, [codigosAtendimento, funcionarioSelecionado])
 
 
+
+  /**
+   * Função para salvar os dados do exame preenchido
+   * 
+   * @param data formulario do exame preenchido
+   * @returns 
+   */
   const handleSaveExam = async (data: any) => {
   if (!funcionarioSelecionado) return;
 
@@ -108,25 +121,39 @@ const AtendimentoModalExames = ({
 
   // ✅ Mapeamento dos tipos de exame para componentes de formulário
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
+    "Acuidade Visual": AcuidadeVisual,
+    "Audiometria": AudiometriaOcupacional,
+    "Dinamometria": Dinamometria,
+    "EEG": Psicossocial,
+    "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
+    "Psicossocial": Psicossocial,
     "Triagem": FichaClinicaOcupacional,
-    // "Acuidade Visual": FichaAcuidade,
+    
     // etc...
   };
 
   const Formulario = EXAME_FORM_MAP[exame];
 
-  // ✅ Protege contra mapeamento inexistente
+  // Protege contra mapeamento inexistente
   if (!Formulario) {
     return (
-      <Modal isOpen={isOpen} onClose={onClose} backdrop="blur" size="5xl">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        disableAnimation={true}
+        backdrop="blur"
+        size="5xl"
+        scrollBehavior="outside"
+      >
         <ModalContent>
-          <ModalHeader>{exame} em atendimento</ModalHeader>
-          <ModalBody>
-            <Spinner />
-            <p>O formulário para o exame "{exame}" ainda não foi implementado.</p>
-            <Button onPress={() =>handleSaveExam({ teste: "sem formularioo"})}>Finalizar</Button>
-          </ModalBody>
+            <ExamePadrao
+              atendimento={funcionarioSelecionado}
+              exame={exame}
+              onClose={onClose}
+              onSave={handleSaveExam}
+              formulario={""}
+            />
         </ModalContent>
       </Modal>
     );

@@ -92,7 +92,7 @@ const getAvatarColor = (ticket: Ticket): string => {
   } else if (ticket.prefixo && ticket.prefixo.trim() !== "") {
     return "bg-gradient-to-br from-blue-500 to-blue-600"; // Azul para prefixo
   } else {
-    return "bg-gradient-to-br from-yellow-500 to-yellow-600"; // Verde para normal
+    return "bg-gradient-to-br from-green-500 to-green-600"; // Verde para normal
   }
 };
 
@@ -122,7 +122,7 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) 
   
   return (
     <div className={`flex-shrink-0 w-10 h-10 ${avatarColor} rounded-full flex items-center justify-center font-semibold text-xs ${textColor}`}>
-      {ticketNumber}
+      <span className="text-lg">{ticketNumber}</span>
     </div>
   );
 };
@@ -326,7 +326,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       <Badge 
                         size="sm" 
                         variant="flat"
-                        className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium px-2 py-1`}
+                        className={`${statusColors.bg} ${statusColors.text} border-0 text-xs px-2 py-1`}
                       >
                         {exame.status}
                       </Badge>
@@ -335,15 +335,15 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                   
                   <TableCell>
                     <div className="flex items-center gap-1 justify-center">
-                      <span className="text-sm text-gray-700 text-center">
-                        {exame.profissional || "—"}
+                      <span className="text-xs text-gray-700 text-center">
+                        {exame.profissional?.split(" ")[0] || "—"}
                       </span>
                     </div>
                   </TableCell>
                   
                   <TableCell>
                     <div className="flex items-center gap-1 justify-center">
-                      <span className="text-sm text-gray-700">
+                      <span className="text-xs text-gray-700">
                         {exame.sala || "—"}
                       </span>
                     </div>
@@ -354,12 +354,12 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       {formattedTime ? (
                         <Tooltip content={`Finalizado às ${formattedTime}`} placement="top">
                           <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Calendar className="h-3 w-3" />
+                            <Clock className="h-3 w-3" />
                             <span className="text-xs">{formattedTime}</span>
                           </div>
                         </Tooltip>
                       ) : (
-                        <span className="text-gray-400 text-sm">—</span>
+                        <span className="text-gray-400 text-xs">—</span>
                       )}
                     </div>
                   </TableCell>
@@ -662,16 +662,6 @@ const TicketActions: React.FC<{
     onHandleModal(true);
   };
 
-  const handleAguardar = (ticket: Ticket, action: TicketActionType) => {
-    const currentUser = getCurrentUser();
-
-    // exibe modal de solicitação preparo
-    if(action === TicketActionType.EM_PREPARACAO){
-      setIsOpen(true);
-    } else {
-      executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome);
-    }
-  };
 
   const handleRetornar = (ticket: Ticket, action: TicketActionType) => {
     if(ticket.status === TicketStatus.EM_PREPARACAO){
@@ -686,7 +676,7 @@ const TicketActions: React.FC<{
 
       // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
       if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
-        && ticket.sala != salaSelecionada
+        && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
       ) {
         return true;
       }
@@ -702,7 +692,7 @@ const TicketActions: React.FC<{
       {/* Botão Chamar - Amarelo */}
       <Tooltip content="Chamar" placement="top">
         <Button
-          size="sm"
+          size="md"
           isIconOnly
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           onPress={() => handleExecutarAcao(ticket, TicketActionType.CHAMAR)}
@@ -715,7 +705,7 @@ const TicketActions: React.FC<{
       {/* Botão Atender - Vermelho */}
       <Tooltip content="Atender" placement="top">
         <Button
-          size="sm"
+          size="md"
           isIconOnly
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           onPress={() => handleAtender(ticket, TicketActionType.ATENDER, atendimento)}
@@ -725,34 +715,11 @@ const TicketActions: React.FC<{
         </Button>
       </Tooltip>
 
-      {/* Botão Aguardar - Azul */}
-      <Dropdown>
-        <Tooltip content="Ações de espera" placement="top">
-          <Button
-            size="sm"
-            isIconOnly
-            className="min-w-8 h-8 bg-blue-500 hover:bg-blue-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-            disabled={isDisabled}
-          >
-            <Pause className="h-4 w-4" />
-          </Button>
-        </Tooltip>
-        <DropdownMenu aria-label="Ações de espera" items={waitActions}>
-          {(item) => (
-            <DropdownItem
-              key={item.key}
-              onPress={() => handleAguardar(ticket, item.action as TicketActionType)}
-            >
-              {item.label}
-            </DropdownItem>
-          )}
-        </DropdownMenu>
-      </Dropdown>
 
       {/* Botão Retornar - Cinza */}
       <Tooltip content="Retornar" placement="top">
         <Button
-          size="sm"
+          size="md"
           isIconOnly
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           onPress={() => handleRetornar(ticket, TicketActionType.RETORNAR)}

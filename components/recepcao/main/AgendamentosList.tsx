@@ -29,7 +29,10 @@ import {
   CheckCircle,
   Clock as ClockIcon,
   AlertCircle,
-  Stethoscope
+  Stethoscope,
+  User,
+  MapPin,
+  Calendar as CalendarIcon
 } from "lucide-react";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
@@ -97,7 +100,7 @@ const ExamesModal: React.FC<{
   const examesPendentes = exames.filter(exame => exame.status === "PENDENTE");
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl">
       <ModalContent>
         <ModalHeader className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
@@ -107,15 +110,15 @@ const ExamesModal: React.FC<{
           <p className="text-sm text-gray-600">{nomePaciente}</p>
         </ModalHeader>
         <ModalBody>
-          <div className="space-y-6">
+          <div className="space-y-4">
             {/* Exames Pendentes */}
             {examesPendentes.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <ClockIcon size={16} className="text-amber-500" />
+                <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                  <ClockIcon size={14} className="text-amber-500" />
                   Exames Pendentes ({examesPendentes.length})
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {examesPendentes.map((exame, index) => (
                     <ExameCard key={exame.sequencialResultadoExame || index} exame={exame} />
                   ))}
@@ -126,11 +129,11 @@ const ExamesModal: React.FC<{
             {/* Exames Finalizados */}
             {examesFinalizados.length > 0 && (
               <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <CheckCircle size={16} className="text-green-500" />
+                <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
+                  <CheckCircle size={14} className="text-green-500" />
                   Exames Finalizados ({examesFinalizados.length})
                 </h4>
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {examesFinalizados.map((exame, index) => (
                     <ExameCard key={exame.sequencialResultadoExame || index} exame={exame} />
                   ))}
@@ -140,9 +143,9 @@ const ExamesModal: React.FC<{
 
             {/* Caso não haja exames */}
             {exames.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
-                <Stethoscope size={48} className="mx-auto mb-4 text-gray-300" />
-                <p>Nenhum exame encontrado</p>
+              <div className="text-center py-6 text-gray-500">
+                <Stethoscope size={32} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-sm">Nenhum exame encontrado</p>
               </div>
             )}
           </div>
@@ -158,48 +161,66 @@ const ExamesModal: React.FC<{
 });
 ExamesModal.displayName = 'ExamesModal';
 
-// Card individual para cada exame
+// Card individual compacto para cada exame
 const ExameCard: React.FC<{ exame: any }> = React.memo(({ exame }) => (
-  <div className="flex flex-col gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-    <div className="flex justify-between items-start">
-      <div className="flex-1">
-        <h4 className="text-sm font-medium text-gray-900">
+  <div className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+    <div className="flex-1 min-w-0">
+      {/* Nome do exame e status na mesma linha */}
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <h4 className="text-sm font-medium text-gray-900 leading-tight flex-1">
           {exame.nomeExame}
         </h4>
+        <div className="flex-shrink-0">
+          <ExameStatus status={exame.status} />
+        </div>
+      </div>
+      
+      {/* Informações compactas em linha */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
+        {/* Código do exame (se aplicável) */}
         {exame.codigoExame && exame.codigoExame !== "clinico" && exame.codigoExame !== "triagem" && (
-          <p className="text-xs text-gray-500 mt-1">
-            Código: {exame.codigoExame}
-          </p>
+          <div className="flex items-center gap-1">
+            <FileText size={10} className="text-gray-400" />
+            <span>{exame.codigoExame}</span>
+          </div>
+        )}
+        
+        {/* Data do exame */}
+        {exame.dataExame && (
+          <div className="flex items-center gap-1">
+            <CalendarIcon size={10} className="text-gray-400" />
+            <span>{new Date(exame.dataExame).toLocaleDateString('pt-BR')}</span>
+          </div>
+        )}
+        
+        {/* Profissional */}
+        {exame.profissional && (
+          <div className="flex items-center gap-1">
+            <User size={10} className="text-gray-400" />
+            <span className="truncate max-w-[120px]">{exame.profissional}</span>
+          </div>
+        )}
+        
+        {/* Sala */}
+        {exame.sala && (
+          <div className="flex items-center gap-1">
+            <MapPin size={10} className="text-gray-400" />
+            <span>{exame.sala}</span>
+          </div>
         )}
       </div>
-      <ExameStatus status={exame.status} />
-    </div>
-    
-    <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-      {exame.dataExame && (
-        <div>
-          <strong>Data:</strong> {new Date(exame.dataExame).toLocaleDateString('pt-BR')}
-        </div>
-      )}
-      {exame.profissional && (
-        <div>
-          <strong>Profissional:</strong> {exame.profissional}
-        </div>
-      )}
-      {exame.sala && (
-        <div>
-          <strong>Sala:</strong> {exame.sala}
-        </div>
-      )}
+      
+      {/* Preparação (se houver) */}
       {exame.preparacao && (
-        <div className="col-span-2">
+        <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
           <strong>Preparação:</strong> {exame.preparacao}
         </div>
       )}
     </div>
     
+    {/* Botão de resultado alinhado à direita */}
     {exame.url && (
-      <div className="flex justify-end">
+      <div className="flex-shrink-0 ml-3">
         <Button
           size="sm"
           variant="flat"
@@ -208,10 +229,10 @@ const ExameCard: React.FC<{ exame: any }> = React.memo(({ exame }) => (
           href={exame.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-xs"
-          startContent={<ExternalLink size={12} />}
+          className="text-xs min-w-0 px-2"
+          startContent={<ExternalLink size={10} />}
         >
-          Ver Resultado
+          Resultado
         </Button>
       </div>
     )}
@@ -235,7 +256,6 @@ const ExamesBadge: React.FC<{
         size="sm"
         variant="flat"
         onPress={() => {
-          // Criar um evento simulado para passar para onOpen
           const syntheticEvent = {
             stopPropagation: () => {}
           } as React.MouseEvent;
@@ -254,7 +274,7 @@ const ExamesBadge: React.FC<{
 });
 ExamesBadge.displayName = 'ExamesBadge';
 
-// Componente memoizado para cada item
+// Componente memoizado para cada item (mantido igual)
 const AgendamentoItem = React.memo(({
   agendamento,
   style,
@@ -346,6 +366,7 @@ const AgendamentoItem = React.memo(({
 });
 AgendamentoItem.displayName = 'AgendamentoItem';
 
+// Restante do componente mantido igual...
 const AgendamentosList: React.FC<AgendamentosListProps> = ({
   agendadosFiltrados,
   conectado,

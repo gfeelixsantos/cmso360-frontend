@@ -46,6 +46,7 @@ export class ExamRegister {
     profissional?:string
     url:string = ""
     formulario: any
+    grupo: string = ""
 
     constructor(codigoExame:string, nomeExame:string, status:string)
     {

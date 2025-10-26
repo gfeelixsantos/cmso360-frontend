@@ -6,7 +6,7 @@ export interface IUserInfo {
   nome: string
   perfil: string
   codigo: string
-  conselho: string,
+  conselho?: string,
   ufconselho: string,
 }
 

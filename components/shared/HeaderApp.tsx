@@ -1,9 +1,88 @@
 import { IUserInfo } from "@/lib/user/interfaces/IUser"
 import { Link } from "@heroui/react"
 import { motion, AnimatePresence } from "framer-motion"
-import { LogOut, User, Settings, ChevronDown, Bell } from "lucide-react"
+import { LogOut, User, Settings, ChevronDown, Bell, AlertCircle, CheckCircle } from "lucide-react"
 import Image from "next/image"
 import { useState, useRef, useEffect } from "react"
+
+interface Notification {
+  id: string
+  title: string
+  message: string
+  type: "info" | "warning" | "success"
+  date: string
+  read: boolean
+}
+// Componente de Notificações
+const NotificationsPanel: React.FC<{
+  notifications: Notification[]
+  isOpen: boolean
+  onClose: () => void
+  onMarkAsRead: (id: string) => void
+}> = ({ notifications, isOpen, onClose, onMarkAsRead }) => {
+  if (!isOpen) return null
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'warning': return <AlertCircle className="h-5 w-5 text-yellow-500" />
+      case 'success': return <CheckCircle className="h-5 w-5 text-green-500" />
+      default: return <Bell className="h-5 w-5 text-blue-500" />
+    }
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
+    >
+      <div className="p-4 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <h3 className="font-semibold text-gray-900">Notificações</h3>
+          <span className="text-sm text-gray-500">
+            {notifications.filter(n => !n.read).length} não lidas
+          </span>
+        </div>
+      </div>
+      <div className="max-h-96 overflow-y-auto">
+        {notifications.length === 0 ? (
+          <div className="p-4 text-center text-gray-500">
+            Nenhuma notificação
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
+                !notification.read ? 'bg-blue-50' : ''
+              }`}
+              onClick={() => onMarkAsRead(notification.id)}
+            >
+              <div className="flex items-start space-x-3">
+                {getIcon(notification.type)}
+                <div className="flex-1">
+                  <p className="font-medium text-sm text-gray-900">
+                    {notification.title}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    {notification.date}
+                  </p>
+                </div>
+                {!notification.read && (
+                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </motion.div>
+  )
+}
 
 interface HeaderProps {
   user: IUserInfo
@@ -34,6 +113,9 @@ const getSpecialtyColor = (especialidade: string) => {
 // Componente Header atualizado
 export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [showNotifications, setShowNotifications] = useState(false)
+  
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   // Fechar dropdown ao clicar fora
@@ -47,6 +129,53 @@ export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) =
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [])
+
+  // Notificações mockadas
+  useEffect(() => {
+    setNotifications([
+      {
+        id: '1',
+        title: 'ASO Pendente',
+        message: '15 ASOs aguardando liberação médica',
+        type: 'warning',
+        date: '10 min atrás',
+        read: false
+      },
+      {
+        id: '2',
+        title: 'Exames Atrasados',
+        message: '8 exames com resultado pendente há mais de 48h',
+        type: 'warning',
+        date: '1 hora atrás',
+        read: false
+      },
+      {
+        id: '3',
+        title: 'Agendamento Confirmado',
+        message: 'Novo agendamento para SEW EURODRIVE',
+        type: 'info',
+        date: '2 horas atrás',
+        read: true
+      },
+      {
+        id: '4',
+        title: 'Liberação Concluída',
+        message: '23 prontuários liberados hoje',
+        type: 'success',
+        date: '3 horas atrás',
+        read: true
+      }
+    ])
+  }, [])
+
+   const unreadNotificationsCount = notifications.filter(n => !n.read).length
+  const handleMarkAsRead = (id: string) => {
+  setNotifications(prev =>
+    prev.map(notification =>
+      notification.id === id ? { ...notification, read: true } : notification
+    )
+  )
+}
 
   return (
     <>
@@ -79,17 +208,28 @@ export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) =
 
             {/* User info + notifications + logout */}
             <div className="flex items-center gap-3">
-              {/* Notificações */}
-              <button 
-                className="relative p-2 text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                aria-label="Notificações"
-              >
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                </span>
-              </button>
+              {/* Botão de Notificações no Header */}
+              <div className="relative">
+                <button
+                  onClick={() => setShowNotifications(!showNotifications)}
+                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+                  aria-label="Notificações"
+                >
+                  <Bell className="h-5 w-5" />
+                  {unreadNotificationsCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {unreadNotificationsCount}
+                    </span>
+                  )}
+                </button>
+                
+                <NotificationsPanel
+                  notifications={notifications}
+                  isOpen={showNotifications}
+                  onClose={() => setShowNotifications(false)}
+                  onMarkAsRead={handleMarkAsRead}
+                />
+              </div>
 
               {/* User profile with dropdown */}
               <div className="relative" ref={dropdownRef}>
@@ -100,18 +240,10 @@ export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) =
                   aria-haspopup="true"
                   aria-label="Abrir menu do usuário"
                 >
-                  {/* Avatar */}
-                  <div
-                    className="h-10 w-10 rounded-full bg-gradient-to-br from-[#3EAFE1] to-[#395467] 
-                             flex items-center justify-center text-white font-semibold shadow-md"
-                    aria-hidden="true"
-                  >
-                    {getInitials(user.nome)}
-                  </div>
 
                   {/* Nome + perfil (visível em telas médias para cima) */}
                   <div className="hidden md:block text-left">
-                    <p className="text-sm font-semibold text-gray-900 truncate max-w-[120px]">
+                    <p className="text-sm font-semibold text-gray-900">
                       {user.nome}
                     </p>
                     <p

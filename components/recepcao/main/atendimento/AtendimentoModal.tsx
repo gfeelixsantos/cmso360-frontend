@@ -266,7 +266,7 @@ const handleBuscarFuncionario = useCallback(async () => {
   const handleSelecionarPacienteAgendamento = useCallback(async(paciente: Scheduling) => {
     document.getElementById('empresa-autocomplete')?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
 
- 
+    handleDeselecionarAgendamento()
     setIsLoading(true)
     setFuncionarioSelecionado(paciente)
     
@@ -643,7 +643,7 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
         )
         
         alert("Atendimento enviado com sucesso")
-        setTimeout(() => onClose(), 1000)
+        onClose()
       } 
       
     } catch (err) {
@@ -1129,12 +1129,12 @@ const PacienteItem = React.memo(function _PacienteItem({
 
           return (exame === "Laboratório" || exame === "Raio-X") && isSelected ? (
             <Tooltip 
-              key={`tooltip-exame-${funcionarioSelecionado?.EXAMES[index]}`}
+              key={`tooltip-exame-${exame}-${index}`} 
               className="p-2 bg-amber-100"
               disableAnimation={true}
               content={exame == "Laboratório" ? 
-                laboratorialExames?.map(e => <span className="text-xs">{e}</span>)
-                : examesImagem?.map(e => <span className="text-xs">{e}</span>)
+                laboratorialExames?.map((e, i) => <span key={`lab-${i}`} className="text-xs">{e}</span>)
+                : examesImagem?.map((e, i) => <span key={`img-${i}`}  className="text-xs">{e}</span>)
               }
             >
               <Button
@@ -1204,7 +1204,7 @@ const PacienteItem = React.memo(function _PacienteItem({
         <label className="text-sm font-medium text-gray-700">Anexos</label>
         {anexos.map((anexo: FileUpload, index) => (
           <Button
-            key={index}
+            key={anexo.Name || index}
             color="primary"
             variant="light"
             size="sm"
@@ -1394,7 +1394,7 @@ const PacienteItem = React.memo(function _PacienteItem({
                     size="sm" 
                     variant="light" 
                     className="absolute right-1 top-1/2 -translate-y-1/2" 
-                    onClick={() => setSearchTerm("")}
+                    onPress={() => setSearchTerm("")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
@@ -1440,14 +1440,16 @@ const PacienteItem = React.memo(function _PacienteItem({
           </div>
 
           <div className="flex items-center gap-3">
-            <Button 
-              variant="flat" 
-              disabled={isSubmitting || !ticketSelecionado} 
-              className="px-4 py-2 rounded hover:bg-gray-100"
-              onPress={handlePreparationModal}
-            >
-              <FileInput className="h-4 w-4 mr-2" /> Preparar documentação
-            </Button>
+            { ticketSelecionado && (
+                <Button 
+                variant="flat" 
+                disabled={isSubmitting} 
+                className="px-4 py-2 rounded hover:bg-gray-100"
+                onPress={handlePreparationModal}
+              >
+                <FileInput className="h-4 w-4 mr-2" /> Preparar documentação
+              </Button>
+            )}
             <Button 
               variant="flat" 
               onPress={onClose} 

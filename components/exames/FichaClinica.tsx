@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, RadioGroup } from "@heroui/react";
+import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, RadioGroup, Spinner } from "@heroui/react";
 import { Calendar, User, Building, Briefcase, Stethoscope, FileText, ClipboardList } from 'lucide-react';
 import { IUserInfo, useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
@@ -325,6 +325,36 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
+          <div className="text-center lg:text-left">
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
+              {exame || 'Exame Ocupacional'}
+            </h1>
+            <p className="text-gray-600 text-sm lg:text-base">
+              Registro de Atendimento
+            </p>
+          </div>
+          
+          {/* Status do atendimento */}
+          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
+            <div className="flex-shrink-0">
+              <Spinner size="sm" color="success" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
+              </div>
+              <p className="text-xs text-green-700">
+                Realizando procedimento
+              </p>
+            </div>
+          </div>
+        </div>
+      </Card>
+
       {/* 1. Dados do Atendimento / Funcionário */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 

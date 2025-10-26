@@ -6,6 +6,7 @@ import { Providers } from "./providers";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
+import { NEST_SCHEDULINGS_ALL } from "@/config/constants";
 
 
 
@@ -28,11 +29,35 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+async function getInitialAppData() {
+  try {
+    const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+
+    if (!response.ok) {
+      console.error("Erro ao buscar dados iniciais:", response.statusText);
+      return null;
+    }
+
+    const json = await response.json();
+    const data = {
+      atendimentos: json,
+    };
+
+    return data;
+  } catch (err) {
+    console.error("Erro ao carregar dados iniciais:", err);
+    return null;
+  }
+}
+
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+
+  const initialData = await getInitialAppData();
+  
   return (
     <html suppressHydrationWarning lang="pt-br">
       <head />
@@ -42,7 +67,7 @@ export default function RootLayout({
           fontSans.variable,
         )}
       >
-        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+        <Providers themeProps={{ attribute: "class", defaultTheme: "light" }} initialData={initialData}>
           {children}
         </Providers>
       </body>

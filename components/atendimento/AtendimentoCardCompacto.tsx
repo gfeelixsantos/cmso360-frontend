@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Badge, Progress, Tooltip } from "@heroui/react";
+import { Card, Badge, Progress, Tooltip, Chip } from "@heroui/react";
 import { Clock, User, Pin, Ticket as Senha } from "lucide-react";
 import { TicketStatus } from "@/lib/ticket/ticket";
 import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
@@ -100,17 +100,18 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({ atendimento }
             </Tooltip>
             <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
               <span>{atendimento.TIPOEXAMENOME}</span>
-              {idade && <span>• {idade}</span>}
             </div>
           </div>
           
-          <Badge 
+          <Chip 
             size="sm" 
             variant="flat" 
-            className={`${getStatusColor(atendimento.TICKET.status)} text-xs`}
+            className={`${getStatusColor(atendimento.TICKET.status)} text-xs text-center p-4`}
           >
-            {atendimento.TICKET.status}
-          </Badge>
+            <div>{atendimento.TICKET.status}</div>
+            <div className="text-xs">{atendimento.TICKET.sala}</div>
+          </Chip>
+         
         </div>
 
         {/* Empresa e cargo */}
@@ -118,7 +119,6 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({ atendimento }
           <Tooltip content={atendimento.NOMEEMPRESA}>
             <div className="truncate">{atendimento.NOMEEMPRESA}</div>
           </Tooltip>
-          <div className="truncate">{atendimento.NOMECARGO}</div>
         </div>
 
         {/* Progresso dos exames */}

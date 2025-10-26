@@ -139,15 +139,15 @@ const IdleScreen = () => (
         className="mb-8"
       >
         <div 
-          className="w-48 h-48 mx-auto rounded-2xl flex items-center justify-center shadow-2xl"
+          className="w-64 h-64 mx-auto rounded-2xl flex items-center justify-center shadow-2xl"
           style={{
             backgroundColor: 'rgba(255, 255, 255, 0.2)',
             backdropFilter: 'blur(10px)',
           }}
         >
-          <Monitor size={80} className="text-white" />
+          {/* <Monitor size={80} className="text-white" /> */}
           {/* Substitua o ícone acima por uma imagem: */}
-          {/* <img src="/sua-imagem.png" alt="MedLink" className="w-full h-full object-contain" /> */}
+          <img src="images/cmso_icone.png" alt="cmso-logo" className="w-full h-full object-contain" />
         </div>
       </motion.div>
 
@@ -157,7 +157,7 @@ const IdleScreen = () => (
         transition={{ delay: 1, duration: 0.6 }}
         className="text-5xl lg:text-6xl font-black mb-6 uppercase tracking-wider"
       >
-        MEDLINK
+        CMSO
       </motion.h1>
 
       <motion.p
@@ -166,7 +166,7 @@ const IdleScreen = () => (
         transition={{ delay: 1.2, duration: 0.6 }}
         className="text-2xl lg:text-3xl font-light mb-8 opacity-90"
       >
-        Sistema de Chamadas Inteligente
+        Sistema de Chamadas
       </motion.p>
 
       <motion.div

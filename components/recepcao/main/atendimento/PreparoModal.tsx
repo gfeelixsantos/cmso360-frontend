@@ -20,7 +20,7 @@ import { FileClock } from "lucide-react";
 import { IndexDb } from "@/lib/indexDb/indexdb";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import { Ticket, PreparationRequest } from "@/lib/ticket/ticket";
-import { formatBrithdayDate, getCurrentUser } from "@/lib/utils";
+import { formatBrithdayDate, formatCPF, getCurrentUser } from "@/lib/utils";
 import { Socket } from "socket.io-client";
 import { TIPOS_EXAME } from "@/config/constants";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -148,10 +148,10 @@ export default function EmPreparacaoModal({
           empresa: funcionario.CODIGOEMPRESA,
           nome: funcionario.NOME,
           dataNascimento: funcionario.DATAAGENDAMENTO,
-          cpf: funcionario.CPFFUNCIONARIO,
+          cpf: formatCPF(funcionario.CPFFUNCIONARIO),
           tipoExame: TIPOS_EXAME[funcionario.TIPOEXAMENOME],
           informacoes: "",
-          ticketId: ticket._id,
+          ticketId: ticket.id,
           unidade: unidadeSelecionada,
           atendente: currentUser?.nome ?? "",
           sala: salaSelecionada
@@ -212,7 +212,7 @@ export default function EmPreparacaoModal({
       setLoading(true);
       const requestData: PreparationRequest = {
         ...solicitacao,
-        ticketId: ticket._id,
+        ticketId: ticket.id,
         atendente: currentUser?.nome ?? "",
         sala: salaSelecionada,
         unidade: unidadeSelecionada
@@ -237,7 +237,7 @@ export default function EmPreparacaoModal({
         onOpenChange(false);
       }
     }
-  }, [solicitacao, ticket._id, socket, currentUser, onOpenChange]);
+  }, [solicitacao, ticket.id, socket, currentUser, onOpenChange]);
 
   return (
     <Modal

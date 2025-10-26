@@ -50,6 +50,7 @@ export interface Ticket {
   unidade:string
   sala:string
   atendente:string
+  profissional:string,
   grupo: TicketGroups | string
 }
 
