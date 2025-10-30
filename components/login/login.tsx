@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import Link from "next/link";
+
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeOff, User, Lock, } from "lucide-react";
@@ -8,6 +8,7 @@ import { fetchBodyJson, formatCPF, setCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { ApiResponse } from "@/shared/responses/ApiResponse";
 import CMSO360Animation from "../shared/CMSO360Animation";
+
 
 // Definindo tipos para as props dos subcomponentes
 interface InputFieldProps {
@@ -22,17 +23,13 @@ interface InputFieldProps {
   disabled?: boolean;
   required?: boolean;
   autoComplete?: string;
+  name?: string;
 }
 
 interface SubmitButtonProps {
   isLoading: boolean;
   onClick: () => void;
   disabled?: boolean;
-}
-
-interface FooterLinkProps {
-  href: string;
-  label: string;
 }
 
 // Subcomponente para campos de entrada
@@ -47,7 +44,8 @@ const InputField: React.FC<InputFieldProps> = ({
   endIcon,
   disabled,
   required,
-  autoComplete
+  autoComplete,
+  name,
 }) => (
   <div className="space-y-2">
     <label className="block text-sm font-medium text-gray-700">{label}</label>
@@ -63,6 +61,8 @@ const InputField: React.FC<InputFieldProps> = ({
         required={required}
         aria-label={label}
         autoComplete={autoComplete}
+        // Passando o atributo name para o autofill
+        name={name}
         className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35] disabled:bg-gray-100 disabled:cursor-not-allowed transition-all duration-200"
       />
       {endIcon && <span className="absolute inset-y-0 right-0 flex items-center pr-3">{endIcon}</span>}
@@ -93,17 +93,6 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, onClick, disable
   </button>
 );
 
-// Subcomponente para links do rodapé
-const FooterLink: React.FC<FooterLinkProps> = ({ href, label }) => (
-  <Link
-    href={href}
-    className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors duration-200 focus:ring-2 focus:ring-[#104e35] focus:outline-none rounded"
-  >
-    {label}
-  </Link>
-);
-
-
 
 // Ícone ArrowRight separado (não estava importado)
 const ArrowRight = ({ className }: { className?: string }) => (
@@ -113,32 +102,13 @@ const ArrowRight = ({ className }: { className?: string }) => (
 );
 
 export default function LoginPage() {
+  const router = useRouter()
   const [cpf, setCpf] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
-  const router = useRouter();
-
-  // Carregar credenciais salvas ao montar o componente
-  useEffect(() => {
-    const savedCredentials = localStorage.getItem("medocupa_credentials");
-    if (savedCredentials) {
-      try {
-        const { cpf: savedCpf, password: savedPassword, remember } = JSON.parse(savedCredentials);
-        if (remember) {
-          setCpf(savedCpf);
-          setPassword(savedPassword);
-          setRememberMe(true);
-        }
-      } catch (error) {
-        console.error("Erro ao carregar credenciais salvas:", error);
-        // Limpar dados corrompidos
-        localStorage.removeItem("medocupa_credentials");
-      }
-    }
-  }, []);
+  
 
   const handleCPFChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCPF(e.target.value);
@@ -156,60 +126,21 @@ export default function LoginPage() {
     }
   };
 
-  // Função para salvar ou remover credenciais
-  const handleRememberMe = (shouldRemember: boolean) => {
-    setRememberMe(shouldRemember);
-    
-    if (shouldRemember && cpf && password) {
-      // Salvar credenciais
-      const credentials = {
-        cpf,
-        password,
-        remember: true,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem("medocupa_credentials", JSON.stringify(credentials));
-    } else if (!shouldRemember) {
-      // Remover credenciais salvas
-      localStorage.removeItem("medocupa_credentials");
-    }
-  };
-
-  // Atualizar credenciais salvas quando CPF ou senha mudarem e rememberMe estiver ativo
-  useEffect(() => {
-    if (rememberMe && cpf && password) {
-      const credentials = {
-        cpf,
-        password,
-        remember: true,
-        timestamp: new Date().toISOString()
-      };
-      localStorage.setItem("medocupa_credentials", JSON.stringify(credentials));
-    }
-  }, [cpf, password, rememberMe]);
-
   const handleLogin = async () => {
+
     try {
       const userLogged = await fetchBodyJson<ApiResponse<IUserInfo>>("/api/auth", "POST", { cpf, password });
+
       if (userLogged.data) {
+
         setCurrentUser(userLogged.data);
-        
-        // Salvar credenciais se "Lembrar-me" estiver marcado
-        if (rememberMe) {
-          const credentials = {
-            cpf,
-            password,
-            remember: true,
-            timestamp: new Date().toISOString()
-          };
-          localStorage.setItem("medocupa_credentials", JSON.stringify(credentials));
-        }
-        
         setTimeout(() => router.push("/dashboard"), 500);
+
       } else {
         setIsLoading(false);
         throw new Error(userLogged.message || "Falha no login");
       }
+
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : "Erro ao conectar";
       setIsLoading(false);
@@ -218,10 +149,15 @@ export default function LoginPage() {
     }
   };
 
+
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (cpf.length < 14) {
-      setError("CPF Inválido");
+    // Limpando o CPF para validação, removendo pontos e traços.
+    const rawCpf = cpf.replace(/\D/g, ''); 
+
+    if (rawCpf.length !== 11) {
+      setError("CPF Inválido. Deve conter 11 dígitos.");
       return;
     }
     
@@ -278,7 +214,8 @@ export default function LoginPage() {
                   onPaste={handleCPFPaste}
                   startIcon={<User className="h-4 w-4" />}
                   disabled={isLoading}
-                  autoComplete="username"
+                  autoComplete="username" 
+                  name="username" 
                   required
                 />
               </motion.div>
@@ -291,7 +228,8 @@ export default function LoginPage() {
                 <InputField
                   label="Senha"
                   placeholder="Digite sua senha"
-                  autoComplete="current-password"
+                  autoComplete="current-password" 
+                  name="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   type={showPassword ? "text" : "password"}
@@ -316,33 +254,14 @@ export default function LoginPage() {
                 />
               </motion.div>
               
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: 0.3 }}
-                className="flex justify-between items-center text-sm"
-              >
-                <label className="flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={rememberMe}
-                    onChange={(e) => handleRememberMe(e.target.checked)}
-                    className="rounded border-gray-300 text-[#104e35] focus:ring-[#104e35] cursor-pointer" 
-                  />
-                  <span className="ml-2 text-gray-700">Lembrar-me</span>
-                </label>
-                <Link 
-                  href="/esqueci-senha" 
-                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
-                >
-                  Esqueceu sua senha?
-                </Link>
-              </motion.div>
+              {/* O div com "Lembrar-me" e "Esqueceu a senha?" foi removido aqui. */}
               
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
+                // Usando delay 0.3 para manter a sequência visual
+                className="pt-2" 
               >
                 <SubmitButton isLoading={isLoading} onClick={handleSubmit} />
               </motion.div>
@@ -356,12 +275,13 @@ export default function LoginPage() {
             >
               <p className="text-sm text-gray-600">
                 Não tem uma conta?{" "}
-                <Link
+                {/* Substituído o componente Link do Next.js por um <a> padrão */}
+                <a
                   href="/registro"
                   className="text-[#104e35] font-semibold hover:text-[#0d3d29] hover:underline transition-colors"
                 >
                   Registre-se aqui
-                </Link>
+                </a>
               </p>
             </motion.div>
             
@@ -372,9 +292,6 @@ export default function LoginPage() {
               className="mt-6 pt-6 border-t border-gray-200"
             >
               <div className="flex justify-center gap-4 text-xs text-gray-500" aria-label="Links de rodapé">
-                {/* <FooterLink href="#" label="Política de Segurança" />
-                <FooterLink href="#" label="Normas Internas" />
-                <FooterLink href="#" label="Suporte TI" /> */}
                 {<p>Centro Médico de Saúde Ocupacional { new Date().getFullYear() }</p>}
               </div>
             </motion.div>

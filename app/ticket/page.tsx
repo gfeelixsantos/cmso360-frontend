@@ -186,7 +186,7 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
               backgroundColor: 'white',
               borderColor: COLOR_PALETTE.gray,
               color: COLOR_PALETTE.text,
-              focusRingColor: COLOR_PALETTE.primary
+              // focusRingColor: COLOR_PALETTE.primary
             }}
           />
         </div>
@@ -204,7 +204,7 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
               backgroundColor: 'white',
               borderColor: COLOR_PALETTE.gray,
               color: COLOR_PALETTE.text,
-              focusRingColor: COLOR_PALETTE.primary
+              // focusRingColor: COLOR_PALETTE.primary
             }}
           >
             <option value="" disabled>Selecione a unidade</option>
@@ -427,7 +427,7 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
 
   const handleTicketOption = (tipo: TicketTypes) => {
     if (tipo === TicketTypes.ATENDIMENTO) {
-      setSubOptions([TicketTypes.NORMAL, TicketTypes.WHIRLPOOL, TicketTypes.MAJOPAR]);
+      setSubOptions([TicketTypes.NORMAL, TicketTypes.WHIRLPOOL]);
     } else {
       emitirTicket(tipo);
     }
@@ -443,8 +443,6 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
         return <ClipboardDocumentCheckIcon className="w-10 h-10 md:w-12 md:h-12" />;
       case TicketTypes.WHIRLPOOL:
         return <BuildingOfficeIcon className="w-10 h-10 md:w-12 md:h-12" />;
-      case TicketTypes.MAJOPAR:
-        return <WrenchScrewdriverIcon className="w-10 h-10 md:w-12 md:h-12" />;
       default:
         return <UserIcon className="w-10 h-10 md:w-12 md:h-12" />;
     }
@@ -458,8 +456,6 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
         return `linear-gradient(135deg, #5a8c7a 0%, ${COLOR_PALETTE.accent} 100%)`;
       case TicketTypes.WHIRLPOOL:
         return `linear-gradient(135deg, #6b7f76 0%, ${COLOR_PALETTE.gray} 100%)`;
-      case TicketTypes.MAJOPAR:
-        return `linear-gradient(135deg, ${COLOR_PALETTE.dark} 0%, ${COLOR_PALETTE.primary} 100%)`;
       default:
         return `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`;
     }

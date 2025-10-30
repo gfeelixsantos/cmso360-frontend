@@ -39,7 +39,9 @@ interface SenhasSectionProps {
   // agendamentos: Scheduling[]
   onHandleModal: (state: Boolean) => void
   setTicketSelecionado: (ticket: Ticket | null) => void
-  setFuncionarioSelecionado: (funcionario: Scheduling | null) => void
+  setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
+
+  exameSelecionado: string;
 }
 
 // Componente para o estado vazio
@@ -75,6 +77,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   onHandleModal,
   setTicketSelecionado,
   setFuncionarioSelecionado,
+  exameSelecionado,
 }) => {
 
 
@@ -105,6 +108,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
             setFuncionarioSelecionado={setFuncionarioSelecionado}
             onHandleModal={onHandleModal}
             setTicketSelecionado={setTicketSelecionado}
+            exameSelecionado={exameSelecionado}
           />
         ))}
       </div>

@@ -87,6 +87,7 @@ export type Scheduling = {
   NOMESETOR: string;
   NOMEUNIDADE: string;
   OBSERVACOES: string | null;
+  PARECERMEDICO: string | null;
   PRONTUARIOSVINCULADOS: string[];
   RECOMENDACAOMEDICA: string | null;
   RISCOSASO: string | null;

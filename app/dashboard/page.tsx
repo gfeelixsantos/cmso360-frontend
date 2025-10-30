@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Image from "next/image"
 import { motion } from "framer-motion"
-import { Users, Stethoscope, UserCircle, LogOut, Activity, Calendar, FileText, ArrowRight, Bell, AlertCircle, CheckCircle, Clock, Eye, ChartNoAxesCombined } from "lucide-react"
+import { Users, Stethoscope, UserCircle, Calendar, FileText,  CheckCircle, Clock, Eye, ChartNoAxesCombined } from "lucide-react"
 import { IUserInfo } from "@/lib/user/interfaces/IUser"
 import { getCurrentUser, logout } from "@/lib/utils"
 import { HeaderApp } from "@/components/shared/HeaderApp"
-import { EXAMES_LIST, NEST_SCHEDULINGS_ALL } from "@/config/constants"
 import { Scheduling } from "@/lib/scheduling/interface/scheduling"
 import { AtendimentoStatus, ExamStatus } from "@/lib/scheduling/enum/scheduling.enum"
 import { useAppData } from "../context/AppDataContext"
+import CmsoLoading from "@/components/shared/CmsoLoading"
+import { Alert, Link } from "@heroui/react"
 
 // Interfaces para tipagem robusta
 interface MenuCardProps {
@@ -60,10 +60,24 @@ const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
     className="mb-10"
     aria-labelledby="welcome-title"
   >
-    <h1 id="welcome-title" className="text-3xl font-bold text-gray-900 tracking-tight">
-      Bem-vindo, <span>{name.split(" ")[0]} {name.split(" ")[1]}</span>
-    </h1>
-    <p className="text-lg text-gray-600 mt-2">Acesse as funcionalidades do sistema abaixo</p>
+    <section className="flex justify-between">
+      <div>
+        <h1 id="welcome-title" className="text-3xl font-bold text-gray-900 tracking-tight">
+          Bem-vindo, <span>{name.split(" ")[0]} {name.split(" ")[1]}</span>
+        </h1>
+        <p className="text-lg text-gray-600 mt-2">Acesse as funcionalidades do sistema abaixo</p>
+      </div>
+      <div>
+        <Alert
+          color="success"
+          variant="faded"
+        >
+          <p className="font-bold">Nosso novo sistema de atendimento!</p>
+          <p>Estamos em fase de testes, sugestões e melhorias serão bem vindas</p>
+          <Link href="https://forms.gle/Yk34nUL6654x9MNC6" target="_blank">Formulário de sugestões</Link>
+        </Alert>
+      </div>
+    </section>
   </motion.section>
 )
 
@@ -205,35 +219,9 @@ export default function DashboardPage() {
     )
   }
 
-  if (isLoading) {
-    return (
-      <main className="min-h-screen bg-white flex items-center justify-center" aria-label="Carregando dashboard">
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="flex flex-col items-center"
-        >
-          <Image
-            src="/images/logo.png"
-            alt="CMSO 360°"
-            width={160}
-            height={64}
-            className="h-16 w-auto mb-4"
-            priority
-          />
-          <div className="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
-            <motion.div
-              className="h-1 bg-gradient-to-r from-[#104e35] to-[#a6ce39] rounded-full"
-              initial={{ width: 0 }}
-              animate={{ width: "100%" }}
-              transition={{ duration: 1.2, ease: "easeInOut" }}
-            />
-          </div>
-          <p className="text-gray-600 text-sm mt-4">Carregando seu dashboard...</p>
-        </motion.div>
-      </main>
-    )
+  if (true) {
+    // <CmsoLoading />
+    <p>teste</p>
   }
 
   const menuItems = [
@@ -409,7 +397,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Seção de Status dos Atendimentos */}
+        {/* Seção de Status dos Atendimentos
         <section className="mt-8" aria-labelledby="status-title">
           <motion.h2 
             id="status-title" 
@@ -441,7 +429,7 @@ export default function DashboardPage() {
               </motion.div>
             ))}
           </div>
-        </section>
+        </section> */}
 
         {/* Footer do Dashboard */}
         <motion.footer 
@@ -451,7 +439,7 @@ export default function DashboardPage() {
           transition={{ duration: 0.5, delay: 1.5 }}
         >
           <p className="text-sm text-gray-600">
-            CMSO 360° • {new Date().getFullYear()}
+            Centro Médico de Saúde Ocupacional • {new Date().getFullYear()}
           </p>
         </motion.footer>
       </main>

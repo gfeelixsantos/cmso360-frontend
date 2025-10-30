@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
 
-import { CustomEventMap, EventType, onEvent } from "@/lib/websocket/events/events";
+import { CustomEventMap, emitEvent, EventType, onEvent } from "@/lib/websocket/events/events";
 import { PreparationRequestTypes, WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 
 
@@ -30,23 +30,11 @@ import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import SenhasEstatisticas, { StatsModal } from "@/components/recepcao/main/SenhasEstatisticas";
 import AtendimentoContent from "@/components/atendimento/AtendimentoContent";
 import AtendimentoModalExames from "@/components/atendimento/AtendimentoModalExames";
+import CmsoLoading from "@/components/shared/CmsoLoading";
 
 
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!; 
-
-// Componente para o estado de carregamento
-const LoadingState: React.FC = () => (
-  <div
-    className="flex items-center justify-center min-h-screen bg-gray-50"
-    aria-label="Carregando página"
-  >
-    <div
-      className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-      aria-hidden="true"
-    />
-  </div>
-);
 
 // Componente principal
 const AtendimentoPage: React.FC = () => {
@@ -115,17 +103,17 @@ type initialTicketsRequest = {
   preparationRequests: PreparationRequest[]
 }
 // Carrega todos tickets emitidos
-const loadInitialTickets = async (unidade: string) => {
+const loadInitialTickets = async () => {
   try {
-    const encodedUnidade = encodeURIComponent(unidade);
+    const encodedUnidade = encodeURIComponent(unidadeSelecionada);
     const url = `${NEST_TICKET_QUERY}${encodedUnidade}`;
     const response = await fetch(url);
     
     if (!response.ok) {
-      return console.info(`Não há tickets para a unidade ${unidade}`);
+      return console.info(`Não há tickets para a unidade ${unidadeSelecionada}`);
     }
     const data:initialTicketsRequest = await response.json();
-
+    
     if (Array.isArray(data.tickets)) setAll(data.tickets);
 
     if (Array.isArray(data.preparationRequests)) setEmPreparacao(data.preparationRequests);
@@ -380,8 +368,10 @@ useEffect(() => {
       await Promise.all([
         loadSocCompanies(),
         getSchedulings(),
-        loadInitialTickets(unidadeSelecionada),
+        loadInitialTickets(),
       ]);
+
+      emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada)
       
       if (salaSelecionada.includes("PREPARO")) subscribeNotification();
 
@@ -462,7 +452,7 @@ useEffect(() => {
 
 
   if (!user) {
-    return <LoadingState />;
+    return <CmsoLoading />;
   }
 
   return (
@@ -528,6 +518,7 @@ useEffect(() => {
               onPreparationRequests={empreparacao}
               preparacoesFinalizadas={preparacaoFinalizada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
+              exameSelecionado={exameSelecionado}
               />
             )
 

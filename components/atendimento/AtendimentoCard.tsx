@@ -42,6 +42,7 @@ interface AtendimentoCardProps {
   onHandleModal: (state: boolean) => void;
   setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void
+  exameSelecionado: string
 }
 
 // Hook para cálculo de progresso dos exames (memorizado para performance)
@@ -624,6 +625,7 @@ const TicketActions: React.FC<{
   onHandleModal: (state: boolean) => void;
   setTicketSelecionado: (ticket: Ticket) => void;
   setFuncionarioSelecionado:(funcionario:Scheduling | null) => void
+  exameSelecionado: string
 }> = ({
   ticket,
   salaSelecionada,
@@ -633,26 +635,14 @@ const TicketActions: React.FC<{
   onHandleModal,
   setTicketSelecionado,
   setFuncionarioSelecionado,
+  exameSelecionado,
 }) => {
   const { executarAcao } = useEntityManager<Ticket>([]);
-  const [isOpen, setIsOpen] = useState(false);
 
-  const waitActions = [
-    {
-      key: "preparo",
-      label: "Em preparação",
-      action: TicketActionType.EM_PREPARACAO
-    },
-    {
-      key: "raiox",
-      label: "Encaminhado RX",
-      action: TicketActionType.ENCAMINHADO_RX
-    }
-  ];
-
+  // Utilizado para chamar e nas demais ações
   const handleExecutarAcao = (ticket: Ticket, action: TicketActionType) => {
     const currentUser = getCurrentUser();
-    executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome);
+    executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome, atendimento.NOME, exameSelecionado);
   };
 
   const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
@@ -740,7 +730,8 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   socket,
   onHandleModal,
   setTicketSelecionado,
-  setFuncionarioSelecionado
+  setFuncionarioSelecionado,
+  exameSelecionado
 }) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg } = getStatusVisual(atendimento.TICKET.status);
@@ -775,6 +766,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
               setTicketSelecionado={setTicketSelecionado}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               atendimento={atendimento}
+              exameSelecionado={exameSelecionado}
             />
           </div>
         </div>

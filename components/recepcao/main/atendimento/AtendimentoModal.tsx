@@ -27,8 +27,8 @@ import { FixedSizeList as List, ListChildComponentProps } from "react-window"
 import { PreparationRequest, Ticket, TicketActionType, TicketEmitedDto, TicketGroups, TicketStatus, TicketTypes } from "@/lib/ticket/ticket"
 
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa"
-import { EXAMES_LIST, NEST_SCHEDULINGS, NEST_SCHEDULINGS_RECORDS, NEST_SOC_PEDIDOEXAME, NEST_TICKETS_URL, PREFERENCIAL_OPTIONS, TIPOS_EXAME } from "@/config/constants"
-import { AsoStatus } from "@/lib/scheduling/enum/scheduling.enum"
+import { EMPRESAS_COM_PSICOLOGA, EXAMES_LIST, NEST_SCHEDULINGS, NEST_SCHEDULINGS_RECORDS, NEST_SOC_PEDIDOEXAME, NEST_TICKETS_URL, PREFERENCIAL_OPTIONS, TIPOS_EXAME } from "@/config/constants"
+import { AsoStatus, AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum"
 import { InformationCircleIcon } from "@heroicons/react/24/outline"
 import { FileUpload, Scheduling } from "@/lib/scheduling/interface/scheduling"
 import { convertRespAso, convertTipoAsoNome, copyToClipboard, formatBrithdayDate, formatCPF, toBase64 } from "@/lib/utils"
@@ -125,7 +125,10 @@ export default function AtendimentoModalComplete({
       tipoExame: tipoExame.trim().length > 0,
       exames: codigoExames.length > 0,
       preferencial: ticketSelecionado?.preferencial ? preferencialTipo.length > 0 : null,
-      all: empresa.trim().length > 0 && codigoFuncionario.trim().length > 0 && nome.trim().length > 0 && tipoExame.trim().length > 0 && codigoExames.length > 0 && (ticketSelecionado?.preferencial ? preferencialTipo.length > 0 : true)
+      all: empresa.trim().length > 0 && codigoFuncionario.trim().length > 0 
+            && nome.trim().length > 0 && tipoExame.trim().length > 0 
+            && codigoExames.length > 0 && (ticketSelecionado?.preferencial ? preferencialTipo.length > 0 : true)
+            && funcionarioSelecionado?.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO
     }
   }, [empresa, codigoFuncionario, nome, tipoExame, codigoExames, preferencialTipo])
 
@@ -311,7 +314,8 @@ const handleBuscarFuncionario = useCallback(async () => {
         .map((cod) => codigoToNome[cod]);
 
       setExamesImagem(examesImagem);
-      
+
+      handlePsicoExame()
     }
 
     else
@@ -328,7 +332,6 @@ const handleBuscarFuncionario = useCallback(async () => {
     setDataNascimento(paciente.DATANASCIMENTO || "")
     setCpf(formatCPF(paciente.CPFFUNCIONARIO || ""))
     setTipoExame(TIPOS_EXAME[paciente.TIPOEXAMENOME] || "")
-    setPsicoPresencial(false)
     setSelectedSchedulingId(paciente.SCHEDULINGCODE || "")
     setObservacoes(paciente.OBSERVACOES || "")
     setAnotacoes("")
@@ -423,12 +426,14 @@ const toggleExame = useCallback((exame: string) => {
       return [...prev, exame];
     }
   });
-}, []);
+
+}, [funcionarioSelecionado]);
+
 
 
 const handlePsicoExame = () => {
+ 
   setPsicoPresencial((prev) => {
-      // Exemplo do seu trecho comentado (adaptado):
     if (funcionarioSelecionado) {
       funcionarioSelecionado.EXAMES?.forEach(exam => {
         if (exam.nomeExame.includes('Psico')) {
@@ -440,7 +445,6 @@ const handlePsicoExame = () => {
     }
     return !prev;
   });
-
 }
 
 
@@ -731,7 +735,6 @@ const PacienteItem = React.memo(function _PacienteItem({
                 )}
               </div>
               <div className="flex items-center gap-2 text-xs text-gray-600 mb-1">
-                <Building2 className="h-3 w-3 text-gray-400" />
                 <span className="truncate">{paciente.NOMEEMPRESA}</span>
               </div>
               <div className="flex items-center text-xs text-gray-500 gap-2">
@@ -746,7 +749,7 @@ const PacienteItem = React.memo(function _PacienteItem({
               <span
                 className="text-xs"
               >
-                ASO OK
+                {paciente.ATENDIMENTOSTATUS != "AGENDADO" ? paciente.ATENDIMENTOSTATUS : "ASO OK"}
               </span>
             </div>
           )}
@@ -923,7 +926,7 @@ const PacienteItem = React.memo(function _PacienteItem({
         label={"Empresa"}
         aria-label="Selecione a empresa"
         defaultItems={socCompanies}
-        selectedKey={empresa || undefined}
+        selectedKey={empresa || ""}
         onSelectionChange={(key) => setEmpresa(String(key))}
         inputProps={{
           className: showErrors && !validation.empresa ? "ring-1 ring-amber-300" : "",
@@ -1175,7 +1178,7 @@ const PacienteItem = React.memo(function _PacienteItem({
               {exame.includes('Psico') && isSelected ? (
                 <div className="flex justify-between items-baseline-last w-full">
                   <span>{exame}</span>
-                  <span>Com psico. <Switch size="sm" color="warning" onValueChange={handlePsicoExame} disabled={isLoading}></Switch></span> 
+                  <span>Com psico. <Switch id="psicossocial-switch" size="sm" color="warning" checked={psicoPresencial} onValueChange={handlePsicoExame} disabled={isLoading}></Switch></span> 
                 </div>
               ) : <span>{exame}</span>}
             </Button>

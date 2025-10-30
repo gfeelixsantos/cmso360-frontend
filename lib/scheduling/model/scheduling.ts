@@ -32,6 +32,7 @@ export class SchedulingClass implements Scheduling {
   NOMESETOR: string = "";
   NOMEUNIDADE: string = "";
   OBSERVACOES: string | null = null;
+  PARECERMEDICO: string | null = null;
   PRONTUARIOSVINCULADOS: string[] = [];
   RECOMENDACAOMEDICA: string | null = null;
   RISCOSASO: string | null = null;
@@ -111,7 +112,9 @@ export class SchedulingClass implements Scheduling {
             preparacao: "",
             profissional: "",
             sala: "",
-            url: ""
+            url: "",
+            formulario: null,
+            grupo: grupo
           });
         });
       });

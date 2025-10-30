@@ -29,23 +29,12 @@ import { PreparationGrid } from "@/components/recepcao/main/PreparationGrid";
 import { addToast, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, useDisclosure } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import SenhasEstatisticas, { StatsModal } from "@/components/recepcao/main/SenhasEstatisticas";
+import CmsoLoading from "@/components/shared/CmsoLoading";
 
 
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!; 
 
-// Componente para o estado de carregamento
-const LoadingState: React.FC = () => (
-  <div
-    className="flex items-center justify-center min-h-screen bg-gray-50"
-    aria-label="Carregando página"
-  >
-    <div
-      className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"
-      aria-hidden="true"
-    />
-  </div>
-);
 
 // Componente principal
 const RecepcaoPage: React.FC = () => {
@@ -130,7 +119,7 @@ const RecepcaoPage: React.FC = () => {
       const response = await fetch(NEST_SOC_COMPANIES);
 
       if (!response.ok) {
-        console.warn("Não foi possível carregar as empresas SOC");
+        console.warn("Não foi possível carregar as empresas SOC", await response.text());
         // Se API falhar, tenta retornar o IndexedDB
         return await IndexDb.getCompanies();
         
@@ -426,7 +415,7 @@ useEffect(() => {
 
 
   if (!user) {
-    return <LoadingState />;
+    return <CmsoLoading />;
   }
 
   return (
@@ -513,7 +502,9 @@ useEffect(() => {
         isOpen={modalAtendimentoAberto}
         onClose={handleModal}
         ticketSelecionado={ticketSelecionado}
-        agendamentos={agendamentos.filter(a => a.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO)}
+        // teste sem filtro de atendimento
+        // agendamentos={agendamentos.filter(a => a.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO)}
+        agendamentos={agendamentos}
         socCompanies={socCompanies}
         unidadeSelecionada={unidadeSelecionada}
         salaSelecionada={salaSelecionada}

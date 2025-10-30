@@ -358,24 +358,23 @@ const classificarPerdaLloydKaplan = useCallback((media: number): string => {
   return 'Profunda';
 }, []);
 
-  // === CÁLCULO DA MÉDIA TONAL CORRETO ===
-  const calcularMediaTonal = useCallback((
-    freq500: string, freq1000: string, freq2000: string, freq3000: string,
-    freq4000: string
-  ): number => {
-    const valores = [freq500, freq1000, freq2000, freq3000, freq4000]
-      .map(v => {
-        const num = parseFloat(v);
-        return isNaN(num) ? null : num;
-      })
-      .filter(v => v !== null) as number[];
-    
-    if (valores.length === 0) return 0;
-    
-    // Média aritmética simples conforme critérios internacionais
-    const soma = valores.reduce((acc, val) => acc + val, 0);
-    return Math.round(soma / valores.length);
-  }, []);
+  // === CÁLCULO DA MÉDIA TONAL ===
+const calcularMediaTonal = useCallback((
+  freq500: string, freq1000: string, freq2000: string, freq3000: string // Apenas 4 frequências
+): number => {
+  const valores = [freq500, freq1000, freq2000, freq3000] // Apenas as 4 frequências
+    .map(v => {
+      const num = parseFloat(v);
+      return isNaN(num) ? null : num;
+    })
+    .filter(v => v !== null) as number[];
+  
+  if (valores.length === 0) return 0;
+  
+  // Média aritmética simples conforme critérios legais/internacionais
+  const soma = valores.reduce((acc, val) => acc + val, 0);
+  return Math.round(soma / valores.length);
+}, []);
 
 // === VERIFICAR CRITÉRIO PCD PARA COTA OCUPACIONAL (LEIS FEDERAIS ATUAIS) ===
 const verificarCriterioPCD = useCallback(() => {
@@ -451,15 +450,16 @@ const verificarCriterioPCD = useCallback(() => {
 
   // === CÁLCULOS E CLASSIFICAÇÕES PRINCIPAIS - CORRIGIDOS ===
   const calcularClassificacoes = useCallback(() => {
-    // Cálculo da média tonal corrigido
+
+    // Apenas as 4 frequências
     const mediaTonalOD = calcularMediaTonal(
       formData.viaAereaOD500, formData.viaAereaOD1000, formData.viaAereaOD2000,
-      formData.viaAereaOD3000, formData.viaAereaOD4000
+      formData.viaAereaOD3000 
     );
     
     const mediaTonalOE = calcularMediaTonal(
       formData.viaAereaOE500, formData.viaAereaOE1000, formData.viaAereaOE2000,
-      formData.viaAereaOE3000, formData.viaAereaOE4000
+      formData.viaAereaOE3000, 
     );
 
     // Classificação Lloyd & Kaplan corrigida
@@ -1048,7 +1048,7 @@ const verificarCriterioPCD = useCallback(() => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tratamento com antibióticos ototóxicos?
+                    Tratamento antibióticos  e/ou ototóxicos?
                   </label>
                   <div className="flex gap-4 mb-2">
                     <Checkbox
@@ -1240,7 +1240,7 @@ const verificarCriterioPCD = useCallback(() => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Costuma ouvir som alto (música, fones, etc)?
+                    Costuma ouvir música (caixas, fones, etc)?
                   </label>
                   <div className="flex gap-4">
                     <Checkbox
@@ -1294,7 +1294,7 @@ const verificarCriterioPCD = useCallback(() => {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Apresenta labirintite, tontura ou convulsões?
+                    Apresenta ou apresentou labirintite, tontura ou convulsões?
                   </label>
                   <div className="flex gap-4">
                     <Checkbox

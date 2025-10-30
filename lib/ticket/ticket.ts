@@ -34,7 +34,6 @@ export enum TicketTypes {
   RETIRADA_EXAMES = "RETIRADA_EXAMES",
   NORMAL = "NORMAL",
   WHIRLPOOL = "WHIRLPOOL",
-  MAJOPAR = "MAJOPAR",
 }
 
 

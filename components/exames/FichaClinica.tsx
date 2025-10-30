@@ -30,6 +30,7 @@ interface FichaClinicaData {
   etilismo: string;
   atividadeFisica: string;
   acimaPeso: string;
+  ultimaMenstruacao: string;
   
   // Aptidões funcionais
   trabalhoAltura: string;
@@ -56,7 +57,10 @@ interface FichaClinicaData {
   conclusao: string;
   observacoesMedicas: string;
   codigoMedico: string,
-  medico: string
+  medico: string;
+  
+  // Novos campos para observações
+  observacoesDoencasPessoais: string;
 }
 
 const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({ 
@@ -70,6 +74,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [tipoAdmissional, setTipoAdmissional] = useState<boolean>(false);
   const [pressaoAlterada, setPressaoAlterada] = useState<boolean>(false);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState<FichaClinicaData>({
     doencasFamiliares: ["Nenhuma"],
@@ -80,6 +85,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     etilismo: 'Não',
     atividadeFisica: 'Não',
     acimaPeso: 'Não',
+    ultimaMenstruacao: '',
     trabalhoAltura: 'Apto', 
     trabalhoEspacoConfinado: 'Apto', 
     capacidadeCarregarPeso: 'Apto', 
@@ -98,8 +104,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     conclusao: 'Apto',
     observacoesMedicas: '',
     codigoMedico: user?.perfil.includes("MEDICO") ? user.codigo : "",
-    medico: user?.perfil.includes("MEDICO") ? user.nome : ""
+    medico: user?.perfil.includes("MEDICO") ? user.nome : "",
+    observacoesDoencasPessoais: ''
   });
+
+  // Estados para controlar abertura dos campos de observação
+  const [showObservacoesPessoais, setShowObservacoesPessoais] = useState<boolean>(false);
 
   // Função para verificar se a pressão arterial está alterada
   const verificarPressaoAlterada = useCallback((pressao: string): boolean => {
@@ -200,6 +210,21 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     return cleaned;
   };
 
+  // Formatação automática da data (DD/MM/AAAA)
+  const formatarData = (value: string): string => {
+    const numbers = value.replace(/\D/g, '');
+    
+    if (numbers.length <= 2) {
+      return numbers;
+    }
+    
+    if (numbers.length <= 4) {
+      return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}`;
+    }
+    
+    return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
+  };
+
   const handleInputChange = useCallback((field: keyof FichaClinicaData, value: any) => {
     let formattedValue = value;
 
@@ -207,27 +232,31 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       formattedValue = formatarPressaoArterial(value);
     } else if (field === 'altura') {
       formattedValue = formatarAltura(value);
+    } else if (field === 'ultimaMenstruacao') {
+      formattedValue = formatarData(value);
     }
 
     setFormData(prev => ({ ...prev, [field]: formattedValue }));
-  }, []);
+    
+    // Limpar erro do campo quando usuário começar a preencher
+    if (formErrors[field]) {
+      setFormErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  }, [formErrors]);
 
   const handleMultiSelectChange = useCallback((field: keyof FichaClinicaData, value: string) => {
     setFormData(prev => {
       const currentValues = prev[field] as string[];
       
-      // Lógica especial para "Nenhuma" nas doenças familiares
-      if (field === 'doencasFamiliares') {
-        if (value === 'Nenhuma') {
-          // Se clicou em "Nenhuma", limpa todas as outras e marca apenas "Nenhuma"
-          return { ...prev, [field]: ['Nenhuma'] };
-        } else {
-          // Se clicou em outra opção, remove "Nenhuma" se estiver presente
-          const newValues = currentValues.includes(value)
-            ? currentValues.filter(v => v !== value && v !== 'Nenhuma')
-            : [...currentValues.filter(v => v !== 'Nenhuma'), value];
-          return { ...prev, [field]: newValues };
-        }
+      // Lógica para doenças pessoais
+      if (field === 'doencasPessoais') {
+        const newValues = currentValues.includes(value)
+          ? currentValues.filter(v => v !== value)
+          : [...currentValues, value];
+        
+        // Mostrar campo de observações se houver itens selecionados
+        setShowObservacoesPessoais(newValues.length > 0);
+        return { ...prev, [field]: newValues };
       }
       
       // Lógica padrão para outros campos
@@ -237,6 +266,34 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       return { ...prev, [field]: newValues };
     });
   }, []);
+
+  // Validação do formulário
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {};
+
+    // Validação de Dados Vitais - pelo menos uma aferição de pressão arterial
+    if (formData.pressaoArterial.length === 0) {
+      errors.pressaoArterial = 'Pelo menos uma aferição de pressão arterial é obrigatória';
+    }
+
+    // Validação de peso obrigatório
+    if (!formData.peso.trim()) {
+      errors.peso = 'Peso é obrigatório';
+    }
+
+    // Validação de altura obrigatória
+    if (!formData.altura.trim()) {
+      errors.altura = 'Altura é obrigatória';
+    }
+
+    // Validação de observações para doenças pessoais (se houver itens selecionados)
+    if (showObservacoesPessoais && !formData.observacoesDoencasPessoais.trim()) {
+      errors.observacoesDoencasPessoais = 'Observações são obrigatórias quando há doenças pessoais selecionadas';
+    }
+
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleNormalAll = useCallback((checked: boolean) => {
     const normalValue = checked ? 'Normal' : 'Alterado';
@@ -252,6 +309,9 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   }, []);
 
   const handleSave = useCallback(() => {
+    if (!validateForm()) {
+      return;
+    }
     onSave?.(formData);
   }, [formData, onSave]);
 
@@ -271,6 +331,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     "Asma / Doença pulmonar",
     "Depressão / Ansiedade",
     "Cirurgias prévias",
+    "Uso de medicação",
     "Outros"
   ];
 
@@ -339,9 +400,6 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           
           {/* Status do atendimento */}
           <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
-            </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
@@ -512,6 +570,31 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 </Checkbox>
               ))}
             </div>
+
+            {/* Campo de observações para doenças pessoais */}
+            {showObservacoesPessoais && (
+              <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <label className="block text-sm font-medium text-blue-700 mb-2">
+                  Observações - Doenças Pessoais:
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <Textarea
+                  value={formData.observacoesDoencasPessoais}
+                  onChange={(e) => handleInputChange('observacoesDoencasPessoais', e.target.value)}
+                  rows={3}
+                  placeholder="Descreva as observações sobre as doenças pessoais/antecedentes selecionados..."
+                  className={`w-full border-blue-300 focus:border-blue-400 ${
+                    formErrors.observacoesDoencasPessoais ? 'border-red-500' : ''
+                  }`}
+                />
+                {formErrors.observacoesDoencasPessoais && (
+                  <p className="text-xs text-red-600 mt-1">{formErrors.observacoesDoencasPessoais}</p>
+                )}
+                <p className="text-xs text-blue-600 mt-1">
+                  Campo obrigatório quando há doenças pessoais selecionadas.
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -560,7 +643,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           {/* Tabagismo */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <label className="block text-sm font-medium text-gray-700 mb-3">Tabagismo:</label>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-6">
               {tabagismoOptions.map((option) => (
                 <Checkbox
                   key={option.value}
@@ -571,7 +654,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                     }
                   }}
                   classNames={{
-                    base: "min-w-[200px] hover:bg-gray-100 rounded-lg p-3 transition-colors border border-gray-200",
+                    base: "hover:bg-gray-100 rounded-lg p-2 transition-colors",
                     label: "text-sm font-medium text-gray-700"
                   }}
                 >
@@ -584,7 +667,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           {/* Etilismo */}
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <label className="block text-sm font-medium text-gray-700 mb-3">Etilismo:</label>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-6">
               {etilismoOptions.map((option) => (
                 <Checkbox
                   key={option.value}
@@ -595,7 +678,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                     }
                   }}
                   classNames={{
-                    base: "min-w-[120px] hover:bg-gray-100 rounded-lg p-3 transition-colors border border-gray-200",
+                    base: "hover:bg-gray-100 rounded-lg p-2 transition-colors",
                     label: "text-sm font-medium text-gray-700"
                   }}
                 >
@@ -610,7 +693,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Pratica atividade física?
             </label>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-6">
               {atividadeFisicaOptions.map((option) => (
                 <Checkbox
                   key={option.value}
@@ -621,7 +704,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                     }
                   }}
                   classNames={{
-                    base: "min-w-[140px] hover:bg-gray-100 rounded-lg p-3 transition-colors border border-gray-200",
+                    base: "hover:bg-gray-100 rounded-lg p-2 transition-colors",
                     label: "text-sm font-medium text-gray-700"
                   }}
                 >
@@ -636,7 +719,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Considera-se acima do peso?
             </label>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-6">
               {acimaPesoOptions.map((option) => (
                 <Checkbox
                   key={option.value}
@@ -647,7 +730,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                     }
                   }}
                   classNames={{
-                    base: "min-w-[80px] hover:bg-gray-100 rounded-lg p-3 transition-colors border border-gray-200",
+                    base: "hover:bg-gray-100 rounded-lg p-2 transition-colors",
                     label: "text-sm font-medium text-gray-700"
                   }}
                 >
@@ -661,117 +744,139 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
         </>
       )}
 
-      {/* 4. Aptidões Funcionais */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="4" 
-          title="Aptidões Funcionais" 
-          icon={<Briefcase className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <p className="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-          Perguntas voltadas à função laboral — respostas rápidas.
-        </p>
-        
-        <div className="space-y-4">
-          {[
-            { label: "Trabalho em altura:", field: "trabalhoAltura" as keyof FichaClinicaData },
-            { label: "Trabalho em espaço confinado:", field: "trabalhoEspacoConfinado" as keyof FichaClinicaData },
-            { label: "Capacidade para carregar peso:", field: "capacidadeCarregarPeso" as keyof FichaClinicaData },
-            { label: "Apto a operar veículos:", field: "aptoOperarVeiculos" as keyof FichaClinicaData }
-          ].map((item) => (
-            <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <span className="block text-sm font-medium text-gray-700 mb-3">{item.label}</span>
-              <div className="flex gap-6">
-                {aptidaoOptions.map((option) => (
-                  <Checkbox
-                    key={option.value}
-                    isSelected={formData[item.field] === option.value}
-                    onValueChange={(checked) => {
-                      if (checked) {
-                        handleInputChange(item.field, option.value);
-                      }
-                    }}
-                    classNames={{
-                      label: "text-sm text-gray-700"
-                    }}
-                  >
-                    {option.label}
-                  </Checkbox>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </Card>
-
-      {/* 5. Exame Clínico */}
+      {/* Seção de preenchimento médico */}
       { !exame.includes("Triagem") && (
-        <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-          <SectionTitle 
-            number="5" 
-            title="Exame Clínico" 
-            icon={<Stethoscope className="h-5 w-5 text-gray-600" />}
-          />
-          
-          <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-            <Checkbox
-              isSelected={Object.values({
-                cabecaPescoco: formData.cabecaPescoco,
-                torax: formData.torax,
-                abdome: formData.abdome,
-                coluna: formData.coluna,
-                membrosSuperiores: formData.membrosSuperiores,
-                membrosInferiores: formData.membrosInferiores
-              }).every(value => value === 'Normal')}
-              onValueChange={handleNormalAll}
-              classNames={{
-                label: "text-gray-700 font-medium"
-              }}
-            >
-              Marcar "Normal em todos"
-            </Checkbox>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { label: "Cabeça / Pescoço", field: "cabecaPescoco" as keyof FichaClinicaData },
-              { label: "Tórax", field: "torax" as keyof FichaClinicaData },
-              { label: "Abdome", field: "abdome" as keyof FichaClinicaData },
-              { label: "Coluna", field: "coluna" as keyof FichaClinicaData },
-              { label: "Membros Superiores", field: "membrosSuperiores" as keyof FichaClinicaData },
-              { label: "Membros Inferiores", field: "membrosInferiores" as keyof FichaClinicaData }
-            ].map((item) => (
-              <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <span className="block text-sm font-medium text-gray-700 mb-2">{item.label}</span>
-                <div className="flex gap-4">
-                  <Checkbox
-                    isSelected={formData[item.field] === 'Normal'}
-                    onValueChange={(checked) => 
-                      handleInputChange(item.field, checked ? 'Normal' : 'Alterado')
-                    }
-                    classNames={{
-                      label: "text-gray-700"
-                    }}
-                  >
-                    Normal
-                  </Checkbox>
-                  <Checkbox
-                    isSelected={formData[item.field] === 'Alterado'}
-                    onValueChange={(checked) => 
-                      handleInputChange(item.field, checked ? 'Alterado' : 'Normal')
-                    }
-                    classNames={{
-                      label: "text-gray-700"
-                    }}
-                  >
-                    Alterado
-                  </Checkbox>
+        <div>
+          {/* 4. Aptidões Funcionais */}
+          <Card className="p-6 shadow-sm border border-gray-200 bg-white">
+            <SectionTitle 
+              number="4" 
+              title="Aptidões Funcionais" 
+              icon={<Briefcase className="h-5 w-5 text-gray-600" />}
+            />
+            
+            <p className="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+              Perguntas voltadas à função laboral — respostas rápidas.
+            </p>
+            
+            <div className="space-y-4">
+              {[
+                { label: "Trabalho em altura:", field: "trabalhoAltura" as keyof FichaClinicaData },
+                { label: "Trabalho em espaço confinado:", field: "trabalhoEspacoConfinado" as keyof FichaClinicaData },
+                { label: "Capacidade para carregar peso:", field: "capacidadeCarregarPeso" as keyof FichaClinicaData },
+                { label: "Apto a operar veículos:", field: "aptoOperarVeiculos" as keyof FichaClinicaData }
+              ].map((item) => (
+                <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <span className="block text-sm font-medium text-gray-700 mb-3">{item.label}</span>
+                  <div className="flex gap-6">
+                    {aptidaoOptions.map((option) => (
+                      <Checkbox
+                        key={option.value}
+                        isSelected={formData[item.field] === option.value}
+                        onValueChange={(checked) => {
+                          if (checked) {
+                            handleInputChange(item.field, option.value);
+                          }
+                        }}
+                        classNames={{
+                          label: "text-sm text-gray-700"
+                        }}
+                      >
+                        {option.label}
+                      </Checkbox>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        
+        {/* 5. Exame Clínico */}
+          <Card className="p-6 shadow-sm border border-gray-200 bg-white mt-6">
+            <SectionTitle 
+              number="5" 
+              title="Exame Clínico" 
+              icon={<Stethoscope className="h-5 w-5 text-gray-600" />}
+            />
+            
+            <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+              <Checkbox
+                isSelected={Object.values({
+                  cabecaPescoco: formData.cabecaPescoco,
+                  torax: formData.torax,
+                  abdome: formData.abdome,
+                  coluna: formData.coluna,
+                  membrosSuperiores: formData.membrosSuperiores,
+                  membrosInferiores: formData.membrosInferiores
+                }).every(value => value === 'Normal')}
+                onValueChange={handleNormalAll}
+                classNames={{
+                  label: "text-gray-700 font-medium"
+                }}
+              >
+                Marcar "Normal em todos"
+              </Checkbox>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {[
+                { label: "Cabeça / Pescoço", field: "cabecaPescoco" as keyof FichaClinicaData },
+                { label: "Tórax", field: "torax" as keyof FichaClinicaData },
+                { label: "Abdome", field: "abdome" as keyof FichaClinicaData },
+                { label: "Coluna", field: "coluna" as keyof FichaClinicaData },
+                { label: "Membros Superiores", field: "membrosSuperiores" as keyof FichaClinicaData },
+                { label: "Membros Inferiores", field: "membrosInferiores" as keyof FichaClinicaData }
+              ].map((item) => (
+                <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                  <span className="block text-sm font-medium text-gray-700 mb-2">{item.label}</span>
+                  <div className="flex gap-4">
+                    <Checkbox
+                      isSelected={formData[item.field] === 'Normal'}
+                      onValueChange={(checked) => 
+                        handleInputChange(item.field, checked ? 'Normal' : 'Alterado')
+                      }
+                      classNames={{
+                        label: "text-gray-700"
+                      }}
+                    >
+                      Normal
+                    </Checkbox>
+                    <Checkbox
+                      isSelected={formData[item.field] === 'Alterado'}
+                      onValueChange={(checked) => 
+                        handleInputChange(item.field, checked ? 'Alterado' : 'Normal')
+                      }
+                      classNames={{
+                        label: "text-gray-700"
+                      }}
+                    >
+                      Alterado
+                    </Checkbox>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Data da Última Menstruação */}
+            {atendimento?.SEXO === 'Feminino' || atendimento.TIPOEXAMENOME === "DEMISSIONAL" && (
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Data da última menstruação:
+              </label>
+              <Input
+                type="text"
+                value={formData.ultimaMenstruacao}
+                onChange={(e) => handleInputChange('ultimaMenstruacao', e.target.value)}
+                placeholder="DD/MM/AAAA"
+                maxLength={10}
+                className="bg-white border-gray-300 max-w-xs"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Formato automático: DD/MM/AAAA
+              </p>
+            </div>
+            )}
+          </Card>
+        </div>
       )}
 
       {/* 6. Dados Vitais */}
@@ -787,6 +892,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           <div className="flex items-center justify-between mb-3">
             <label className="block text-sm font-medium text-gray-700">
               Pressões Arteriais (mmHg)
+              <span className="text-red-500 ml-1">*</span>
             </label>
             <Button
               size="sm"
@@ -875,35 +981,54 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           ))}
 
           {(!formData.pressaoArterial || formData.pressaoArterial.length === 0) && (
-            <p className="text-sm text-gray-500">Nenhuma aferição registrada.</p>
+            <p className="text-sm text-red-600">Nenhuma aferição registrada. Pelo menos uma aferição é obrigatória.</p>
+          )}
+          {formErrors.pressaoArterial && (
+            <p className="text-sm text-red-600 mt-2">{formErrors.pressaoArterial}</p>
           )}
         </div>
 
         {/* Peso, altura e IMC */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Peso (kg):</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Peso (kg):
+              <span className="text-red-500 ml-1">*</span>
+            </label>
             <Input
               type="text"
               inputMode="decimal"
               value={formData.peso}
               onChange={(e) => handleInputChange("peso", e.target.value)}
               placeholder="70,5"
-              className="bg-white border-gray-300"
+              className={`bg-white border-gray-300 ${
+                formErrors.peso ? 'border-red-500' : ''
+              }`}
             />
+            {formErrors.peso && (
+              <p className="text-xs text-red-600 mt-1">{formErrors.peso}</p>
+            )}
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <label className="block text-sm font-medium text-gray-700 mb-2">Altura (m):</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Altura (m):
+              <span className="text-red-500 ml-1">*</span>
+            </label>
             <Input
               type="text"
               inputMode="decimal"
               value={formData.altura}
               onChange={(e) => handleInputChange("altura", e.target.value)}
               placeholder="1,75"
-              className="bg-white border-gray-300"
+              className={`bg-white border-gray-300 ${
+                formErrors.altura ? 'border-red-500' : ''
+              }`}
             />
             <p className="text-xs text-gray-500 mt-1">Vírgula automática</p>
+            {formErrors.altura && (
+              <p className="text-xs text-red-600 mt-1">{formErrors.altura}</p>
+            )}
           </div>
 
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
@@ -961,8 +1086,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           
           <div className="space-y-4">
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <label className="block text-sm font-medium text-gray-700 mb-3">Conclusão:</label>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="flex justify-between gap-1">
                 {conclusaoOptions.map((option) => (
                   <Checkbox
                     key={option.value}
@@ -973,7 +1097,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       }
                     }}
                     classNames={{
-                      base: "w-full hover:bg-gray-100 rounded-lg p-3 transition-colors border border-gray-200",
+                      base: "w-full hover:bg-gray-100 rounded-lg p-3 transition-colors",
                       label: "text-sm font-medium text-gray-700"
                     }}
                   >

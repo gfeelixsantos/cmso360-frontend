@@ -39,6 +39,8 @@ interface MainContentProps {
 
   preparacoesFinalizadas: PreparationRequest[];
 
+  exameSelecionado: string;
+
 }
 
 
@@ -57,6 +59,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   onPreparationRequests,
   preparacoesFinalizadas,
   setFuncionarioSelecionado,
+  exameSelecionado,
 }) => {
 
   // Filtragem/organização tickets
@@ -153,6 +156,7 @@ const senhasNormais = AtendimentosOrdenados.filter((s) =>
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}
         preparacoesFinalizadas={preparacoesFinalizadas}
+        exameSelecionado={exameSelecionado}
       />
     </main>
   );

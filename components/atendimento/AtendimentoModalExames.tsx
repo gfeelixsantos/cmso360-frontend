@@ -42,6 +42,7 @@ const AtendimentoModalExames = ({
   const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister>()
 
   useEffect(() => {
+    console.log(codigosAtendimento)
     // Encontra o código do exame que precisa ser atualizado
     const exameEmAtendimento = funcionarioSelecionado?.EXAMES.find(e =>
       codigosAtendimento.has(e.codigoExame)
@@ -120,11 +121,13 @@ const AtendimentoModalExames = ({
 
 
   // ✅ Mapeamento dos tipos de exame para componentes de formulário
+  const entrevistaPsico = funcionarioSelecionado?.EXAMES.some(e => e.grupo === "Psicossocial" && e.preparacao.includes("entrevista"))
+
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
     "Audiometria": AudiometriaOcupacional,
     "Dinamometria": Dinamometria,
-    "EEG": Psicossocial,
+    "EEG": !entrevistaPsico ? Psicossocial : ExamePadrao,
     "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
     "Psicossocial": Psicossocial,

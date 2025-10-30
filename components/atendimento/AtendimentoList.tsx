@@ -54,7 +54,9 @@ interface SenhasListProps {
 
    onPreparationRequests: PreparationRequest[];
 
-   preparacoesFinalizadas: PreparationRequest[]
+   preparacoesFinalizadas: PreparationRequest[];
+
+   exameSelecionado: string;
 }
 
 // Componente para o estado vazio
@@ -89,6 +91,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   unidadeSelecionada,
   setFuncionarioSelecionado,
   onHandleModal,
+  exameSelecionado,
 }) => {
   if (senhasOrdenadas.length === 0) {
     return <EmptyState />;
@@ -112,6 +115,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
             unidadeSelecionada={unidadeSelecionada}
             setFuncionarioSelecionado={setFuncionarioSelecionado}
             onHandleModal={onHandleModal}
+            exameSelecionado={exameSelecionado}
           />
         )}
         <AtendimentoSection
@@ -125,6 +129,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
           unidadeSelecionada={unidadeSelecionada}
           setFuncionarioSelecionado={setFuncionarioSelecionado}
           onHandleModal={onHandleModal}
+          exameSelecionado={exameSelecionado}
         />
       </div>
       <div className='w-md mb-2'>
