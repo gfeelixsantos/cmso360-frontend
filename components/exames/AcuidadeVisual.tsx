@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Input, Select, SelectItem, Textarea, RadioGroup, Radio, Spinner } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Eye, Palette, Gauge, FileText, Plus, Minus, AlertTriangle, Check, X } from 'lucide-react';
+import { User, Eye, Palette, Gauge, FileText, Plus, Minus, AlertTriangle, Check, X, CheckCheck } from 'lucide-react';
 
 interface AcuidadeVisualProps {
   atendimento: any;
@@ -57,11 +57,6 @@ interface AcuidadeVisualData {
   estereopsiaAcertos: number;
   estereopsiaTotal: number;
   estereopsiaRespostas: { [key: number]: 'acerto' | 'erro' | null };
-  
-  // Resultados Separados
-  resultadoAcuidadeVisual: string;
-  resultadoIshihara: string;
-  resultadoEstereopsia: string;
   
   // Conclusão Geral
   observacoesFinais: string;
@@ -139,15 +134,15 @@ const placasIshiharaConfig = [
 
 // Configuração das setas para teste de profundidade
 const setasProfundidade = [
-  { id: 1, numero: '1', direcao: '⬆️' },
-  { id: 2, numero: '2', direcao: '➡️' },
+  { id: 1, numero: '1', direcao: '⬇️' },
+  { id: 2, numero: '2', direcao: '⬅️' },
   { id: 3, numero: '3', direcao: '⬇️' },
-  { id: 4, numero: '4', direcao: '↙️' },
-  { id: 5, numero: '5', direcao: '↘️' },
-  { id: 6, numero: '6', direcao: '↖️' },
-  { id: 7, numero: '7', direcao: '↗️' },
+  { id: 4, numero: '4', direcao: '⬆️' },
+  { id: 5, numero: '5', direcao: '⬆️' },
+  { id: 6, numero: '6', direcao: '⬅️' },
+  { id: 7, numero: '7', direcao: '➡️' },
   { id: 8, numero: '8', direcao: '⬅️' },
-  { id: 9, numero: '9', direcao: '↔️' }
+  { id: 9, numero: '9', direcao: '➡️' },
 ];
 
 const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({ 
@@ -197,12 +192,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     estereopsiaAcertos: 0,
     estereopsiaTotal: 9,
     estereopsiaRespostas: {},
-    
-    // Resultados Separados
-    resultadoAcuidadeVisual: 'Normal',
-    resultadoIshihara: 'Normal',
-    resultadoEstereopsia: '',
-    
+     
     // Conclusão Geral
     observacoesFinais: ''
   });
@@ -262,9 +252,8 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     const calcularResultado = (acertos: number, total: number) => {
       if (total === 0) return '';
       const porcentagem = (acertos / total) * 100;
-      if (porcentagem >= 80) return 'Normal';
-      if (porcentagem >= 50) return 'Alterado Leve';
-      return 'Alterado Grave';
+      if (porcentagem >= 80) return 'Dentro dos padrões da normalidade';
+      return 'Fora dos padrões da normalidade';
     };
 
     const resultado = calcularResultado(formData.estereopsiaAcertos, formData.estereopsiaTotal);
@@ -386,32 +375,32 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
               {setasProfundidade.map((seta) => (
                 <div key={seta.id} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
                   <div className="text-2xl mb-2">{seta.direcao}</div>
-                  <div className="text-sm font-medium text-gray-700 mb-3">Set {seta.numero}</div>
+                  <div className="text-sm font-medium text-gray-700 mb-3">nº {seta.numero}</div>
                   <div className="flex justify-center gap-2">
                     <Button
                       size="sm"
+                      isIconOnly
                       variant={formData.estereopsiaRespostas[seta.id] === 'acerto' ? 'solid' : 'flat'}
                       color={formData.estereopsiaRespostas[seta.id] === 'acerto' ? 'success' : 'default'}
                       onPress={() => handleRespostaProfundidade(seta.id, 'acerto')}
                       className="min-w-12"
                       startContent={<Check className="h-4 w-4" />}
                     >
-                      ✓
                     </Button>
                     <Button
                       size="sm"
+                      isIconOnly
                       variant={formData.estereopsiaRespostas[seta.id] === 'erro' ? 'solid' : 'flat'}
                       color={formData.estereopsiaRespostas[seta.id] === 'erro' ? 'danger' : 'default'}
                       onPress={() => handleRespostaProfundidade(seta.id, 'erro')}
                       className="min-w-12"
                       startContent={<X className="h-4 w-4" />}
                     >
-                      ✗
                     </Button>
                   </div>
                   <div className="text-xs text-gray-500 mt-2">
-                    {formData.estereopsiaRespostas[seta.id] === 'acerto' && '✓ Acerto'}
-                    {formData.estereopsiaRespostas[seta.id] === 'erro' && '✗ Erro'}
+                    {formData.estereopsiaRespostas[seta.id] === 'acerto' && 'Acerto'}
+                    {formData.estereopsiaRespostas[seta.id] === 'erro' && 'Erro'}
                     {!formData.estereopsiaRespostas[seta.id] && 'Pendente'}
                   </div>
                 </div>
@@ -448,28 +437,6 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Resultado Final:
-              </label>
-              <Select
-                selectedKeys={formData.estereopsiaResultado ? [formData.estereopsiaResultado] : []}
-                onChange={(e) => {
-                  handleInputChange('estereopsiaResultado', e.target.value);
-                  handleInputChange('resultadoEstereopsia', e.target.value);
-                }}
-                className="w-full"
-                classNames={{
-                  trigger: "bg-white border-gray-300"
-                }}
-              >
-                <SelectItem key="Normal">Normal</SelectItem>
-                <SelectItem key="Alterado Leve">Alterado Leve</SelectItem>
-                <SelectItem key="Alterado Grave">Alterado Grave</SelectItem>
-                <SelectItem key="Não realizado">Não realizado</SelectItem>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Observação
               </label>
               <Textarea
@@ -495,21 +462,20 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
               {exame || 'Exame Ocupacional'}
             </h1>
             <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento
+              Exame visual ocupacional
             </p>
           </div>
           
           {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
+          <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
             <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
               </div>
-              <p className="text-xs text-green-700">
+              <p className="text-xs text-red-700">
                 Realizando procedimento
               </p>
             </div>
@@ -673,20 +639,18 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-4 py-3 text-left font-semibold text-gray-700">Distância</th>
                     <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Direito (OD)</th>
                     <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Esquerdo (OE)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Binocular</th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Para perto</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
-                    <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Longe</td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
                         value={formData.longeOD}
                         onChange={(e) => handleInputChange('longeOD', e.target.value)}
-                        placeholder="Ex: 20/20 ou 1.0"
+                        placeholder="Ex: 20/20"
                         className="border-gray-300 text-center bg-white"
                       />
                     </td>
@@ -694,7 +658,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                       <Input
                         value={formData.longeOE}
                         onChange={(e) => handleInputChange('longeOE', e.target.value)}
-                        placeholder="Ex: 20/25 ou 0.8"
+                        placeholder="Ex: 20/25"
                         className="border-gray-300 text-center bg-white"
                       />
                     </td>
@@ -707,42 +671,12 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                       />
                     </td>
                   </tr>
-                  <tr>
-                    <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Perto</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center text-gray-500">
-                      -
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2 text-center text-gray-500">
-                      -
-                    </td>
-                    <td className="border border-gray-300 px-4 py-2">
-                      <Input
-                        value={formData.pertoBinocular}
-                        onChange={(e) => handleInputChange('pertoBinocular', e.target.value)}
-                        placeholder="Ex: 20/20 ou J1"
-                        className="border-gray-300 text-center bg-white"
-                      />
-                    </td>
-                  </tr>
                 </tbody>
               </table>
               <p className="text-xs text-gray-500 mt-2">
                 * A acuidade visual para perto é realizada apenas com os dois olhos (binocular)
               </p>
             </div>
-          </div>
-
-          {/* Resultado da Acuidade Visual */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Resultado da Acuidade Visual
-            </label>
-            <Input
-              value={formData.resultadoAcuidadeVisual}
-              onChange={(e) => handleInputChange('resultadoAcuidadeVisual', e.target.value)}
-              className="w-full bg-white border-gray-300"
-              placeholder="Digite o resultado da acuidade visual..."
-            />
           </div>
         </div>
       </Card>
@@ -792,7 +726,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                           <Input
                             value={formData[placa.fieldPlaca as keyof AcuidadeVisualData] as string}
                             onChange={(e) => handleInputChange(placa.fieldPlaca as keyof AcuidadeVisualData, e.target.value)}
-                            placeholder={`Ex: ${placa.real} ou NA`}
+                            placeholder={`Ex: ${placa.real}`}
                             className="border-gray-300 text-center bg-white"
                           />
                         </td>
@@ -815,22 +749,6 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                     ))}
                   </tbody>
                 </table>
-              </div>
-
-              {/* Conclusão do Teste */}
-              <div className="mt-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Resultado do Teste de Ishihara
-                </label>
-                <Input
-                  value={formData.resultadoIshihara}
-                  onChange={(e) => {
-                    handleInputChange('resultadoIshihara', e.target.value);
-                    handleInputChange('conclusaoIshihara', e.target.value);
-                  }}
-                  className="w-full bg-white border-gray-300"
-                  placeholder="Digite o resultado do teste de Ishihara..."
-                />
               </div>
             </div>
           </div>

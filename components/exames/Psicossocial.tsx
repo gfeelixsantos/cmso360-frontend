@@ -112,30 +112,29 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
       {/* Header */}
       <Card className="p-6 shadow-lg border border-blue-200 bg-white">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
+            <div className="text-center lg:text-left">
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
+                {exame || 'Exame Ocupacional'}
             </h1>
             <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento
+                {agendamento?.TIPOEXAMENOME}
             </p>
-          </div>
-          
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
+            </div>
+            
+            {/* Status do atendimento */}
+            <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
             <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
             </div>
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
-              </div>
-              <p className="text-xs text-green-700">
+                <div className="flex items-center gap-2 mb-1">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
+                </div>
+                <p className="text-xs text-red-700">
                 Realizando procedimento
-              </p>
+                </p>
             </div>
-          </div>
+            </div>
         </div>
       </Card>
 

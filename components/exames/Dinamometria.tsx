@@ -32,14 +32,10 @@ interface DinamometriaData {
   classificacaoPalmar: string;
   
   // Dinamometria Escapular - Força de Membros Superiores
-  escapularDireita1: string;
-  escapularDireita2: string;
-  escapularDireita3: string;
-  escapularDireitaMedia: string;
-  escapularEsquerda1: string;
-  escapularEsquerda2: string;
-  escapularEsquerda3: string;
-  escapularEsquerdaMedia: string;
+  escapular1: string;
+  escapular2: string;
+  escapular3: string;
+  escapularMedia: string;
   classificacaoEscapular: string;
   
   // Dinamometria Dorsal - Força de Tronco
@@ -81,10 +77,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     classificacaoPalmar: '',
     
     // Dinamometria Escapular
-    escapularDireita1: '', escapularDireita2: '', escapularDireita3: '',
-    escapularDireitaMedia: '',
-    escapularEsquerda1: '', escapularEsquerda2: '', escapularEsquerda3: '',
-    escapularEsquerdaMedia: '',
+    escapular1: '', escapular2: '', escapular3: '',
+    escapularMedia: '',
     classificacaoEscapular: '',
     
     // Dinamometria Dorsal
@@ -152,9 +146,9 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
     // Cálculo da média escapular direita
     const valoresEscapularDireita = [
-      parseFloat(formData.escapularDireita1.replace(',', '.')),
-      parseFloat(formData.escapularDireita2.replace(',', '.')),
-      parseFloat(formData.escapularDireita3.replace(',', '.'))
+      parseFloat(formData.escapular1.replace(',', '.')),
+      parseFloat(formData.escapular2.replace(',', '.')),
+      parseFloat(formData.escapular3.replace(',', '.'))
     ].filter(v => !isNaN(v));
     
     if (valoresEscapularDireita.length > 0) {
@@ -162,21 +156,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       setFormData(prev => ({
         ...prev,
         escapularDireitaMedia: media.toFixed(1).replace('.', ',')
-      }));
-    }
-
-    // Cálculo da média escapular esquerda
-    const valoresEscapularEsquerda = [
-      parseFloat(formData.escapularEsquerda1.replace(',', '.')),
-      parseFloat(formData.escapularEsquerda2.replace(',', '.')),
-      parseFloat(formData.escapularEsquerda3.replace(',', '.'))
-    ].filter(v => !isNaN(v));
-    
-    if (valoresEscapularEsquerda.length > 0) {
-      const media = valoresEscapularEsquerda.reduce((a, b) => a + b) / valoresEscapularEsquerda.length;
-      setFormData(prev => ({
-        ...prev,
-        escapularEsquerdaMedia: media.toFixed(1).replace('.', ',')
       }));
     }
 
@@ -197,8 +176,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   }, [
     formData.palmarDireita1, formData.palmarDireita2, formData.palmarDireita3,
     formData.palmarEsquerda1, formData.palmarEsquerda2, formData.palmarEsquerda3,
-    formData.escapularDireita1, formData.escapularDireita2, formData.escapularDireita3,
-    formData.escapularEsquerda1, formData.escapularEsquerda2, formData.escapularEsquerda3,
+    formData.escapular1, formData.escapular2, formData.escapular3,
     formData.dorsal1, formData.dorsal2, formData.dorsal3
   ]);
 
@@ -208,8 +186,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   }, [
     formData.palmarDireitaMedia,
     formData.palmarEsquerdaMedia,
-    formData.escapularDireitaMedia,
-    formData.escapularEsquerdaMedia,
+    formData.escapularMedia,
     formData.dorsalMedia,
     formData.ladoDominante,
     formData.sexo
@@ -230,83 +207,95 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     return Object.keys(errors).length === 0;
   }, [formData.ladoDominante, formData.sexo]);
 
+  // Função para avaliar dinamometria palmar
+  const avaliarDinamometriaPalmar = useCallback((mediaDominante: number, mediaNaoDominante: number, sexo: string) => {
+    if (sexo === 'Masculino') {
+      const dominanteAdequado = mediaDominante >= 45;
+      const naoDominanteAdequado = mediaNaoDominante >= 40;
+      return dominanteAdequado && naoDominanteAdequado;
+    } else {
+      const dominanteAdequado = mediaDominante >= 25;
+      const naoDominanteAdequado = mediaNaoDominante >= 20;
+      return dominanteAdequado && naoDominanteAdequado;
+    }
+  }, []);
+
+  // Função para avaliar dinamometria escapular
+  const avaliarDinamometriaEscapular = useCallback((mediaDireita: number, sexo: string) => {
+    const minimo = sexo === 'Masculino' ? 20 : 10;
+    return mediaDireita >= minimo;
+  }, []);
+
+  // Função para avaliar dinamometria dorsal
+  const avaliarDinamometriaDorsal = useCallback((media: number, sexo: string) => {
+    const minimo = sexo === 'Masculino' ? 100 : 50;
+    return media >= minimo;
+  }, []);
+
   const calcularResultado = useCallback(() => {
     // Obter todas as médias como números
     const mediaPalmarDir = parseFloat(formData.palmarDireitaMedia.replace(',', '.')) || 0;
     const mediaPalmarEsq = parseFloat(formData.palmarEsquerdaMedia.replace(',', '.')) || 0;
-    const mediaEscapularDir = parseFloat(formData.escapularDireitaMedia.replace(',', '.')) || 0;
-    const mediaEscapularEsq = parseFloat(formData.escapularEsquerdaMedia.replace(',', '.')) || 0;
+    const mediaEscapularDir = parseFloat(formData.escapularMedia.replace(',', '.')) || 0;
     const mediaDorsal = parseFloat(formData.dorsalMedia.replace(',', '.')) || 0;
 
-    // Critérios simplificados para avaliação
-    // Nota: Em um sistema real, esses critérios seriam mais complexos e baseados em normas técnicas
-    const criterios = {
-      palmarMinimo: formData.sexo === 'Feminino' ? 15 : 25, // kgf
-      escapularMinimo: formData.sexo === 'Feminino' ? 20 : 35, // kgf
-      dorsalMinimo: formData.sexo === 'Feminino' ? 30 : 50, // kgf
-      assimetriaMaxima: 20 // porcentagem
-    };
+    // Verificar se temos dados suficientes para avaliação
+    if (!formData.ladoDominante || !formData.sexo) {
+      setFormData(prev => ({
+        ...prev,
+        resultado: 'Normal',
+        observacoesFinais: 'Aguardando preenchimento dos dados obrigatórios para avaliação.'
+      }));
+      return;
+    }
 
-    // Verificar valores mínimos
-    const palmarAbaixoMinimo = mediaPalmarDir < criterios.palmarMinimo || 
-                               mediaPalmarEsq < criterios.palmarMinimo;
-    const escapularAbaixoMinimo = mediaEscapularDir < criterios.escapularMinimo || 
-                                  mediaEscapularEsq < criterios.escapularMinimo;
-    const dorsalAbaixoMinimo = mediaDorsal < criterios.dorsalMinimo;
-
-    // Verificar assimetria entre lados
-    const calcularAssimetria = (ladoDominante: number, ladoNaoDominante: number) => {
-      if (ladoDominante === 0 || ladoNaoDominante === 0) return 0;
-      return Math.abs((ladoDominante - ladoNaoDominante) / ladoDominante) * 100;
-    };
-
-    let assimetriaSignificativa = false;
+    // Avaliar cada tipo de dinamometria
+    let palmarNormal = false;
+    let escapularNormal = false;
+    let dorsalNormal = false;
 
     if (formData.ladoDominante === 'Direito') {
-      const assimetriaPalmar = calcularAssimetria(mediaPalmarDir, mediaPalmarEsq);
-      const assimetriaEscapular = calcularAssimetria(mediaEscapularDir, mediaEscapularEsq);
-      assimetriaSignificativa = assimetriaPalmar > criterios.assimetriaMaxima || 
-                               assimetriaEscapular > criterios.assimetriaMaxima;
-    } else if (formData.ladoDominante === 'Esquerdo') {
-      const assimetriaPalmar = calcularAssimetria(mediaPalmarEsq, mediaPalmarDir);
-      const assimetriaEscapular = calcularAssimetria(mediaEscapularEsq, mediaEscapularDir);
-      assimetriaSignificativa = assimetriaPalmar > criterios.assimetriaMaxima || 
-                               assimetriaEscapular > criterios.assimetriaMaxima;
+      palmarNormal = avaliarDinamometriaPalmar(mediaPalmarDir, mediaPalmarEsq, formData.sexo);
+    } else {
+      palmarNormal = avaliarDinamometriaPalmar(mediaPalmarEsq, mediaPalmarDir, formData.sexo);
     }
 
-    // Determinar resultado
-    let resultado = 'Normal';
+    escapularNormal = avaliarDinamometriaEscapular(mediaEscapularDir, formData.sexo);
+    dorsalNormal = avaliarDinamometriaDorsal(mediaDorsal, formData.sexo);
+
+    // Determinar resultado final
+    const todasNormais = palmarNormal && escapularNormal && dorsalNormal;
+    const resultado = todasNormais ? 'Normal' : 'Alterado';
+
+    // Gerar observações detalhadas
     let observacoes = '';
+    
+    if (todasNormais) {
+      observacoes = 'Dinamometria dentro dos padrões da normalidade';
+    } else {
+      observacoes = 'Dinamometria fora dos padrões da normalidade.';
 
-    if (palmarAbaixoMinimo || escapularAbaixoMinimo || dorsalAbaixoMinimo) {
-      resultado = 'Alterado';
-      observacoes = 'Força muscular abaixo dos parâmetros esperados para o contexto ocupacional. ';
     }
 
-    if (assimetriaSignificativa) {
-      resultado = 'Alterado';
-      observacoes += 'Assimetria significativa detectada entre os membros. ';
-    }
-
-    // Adicionar orientações baseadas na Escala MRC
-    if (resultado === 'Alterado') {
-      observacoes += 'Recomenda-se avaliação médica para análise detalhada e possíveis encaminhamentos. ';
-    }
-
-    // Atualizar resultado
+    // Atualizar classificações individuais
     setFormData(prev => ({
       ...prev,
       resultado,
-      observacoesFinais: observacoes.trim() || 'Avaliação dentro dos parâmetros normais para o contexto ocupacional.'
+      observacoesFinais: observacoes,
+      classificacaoPalmar: palmarNormal ? 'Normal' : 'Abaixo do esperado',
+      classificacaoEscapular: escapularNormal ? 'Normal' : 'Abaixo do esperado',
+      classificacaoDorsal: dorsalNormal ? 'Normal' : 'Abaixo do esperado'
     }));
   }, [
     formData.palmarDireitaMedia,
     formData.palmarEsquerdaMedia,
-    formData.escapularDireitaMedia,
-    formData.escapularEsquerdaMedia,
+    formData.escapularMedia,
     formData.dorsalMedia,
     formData.ladoDominante,
-    formData.sexo
+    formData.sexo,
+    avaliarDinamometriaPalmar,
+    avaliarDinamometriaEscapular,
+    avaliarDinamometriaDorsal
   ]);
 
   const handleInputChange = useCallback((field: keyof DinamometriaData, value: any) => {
@@ -437,6 +426,64 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     </div>
   );
 
+
+  const renderTabelaDinamometriaEscapular = (
+    titulo: string,
+    ladoDireito: { campo1: string; campo2: string; campo3: string; media: string },
+    unidade: string = 'kgf'
+  ) => (
+    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">{titulo}</h3>
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse">
+          <thead>
+            <tr className="bg-gray-100">
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">1ª Medida ({unidade})</th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">2ª Medida ({unidade})</th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">3ª Medida ({unidade})</th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Média ({unidade})</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="border border-gray-300 px-4 py-2">
+                <Input
+                  value={formData[ladoDireito.campo1 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(ladoDireito.campo1 as keyof DinamometriaData, e.target.value)}
+                  placeholder="0,0"
+                  className="border-gray-300 text-center bg-white"
+                />
+              </td>
+              <td className="border border-gray-300 px-4 py-2">
+                <Input
+                  value={formData[ladoDireito.campo2 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(ladoDireito.campo2 as keyof DinamometriaData, e.target.value)}
+                  placeholder="0,0"
+                  className="border-gray-300 text-center bg-white"
+                />
+              </td>
+              <td className="border border-gray-300 px-4 py-2">
+                <Input
+                  value={formData[ladoDireito.campo3 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(ladoDireito.campo3 as keyof DinamometriaData, e.target.value)}
+                  placeholder="0,0"
+                  className="border-gray-300 text-center bg-white"
+                />
+              </td>
+              <td className="border border-gray-300 px-4 py-2">
+                <Input
+                  value={formData[ladoDireito.media as keyof DinamometriaData] as string}
+                  isReadOnly
+                  className="border-gray-300 text-center bg-gray-100 font-semibold"
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
       <Card className="p-6 shadow-lg border border-blue-200 bg-white">
@@ -446,21 +493,20 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               {exame || 'Exame Ocupacional'}
             </h1>
             <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento
+              Avaliação da função muscular
             </p>
           </div>
           
           {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
+          <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
             <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
             </div>
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
               </div>
-              <p className="text-xs text-green-700">
+              <p className="text-xs text-red-700">
                 Realizando procedimento
               </p>
             </div>
@@ -573,58 +619,58 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
           </div>
         </div>
 
-                  {/* Dados Obrigatórios - Lado Dominante e Sexo */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide flex items-center">
-              Dados Obrigatórios para Avaliação
-              <span className="ml-2 text-red-500 text-xs">*</span>
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Lado Dominante <span className="text-red-500">*</span>
-                  {formErrors.ladoDominante && (
-                    <span className="ml-2 text-red-500 text-xs">{formErrors.ladoDominante}</span>
-                  )}
-                </label>
-                <RadioGroup
-                  value={formData.ladoDominante}
-                  onValueChange={(value) => handleInputChange('ladoDominante', value)}
-                  orientation="horizontal"
-                  className="gap-4"
-                >
-                  <Radio value="Direito" className="mr-2">
-                    Direito
-                  </Radio>
-                  <Radio value="Esquerdo">
-                    Esquerdo
-                  </Radio>
-                </RadioGroup>
-              </div>
+        {/* Dados Obrigatórios - Lado Dominante e Sexo */}
+        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-6">
+          <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide flex items-center">
+            Dados Obrigatórios para Avaliação
+            <span className="ml-2 text-red-500 text-xs">*</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Lado Dominante <span className="text-red-500">*</span>
+                {formErrors.ladoDominante && (
+                  <span className="ml-2 text-red-500 text-xs">{formErrors.ladoDominante}</span>
+                )}
+              </label>
+              <RadioGroup
+                value={formData.ladoDominante}
+                onValueChange={(value) => handleInputChange('ladoDominante', value)}
+                orientation="horizontal"
+                className="gap-4"
+              >
+                <Radio value="Direito" className="mr-2">
+                  Direito
+                </Radio>
+                <Radio value="Esquerdo">
+                  Esquerdo
+                </Radio>
+              </RadioGroup>
+            </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Sexo <span className="text-red-500">*</span>
-                  {formErrors.sexo && (
-                    <span className="ml-2 text-red-500 text-xs">{formErrors.sexo}</span>
-                  )}
-                </label>
-                <RadioGroup
-                  value={formData.sexo}
-                  onValueChange={(value) => handleInputChange('sexo', value)}
-                  orientation="horizontal"
-                  className="gap-4"
-                >
-                  <Radio value="Masculino" className="mr-2">
-                    Masculino
-                  </Radio>
-                  <Radio value="Feminino">
-                    Feminino
-                  </Radio>
-                </RadioGroup>
-              </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                Sexo <span className="text-red-500">*</span>
+                {formErrors.sexo && (
+                  <span className="ml-2 text-red-500 text-xs">{formErrors.sexo}</span>
+                )}
+              </label>
+              <RadioGroup
+                value={formData.sexo}
+                onValueChange={(value) => handleInputChange('sexo', value)}
+                orientation="horizontal"
+                className="gap-4"
+              >
+                <Radio value="Masculino" className="mr-2">
+                  Masculino
+                </Radio>
+                <Radio value="Feminino">
+                  Feminino
+                </Radio>
+              </RadioGroup>
             </div>
           </div>
+        </div>
       </Card>
 
       {/* 2. Dinamometria Palmar */}
@@ -652,6 +698,15 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
             },
             'kgf'
           )}
+          
+          {/* Critérios de Avaliação */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Palmar:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• <strong>Homens:</strong> Lado dominante ≥ 45 kgf | Lado não dominante ≥ 40 kgf</li>
+              <li>• <strong>Mulheres:</strong> Lado dominante ≥ 25 kgf | Lado não dominante ≥ 20 kgf</li>
+            </ul>
+          </div>
         </div>
       </Card>
 
@@ -664,7 +719,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
         />
         
         <div className="space-y-6">
-          {renderTabelaDinamometria(
+          {renderTabelaDinamometriaEscapular(
             "Força de Membros Superiores (kgf)",
             {
               campo1: 'escapularDireita1',
@@ -672,14 +727,17 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               campo3: 'escapularDireita3',
               media: 'escapularDireitaMedia'
             },
-            {
-              campo1: 'escapularEsquerda1',
-              campo2: 'escapularEsquerda2',
-              campo3: 'escapularEsquerda3',
-              media: 'escapularEsquerdaMedia'
-            },
             'kgf'
           )}
+          
+          {/* Critérios de Avaliação */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Escapular:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• <strong>Homens:</strong> Ambos os lados ≥ 20 kgf</li>
+              <li>• <strong>Mulheres:</strong> Ambos os lados ≥ 10 kgf</li>
+            </ul>
+          </div>
         </div>
       </Card>
 
@@ -742,6 +800,15 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               </table>
             </div>
           </div>
+          
+          {/* Critérios de Avaliação */}
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Dorsal:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li>• <strong>Homens:</strong> Média ≥ 100 kgf</li>
+              <li>• <strong>Mulheres:</strong> Média ≥ 50 kgf</li>
+            </ul>
+          </div>
         </div>
       </Card>
 
@@ -756,30 +823,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
         <div className="space-y-6">
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Resultado:
-                  </label>
-                  <Input
-                    value={formData.resultado}
-                    isReadOnly
-                    className={`border-gray-300 text-center font-semibold ${
-                      formData.resultado === 'Normal' 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-yellow-100 text-yellow-800'
-                    }`}
-                  />
-                  <p className="text-xs text-gray-500 mt-1">
-                    Resultado calculado automaticamente com base nos valores inseridos
-                  </p>
-                </div>
-              </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Observações e Orientações:
-                </label>
                 <Textarea
                   value={formData.observacoesFinais}
                   onChange={(e) => handleInputChange('observacoesFinais', e.target.value)}
@@ -787,9 +831,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
                   placeholder="Observações finais sobre a avaliação de força muscular..."
                   className="bg-white border-gray-300"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  Observações baseadas na Escala MRC e contexto ocupacional
-                </p>
               </div>
             </div>
           </div>

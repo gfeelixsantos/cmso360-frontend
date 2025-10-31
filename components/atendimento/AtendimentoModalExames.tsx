@@ -121,7 +121,7 @@ const AtendimentoModalExames = ({
 
 
   // ✅ Mapeamento dos tipos de exame para componentes de formulário
-  const entrevistaPsico = funcionarioSelecionado?.EXAMES.some(e => e.grupo === "Psicossocial" && e.preparacao.includes("entrevista"))
+  const entrevistaPsico = funcionarioSelecionado?.EXAMES.some(e => e.grupo === "Psicossocial" && e.preparacao.includes("Entrevista"))
 
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
