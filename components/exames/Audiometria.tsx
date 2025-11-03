@@ -651,50 +651,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       
       {/* 1. Dados Iniciais e Anamnese */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle number="1" title="Dados do Atendimento e Anamnese" />
+        <SectionTitle number="1" title="Anamnese Auditiva" />
         
         <div className="space-y-6">
-            {/* Dados Pessoais */}
-            <div className=" p-4">
-                <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                        <Input value={agendamento?.NOME} isReadOnly className="bg-white border-gray-300" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                        <Input value={agendamento?.CPFFUNCIONARIO} isReadOnly className="bg-white border-gray-300" placeholder="000.000.000-00" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                        <Input value={agendamento?.DATANASCIMENTO ?? ""} isReadOnly className="bg-white border-gray-300" placeholder="DD/MM/AAAA" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Dados Profissionais */}
-            <div className="p-4 ">
-                <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                        <Input value={agendamento?.NOMECARGO} isReadOnly className="bg-white border-gray-300" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                        <Input value={agendamento?.NOMESETOR} isReadOnly className="bg-white border-gray-300" />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                        <Input value={agendamento?.TIPOEXAMENOME} isReadOnly className="bg-white border-gray-300" />
-                    </div>
-                </div>
-            </div>
-
             {/* Anamnese */}
             <div className="p-4">
-                <h3 className="font-bold text-center text-gray-700 mb-3 text-sm uppercase tracking-wide">Anamnese Auditiva</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
                     {/* Linha 1 */}
                     <div>

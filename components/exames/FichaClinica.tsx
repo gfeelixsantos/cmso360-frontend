@@ -174,6 +174,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
+      console.log(atendimento)
       setAgendamento(atendimento);
     }
 
@@ -181,7 +182,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       setFormData(Object.assign(formulario));
     }
 
-    if (atendimento?.TIPOEXAME === "1") {
+    if (atendimento?.TIPOEXAME === "1" || atendimento?.TIPOEXAME === 1) {
       setTipoAdmissional(true);
     }
   }, [atendimento, formulario]);

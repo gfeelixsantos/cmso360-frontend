@@ -2,8 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Card, Button, Input, Spinner, Radio, RadioGroup } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Clock, FileText, Calendar, Building, Briefcase, MapPin, Filter } from 'lucide-react';
-import { formatCPF } from '@/lib/utils';
+import { User, Clock, FileText } from 'lucide-react';
 import HeaderExame from './HeaderExame';
 
 interface ExamePadraoProps {

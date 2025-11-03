@@ -705,7 +705,7 @@ const TicketActions: React.FC<{
           isIconOnly
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           onPress={() => handleRetornar(ticket, TicketActionType.RETORNAR)}
-          disabled={isDisabled}
+          // disabled={isDisabled}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>

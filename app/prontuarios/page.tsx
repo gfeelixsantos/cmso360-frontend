@@ -665,42 +665,42 @@ export default function UnifiedProntuarioPage(){
     fileInputRefs.current[codigoExame]?.click();
   };
 
-  const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files || []);
-    if (files.length === 0) return;
+const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLInputElement>) => {
+  const files = Array.from(event.target.files || []);
+  if (files.length === 0) return;
 
-    const file = files[0]; // Pega apenas o primeiro arquivo
-    
-    if (file.type !== "application/pdf") {
-      addToast({
-        title: "Formato inválido",
-        description: "Apenas PDF é permitido.",
-        color: "warning",
-      });
-      return;
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      addToast({
-        title: "Arquivo muito grande",
-        description: "Tamanho máximo: 10MB.",
-        color: "warning",
-      });
-      return;
-    }
+  const file = files[0]; // Pega apenas o primeiro arquivo
+  
+  if (file.type !== "application/pdf") {
+    addToast({
+      title: "Formato inválido",
+      description: "Apenas PDF é permitido.",
+      color: "warning",
+    });
+    return;
+  }
+  if (file.size > 10 * 1024 * 1024) {
+    addToast({
+      title: "Arquivo muito grande",
+      description: "Tamanho máximo: 10MB.",
+      color: "warning",
+    });
+    return;
+  }
 
-    if (!selectedRecord) return;
+  if (!selectedRecord) return;
 
-    setUploadStates((prev) => ({
-      ...prev,
-      [selectedRecord._id as string]: {
-        ...(prev[selectedRecord._id as string] || {}),
-        [codigoExame]: { file, progress: 0, uploading: false },
-      },
-    }));
+  setUploadStates((prev) => ({
+    ...prev,
+    [selectedRecord._id as string]: {
+      ...(prev[selectedRecord._id as string] || {}),
+      [codigoExame]: { file, progress: 0, uploading: false },
+    },
+  }));
 
-    // Limpa o input para permitir selecionar o mesmo arquivo novamente
-    event.target.value = '';
-  };
+  // Limpa o input para permitir selecionar o mesmo arquivo novamente
+  event.target.value = '';
+};
 
   const startUpload = async (codigoExame: string) => {
     if (!selectedRecord) return;
@@ -1177,7 +1177,9 @@ export default function UnifiedProntuarioPage(){
                                     <div className="flex gap-2">
                                       <input
                                         type="file"
-                                        ref={el => fileInputRefs.current[exame.codigoExame] = el}
+                                        ref={(el: HTMLInputElement | null) => {
+                                          fileInputRefs.current[exame.codigoExame] = el;
+                                        }}
                                         onChange={(e) => handleFileSelected(exame.codigoExame, e)}
                                         accept="application/pdf"
                                         className="hidden"
@@ -1274,10 +1276,10 @@ export default function UnifiedProntuarioPage(){
                         <Textarea
                           label="Detalhes da orientação"
                           placeholder="Descreva as orientações..."
-                          value={opinion.details?.details ?? ""}
+                          value={opinion.details ?? ""}
                           onValueChange={(value) => setOpinion({ 
                             ...opinion, 
-                            details: { ...(opinion.details || {}), details: value } 
+                            details: value 
                           })}
                           rows={4}
                         />
@@ -1287,10 +1289,10 @@ export default function UnifiedProntuarioPage(){
                         <Textarea
                           label="Motivo da repetição"
                           placeholder="Descreva o motivo detalhado para solicitação de repetição..."
-                          value={opinion.details?.reason ?? ""}
+                          value={opinion.details ?? ""}
                           onValueChange={(value) => setOpinion({ 
                             ...opinion, 
-                            details: { ...(opinion.details || {}), reason: value } 
+                            details: value 
                           })}
                           rows={4}
                         />
@@ -1300,10 +1302,10 @@ export default function UnifiedProntuarioPage(){
                         <Textarea
                           label="Justificativa"
                           placeholder="Justificativa detalhada da inaptidão permanente..."
-                          value={opinion.details?.justification ?? ""}
+                          value={opinion.details ?? ""}
                           onValueChange={(value) => setOpinion({ 
                             ...opinion, 
-                            details: { ...(opinion.details || {}), justification: value } 
+                            details: value 
                           })}
                           rows={4}
                         />
@@ -1314,20 +1316,20 @@ export default function UnifiedProntuarioPage(){
                           <Textarea
                             label="Justificativa"
                             placeholder="Justificativa da inaptidão temporária..."
-                            value={opinion.details?.justification ?? ""}
+                            value={opinion.details ?? ""}
                             onValueChange={(value) => setOpinion({ 
                               ...opinion, 
-                              details: { ...(opinion.details || {}), justification: value } 
+                              details:  value 
                             })}
                             rows={3}
                           />
                           <Input
                             type="date"
                             label="Inapto até"
-                            value={opinion.details?.inaptUntil ?? ""}
+                            value={opinion.details ?? ""}
                             onValueChange={(value) => setOpinion({ 
                               ...opinion, 
-                              details: { ...(opinion.details || {}), inaptUntil: value } 
+                              details: value 
                             })}
                           />
                         </div>

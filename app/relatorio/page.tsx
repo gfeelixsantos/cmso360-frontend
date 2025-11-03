@@ -441,7 +441,7 @@ export default function RelatoriosPage() {
           <h1 className="text-2xl font-bold text-gray-900">Relatórios de Atendimento</h1>
           <p className="text-gray-600">Configure os filtros e clique em "Aplicar Filtros" para ver os resultados</p>
         </div>
-        <div className="flex gap-2">
+        {/* <div className="flex gap-2">
           <Button
             color="primary"
             variant="flat"
@@ -461,7 +461,7 @@ export default function RelatoriosPage() {
           >
             Exportar PDF
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Filtros */}
@@ -509,7 +509,7 @@ export default function RelatoriosPage() {
               onSelectionChange={(keys) => handleFilterChange('empresa', Array.from(keys)[0] || '')}
             >
               {empresas.map(empresa => (
-                <SelectItem key={empresa} value={empresa}>
+                <SelectItem key={empresa}>
                   {empresa}
                 </SelectItem>
               ))}
@@ -521,7 +521,7 @@ export default function RelatoriosPage() {
               onSelectionChange={(keys) => handleFilterChange('exame', Array.from(keys)[0] || '')}
             >
               {exames.map(exame => (
-                <SelectItem key={exame} value={exame}>
+                <SelectItem key={exame}>
                   {exame}
                 </SelectItem>
               ))}
@@ -533,7 +533,7 @@ export default function RelatoriosPage() {
               onSelectionChange={(keys) => handleFilterChange('status', Array.from(keys)[0] || '')}
             >
               {Object.values(AtendimentoStatus).map(status => (
-                <SelectItem key={status} value={status}>
+                <SelectItem key={status}>
                   {status.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase())}
                 </SelectItem>
               ))}

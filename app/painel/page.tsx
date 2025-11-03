@@ -8,9 +8,7 @@ import { EventType, onEvent } from "@/lib/websocket/events/events";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { PainelCall } from "@/lib/painel/interfaces/paniel.interface";
 import { Ticket } from "@/lib/ticket/ticket";
-import { NEST_URL, SERVICES_KEY, UNIDADES_ATENDIMENTO } from "@/config/constants";
-import Script from "next/script";
-import { Image } from "@heroui/react";
+import { NEST_URL, NEXT_WS_URL, SERVICES_KEY, UNIDADES_ATENDIMENTO } from "@/config/constants";
 
 // Paleta de cores atualizada com tons de branco e verde da empresa
 const COLOR_PALETTE = {
@@ -553,7 +551,7 @@ export default function PainelPage() {
     if (!isLiberado) return;
 
     const painel: PainelSocket = { type: WebsocketType.PAINEL, unidade: unidadeSelecionada };
-    socket = io(process.env.NEXT_PUBLIC_WS_URL || "http://localhost:3333", {
+    socket = io(NEXT_WS_URL || "http://localhost:3333", {
       auth: painel,
       transports: ["websocket"],
     });

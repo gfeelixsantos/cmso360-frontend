@@ -44,6 +44,7 @@ export class ExamRegister {
     sequencialResultadoExame?:string
     sala?: string
     profissional?:string
+    codigoProfissional?: string;
     url:string = ""
     formulario: any
     grupo: string = ""

@@ -28,7 +28,6 @@ interface InputFieldProps {
 
 interface SubmitButtonProps {
   isLoading: boolean;
-  onClick: () => void;
   disabled?: boolean;
 }
 
@@ -71,10 +70,9 @@ const InputField: React.FC<InputFieldProps> = ({
 );
 
 // Subcomponente para o botão de submit
-const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, onClick, disabled }) => (
+const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, disabled }) => (
   <button
     type="submit"
-    onClick={onClick}
     disabled={disabled || isLoading}
     aria-label={isLoading ? "Conectando ao sistema" : "Conectar ao sistema"}
     className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
@@ -263,7 +261,7 @@ export default function LoginPage() {
                 // Usando delay 0.3 para manter a sequência visual
                 className="pt-2" 
               >
-                <SubmitButton isLoading={isLoading} onClick={handleSubmit} />
+                <SubmitButton isLoading={isLoading} />
               </motion.div>
             </form>
             
