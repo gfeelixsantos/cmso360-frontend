@@ -81,7 +81,8 @@ export const StatsModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   estatisticasSenhas: {
-    aguardando: number,
+    recepcaoAguardando: number,
+    examesAguardando: number,
     emAtendimento: number,
     preparacao: number
     raiox: number,
@@ -207,7 +208,7 @@ export const StatsModal: React.FC<{
       taxaConclusao: taxaConclusao,
       maiorTempoEspera: maiorTempoEspera,
       ticketsPorStatus: {
-        aguardando: estatisticasSenhas.aguardando,
+        aguardando: estatisticasSenhas.recepcaoAguardando + estatisticasSenhas.examesAguardando,
         emAtendimento: estatisticasSenhas.emAtendimento,
         preparacao: estatisticasSenhas.preparacao,
         raiox: estatisticasSenhas.raiox,
@@ -461,7 +462,13 @@ export const StatsModal: React.FC<{
                   />
                   <StatCard
                     title="Aguardando"
-                    value={estatisticasSenhas.aguardando}
+                    value={estatisticasSenhas.recepcaoAguardando}
+                    icon={<Clock size={16} className={getIconColor('aguardando')} />}
+                    color={getStatusColor('aguardando')}
+                  />
+                  <StatCard
+                    title="Aguardando"
+                    value={estatisticasSenhas.examesAguardando}
                     icon={<Clock size={16} className={getIconColor('aguardando')} />}
                     color={getStatusColor('aguardando')}
                   />
@@ -556,7 +563,8 @@ export const StatsModal: React.FC<{
 
 interface SenhasEstatisticasProps {
   estatisticasSenhas: {
-    aguardando: number,
+    recepcaoAguardando: number,
+    examesAguardando: number,
     emAtendimento: number,
     preparacao: number
     raiox: number,
@@ -595,16 +603,16 @@ export default function SenhasEstatisticas({
       {/* Grupo de botões de estatísticas - Desktop (compacto para header) */}
       <div className="hidden lg:flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
         <StatButton
-          icon={<Users size={12} />}
-          value={estatisticasSenhas.total}
-          label="Total"
-          color={getIconColor('total')}
+          icon={<Clock size={12} />}
+          value={estatisticasSenhas.recepcaoAguardando}
+          label="Recep."
+          color={getIconColor('aguardando')}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
           icon={<Clock size={12} />}
-          value={estatisticasSenhas.aguardando}
-          label="Aguard."
+          value={estatisticasSenhas.examesAguardando}
+          label="Exames"
           color={getIconColor('aguardando')}
           onClick={() => onSetStatsModalOpen(true)}
         />
@@ -634,6 +642,13 @@ export default function SenhasEstatisticas({
           value={estatisticasSenhas.finalizados}
           label="Concl."
           color={getIconColor('finalizados')}
+          onClick={() => onSetStatsModalOpen(true)}
+        />
+        <StatButton
+          icon={<Users size={12} />}
+          value={estatisticasSenhas.total}
+          label="Total"
+          color={getIconColor('total')}
           onClick={() => onSetStatsModalOpen(true)}
         />
       </div>

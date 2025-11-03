@@ -3,6 +3,7 @@ import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, Rad
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Ear, Stethoscope, FileText, Volume2, AlertTriangle, Calculator } from 'lucide-react';
+import HeaderExame from './HeaderExame';
 
 interface AudiometriaProps {
   atendimento: any;
@@ -156,8 +157,8 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     labirintiteTontura: 'Não',
     usoMedicamentos: 'Não',
     quaisMedicamentos: '',
-    meatoscopiaOD: 'Normal',
-    meatoscopiaOE: 'Normal',
+    meatoscopiaOD: 'SEM_OBSTRUCAO',
+    meatoscopiaOE: 'SEM_OBSTRUCAO',
     observacoesMeatoscopia: '',
     
     // Via Aérea - OD (vazio)
@@ -630,9 +631,6 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ number, title, icon }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -646,33 +644,10 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
   return (
     <div className="space-y-8 p-4 md:p-8  min-h-screen">
-        <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-                {agendamento?.TIPOEXAMENOME}
-            </p>
-            </div>
-            
-            {/* Status do atendimento */}
-            <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-            </div>
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
-                </div>
-                <p className="text-xs text-red-700">
-                Realizando procedimento
-                </p>
-            </div>
-            </div>
-        </div>
-        </Card>
+        <HeaderExame 
+            agendamento={agendamento}
+            exame={exame}
+        />
       
       {/* 1. Dados Iniciais e Anamnese */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
@@ -913,7 +888,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Audiômetro</label>
-                        <Select selectedKeys={[formData.tipoAudiometro]} onChange={(e) => handleInputChange('tipoAudiometro', e.target.value)} classNames={{ trigger: "bg-white border-gray-300" }} >
+                        <Select selectedKeys={[formData.tipoAudiometro]} onChange={(e) => handleInputChange('tipoAudiometro', e.target.value)} classNames={{ trigger: "bg-white border-gray-300" }}>
                             <SelectItem key="AVS 500">AVS 500</SelectItem>
                             <SelectItem key="AS 60">AS 60</SelectItem>
                         </Select>
@@ -945,21 +920,17 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">OD</label>
                         <Select selectedKeys={[formData.meatoscopiaOD]} onChange={(e) => handleInputChange('meatoscopiaOD', e.target.value)} classNames={{ trigger: "bg-white border-gray-300" }} >
-                            <SelectItem key="Normal">Normal</SelectItem>
-                            <SelectItem key="Rolha de Cerúmen">Rolha de Cerúmen</SelectItem>
-                            <SelectItem key="Corpo Estranho">Corpo Estranho</SelectItem>
-                            <SelectItem key="Otorreia">Otorreia</SelectItem>
-                            <SelectItem key="Outros">Outros</SelectItem>
+                            <SelectItem key="SEM_OBSTRUCAO">Sem obstrução</SelectItem>
+                            <SelectItem key="COM_OBSTRUCAO_PARCIAL">Obstrução parcial</SelectItem>
+                            <SelectItem key="COM_OBSTRUCAO_TOTAL">Obstrução total</SelectItem>
                         </Select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">OE</label>
                         <Select selectedKeys={[formData.meatoscopiaOE]} onChange={(e) => handleInputChange('meatoscopiaOE', e.target.value)} classNames={{ trigger: "bg-white border-gray-300" }} >
-                            <SelectItem key="Normal">Normal</SelectItem>
-                            <SelectItem key="Rolha de Cerúmen">Rolha de Cerúmen</SelectItem>
-                            <SelectItem key="Corpo Estranho">Corpo Estranho</SelectItem>
-                            <SelectItem key="Otorreia">Otorreia</SelectItem>
-                            <SelectItem key="Outros">Outros</SelectItem>
+                            <SelectItem key="SEM_OBSTRUCAO">Sem obstrução</SelectItem>
+                            <SelectItem key="COM_OBSTRUCAO_PARCIAL">Obstrução parcial</SelectItem>
+                            <SelectItem key="COM_OBSTRUCAO_TOTAL">Obstrução total</SelectItem>
                         </Select>
                     </div>
                     <div className="md:col-span-1">

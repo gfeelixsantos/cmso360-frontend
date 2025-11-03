@@ -2,7 +2,7 @@
 import { PreparationRequestTypes, WebsocketType } from "@/lib/websocket/enums/websocket.enum"
 
 export enum TicketGroups {
-  RECEPCAO = "RECEPÇÃO",
+  RECEPCAO = "RECEPCAO",
   EXAME = "EXAME"
 }
 

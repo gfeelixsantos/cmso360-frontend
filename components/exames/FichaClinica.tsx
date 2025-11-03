@@ -3,6 +3,7 @@ import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, Rad
 import { Calendar, User, Building, Briefcase, Stethoscope, FileText, ClipboardList } from 'lucide-react';
 import { IUserInfo, useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
+import HeaderExame from './HeaderExame';
 
 interface FichaClinicaProps {
   atendimento: any;
@@ -16,6 +17,19 @@ interface RegistroPa {
   valor: string,
   horario: string,
   profissional: string
+}
+
+interface RestricoesMedicas {
+  evitarCarregarPeso: boolean;
+  pesoMaximoKg?: string;
+  evitarElevacaoBracos: boolean;
+  tipoElevacaoBracos?: 'direito' | 'esquerdo' | 'ambos';
+  evitarCurvarTronco: boolean;
+  evitarEscadas: boolean;
+  evitarLongasCaminhadas: boolean;
+  evitarAlterarPostura: boolean;
+  outros: boolean;
+  descricaoOutros?: string;
 }
 
 interface FichaClinicaData {
@@ -61,6 +75,14 @@ interface FichaClinicaData {
   
   // Novos campos para observações
   observacoesDoencasPessoais: string;
+  
+  // Novos campos para restrições
+  restricoes?: RestricoesMedicas;
+  duracaoRestricaoDias?: string;
+  dataInicioRestricao?: string;
+  
+  // Novo campo para aguardar avaliação
+  informacaoAguardarAvaliacao?: string;
 }
 
 const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({ 
@@ -105,7 +127,22 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     observacoesMedicas: '',
     codigoMedico: user?.perfil.includes("MEDICO") ? user.codigo : "",
     medico: user?.perfil.includes("MEDICO") ? user.nome : "",
-    observacoesDoencasPessoais: ''
+    observacoesDoencasPessoais: '',
+    restricoes: {
+      evitarCarregarPeso: false,
+      pesoMaximoKg: '',
+      evitarElevacaoBracos: false,
+      tipoElevacaoBracos: undefined,
+      evitarCurvarTronco: false,
+      evitarEscadas: false,
+      evitarLongasCaminhadas: false,
+      evitarAlterarPostura: false,
+      outros: false,
+      descricaoOutros: ''
+    },
+    duracaoRestricaoDias: '',
+    dataInicioRestricao: '',
+    informacaoAguardarAvaliacao: ''
   });
 
   // Estados para controlar abertura dos campos de observação
@@ -126,10 +163,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   // Verificar se há pressão arterial alterada
   useEffect(() => {
-    const temPressaoAlterada = formData.pressaoArterial.some(pa => 
-      pa.valor && verificarPressaoAlterada(pa.valor)
-    );
-    setPressaoAlterada(temPressaoAlterada);
+      const pressures = Array.isArray(formData.pressaoArterial) ? formData.pressaoArterial : [];
+      
+      const temPressaoAlterada = pressures.some(pa => 
+        pa.valor && verificarPressaoAlterada(pa.valor)
+      );
+      setPressaoAlterada(temPressaoAlterada);
   }, [formData.pressaoArterial, verificarPressaoAlterada]);
 
   // Preenchimento automático dos dados do atendimento
@@ -267,6 +306,17 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     });
   }, []);
 
+  // Função para atualizar restrições médicas
+  const handleRestricoesChange = useCallback((field: keyof RestricoesMedicas, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      restricoes: {
+        ...prev.restricoes!,
+        [field]: value
+      }
+    }));
+  }, []);
+
   // Validação do formulário
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -289,6 +339,21 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     // Validação de observações para doenças pessoais (se houver itens selecionados)
     if (showObservacoesPessoais && !formData.observacoesDoencasPessoais.trim()) {
       errors.observacoesDoencasPessoais = 'Observações são obrigatórias quando há doenças pessoais selecionadas';
+    }
+
+    // Validação para "Apto com restrições"
+    if (formData.conclusao === 'Apto com restrições') {
+      if (!formData.duracaoRestricaoDias || !formData.duracaoRestricaoDias.trim()) {
+        errors.duracaoRestricaoDias = 'Duração provável é obrigatória para apto com restrições';
+      }
+      if (!formData.dataInicioRestricao || !formData.dataInicioRestricao.trim()) {
+        errors.dataInicioRestricao = 'Data de início é obrigatória para apto com restrições';
+      }
+    }
+
+    // Validação para "Aguardar avaliação"
+    if (formData.conclusao === 'Aguardar Avaliação' && !formData.informacaoAguardarAvaliacao?.trim()) {
+      errors.informacaoAguardarAvaliacao = 'Informação médica é obrigatória para aguardar avaliação';
     }
 
     setFormErrors(errors);
@@ -366,167 +431,38 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   const conclusaoOptions = [
     { value: 'Apto', label: 'Apto' },
+    { value: 'Apto com restrições', label: 'Apto com restrições' },
     { value: 'Inapto Temporariamente', label: 'Inapto Temporariamente' },
     { value: 'Inapto', label: 'Inapto' },
     { value: 'Aguardar Avaliação', label: 'Aguardar Avaliação' }
   ];
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
-    number, 
     title, 
     icon 
   }) => (
     <div className="flex items-center gap-3 mb-4">
       {icon}
       <div className="flex items-center gap-2">
-        <span className="text-lg font-semibold text-gray-900">{title}</span>
+        <span className="text-lg font-semibold text-gray-600">{title}</span>
       </div>
     </div>
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento
-            </p>
-          </div>
-          
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
-              </div>
-              <p className="text-xs text-green-700">
-                Realizando procedimento
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* 1. Dados do Atendimento / Funcionário */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={agendamento?.CPFFUNCIONARIO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+    <div className="max-w-6xl mx-auto p-6 space-y-3  min-h-screen">
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
 
       {/* 2. Anamnese e Histórico Familiar */}
       {tipoAdmissional && (
         <>
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
+      <Card className="p-6 shadow-none border border-gray-200 bg-white">
         <SectionTitle 
           number="2" 
           title="Anamnese e Histórico Familiar" 
-          icon={<Stethoscope className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
@@ -537,6 +473,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {doencasFamiliaresOptions.map((doenca) => (
                 <Checkbox
+                  color='success'
                   key={doenca}
                   isSelected={formData.doencasFamiliares.includes(doenca)}
                   onValueChange={() => handleMultiSelectChange('doencasFamiliares', doenca)}
@@ -558,6 +495,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {doencasPessoaisOptions.map((doenca) => (
                 <Checkbox
+                  color='success'
                   key={doenca}
                   isSelected={formData.doencasPessoais.includes(doenca)}
                   onValueChange={() => handleMultiSelectChange('doencasPessoais', doenca)}
@@ -632,11 +570,10 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       </Card>
 
       {/* 3. Hábitos e Condições Gerais */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
+     <Card className="p-6 shadow-none border border-gray-200 bg-white">
         <SectionTitle 
           number="3" 
           title="Hábitos e Condições Gerais" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
@@ -646,6 +583,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="flex flex-wrap gap-6">
               {tabagismoOptions.map((option) => (
                 <Checkbox
+                  color='success'
                   key={option.value}
                   isSelected={formData.tabagismo === option.value}
                   onValueChange={(checked) => {
@@ -670,6 +608,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="flex flex-wrap gap-6">
               {etilismoOptions.map((option) => (
                 <Checkbox
+                  color='success'
                   key={option.value}
                   isSelected={formData.etilismo === option.value}
                   onValueChange={(checked) => {
@@ -696,6 +635,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="flex flex-wrap gap-6">
               {atividadeFisicaOptions.map((option) => (
                 <Checkbox
+                  color='success'
                   key={option.value}
                   isSelected={formData.atividadeFisica === option.value}
                   onValueChange={(checked) => {
@@ -722,6 +662,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             <div className="flex flex-wrap gap-6">
               {acimaPesoOptions.map((option) => (
                 <Checkbox
+                  color='success'
                   key={option.value}
                   isSelected={formData.acimaPeso === option.value}
                   onValueChange={(checked) => {
@@ -748,29 +689,25 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       { !exame.includes("Triagem") && (
         <div>
           {/* 4. Aptidões Funcionais */}
-          <Card className="p-6 shadow-sm border border-gray-200 bg-white">
+          <Card className="p-6 shadow-none border border-gray-200 bg-white mb-6">
             <SectionTitle 
               number="4" 
               title="Aptidões Funcionais" 
-              icon={<Briefcase className="h-5 w-5 text-gray-600" />}
             />
-            
-            <p className="text-sm text-gray-600 mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-              Perguntas voltadas à função laboral — respostas rápidas.
-            </p>
             
             <div className="space-y-4">
               {[
-                { label: "Trabalho em altura:", field: "trabalhoAltura" as keyof FichaClinicaData },
-                { label: "Trabalho em espaço confinado:", field: "trabalhoEspacoConfinado" as keyof FichaClinicaData },
-                { label: "Capacidade para carregar peso:", field: "capacidadeCarregarPeso" as keyof FichaClinicaData },
-                { label: "Apto a operar veículos:", field: "aptoOperarVeiculos" as keyof FichaClinicaData }
+                { label: "Trabalho em altura", field: "trabalhoAltura" as keyof FichaClinicaData },
+                { label: "Trabalho em espaço confinado", field: "trabalhoEspacoConfinado" as keyof FichaClinicaData },
+                { label: "Capacidade para carregar peso", field: "capacidadeCarregarPeso" as keyof FichaClinicaData },
+                { label: "Apto a operar veículos", field: "aptoOperarVeiculos" as keyof FichaClinicaData }
               ].map((item) => (
-                <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                  <span className="block text-sm font-medium text-gray-700 mb-3">{item.label}</span>
+                <div key={item.field} className=" p-4 grid grid-cols-2">
+                  <span className="text-sm align-center font-medium text-gray-700">{item.label}</span>
                   <div className="flex gap-6">
                     {aptidaoOptions.map((option) => (
                       <Checkbox
+                        color={option.value === 'Apto' ? 'success' : option.value === 'Inapto' ? "danger" : "default" }
                         key={option.value}
                         isSelected={formData[item.field] === option.value}
                         onValueChange={(checked) => {
@@ -792,31 +729,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           </Card>
         
         {/* 5. Exame Clínico */}
-          <Card className="p-6 shadow-sm border border-gray-200 bg-white mt-6">
+          <Card className="p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle 
               number="5" 
               title="Exame Clínico" 
-              icon={<Stethoscope className="h-5 w-5 text-gray-600" />}
             />
             
-            <div className="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
-              <Checkbox
-                isSelected={Object.values({
-                  cabecaPescoco: formData.cabecaPescoco,
-                  torax: formData.torax,
-                  abdome: formData.abdome,
-                  coluna: formData.coluna,
-                  membrosSuperiores: formData.membrosSuperiores,
-                  membrosInferiores: formData.membrosInferiores
-                }).every(value => value === 'Normal')}
-                onValueChange={handleNormalAll}
-                classNames={{
-                  label: "text-gray-700 font-medium"
-                }}
-              >
-                Marcar "Normal em todos"
-              </Checkbox>
-            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {[
@@ -827,10 +745,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 { label: "Membros Superiores", field: "membrosSuperiores" as keyof FichaClinicaData },
                 { label: "Membros Inferiores", field: "membrosInferiores" as keyof FichaClinicaData }
               ].map((item) => (
-                <div key={item.field} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div key={item.field} className=" p-4 ">
                   <span className="block text-sm font-medium text-gray-700 mb-2">{item.label}</span>
                   <div className="flex gap-4">
                     <Checkbox
+                      color='success'
                       isSelected={formData[item.field] === 'Normal'}
                       onValueChange={(checked) => 
                         handleInputChange(item.field, checked ? 'Normal' : 'Alterado')
@@ -842,6 +761,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       Normal
                     </Checkbox>
                     <Checkbox
+                      color='danger'
                       isSelected={formData[item.field] === 'Alterado'}
                       onValueChange={(checked) => 
                         handleInputChange(item.field, checked ? 'Alterado' : 'Normal')
@@ -858,7 +778,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             </div>
             {/* Data da Última Menstruação */}
             {atendimento?.SEXO === 'Feminino' || atendimento.TIPOEXAMENOME === "DEMISSIONAL" && (
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-4">
+              <div className="p-4 ">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Data da última menstruação:
               </label>
@@ -880,46 +800,48 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       )}
 
       {/* 6. Dados Vitais */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="6" 
-          title="Dados Vitais e Medidas" 
-          icon={<FileText className="h-5 w-5 text-gray-600" />}
-        />
+      <Card className="p-6 shadow-none border border-gray-200 bg-white">
+        <div className='flex justify-between'>
+            <SectionTitle 
+            number="6" 
+            title="Dados Vitais e Medidas" 
+          />
+          <Button
+                size="sm"
+                color="success"
+                variant="flat"
+                onPress={() =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    pressaoArterial: [
+                      ...(Array.isArray(prev.pressaoArterial) ? prev.pressaoArterial : []),
+                      { 
+                        valor: "", 
+                        horario: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
+                        profissional: user?.nome ?? ""
+                      }
+                    ]
+                  }))
+                }
+              >
+                + Adicionar Aferição
+            </Button> 
+        </div>
 
         {/* Pressões Arteriais */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mb-6">
-          <div className="flex items-center justify-between mb-3">
+        <div className="p-4 mb-6">
+          {/* <div className="flex items-center justify-between mb-3">
             <label className="block text-sm font-medium text-gray-700">
-              Pressões Arteriais (mmHg)
+              Pressões Arteriais
               <span className="text-red-500 ml-1">*</span>
             </label>
-            <Button
-              size="sm"
-              color="primary"
-              variant="flat"
-              onPress={() =>
-                setFormData((prev) => ({
-                  ...prev,
-                  pressaoArterial: [
-                    ...(Array.isArray(prev.pressaoArterial) ? prev.pressaoArterial : []),
-                    { 
-                      valor: "", 
-                      horario: new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }),
-                      profissional: user?.nome ?? ""
-                    }
-                  ]
-                }))
-              }
-            >
-              + Adicionar Aferição
-            </Button>
-          </div>
+            
+          </div> */}
 
           {(Array.isArray(formData.pressaoArterial) ? formData.pressaoArterial : []).map((pa, index) => (
             <div
               key={index}
-              className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3 items-center bg-white p-3 rounded-lg border border-gray-200"
+              className="grid grid-cols-1 md:grid-cols-3 gap-3 align-center items-center bg-white"
             >
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">Valor (mmHg):</label>
@@ -933,7 +855,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       return { ...prev, pressaoArterial: novas };
                     });
                   }}
-                  placeholder="120/80"
+                  placeholder="000/00"
                   maxLength={7}
                   className="bg-white border-gray-300"
                 />
@@ -957,15 +879,15 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       return { ...prev, pressaoArterial: novas };
                     });
                   }}
-                  className="bg-white border-gray-300"
+                  className="bg-white "
                 />
               </div>
 
-              <div className="flex justify-end items-end">
+              <div>
                 <Button
                   size="sm"
                   color="danger"
-                  variant="light"
+                  variant="flat"
                   onPress={() => {
                     setFormData((prev) => {
                       const novas = [...(Array.isArray(prev.pressaoArterial) ? prev.pressaoArterial : [])];
@@ -979,18 +901,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               </div>
             </div>
           ))}
-
-          {(!formData.pressaoArterial || formData.pressaoArterial.length === 0) && (
-            <p className="text-sm text-red-600">Nenhuma aferição registrada. Pelo menos uma aferição é obrigatória.</p>
-          )}
-          {formErrors.pressaoArterial && (
-            <p className="text-sm text-red-600 mt-2">{formErrors.pressaoArterial}</p>
-          )}
         </div>
 
         {/* Peso, altura e IMC */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className=" p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Peso (kg):
               <span className="text-red-500 ml-1">*</span>
@@ -1010,7 +925,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             )}
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4 ">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Altura (m):
               <span className="text-red-500 ml-1">*</span>
@@ -1031,7 +946,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             )}
           </div>
 
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <label className="block text-sm font-medium text-gray-700 mb-2">IMC:</label>
             <Input
               value={formData.imc}
@@ -1081,14 +996,14 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           <SectionTitle 
             number="7" 
             title="Conclusão Médica" 
-            icon={<Calendar className="h-5 w-5 text-gray-600" />}
           />
           
           <div className="space-y-4">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="p-4">
               <div className="flex justify-between gap-1">
                 {conclusaoOptions.map((option) => (
                   <Checkbox
+                    color={option.value.includes('Apto') ? 'success' : option.value.includes('Inapto') ? "danger" : "primary" }
                     key={option.value}
                     isSelected={formData.conclusao === option.value}
                     onValueChange={(checked) => {
@@ -1106,8 +1021,231 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 ))}
               </div>
             </div>
+
+            {/* Campo para "Aguardar Avaliação" */}
+            {formData.conclusao === 'Aguardar Avaliação' && (
+              <div className="p-4 ">
+                <label className="block text-sm font-medium text-blue-700 mb-2">
+                  Informação Médica
+                  <span className="text-red-500 ml-1">*</span>
+                </label>
+                <Input
+                  value={formData.informacaoAguardarAvaliacao}
+                  onChange={(e) => handleInputChange('informacaoAguardarAvaliacao', e.target.value)}
+                  placeholder="Descreva as informações médicas para aguardar avaliação..."
+                  className={`w-full border-blue-300 focus:border-blue-400 ${
+                    formErrors.informacaoAguardarAvaliacao ? 'border-red-500' : ''
+                  }`}
+                />
+                {formErrors.informacaoAguardarAvaliacao && (
+                  <p className="text-xs text-red-600 mt-1">{formErrors.informacaoAguardarAvaliacao}</p>
+                )}
+              </div>
+            )}
+
+            {/* Campos para "Apto com restrições" */}
+            {formData.conclusao === 'Apto com restrições' && (
+              <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-4">
+                <h3 className="text-sm font-semibold text-amber-800 mb-3">Restrições Médicas</h3>
+                
+                {/* Checkboxes de restrições */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Evitar carregar peso excessivo */}
+                  <div className="space-y-2">
+                    <Checkbox
+                      color='danger'
+                      isSelected={formData.restricoes?.evitarCarregarPeso || false}
+                      onValueChange={(checked) => handleRestricoesChange('evitarCarregarPeso', checked)}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      Evitar carregar peso excessivo
+                    </Checkbox>
+                    {formData.restricoes?.evitarCarregarPeso && (
+                      <div className="ml-6">
+                        <label className="block text-xs text-gray-600 mb-1">Peso máximo (kg):</label>
+                        <Input
+                          type="number"
+                          value={formData.restricoes?.pesoMaximoKg || ''}
+                          onChange={(e) => handleRestricoesChange('pesoMaximoKg', e.target.value)}
+                          placeholder="Ex: 10"
+                          className="w-32 bg-white border-gray-300"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Evitar elevação dos braços */}
+                  <div className="space-y-2">
+                    <Checkbox
+                      color='danger'
+                      isSelected={formData.restricoes?.evitarElevacaoBracos || false}
+                      onValueChange={(checked) => handleRestricoesChange('evitarElevacaoBracos', checked)}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      Evitar elevação dos braços acima do nível dos ombros
+                    </Checkbox>
+                    {formData.restricoes?.evitarElevacaoBracos && (
+                      <div className="ml-6">
+                        <label className="block text-xs text-gray-600 mb-1">Tipo:</label>
+                        <div className="flex gap-4">
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'direito'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'direito' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Direito
+                          </Checkbox>
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'esquerdo'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'esquerdo' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Esquerdo
+                          </Checkbox>
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'ambos'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'ambos' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Ambos
+                          </Checkbox>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Outras restrições simples */}
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarCurvarTronco || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarCurvarTronco', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar curvar tronco com frequência
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarEscadas || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarEscadas', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar subir/descer escadas ou degraus
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarLongasCaminhadas || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarLongasCaminhadas', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar longas caminhadas
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarAlterarPostura || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarAlterarPostura', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar alterar postura sentado e em pé
+                  </Checkbox>
+
+                  {/* Outros */}
+                  <div className="space-y-2">
+                    <Checkbox
+                      color='danger'
+                      isSelected={formData.restricoes?.outros || false}
+                      onValueChange={(checked) => handleRestricoesChange('outros', checked)}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      Outros
+                    </Checkbox>
+                    {formData.restricoes?.outros && (
+                      <div className="ml-6">
+                        <label className="block text-xs text-gray-600 mb-1">Descrição:</label>
+                        <Input
+                          value={formData.restricoes?.descricaoOutros || ''}
+                          onChange={(e) => handleRestricoesChange('descricaoOutros', e.target.value)}
+                          placeholder="Descreva outras restrições..."
+                          className="w-full bg-white border-gray-300"
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Duração e data de início */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-amber-200">
+                  <div>
+                    <label className="block text-sm font-medium text-amber-700 mb-2">
+                      Duração provável (dias):
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <Input
+                      type="number"
+                      value={formData.duracaoRestricaoDias}
+                      onChange={(e) => handleInputChange('duracaoRestricaoDias', e.target.value)}
+                      placeholder="Ex: 30"
+                      className={`bg-white border-amber-300 focus:border-amber-400 ${
+                        formErrors.duracaoRestricaoDias ? 'border-red-500' : ''
+                      }`}
+                    />
+                    {formErrors.duracaoRestricaoDias && (
+                      <p className="text-xs text-red-600 mt-1">{formErrors.duracaoRestricaoDias}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-amber-700 mb-2">
+                      Data início:
+                      <span className="text-red-500 ml-1">*</span>
+                    </label>
+                    <Input
+                      type="date"
+                      value={formData.dataInicioRestricao}
+                      onChange={(e) => handleInputChange('dataInicioRestricao', e.target.value)}
+                      className={`bg-white border-amber-300 focus:border-amber-400 ${
+                        formErrors.dataInicioRestricao ? 'border-red-500' : ''
+                      }`}
+                    />
+                    {formErrors.dataInicioRestricao && (
+                      <p className="text-xs text-red-600 mt-1">{formErrors.dataInicioRestricao}</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
             
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div className="p-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Observações Médicas:
               </label>
@@ -1120,18 +1258,19 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               />
             </div>
           </div>
-          
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <p className="text-sm text-gray-600 flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Assinatura digital e CRM serão preenchidos automaticamente no sistema.
-            </p>
-          </div>
+
         </Card>
       )}
 
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
+        {(!formData.pressaoArterial || formData.pressaoArterial.length === 0) && (
+          <p className="text-sm text-red-600">Nenhuma aferição registrada. Pelo menos uma aferição é obrigatória.</p>
+        )}
+        {formErrors.pressaoArterial && (
+          <p className="text-sm text-red-600 mt-2">{formErrors.pressaoArterial}</p>
+        )}
+
         <Button
           variant="flat"
           onPress={onClose}
@@ -1145,11 +1284,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           startContent={<FileText className="h-4 w-4" />}
         >
-          Salvar / Concluir Atendimento
+          Concluir Atendimento
         </Button>
       </div>
     </div>
   );
 };
 
-export default FichaClinicaOcupacional;
+export default React.memo(FichaClinicaOcupacional);

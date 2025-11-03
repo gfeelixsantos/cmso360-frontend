@@ -47,6 +47,10 @@ export const NEST_NOTIFICATION_URL= NEST_URL + NOTIFICATION_URL
 export const API_REGISTER_URL="/api/register"
 export const SERVICES_KEY="123"
 
+
+export const PRIMARY_COLOR="#114e34"
+export const SECOND_COLOR="#afca07"
+
 export const USER_PROFILE = {
   MASTER: "MASTER",
 
@@ -89,7 +93,6 @@ export const EMPRESAS_COM_PSICOLOGA = new Set([
   "176792", // SEW
   "122878", // 3 FAZENDAS
   "821445", // EXPERT
-  "950646" // SEGTEC TESTE
 ]);
 
 type ExamToogle = {

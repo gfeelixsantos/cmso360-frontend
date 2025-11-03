@@ -3,6 +3,7 @@ import { Card, Button, Input, RadioGroup, Radio, Textarea, Spinner } from "@hero
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Brain, Heart, Eye, FileText, Scale } from 'lucide-react';
+import HeaderExame from './HeaderExame';
 
 interface PsicossocialProps {
   atendimento: any;
@@ -95,9 +96,6 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
     icon 
   }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -108,152 +106,21 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header */}
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-                {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-                {agendamento?.TIPOEXAMENOME}
-            </p>
-            </div>
-            
-            {/* Status do atendimento */}
-            <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-            </div>
-            <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
-                </div>
-                <p className="text-xs text-red-700">
-                Realizando procedimento
-                </p>
-            </div>
-            </div>
-        </div>
-      </Card>
-
-      {/* 1. Dados do Atendimento / Funcionário */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={agendamento?.CPFFUNCIONARIO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+    <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
 
       {/* 2. Saúde Mental e Hábitos */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
           number="2" 
           title="Saúde Mental e Hábitos" 
-          icon={<Brain className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className=" p-4">
             <div className="space-y-4">
               {[
                 {
@@ -288,6 +155,7 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color="success"
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -311,11 +179,10 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
         <SectionTitle 
           number="3" 
           title="Condições Clínicas e Sensoriais" 
-          icon={<Eye className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               {[
                 {
@@ -336,6 +203,7 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color="success"
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -356,17 +224,17 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
         <SectionTitle 
           number="4" 
           title="Aspectos Psicossociais" 
-          icon={<Heart className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Seu relacionamento familiar e social é satisfatório?
                 </label>
                 <RadioGroup
+                  color="success"
                   value={formData.relacionamentoFamiliar}
                   onValueChange={(value) => handleInputChange('relacionamentoFamiliar', value)}
                   orientation="horizontal"
@@ -392,6 +260,7 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color='success'
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -412,11 +281,10 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
         <SectionTitle 
           number="5" 
           title="Autoavaliação" 
-          icon={<Scale className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               {[
                 {
@@ -443,6 +311,7 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color='success'
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -466,11 +335,10 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
         <SectionTitle 
           number="6" 
           title="Conclusão" 
-          icon={<FileText className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Observações do avaliador:

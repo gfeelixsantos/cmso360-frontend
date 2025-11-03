@@ -5,7 +5,7 @@ import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling"
 import FichaClinicaOcupacional from "../exames/FichaClinica";
 import { useUser } from "@/hooks/useUser";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
+import { EXAMES_LIST, NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { Socket } from "socket.io-client";
@@ -39,17 +39,26 @@ const AtendimentoModalExames = ({
 
   const  user  = useUser();
   const { executarAcao } = useEntityManager<Ticket>([]);
-  const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister>()
+  const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>([])
+  const [entrevistaPsico, setEntrevistaPsico] = useState<boolean>(false);
+  const [psicossocial, setPsicossocial] = useState<boolean>(false);
 
   useEffect(() => {
-    console.log(codigosAtendimento)
     // Encontra o código do exame que precisa ser atualizado
-    const exameEmAtendimento = funcionarioSelecionado?.EXAMES.find(e =>
+    const exameEmAtendimento = funcionarioSelecionado?.EXAMES.filter(e =>
       codigosAtendimento.has(e.codigoExame)
     );
 
+    console.log("exame em atendimento", exameEmAtendimento)
     if(exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento)
 
+    // Verifica exame psiccosial se é no modelo com psicóloga
+    const hasPsico = funcionarioSelecionado?.EXAMES.find(e => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE)
+    if(hasPsico){
+      setPsicossocial(true)
+      setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"))
+    }
+    
   }, [codigosAtendimento, funcionarioSelecionado])
 
 
@@ -88,7 +97,7 @@ const AtendimentoModalExames = ({
         },
         body: JSON.stringify({
           funcionarioId: funcionarioSelecionado._id,
-          codigoExame: exameParaAtualizar.codigoExame,
+          codigoExame: exameParaAtualizar.map(e => e.codigoExame),
           formulario: data,
           sala: sala, // pode ser variável do estado
           profissional: user ?? "Desconhecido"
@@ -110,6 +119,8 @@ const AtendimentoModalExames = ({
         socket
       ) 
       alert("Exame atualizado com sucesso:");
+
+      if(!entrevistaPsico)
       onClose()
       
     } catch (error) {
@@ -118,16 +129,14 @@ const AtendimentoModalExames = ({
     } 
   }
 };
-
-
-  // ✅ Mapeamento dos tipos de exame para componentes de formulário
-  const entrevistaPsico = funcionarioSelecionado?.EXAMES.some(e => e.grupo === "Psicossocial" && e.preparacao.includes("Entrevista"))
+ 
 
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
     "Audiometria": AudiometriaOcupacional,
     "Dinamometria": Dinamometria,
-    "EEG": !entrevistaPsico ? Psicossocial : ExamePadrao,
+    // "EEG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
+    // "ECG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
     "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
     "Psicossocial": Psicossocial,
@@ -177,7 +186,7 @@ const AtendimentoModalExames = ({
           onClose={onClose}
           atendimento={funcionarioSelecionado}
           exame={exame}
-          formulario={exameParaAtualizar?.formulario}
+          formulario={exameParaAtualizar[0]?.formulario}
         />
       </ModalContent>
     </Modal>

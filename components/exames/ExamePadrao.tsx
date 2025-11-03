@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Spinner } from "@heroui/react";
+import { Card, Button, Input, Spinner, Radio, RadioGroup } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Clock, FileText, Calendar, Building, Briefcase, MapPin } from 'lucide-react';
+import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
+import { User, Clock, FileText, Calendar, Building, Briefcase, MapPin, Filter } from 'lucide-react';
 import { formatCPF } from '@/lib/utils';
+import HeaderExame from './HeaderExame';
 
 interface ExamePadraoProps {
   atendimento: any;
@@ -11,6 +12,10 @@ interface ExamePadraoProps {
   formulario: any;
   onSave?: (data: any) => void;
   onClose?: () => void;
+}
+
+interface ExameFiltrado extends ExamRegister {
+  realizado?: boolean;
 }
 
 const ExamePadrao: React.FC<ExamePadraoProps> = ({ 
@@ -21,17 +26,53 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   onClose 
 }) => {
   const [agendamento, setAgendamento] = useState<Scheduling>();
+  const [examesFiltrados, setExamesFiltrados] = useState<ExameFiltrado[]>([]);
+  const [loading, setLoading] = useState(false);
 
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
+      filtrarExamesPorGrupo(atendimento, exame);
     }
-  }, [atendimento, formulario]);
+  }, [atendimento, exame, formulario]);
+
+  // Função para filtrar exames pelo grupo recebido via prop
+  const filtrarExamesPorGrupo = useCallback((atendimentoData: any, grupoExame: string) => {
+    if (!atendimentoData?.EXAMES || !grupoExame) {
+      setExamesFiltrados([]);
+      return;
+    }
+
+    const examesFiltrados = atendimentoData.EXAMES.filter((exameItem: any) => 
+      exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase()
+    ).map((exameItem: any) => ({
+      ...exameItem,
+      realizado: true // Inicializa como não realizado
+    }));
+
+    setExamesFiltrados(examesFiltrados);
+  }, []);
+
+  // Função para atualizar o status de realização do exame
+  const handleRealizacaoExameChange = useCallback((sequencialResultadoExame: string, realizado: boolean) => {
+    setExamesFiltrados(prev => 
+      prev.map(exame => 
+        exame.sequencialResultadoExame === sequencialResultadoExame 
+          ? { ...exame, realizado }
+          : exame
+      )
+    );
+  }, []);
 
   const handleSave = useCallback(() => {
-    onSave?.({ status: 'concluded' });
-  }, []);
+
+    onSave?.({ 
+      status: 'concluded',
+    });
+
+
+  }, [examesFiltrados, onSave]);
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
     number, 
@@ -39,9 +80,6 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
     icon 
   }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -52,142 +90,71 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   );
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header com status integrado */}
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento - Resultados a serem lançados posteriormente
-            </p>
-          </div>
+    <div className="max-w-4xl mx-auto p-6 space-y-6 min-h-screen">
+      {/* Header */}
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
+
+      {/* 2. Exames Filtrados por Grupo */}
+      {examesFiltrados.length > 0 && (
+        <Card className="p-6 shadow-sm border border-gray-200 bg-white">
+          <SectionTitle 
+            number="2" 
+            title={`Exame(s)`} 
+          />
           
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
+          <div className="space-y-4">
+            {examesFiltrados.map((exameItem, index) => (
+              <div 
+                key={exameItem.sequencialResultadoExame || index}
+                className="rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-gray-800 text-sm mb-1">
+                      {exameItem.nomeExame}
+                    </h4>
+                    {/* <div className="flex flex-wrap gap-4 text-xs text-gray-600">
+                      <span>Código: {exameItem.codigoExame}</span>
+                      {exameItem.sequencialResultadoExame && (
+                        <span>Sequencial: {exameItem.sequencialResultadoExame}</span>
+                      )}
+                    </div> */}
+                  </div>
+                  
+                  <div className="flex-shrink-0">
+                    <RadioGroup
+                      color='success'
+                      label="Exame realizado?"
+                      orientation="horizontal"
+                      value={exameItem.realizado ? "sim" : "nao"}
+                      onValueChange={(value) => 
+                        handleRealizacaoExameChange(
+                          exameItem.sequencialResultadoExame!, 
+                          value === "sim"
+                        )
+                      }
+                      classNames={{
+                        base: "flex gap-4",
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      <Radio value="sim" classNames={{ label: "text-sm" }}>
+                        Sim
+                      </Radio>
+                      <Radio value="nao" classNames={{ label: "text-sm" }}>
+                        Não
+                      </Radio>
+                    </RadioGroup>
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-green-700">
-                Realizando procedimento
-              </p>
-            </div>
+            ))}
           </div>
-        </div>
-      </Card>
-
-      {/* 1. Dados do Atendimento / Funcionário */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={formatCPF(agendamento?.CPFFUNCIONARIO ?? "")}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Card Informativo */}
       <Card className="p-5 shadow-md border border-blue-200 bg-blue-50">
@@ -196,10 +163,14 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
             <Clock className="h-6 w-6 text-blue-600 mt-1" />
           </div>
           <div className="flex-1">
-            <h3 className="font-semibold text-blue-800 mb-2">Atendimento em Andamento</h3>
+            <h3 className="font-semibold text-blue-800 mb-2">
+              {examesFiltrados.length > 0 ? 'Confirmação de Exames' : 'Atendimento em Andamento'}
+            </h3>
             <p className="text-blue-700 text-sm leading-relaxed">
-              Este exame não possui questionário digital. O atendimento está sendo realizado 
-              e os resultados serão lançados posteriormente no sistema pelo profissional responsável.
+              {examesFiltrados.length > 0 
+                ? `Os resultados detalhados serão lançados posteriormente no sistema.`
+                : 'Este exame não possui questionário digital. O atendimento está sendo realizado e os resultados serão lançados posteriormente no sistema pelo profissional responsável.'
+              }
             </p>
           </div>
         </div>
@@ -227,4 +198,4 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   );
 };
 
-export default ExamePadrao;
+export default React.memo(ExamePadrao);

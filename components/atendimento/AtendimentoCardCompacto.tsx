@@ -3,6 +3,7 @@ import { Card, Badge, Progress, Tooltip, Chip } from "@heroui/react";
 import { Clock, User, Pin, Ticket as Senha } from "lucide-react";
 import { TicketStatus } from "@/lib/ticket/ticket";
 import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -61,7 +62,7 @@ const useExamProgress = (exames: ExamRegister[]) => {
   if (!exames || exames.length === 0) return { progress: 0, completed: 0, total: 0 };
   
   const completed = exames.filter(exame => 
-    exame.status === 'REALIZADO' || exame.status === 'FINALIZADO'
+    exame.status === ExamStatus.FINALIZADO || exame.status === ExamStatus.AGUARDANDO_RESULTADO
   ).length;
   
   const total = exames.length;

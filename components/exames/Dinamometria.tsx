@@ -3,6 +3,7 @@ import { Card, Button, Input, Select, SelectItem, Textarea, RadioGroup, Radio, S
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Hand, Activity, FileText, Target } from 'lucide-react';
+import HeaderExame from './HeaderExame';
 
 interface DinamometriaProps {
   atendimento: any;
@@ -112,72 +113,61 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     }
   }, [user, formData.profissional]);
 
+  // Função auxiliar para calcular média
+  const calcularMedia = useCallback((valores: string[]): string => {
+    const numeros = valores
+      .map(v => parseFloat(v.replace(',', '.')))
+      .filter(v => !isNaN(v));
+    
+    if (numeros.length === 0) return '';
+    
+    const media = numeros.reduce((a, b) => a + b) / numeros.length;
+    return media.toFixed(1).replace('.', ',');
+  }, []);
+
   // Cálculo automático das médias
   useEffect(() => {
     // Cálculo da média palmar direita
-    const valoresPalmarDireita = [
-      parseFloat(formData.palmarDireita1.replace(',', '.')),
-      parseFloat(formData.palmarDireita2.replace(',', '.')),
-      parseFloat(formData.palmarDireita3.replace(',', '.'))
-    ].filter(v => !isNaN(v));
-    
-    if (valoresPalmarDireita.length > 0) {
-      const media = valoresPalmarDireita.reduce((a, b) => a + b) / valoresPalmarDireita.length;
-      setFormData(prev => ({
-        ...prev,
-        palmarDireitaMedia: media.toFixed(1).replace('.', ',')
-      }));
-    }
+    const mediaPalmarDireita = calcularMedia([
+      formData.palmarDireita1,
+      formData.palmarDireita2,
+      formData.palmarDireita3
+    ]);
 
     // Cálculo da média palmar esquerda
-    const valoresPalmarEsquerda = [
-      parseFloat(formData.palmarEsquerda1.replace(',', '.')),
-      parseFloat(formData.palmarEsquerda2.replace(',', '.')),
-      parseFloat(formData.palmarEsquerda3.replace(',', '.'))
-    ].filter(v => !isNaN(v));
-    
-    if (valoresPalmarEsquerda.length > 0) {
-      const media = valoresPalmarEsquerda.reduce((a, b) => a + b) / valoresPalmarEsquerda.length;
-      setFormData(prev => ({
-        ...prev,
-        palmarEsquerdaMedia: media.toFixed(1).replace('.', ',')
-      }));
-    }
+    const mediaPalmarEsquerda = calcularMedia([
+      formData.palmarEsquerda1,
+      formData.palmarEsquerda2,
+      formData.palmarEsquerda3
+    ]);
 
-    // Cálculo da média escapular direita
-    const valoresEscapularDireita = [
-      parseFloat(formData.escapular1.replace(',', '.')),
-      parseFloat(formData.escapular2.replace(',', '.')),
-      parseFloat(formData.escapular3.replace(',', '.'))
-    ].filter(v => !isNaN(v));
-    
-    if (valoresEscapularDireita.length > 0) {
-      const media = valoresEscapularDireita.reduce((a, b) => a + b) / valoresEscapularDireita.length;
-      setFormData(prev => ({
-        ...prev,
-        escapularDireitaMedia: media.toFixed(1).replace('.', ',')
-      }));
-    }
+    // Cálculo da média escapular
+    const mediaEscapular = calcularMedia([
+      formData.escapular1,
+      formData.escapular2,
+      formData.escapular3
+    ]);
 
     // Cálculo da média dorsal
-    const valoresDorsal = [
-      parseFloat(formData.dorsal1.replace(',', '.')),
-      parseFloat(formData.dorsal2.replace(',', '.')),
-      parseFloat(formData.dorsal3.replace(',', '.'))
-    ].filter(v => !isNaN(v));
-    
-    if (valoresDorsal.length > 0) {
-      const media = valoresDorsal.reduce((a, b) => a + b) / valoresDorsal.length;
-      setFormData(prev => ({
-        ...prev,
-        dorsalMedia: media.toFixed(1).replace('.', ',')
-      }));
-    }
+    const mediaDorsal = calcularMedia([
+      formData.dorsal1,
+      formData.dorsal2,
+      formData.dorsal3
+    ]);
+
+    setFormData(prev => ({
+      ...prev,
+      ...(mediaPalmarDireita && { palmarDireitaMedia: mediaPalmarDireita }),
+      ...(mediaPalmarEsquerda && { palmarEsquerdaMedia: mediaPalmarEsquerda }),
+      ...(mediaEscapular && { escapularMedia: mediaEscapular }),
+      ...(mediaDorsal && { dorsalMedia: mediaDorsal })
+    }));
   }, [
     formData.palmarDireita1, formData.palmarDireita2, formData.palmarDireita3,
     formData.palmarEsquerda1, formData.palmarEsquerda2, formData.palmarEsquerda3,
     formData.escapular1, formData.escapular2, formData.escapular3,
-    formData.dorsal1, formData.dorsal2, formData.dorsal3
+    formData.dorsal1, formData.dorsal2, formData.dorsal3,
+    calcularMedia
   ]);
 
   // Cálculo automático do resultado
@@ -221,9 +211,9 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   }, []);
 
   // Função para avaliar dinamometria escapular
-  const avaliarDinamometriaEscapular = useCallback((mediaDireita: number, sexo: string) => {
+  const avaliarDinamometriaEscapular = useCallback((media: number, sexo: string) => {
     const minimo = sexo === 'Masculino' ? 20 : 10;
-    return mediaDireita >= minimo;
+    return media >= minimo;
   }, []);
 
   // Função para avaliar dinamometria dorsal
@@ -236,7 +226,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     // Obter todas as médias como números
     const mediaPalmarDir = parseFloat(formData.palmarDireitaMedia.replace(',', '.')) || 0;
     const mediaPalmarEsq = parseFloat(formData.palmarEsquerdaMedia.replace(',', '.')) || 0;
-    const mediaEscapularDir = parseFloat(formData.escapularMedia.replace(',', '.')) || 0;
+    const mediaEscapular = parseFloat(formData.escapularMedia.replace(',', '.')) || 0;
     const mediaDorsal = parseFloat(formData.dorsalMedia.replace(',', '.')) || 0;
 
     // Verificar se temos dados suficientes para avaliação
@@ -260,7 +250,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       palmarNormal = avaliarDinamometriaPalmar(mediaPalmarEsq, mediaPalmarDir, formData.sexo);
     }
 
-    escapularNormal = avaliarDinamometriaEscapular(mediaEscapularDir, formData.sexo);
+    escapularNormal = avaliarDinamometriaEscapular(mediaEscapular, formData.sexo);
     dorsalNormal = avaliarDinamometriaDorsal(mediaDorsal, formData.sexo);
 
     // Determinar resultado final
@@ -271,10 +261,9 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     let observacoes = '';
     
     if (todasNormais) {
-      observacoes = 'Dinamometria dentro dos padrões da normalidade';
+      observacoes = 'Dentro dos padrões da normalidade';
     } else {
-      observacoes = 'Dinamometria fora dos padrões da normalidade.';
-
+      observacoes = 'Fora dos padrões da normalidade.';
     }
 
     // Atualizar classificações individuais
@@ -320,9 +309,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     icon 
   }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -338,7 +324,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     ladoEsquerdo: { campo1: string; campo2: string; campo3: string; media: string },
     unidade: string = 'kgf'
   ) => (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div className="p-4 ">
       <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">{titulo}</h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -426,13 +412,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     </div>
   );
 
-
   const renderTabelaDinamometriaEscapular = (
     titulo: string,
-    ladoDireito: { campo1: string; campo2: string; campo3: string; media: string },
+    campos: { campo1: string; campo2: string; campo3: string; media: string },
     unidade: string = 'kgf'
   ) => (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div className=" p-4">
       <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">{titulo}</h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
@@ -448,31 +433,31 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
             <tr>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo1 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo1 as keyof DinamometriaData, e.target.value)}
+                  value={formData[campos.campo1 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(campos.campo1 as keyof DinamometriaData, e.target.value)}
                   placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo2 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo2 as keyof DinamometriaData, e.target.value)}
+                  value={formData[campos.campo2 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(campos.campo2 as keyof DinamometriaData, e.target.value)}
                   placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo3 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo3 as keyof DinamometriaData, e.target.value)}
+                  value={formData[campos.campo3 as keyof DinamometriaData] as string}
+                  onChange={(e) => handleInputChange(campos.campo3 as keyof DinamometriaData, e.target.value)}
                   placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.media as keyof DinamometriaData] as string}
+                  value={formData[campos.media as keyof DinamometriaData] as string}
                   isReadOnly
                   className="border-gray-300 text-center bg-gray-100 font-semibold"
                 />
@@ -485,142 +470,20 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-              Avaliação da função muscular
-            </p>
-          </div>
-          
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
-              </div>
-              <p className="text-xs text-red-700">
-                Realizando procedimento
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
+    <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
 
-      {/* 1. Dados do Atendimento / Funcionário */}
+      {/* 2. Dinamometria Palmar */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
+          number="2" 
+          title="Dinamometria Palmar" 
         />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={agendamento?.CPFFUNCIONARIO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-
         {/* Dados Obrigatórios - Lado Dominante e Sexo */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 mt-6">
+        <div className="p-4 ">
           <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide flex items-center">
             Dados Obrigatórios para Avaliação
             <span className="ml-2 text-red-500 text-xs">*</span>
@@ -634,6 +497,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
                 )}
               </label>
               <RadioGroup
+                color='success'
                 value={formData.ladoDominante}
                 onValueChange={(value) => handleInputChange('ladoDominante', value)}
                 orientation="horizontal"
@@ -656,6 +520,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
                 )}
               </label>
               <RadioGroup
+                color='success'
                 value={formData.sexo}
                 onValueChange={(value) => handleInputChange('sexo', value)}
                 orientation="horizontal"
@@ -671,15 +536,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
             </div>
           </div>
         </div>
-      </Card>
-
-      {/* 2. Dinamometria Palmar */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="2" 
-          title="Dinamometria Palmar - Força de Preensão Manual" 
-          icon={<Hand className="h-5 w-5 text-gray-600" />}
-        />
         
         <div className="space-y-6">
           {renderTabelaDinamometria(
@@ -701,8 +557,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
           
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Palmar:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+            <h4 className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Palmar:</h4>
+            <ul className="text-xs text-green-700 space-y-1">
               <li>• <strong>Homens:</strong> Lado dominante ≥ 45 kgf | Lado não dominante ≥ 40 kgf</li>
               <li>• <strong>Mulheres:</strong> Lado dominante ≥ 25 kgf | Lado não dominante ≥ 20 kgf</li>
             </ul>
@@ -714,26 +570,25 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
           number="3" 
-          title="Dinamometria Escapular - Força de Membros Superiores" 
-          icon={<Target className="h-5 w-5 text-gray-600" />}
+          title="Dinamometria Escapular" 
         />
         
         <div className="space-y-6">
           {renderTabelaDinamometriaEscapular(
             "Força de Membros Superiores (kgf)",
             {
-              campo1: 'escapularDireita1',
-              campo2: 'escapularDireita2',
-              campo3: 'escapularDireita3',
-              media: 'escapularDireitaMedia'
+              campo1: 'escapular1',
+              campo2: 'escapular2',
+              campo3: 'escapular3',
+              media: 'escapularMedia'
             },
             'kgf'
           )}
           
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Escapular:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+            <h4 className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Escapular:</h4>
+            <ul className="text-xs text-green-700 space-y-1">
               <li>• <strong>Homens:</strong> Ambos os lados ≥ 20 kgf</li>
               <li>• <strong>Mulheres:</strong> Ambos os lados ≥ 10 kgf</li>
             </ul>
@@ -745,12 +600,11 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
           number="4" 
-          title="Dinamometria Dorsal - Força de Tronco" 
-          icon={<Activity className="h-5 w-5 text-gray-600" />}
+          title="Dinamometria Dorsal" 
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">Força de Tronco (kgf)</h3>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
@@ -803,8 +657,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
           
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-blue-800 mb-2">Critérios de Avaliação - Dinamometria Dorsal:</h4>
-            <ul className="text-sm text-blue-700 space-y-1">
+            <p className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Dorsal:</p>
+            <ul className="text-xs text-green-700 space-y-1">
               <li>• <strong>Homens:</strong> Média ≥ 100 kgf</li>
               <li>• <strong>Mulheres:</strong> Média ≥ 50 kgf</li>
             </ul>
@@ -817,24 +671,16 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
         <SectionTitle 
           number="5" 
           title="Resultado e Observações" 
-          icon={<FileText className="h-5 w-5 text-gray-600" />}
         />
-        
-        <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div className="space-y-4">
-              <div>
-                <Textarea
-                  value={formData.observacoesFinais}
-                  onChange={(e) => handleInputChange('observacoesFinais', e.target.value)}
-                  rows={4}
-                  placeholder="Observações finais sobre a avaliação de força muscular..."
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
+          <div className="p-4 ">
+            <Textarea
+              value={formData.observacoesFinais}
+              onChange={(e) => handleInputChange('observacoesFinais', e.target.value)}
+              rows={4}
+              placeholder="Observações finais sobre a avaliação de força muscular..."
+              className="bg-white border-gray-300"
+            />
           </div>
-        </div>
       </Card>
 
       {/* Actions */}
@@ -859,4 +705,4 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   );
 };
 
-export default Dinamometria;
+export default React.memo(Dinamometria);

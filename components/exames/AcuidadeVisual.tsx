@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Input, Select, SelectItem, Textarea, RadioGroup, Radio, Spinner } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Eye, Palette, Gauge, FileText, Plus, Minus, AlertTriangle, Check, X, CheckCheck } from 'lucide-react';
+import HeaderExame from './HeaderExame';
 
 interface AcuidadeVisualProps {
   atendimento: any;
@@ -60,11 +61,17 @@ interface AcuidadeVisualData {
   
   // Conclusão Geral
   observacoesFinais: string;
+  // Propriedade opcional para compatibilidade
+  resultadoEstereopsia?: string;
+  
+  // Avaliação PCD
+  laudoOftalmologistaRecomendado: boolean;
+  criterioPCDIdentificado: string;
 }
 
-interface ResultadoInvestigacao {
+interface ResultadoPCD {
   sugereInvestigacao: boolean;
-  criterio: string;
+  criterios: string[];
   detalhes: string;
 }
 
@@ -72,65 +79,75 @@ interface ResultadoInvestigacao {
 const placasIshiharaConfig = [
   { 
     number: 1, 
-    real: '12', 
+    normal: '12', 
+    daltonismoVerdeVermelho: '',
     fieldPlaca: 'ishiharaPlaca1', 
     fieldResultado: 'ishiharaResultado1',
   },
   { 
     number: 2, 
-    real: '8', 
+    normal: '8', 
+    daltonismoVerdeVermelho: '3',
     fieldPlaca: 'ishiharaPlaca2', 
     fieldResultado: 'ishiharaResultado2',
   },
   { 
     number: 3, 
-    real: '29', 
+    normal: '29', 
+    daltonismoVerdeVermelho: '70',
     fieldPlaca: 'ishiharaPlaca3', 
     fieldResultado: 'ishiharaResultado3',
   },
   { 
     number: 4, 
-    real: '5', 
+    normal: '5', 
+    daltonismoVerdeVermelho: '2',
     fieldPlaca: 'ishiharaPlaca4', 
     fieldResultado: 'ishiharaResultado4',
   },
   { 
     number: 5, 
-    real: '3', 
+    normal: '3', 
+    daltonismoVerdeVermelho: '5',
     fieldPlaca: 'ishiharaPlaca5', 
     fieldResultado: 'ishiharaResultado5',
   },
   { 
     number: 6, 
-    real: '15', 
+    normal: '15', 
+    daltonismoVerdeVermelho: '17',
     fieldPlaca: 'ishiharaPlaca6', 
     fieldResultado: 'ishiharaResultado6',
   },
   { 
     number: 7, 
-    real: '74', 
+    normal: '74', 
+    daltonismoVerdeVermelho: '21',
     fieldPlaca: 'ishiharaPlaca7', 
     fieldResultado: 'ishiharaResultado7',
   },
   { 
     number: 8, 
-    real: '6', 
+    normal: '6', 
+    daltonismoVerdeVermelho: '',
     fieldPlaca: 'ishiharaPlaca8', 
     fieldResultado: 'ishiharaResultado8',
   },
   { 
     number: 9, 
-    real: '45', 
+    normal: '45', 
+    daltonismoVerdeVermelho: '',
     fieldPlaca: 'ishiharaPlaca9', 
     fieldResultado: 'ishiharaResultado9',
   },
   { 
     number: 10, 
-    real: '5', 
+    normal: '5', 
+    daltonismoVerdeVermelho: '',
     fieldPlaca: 'ishiharaPlaca10', 
     fieldResultado: 'ishiharaResultado10',
   }
-];
+] as const;
 
 // Configuração das setas para teste de profundidade
 const setasProfundidade = [
@@ -145,6 +162,90 @@ const setasProfundidade = [
   { id: 9, numero: '9', direcao: '➡️' },
 ];
 
+// Função para converter acuidade visual para valor decimal
+const converterAcuidadeParaDecimal = (acuidade: string): number | null => {
+  if (!acuidade || !acuidade.includes('/')) return null;
+  
+  try {
+    const [numerador, denominador] = acuidade.split('/').map(part => parseFloat(part.trim()));
+    if (isNaN(numerador) || isNaN(denominador) || denominador === 0) return null;
+    
+    return numerador / denominador;
+  } catch {
+    return null;
+  }
+};
+
+// Função para verificar critérios PCD (usando useMemo posteriormente)
+const verificarCriteriosPCD = (formData: AcuidadeVisualData): ResultadoPCD => {
+  const criterios: string[] = [];
+  
+  // Converter acuidades visuais para valores decimais - considerar apenas OD e OE para longe
+  const acuidadeOD = converterAcuidadeParaDecimal(formData.longeOD);
+  const acuidadeOE = converterAcuidadeParaDecimal(formData.longeOE);
+  
+  // Encontrar a MELHOR acuidade visual (MAIOR valor decimal = melhor visão)
+  const acuidadesValidas = [acuidadeOD, acuidadeOE].filter(acuidade => acuidade !== null) as number[];
+  const melhorAcuidade = acuidadesValidas.length > 0 ? Math.max(...acuidadesValidas) : null;
+  
+  
+  // Critério 1: Cegueira - acuidade visual ≤ 0,05 (20/400) no melhor olho
+  if (melhorAcuidade !== null && melhorAcuidade <= 0.05) {
+    criterios.push(`Cegueira - acuidade visual ${formataAcuidade(melhorAcuidade)} (≤ 20/400) no melhor olho`);
+  }
+  
+  // Critério 2: Baixa visão - acuidade visual entre 0,05 (20/400) e 0,3 (20/60) no melhor olho
+  // NOTA: Valores decimais MENORES indicam PIOR visão
+  if (melhorAcuidade !== null && melhorAcuidade > 0.05 && melhorAcuidade <= 0.3) {
+    criterios.push(`Baixa visão - acuidade visual ${formataAcuidade(melhorAcuidade)} (entre 20/400 e 20/60) no melhor olho`);
+  }
+  
+  // Critério 3: Cegueira legal em um olho (≤ 0,05) - mesmo que o outro olho tenha visão normal
+  if (acuidadeOD !== null && acuidadeOD <= 0.05) {
+    criterios.push(`Cegueira legal em olho direito (OD ${formataAcuidade(acuidadeOD)}) - conforme parecer CONJUR/MTE 444/11`);
+  }
+  
+  if (acuidadeOE !== null && acuidadeOE <= 0.05) {
+    criterios.push(`Cegueira legal em olho esquerdo (OE ${formataAcuidade(acuidadeOE)}) - conforme parecer CONJUR/MTE 444/11`);
+  }
+  
+  // Critério 4: Daltonismo total no teste de Ishihara
+  const resultadosIshihara = [
+    formData.ishiharaResultado1, formData.ishiharaResultado2, formData.ishiharaResultado3,
+    formData.ishiharaResultado4, formData.ishiharaResultado5, formData.ishiharaResultado6,
+    formData.ishiharaResultado7, formData.ishiharaResultado8, formData.ishiharaResultado9,
+    formData.ishiharaResultado10
+  ];
+  
+  const daltonismoTotalCount = resultadosIshihara.filter(result => result === 'Daltonismo total').length;
+  if (daltonismoTotalCount >= 5) {
+    criterios.push('Daltonismo total identificado no teste de Ishihara');
+  }
+  
+  return {
+    sugereInvestigacao: criterios.length > 0,
+    criterios,
+    detalhes: criterios.length > 0 
+      ? 'Recomenda-se avaliação com oftalmologista para confirmação diagnóstica e eventual inclusão na cota PCD conforme Lei 8.213/91.'
+      : 'Não foram identificados critérios sugestivos de enquadramento PCD nos exames realizados.'
+  };
+};
+
+// Função auxiliar para formatar acuidade visual
+const formataAcuidade = (valorDecimal: number): string => {
+  if (valorDecimal <= 0.05) return '20/400';
+  if (valorDecimal <= 0.1) return '20/200';
+  if (valorDecimal <= 0.16) return '20/125';
+  if (valorDecimal <= 0.2) return '20/100';
+  if (valorDecimal <= 0.25) return '20/80';
+  if (valorDecimal <= 0.3) return '20/60';
+  if (valorDecimal <= 0.4) return '20/50';
+  if (valorDecimal <= 0.5) return '20/40';
+  if (valorDecimal <= 0.6) return '20/30';
+  if (valorDecimal <= 0.8) return '20/25';
+  return '20/20';
+};
+
 const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({ 
   atendimento, 
   exame,
@@ -156,11 +257,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [showIshihara, setShowIshihara] = useState(false);
   const [showEstereopsia, setShowEstereopsia] = useState(false);
-  const [resultadoInvestigacao, setResultadoInvestigacao] = useState<ResultadoInvestigacao>({
-    sugereInvestigacao: false,
-    criterio: '',
-    detalhes: ''
-  });
+  const [isAcuidadeConcluida, setIsAcuidadeConcluida] = useState(false);
   
   const [formData, setFormData] = useState<AcuidadeVisualData>({
     // Dados do exame
@@ -194,7 +291,11 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     estereopsiaRespostas: {},
      
     // Conclusão Geral
-    observacoesFinais: ''
+    observacoesFinais: '',
+    
+    // Avaliação PCD
+    laudoOftalmologistaRecomendado: false,
+    criterioPCDIdentificado: ''
   });
 
   // Preenchimento automático dos dados do atendimento
@@ -218,13 +319,122 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     }
   }, [user, formData.profissional]);
 
+  // Verificar se a acuidade visual está concluída (apenas OD e OE para longe são obrigatórios)
+  useEffect(() => {
+    const acuidadePreenchida = 
+      formData.longeOD.trim() !== '' && 
+      formData.longeOE.trim() !== '';
+    
+    setIsAcuidadeConcluida(acuidadePreenchida);
+  }, [formData.longeOD, formData.longeOE]);
+
+  // Cálculo do resultado PCD com useMemo para performance
+  const resultadoPCD = useMemo((): ResultadoPCD => {
+    if (!isAcuidadeConcluida) {
+      return { sugereInvestigacao: false, criterios: [], detalhes: '' };
+    }
+    return verificarCriteriosPCD(formData);
+  }, [
+    isAcuidadeConcluida,
+    formData.longeOD,
+    formData.longeOE,
+    formData.ishiharaResultado1,
+    formData.ishiharaResultado2,
+    formData.ishiharaResultado3,
+    formData.ishiharaResultado4,
+    formData.ishiharaResultado5,
+    formData.ishiharaResultado6,
+    formData.ishiharaResultado7,
+    formData.ishiharaResultado8,
+    formData.ishiharaResultado9,
+    formData.ishiharaResultado10
+  ]);
+
+  // Atualizar automaticamente o campo de critério PCD quando resultado mudar
+  useEffect(() => {
+    if (resultadoPCD.criterios.length > 0) {
+      handleInputChange('criterioPCDIdentificado', resultadoPCD.criterios.join('; '));
+      handleInputChange('laudoOftalmologistaRecomendado', true);
+    } else {
+      handleInputChange('criterioPCDIdentificado', '');
+      handleInputChange('laudoOftalmologistaRecomendado', false);
+    }
+  }, [resultadoPCD.criterios]);
+
   const handleInputChange = useCallback((field: keyof AcuidadeVisualData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   }, []);
 
+  // Função para calcular automaticamente o resultado do Ishihara
+  const calcularResultadoIshihara = useCallback((placaNumber: number, valorIdentificado: string): string => {
+    const placaConfig = placasIshiharaConfig.find(p => p.number === placaNumber);
+    if (!placaConfig) return 'Normal';
+
+    const valorNormalizado = valorIdentificado.trim().toLowerCase();
+    
+    // Verificar se é branco, "-", NA ou vazio (daltonismo total)
+    if (valorNormalizado === '' || valorNormalizado === '-' || valorNormalizado === 'na' || valorNormalizado === 'nenhum' || valorNormalizado === 'branco') {
+      return 'Daltonismo total';
+    }
+    
+    // Verificar se é o valor normal
+    if (valorNormalizado === placaConfig.normal.toLowerCase()) {
+      return 'Normal';
+    }
+    
+    // Verificar se é o valor para daltonismo verde-vermelho
+    if (placaConfig.daltonismoVerdeVermelho && valorNormalizado === placaConfig.daltonismoVerdeVermelho.toLowerCase()) {
+      return 'Daltonismo verde-vermelho';
+    }
+    
+    // Se não corresponde a nenhum padrão esperado, considerar como alteração
+    return 'Alteração';
+  }, []);
+
+  // Função para lidar com mudanças nas placas do Ishihara
+  const handleIshiharaChange = useCallback((placaNumber: number, valorIdentificado: string) => {
+    const placaConfig = placasIshiharaConfig.find(p => p.number === placaNumber);
+    if (!placaConfig) return;
+
+    // Atualizar o valor identificado
+    handleInputChange(placaConfig.fieldPlaca as keyof AcuidadeVisualData, valorIdentificado);
+    
+    // Calcular e atualizar o resultado automaticamente
+    const resultado = calcularResultadoIshihara(placaNumber, valorIdentificado);
+    handleInputChange(placaConfig.fieldResultado as keyof AcuidadeVisualData, resultado);
+  }, [calcularResultadoIshihara, handleInputChange]);
+
+  // Função para preencher todos os campos do Ishihara como normais
+  const preencherTodosCorretosIshihara = useCallback(() => {
+    const updates: Partial<AcuidadeVisualData> = {};
+    
+    placasIshiharaConfig.forEach(placa => {
+      updates[placa.fieldPlaca] = placa.normal;
+      updates[placa.fieldResultado] = 'Normal';
+    });
+    
+    setFormData(prev => ({ ...prev, ...updates }));
+  }, []);
+
+  // Função para limpar todos os campos do Ishihara
+  const limparTesteIshihara = useCallback(() => {
+    const updates: Partial<AcuidadeVisualData> = {};
+    
+    placasIshiharaConfig.forEach(placa => {
+      updates[placa.fieldPlaca] = '';
+      updates[placa.fieldResultado] = 'Normal';
+    });
+    
+    setFormData(prev => ({ ...prev, ...updates }));
+  }, []);
+
   const handleSave = useCallback(() => {
+    if (!isAcuidadeConcluida) {
+      alert('A acuidade visual é obrigatória para conclusão do exame. Preencha os campos de Olho Direito (OD) e Olho Esquerdo (OE) para longe.');
+      return;
+    }
     onSave?.(formData);
-  }, [formData, onSave]);
+  }, [formData, onSave, isAcuidadeConcluida]);
 
   // Função para lidar com as respostas do teste de profundidade
   const handleRespostaProfundidade = useCallback((setaId: number, resposta: 'acerto' | 'erro') => {
@@ -242,13 +452,13 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
         ...prev,
         estereopsiaRespostas: novasRespostas,
         estereopsiaAcertos: acertos,
-        estereopsiaTotal: total > 0 ? total : 9
+        estereopsiaTotal: total > 0 ? total : 9,
       };
     });
   }, []);
 
   // Calcular resultado do teste de estereopsia baseado nas respostas
-  useEffect(() => {
+  const resultadoEstereopsia = useMemo(() => {
     const calcularResultado = (acertos: number, total: number) => {
       if (total === 0) return '';
       const porcentagem = (acertos / total) * 100;
@@ -256,13 +466,19 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
       return 'Fora dos padrões da normalidade';
     };
 
-    const resultado = calcularResultado(formData.estereopsiaAcertos, formData.estereopsiaTotal);
-    setFormData(prev => ({
-      ...prev,
-      estereopsiaResultado: resultado,
-      resultadoEstereopsia: resultado
-    }));
+    return calcularResultado(formData.estereopsiaAcertos, formData.estereopsiaTotal);
   }, [formData.estereopsiaAcertos, formData.estereopsiaTotal]);
+
+  // Atualizar resultado da estereopsia quando mudar
+  useEffect(() => {
+    if (resultadoEstereopsia) {
+      setFormData(prev => ({
+        ...prev,
+        estereopsiaResultado: resultadoEstereopsia,
+        ...(resultadoEstereopsia && { resultadoEstereopsia: resultadoEstereopsia })
+      }));
+    }
+  }, [resultadoEstereopsia]);
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
     number, 
@@ -270,9 +486,6 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     icon 
   }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -283,7 +496,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
   );
 
   // Componente para o teste de estereopsia com botões de acerto/erro
-  const TesteEstereopsia = () => {
+  const TesteEstereopsia = useCallback(() => {
     const limparTeste = () => {
       setFormData(prev => ({
         ...prev,
@@ -329,63 +542,30 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
     return (
       <div className="space-y-6">
-        <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-          <p className="text-sm text-gray-600 mb-4 text-center">
-            Teste de Estereopsia - Clique nos botões para registrar se o paciente acertou ou errou cada seta
-          </p>
-          
-          {/* Display visual simples */}
-          <div className="bg-white border-2 border-gray-300 rounded-lg p-6 mb-6 text-center">
-            <div className="text-lg font-semibold text-gray-700 mb-2">Teste de Profundidade</div>
-            <div className="text-sm text-gray-600 mb-4">
-              Clique em ✓ para acerto ou ✗ para erro em cada seta identificada pelo paciente
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4 max-w-md mx-auto mb-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{formData.estereopsiaAcertos}</div>
-                <div className="text-sm text-gray-600">Acertos</div>
-              </div>
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-700">{formData.estereopsiaTotal}</div>
-                <div className="text-sm text-gray-600">Total</div>
-              </div>
-            </div>
-            
-            <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-              <div className="text-lg font-semibold text-gray-700">
-                {porcentagem}% de acerto
-              </div>
-              <div className={`text-sm font-medium ${
-                formData.estereopsiaResultado === 'Normal' ? 'text-green-600' :
-                formData.estereopsiaResultado === 'Alterado Leve' ? 'text-yellow-600' :
-                formData.estereopsiaResultado === 'Alterado Grave' ? 'text-red-600' : 'text-gray-600'
-              }`}>
-                {formData.estereopsiaResultado || 'Resultado não calculado'}
-              </div>
-            </div>
-          </div>
-
+        <p className="text-sm text-gray-600">
+          Clique nos botões para registrar se o paciente acertou ou errou cada seta
+        </p>
+        <div className="p-6">
           {/* Grid de setas com botões de acerto/erro */}
           <div className="mb-6">
             <label className="block text-sm font-semibold text-gray-700 mb-4 text-center">
               Registre as respostas para cada seta:
             </label>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {setasProfundidade.map((seta) => (
-                <div key={seta.id} className="bg-white border border-gray-200 rounded-lg p-4 text-center">
+                <div key={seta.id} className="bg-white border border-gray-200 rounded-lg p-3 text-center">
                   <div className="text-2xl mb-2">{seta.direcao}</div>
-                  <div className="text-sm font-medium text-gray-700 mb-3">nº {seta.numero}</div>
-                  <div className="flex justify-center gap-2">
+                  <div className="text-sm font-medium text-gray-700 mb-2">nº {seta.numero}</div>
+                  <div className="flex justify-center gap-1">
                     <Button
                       size="sm"
                       isIconOnly
                       variant={formData.estereopsiaRespostas[seta.id] === 'acerto' ? 'solid' : 'flat'}
                       color={formData.estereopsiaRespostas[seta.id] === 'acerto' ? 'success' : 'default'}
                       onPress={() => handleRespostaProfundidade(seta.id, 'acerto')}
-                      className="min-w-12"
-                      startContent={<Check className="h-4 w-4" />}
+                      className="min-w-10 h-8"
                     >
+                      <Check className="h-3 w-3" />
                     </Button>
                     <Button
                       size="sm"
@@ -393,216 +573,93 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                       variant={formData.estereopsiaRespostas[seta.id] === 'erro' ? 'solid' : 'flat'}
                       color={formData.estereopsiaRespostas[seta.id] === 'erro' ? 'danger' : 'default'}
                       onPress={() => handleRespostaProfundidade(seta.id, 'erro')}
-                      className="min-w-12"
-                      startContent={<X className="h-4 w-4" />}
+                      className="min-w-10 h-8"
                     >
+                      <X className="h-3 w-3" />
                     </Button>
                   </div>
-                  <div className="text-xs text-gray-500 mt-2">
-                    {formData.estereopsiaRespostas[seta.id] === 'acerto' && 'Acerto'}
-                    {formData.estereopsiaRespostas[seta.id] === 'erro' && 'Erro'}
-                    {!formData.estereopsiaRespostas[seta.id] && 'Pendente'}
+                  <div className="text-xs text-gray-500 mt-1">
+                    {formData.estereopsiaRespostas[seta.id] === 'acerto' && 'Acertou'}
+                    {formData.estereopsiaRespostas[seta.id] === 'erro' && 'Errou'}
+                    {!formData.estereopsiaRespostas[seta.id] && '?'}
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="flex justify-center gap-4 mb-6">
+          <div className="flex justify-center gap-3">
             <Button
               variant="flat"
               onPress={limparTeste}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 text-sm"
+              size="sm"
             >
               Limpar Teste
             </Button>
-            <Button
+            {/* <Button
               variant="flat"
               onPress={marcarTodosComoAcerto}
-              className="flex items-center gap-2 bg-green-50 text-green-700"
+              className="flex items-center gap-2 bg-green-50 text-green-700 text-sm"
+              size="sm"
             >
-              <Check className="h-4 w-4" />
+              <Check className="h-3 w-3" />
               Todos Corretos
             </Button>
             <Button
               variant="flat"
               onPress={marcarTodosComoErro}
-              className="flex items-center gap-2 bg-red-50 text-red-700"
+              className="flex items-center gap-2 bg-red-50 text-red-700 text-sm"
+              size="sm"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3 w-3" />
               Todos Errados
-            </Button>
+            </Button> */}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Observação
-              </label>
-              <Textarea
-                value={formData.estereopsiaObservacao}
-                onChange={(e) => handleInputChange('estereopsiaObservacao', e.target.value)}
-                rows={2}
-                placeholder="Ex: leve dificuldade em percepção de profundidade..."
-                className="border-gray-300 bg-white"
-              />
+          {/* Display compacto de resultados */}
+          <div className="p-4">
+            <div className="flex justify-between items-center">
+              <div className="text-center flex-1">
+                <div className="text-2xl font-bold text-blue-600">{formData.estereopsiaAcertos}</div>
+                <div className="text-sm text-gray-600">Acertos</div>
+              </div>
+              
+              <div className="text-center flex-1">
+                <div className="text-2xl font-bold text-gray-700">{porcentagem}%</div>
+                <div className="text-sm text-gray-600">Taxa</div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     );
-  };
+  }, [formData.estereopsiaRespostas, formData.estereopsiaAcertos, formData.estereopsiaTotal, formData.estereopsiaResultado, handleRespostaProfundidade]);
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-              Exame visual ocupacional
-            </p>
-          </div>
-          
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-red-50 px-4 py-3 rounded-lg border border-red-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-red-800">Em Andamento</span>
-              </div>
-              <p className="text-xs text-red-700">
-                Realizando procedimento
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-      {/* 1. Dados do Atendimento / Funcionário */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={agendamento?.CPFFUNCIONARIO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+    <div className="max-w-6xl mx-auto p-6 space-y-6  min-h-screen">
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
+      
 
       {/* 2. Acuidade Visual */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
           number="2" 
           title="Acuidade Visual" 
-          icon={<Eye className="h-5 w-5 text-gray-600" />}
         />
         
-        <div className="space-y-6">
+        <div>
           {/* Exame com lente corretiva */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className=" p-4 ">
             <label className="block text-sm font-medium text-gray-700 mb-3">
               Exame com lente corretiva?
             </label>
             <RadioGroup
+              color='success'
               value={formData.exameComLenteCorretiva}
               onValueChange={(value) => handleInputChange('exameComLenteCorretiva', value)}
               orientation="horizontal"
@@ -615,7 +672,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
             {/* Opções de lente corretiva - aparece apenas se "Sim" for selecionado */}
             {formData.exameComLenteCorretiva === 'Sim' && (
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-3">
+                <label className="block text-sm font-medium text-gray-700">
                   Uso de lente:
                 </label>
                 <RadioGroup
@@ -633,15 +690,14 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
           </div>
 
           {/* Tabela de Acuidade Visual */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Resultados da Acuidade Visual</h3>
+          <div className="p-4">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Direito (OD)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Esquerdo (OE)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Para perto</th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Direito (OD) - Longe</th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Olho Esquerdo (OE) - Longe</th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Ambos os Olhos - Perto</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -664,8 +720,8 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
-                        value={formData.longeBinocular}
-                        onChange={(e) => handleInputChange('longeBinocular', e.target.value)}
+                        value={formData.pertoBinocular}
+                        onChange={(e) => handleInputChange('pertoBinocular', e.target.value)}
                         placeholder="Ex: 20/20"
                         className="border-gray-300 text-center bg-white"
                       />
@@ -673,9 +729,6 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                   </tr>
                 </tbody>
               </table>
-              <p className="text-xs text-gray-500 mt-2">
-                * A acuidade visual para perto é realizada apenas com os dois olhos (binocular)
-              </p>
             </div>
           </div>
         </div>
@@ -683,13 +736,14 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
       {/* 3. Teste de Ishihara (Opcional) */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <SectionTitle 
             number="3" 
             title="Teste de Ishihara (Colorimetria)" 
-            icon={<Palette className="h-5 w-5 text-gray-600" />}
           />
+          
           <Button
+            color="success"
             variant="flat"
             onPress={() => setShowIshihara(!showIshihara)}
             className="flex items-center gap-2"
@@ -698,13 +752,33 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
             {showIshihara ? 'Ocultar' : 'Mostrar'}
           </Button>
         </div>
-        
+  
         {showIshihara && (
-          <div className="space-y-6">
-            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-              <p className="text-sm text-gray-600 mb-4">
-                Identificação de deficiência de visão de cores. Digite o número identificado pelo examinado em cada placa. Use "NA", "-" ou "nenhum" para quando não enxergar nenhum número.
+          <div>
+            <div className="p-4">
+              <p className="text-sm text-gray-600 mb-6">
+                Use "NA", "-", "nenhum" para quando não enxergar nenhum número.
               </p>
+              
+              {/* Botões de ação rápida */}
+              <div className="flex justify-center gap-4 mb-6">
+                <Button
+                  variant="flat"
+                  onPress={limparTesteIshihara}
+                  className="flex items-center gap-2"
+                >
+                  Limpar Teste
+                </Button>
+                <Button
+                  color='success'
+                  variant="solid"
+                  onPress={preencherTodosCorretosIshihara}
+                  className="flex items-center gap-2 bg-green-50 text-green-700"
+                >
+                  <CheckCheck className="h-4 w-4" />
+                  Todos Corretos
+                </Button>
+              </div>
               
               {/* Tabela de Placas */}
               <div className="overflow-x-auto">
@@ -725,25 +799,19 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                         <td className="border border-gray-300 px-4 py-2">
                           <Input
                             value={formData[placa.fieldPlaca as keyof AcuidadeVisualData] as string}
-                            onChange={(e) => handleInputChange(placa.fieldPlaca as keyof AcuidadeVisualData, e.target.value)}
-                            placeholder={`Ex: ${placa.real}`}
+                            onChange={(e) => handleIshiharaChange(placa.number, e.target.value)}
+                            placeholder={`Ex: ${placa.normal}`}
                             className="border-gray-300 text-center bg-white"
                           />
                         </td>
                         <td className="border border-gray-300 px-4 py-2">
-                          <Select
-                            selectedKeys={formData[placa.fieldResultado as keyof AcuidadeVisualData] ? [formData[placa.fieldResultado as keyof AcuidadeVisualData] as string] : []}
-                            onChange={(e) => handleInputChange(placa.fieldResultado as keyof AcuidadeVisualData, e.target.value)}
-                            className="w-full"
-                            classNames={{
-                              trigger: "bg-white border-gray-300"
-                            }}
-                          >
-                            <SelectItem key="Normal">Normal</SelectItem>
-                            <SelectItem key="Daltonismo verde-vermelho">Daltonismo verde-vermelho</SelectItem>
-                            <SelectItem key="Daltonismo total">Daltonismo total</SelectItem>
-                            <SelectItem key="Alteração">Alteração</SelectItem>
-                          </Select>
+                          <div className={`text-center font-medium ${
+                            formData[placa.fieldResultado as keyof AcuidadeVisualData] === 'Normal' ? 'text-green-600' :
+                            formData[placa.fieldResultado as keyof AcuidadeVisualData] === 'Daltonismo verde-vermelho' ? 'text-yellow-600' :
+                            formData[placa.fieldResultado as keyof AcuidadeVisualData] === 'Daltonismo total' ? 'text-red-600' : 'text-gray-600'
+                          }`}>
+                            {formData[placa.fieldResultado as keyof AcuidadeVisualData] as string}
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -757,13 +825,13 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
       {/* 4. Teste de Estereopsia (Opcional) */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between">
           <SectionTitle 
             number="4" 
             title="Teste de Estereopsia (Profundidade)" 
-            icon={<Gauge className="h-5 w-5 text-gray-600" />}
           />
           <Button
+            color='success'
             variant="flat"
             onPress={() => setShowEstereopsia(!showEstereopsia)}
             className="flex items-center gap-2"
@@ -782,38 +850,35 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle 
           number="5" 
-          title="Conclusão Geral" 
-          icon={<FileText className="h-5 w-5 text-gray-600" />}
+          title="Conclusão" 
         />
         
         <div className="space-y-6">
-          {/* Alerta para investigação oftalmológica */}
-          {resultadoInvestigacao.sugereInvestigacao && (
+          {/* Alerta automático para PCD */}
+          {resultadoPCD.sugereInvestigacao && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-yellow-600 mt-0.5 flex-shrink-0" />
                 <div>
-                  <h3 className="font-semibold text-yellow-800 text-sm mb-1">
-                    Investigação Oftalmológica Recomendada para PCD
+                  <h3 className="font-semibold text-yellow-800 text-sm mb-2">
+                    Possibilidade de Enquadramento PCD Identificada
                   </h3>
                   <p className="text-yellow-700 text-sm mb-2">
-                    <strong>Critério atendido:</strong> {resultadoInvestigacao.criterio}
+                    <strong>Critério(s) atendido(s):</strong>
                   </p>
-                  <p className="text-yellow-700 text-sm">
-                    <strong>Base legal:</strong> {resultadoInvestigacao.detalhes}
-                  </p>
-                  <p className="text-yellow-700 text-sm mt-1">
-                    Recomenda-se avaliação com oftalmologista para confirmação diagnóstica e 
-                    eventual inclusão na cota PCD conforme Lei 8.213/91.
-                  </p>
+                  <ul className="text-yellow-700 text-sm list-disc list-inside space-y-1">
+                    {resultadoPCD.criterios.map((criterio, index) => (
+                      <li key={index}>{criterio}</li>
+                    ))}
+                  </ul>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Observações Finais
+              Observações do avaliador
             </label>
             <Textarea
               value={formData.observacoesFinais}
@@ -823,6 +888,10 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
               className="border-gray-300 bg-white"
             />
           </div>
+
+          {/* Campo oculto para armazenar o critério PCD identificado */}
+          <input type="hidden" value={formData.criterioPCDIdentificado} />
+          <input type="hidden" value={formData.laudoOftalmologistaRecomendado ? "true" : "false"} />
         </div>
       </Card>
 
@@ -840,8 +909,9 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
           onPress={handleSave}
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           startContent={<FileText className="h-4 w-4" />}
+          isDisabled={!isAcuidadeConcluida}
         >
-          Salvar / Concluir Exame
+          {isAcuidadeConcluida ? 'Salvar / Concluir Exame' : 'Preencha a Acuidade Visual'}
         </Button>
       </div>
     </div>

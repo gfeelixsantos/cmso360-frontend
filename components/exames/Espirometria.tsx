@@ -3,6 +3,7 @@ import { Card, Button, Input, Select, SelectItem, Textarea, RadioGroup, Radio, C
 import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Stethoscope, Heart, FileText, Eye, EyeOff } from 'lucide-react';
+import HeaderExame from './HeaderExame';
 
 interface EspirometriaProps {
   atendimento: any;
@@ -52,7 +53,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [mostrarQuestionarioTabagismo, setMostrarQuestionarioTabagismo] = useState(false);
-  const [mostrarObservacoesAutomaticas, setMostrarObservacoesAutomaticas] = useState(true);
+ 
   
   const [formData, setFormData] = useState<EspirometriaData>({
     // Histórico Respiratório e Tabagismo
@@ -101,7 +102,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
 
   const handleInputChange = useCallback((field: keyof EspirometriaData, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  }, [setFormData]);
 
   const handleTabagismoChange = useCallback((isChecked: boolean) => {
     setFormData(prev => ({ ...prev, tabagismo: isChecked }));
@@ -118,78 +119,11 @@ const Espirometria: React.FC<EspirometriaProps> = ({
     }
   }, []);
 
-  // Função para gerar observações automáticas baseadas nas respostas
-  const observacoesAutomaticas = useMemo(() => {
-    const observacoes: string[] = [];
-
-    // Verificar tabagismo
-    if (formData.tabagismo) {
-      let tabagismoInfo = "Paciente com histórico de tabagismo";
-      
-      if (formData.quantidadeCigarrosDia && formData.quantidadeCigarrosDia !== 'Não se aplica') {
-        tabagismoInfo += ` (${formData.quantidadeCigarrosDia.toLowerCase()})`;
-      }
-      
-      if (formData.tempoParouFumar) {
-        tabagismoInfo += `, parou há ${formData.tempoParouFumar}`;
-      }
-      
-      if (formData.fumouHoje) {
-        tabagismoInfo += `, fumou há ${formData.fumouHoje}`;
-      }
-      
-      observacoes.push(tabagismoInfo);
-    }
-
-    // Verificar sintomas respiratórios
-    const sintomasRespiratorios = [
-      { campo: formData.tossePigarroManha, descricao: "tosse/pigarro matinal" },
-      { campo: formData.catarroHabitual, descricao: "catarro habitual" },
-      { campo: formData.sibilancia, descricao: "sibilância" },
-      { campo: formData.faltaArEsforco, descricao: "dispneia aos esforços" }
-    ].filter(sintoma => sintoma.campo === 'Sim');
-
-    if (sintomasRespiratorios.length > 0) {
-      const sintomasDesc = sintomasRespiratorios.map(s => s.descricao).join(', ');
-      observacoes.push(`Relata ${sintomasDesc}`);
-    }
-
-    // Verificar doenças pulmonares
-    const condicoesMedicas = [
-      { campo: formData.doencaPulmonar, descricao: "doença pulmonar" },
-      { campo: formData.asma, descricao: "asma" },
-      { campo: formData.medicacaoAsma, descricao: "uso de medicação para asma/respiração" },
-      { campo: formData.cirurgiaToraxPulmao, descricao: "cirurgia torácica/pulmonar" },
-      { campo: formData.doencaCardiacaHipertensao, descricao: "doença cardíaca/hipertensão" }
-    ].filter(condicao => condicao.campo === 'Sim');
-
-    if (condicoesMedicas.length > 0) {
-      const condicoesDesc = condicoesMedicas.map(c => c.descricao).join(', ');
-      observacoes.push(`Histórico de ${condicoesDesc}`);
-    }
-
-    // Verificar prótese dentária
-    if (formData.proteseDentaria === 'Sim') {
-      observacoes.push("Utiliza prótese dentária");
-    }
 
 
-    return observacoes;
-  }, [formData]);
-
-  const handleSave = useCallback(() => {
-    // Combinar observações manuais com automáticas
-    const observacoesCombinadas = formData.observacoes 
-      ? `${formData.observacoes}\n\n--- Observações Automáticas ---\n${observacoesAutomaticas}`
-      : observacoesAutomaticas;
-    
-    const dadosParaSalvar = {
-      ...formData,
-      observacoes: observacoesCombinadas
-    };
-    
-    onSave?.(dadosParaSalvar);
-  }, [formData, observacoesAutomaticas, onSave]);
+const handleSave = useCallback(() => {
+  onSave?.(formData);
+}, [onSave, formData]);
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
     number, 
@@ -197,9 +131,6 @@ const Espirometria: React.FC<EspirometriaProps> = ({
     icon 
   }) => (
     <div className="flex items-start gap-3 mb-4">
-      <div className="flex items-center justify-center w-8 h-8 bg-gray-800 rounded-lg text-white font-semibold text-sm">
-        {number}
-      </div>
       <div className="flex-1">
         <div className="flex items-center gap-2">
           {icon}
@@ -210,142 +141,12 @@ const Espirometria: React.FC<EspirometriaProps> = ({
   );
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
       {/* Header */}
-      <Card className="p-6 shadow-lg border border-blue-200 bg-white">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-          <div className="text-center lg:text-left">
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-2">
-              {exame || 'Exame Ocupacional'}
-            </h1>
-            <p className="text-gray-600 text-sm lg:text-base">
-              Registro de Atendimento
-            </p>
-          </div>
-          
-          {/* Status do atendimento */}
-          <div className="flex items-center gap-3 bg-green-50 px-4 py-3 rounded-lg border border-green-200 min-w-[280px]">
-            <div className="flex-shrink-0">
-              <Spinner size="sm" color="success" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-semibold text-green-800">Em Andamento</span>
-              </div>
-              <p className="text-xs text-green-700">
-                Realizando procedimento
-              </p>
-            </div>
-          </div>
-        </div>
-      </Card>
-
-      {/* 1. Dados do Atendimento / Funcionário */}
-      <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="1" 
-          title="Dados do Atendimento e Funcionário" 
-          icon={<User className="h-5 w-5 text-gray-600" />}
-        />
-        
-        <div className="space-y-6">
-          {/* Dados Pessoais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Pessoais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Nome Completo:</label>
-                <Input
-                  value={agendamento?.NOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CPF:</label>
-                <Input
-                  value={agendamento?.CPFFUNCIONARIO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="000.000.000-00"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data Nascimento:</label>
-                <Input
-                  value={agendamento?.DATANASCIMENTO ?? ""}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                  placeholder="DD/MM/AAAA"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados Profissionais */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Profissionais</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cargo:</label>
-                <Input
-                  value={agendamento?.NOMECARGO}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Setor:</label>
-                <Input
-                  value={agendamento?.NOMESETOR}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Exame:</label>
-                <Input
-                  value={agendamento?.TIPOEXAMENOME}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Dados da Empresa */}
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados da Empresa</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Empresa:</label>
-                <Input
-                  value={agendamento?.NOMEEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">CNPJ:</label>
-                <Input
-                  value={agendamento?.CNPJEMPRESA}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Unidade:</label>
-                <Input
-                  value={agendamento?.NOMEUNIDADE}
-                  isReadOnly
-                  className="bg-white border-gray-300"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </Card>
+      <HeaderExame 
+        agendamento={agendamento}
+        exame={exame}
+      />
 
       {/* 2. Histórico Respiratório e Tabagismo */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
@@ -355,10 +156,11 @@ const Espirometria: React.FC<EspirometriaProps> = ({
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               <div>
                 <Checkbox
+                  color='success'
                   isSelected={formData.tabagismo}
                   onValueChange={handleTabagismoChange}
                   classNames={{ label: "text-sm font-medium text-gray-700" }}
@@ -404,7 +206,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Fumou hoje? Se sim, há quanto tempo?
+                      Fumou hoje? Há quanto tempo?
                     </label>
                     <Input
                       value={formData.fumouHoje}
@@ -428,7 +230,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               {[
                 {
@@ -453,6 +255,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color='success'
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -473,11 +276,10 @@ const Espirometria: React.FC<EspirometriaProps> = ({
         <SectionTitle 
           number="4" 
           title="Doenças Pulmonares e Outras Condições" 
-          icon={<Stethoscope className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               {[
                 {
@@ -510,6 +312,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
                     {item.label}
                   </label>
                   <RadioGroup
+                    color="success"
                     value={formData[item.field] as string}
                     onValueChange={(value) => handleInputChange(item.field, value)}
                     orientation="horizontal"
@@ -530,17 +333,17 @@ const Espirometria: React.FC<EspirometriaProps> = ({
         <SectionTitle 
           number="5" 
           title="Histórico Ocupacional e Exposição" 
-          icon={<Heart className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+          <div className="p-4">
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Já trabalhou em ambiente com poeira, fumaça ou vapores químicos por um ano ou mais?
                 </label>
                 <RadioGroup
+                  color='success'
                   value={formData.exposicaoPoeiraFumaca}
                   onValueChange={(value) => handleInputChange('exposicaoPoeiraFumaca', value)}
                   orientation="horizontal"
@@ -570,6 +373,7 @@ const Espirometria: React.FC<EspirometriaProps> = ({
                   Atualmente trabalha exposto a esses agentes?
                 </label>
                 <RadioGroup
+                  color='success'
                   value={formData.exposicaoAtual}
                   onValueChange={(value) => handleInputChange('exposicaoAtual', value)}
                   orientation="horizontal"
@@ -589,61 +393,22 @@ const Espirometria: React.FC<EspirometriaProps> = ({
         <SectionTitle 
           number="6" 
           title="Observações" 
-          icon={<FileText className="h-5 w-5 text-gray-600" />}
         />
         
         <div className="space-y-6">
-          <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div className="space-y-4">
-              {/* Observações Automáticas */}
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-blue-800 text-sm uppercase tracking-wide">
-                    Observações Automáticas Geradas
-                  </h3>
-                  <Button
-                    variant="light"
-                    size="sm"
-                    onPress={() => setMostrarObservacoesAutomaticas(!mostrarObservacoesAutomaticas)}
-                    startContent={mostrarObservacoesAutomaticas ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    className="text-blue-700 hover:text-blue-800"
-                  >
-                    {mostrarObservacoesAutomaticas ? 'Ocultar' : 'Mostrar'}
-                  </Button>
-                </div>
-                
-                {mostrarObservacoesAutomaticas && (
-                  <div className="text-sm text-blue-700 bg-white p-3 rounded border border-blue-100">
-                    {observacoesAutomaticas.length > 0 ? 
-                    observacoesAutomaticas.map((obs, index) => (
-                      <p key={index} className="whitespace-pre-wrap">{obs}</p>
-                    )): (
-                      <p className="text-blue-500 italic">
-                        Nenhuma observação automática gerada. 
-                      </p>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Observações Manuais */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Observações do avaliador:
-                </label>
-                <Textarea
-                  value={formData.observacoes}
-                  onChange={(e) => handleInputChange('observacoes', e.target.value)}
-                  rows={4}
-                  placeholder="Digite suas observações adicionais aqui."
-                  className="bg-white border-gray-300"
-                />
-                <p className="text-xs text-gray-500 mt-2">
-                  As observações automáticas serão combinadas com suas observações manuais no relatório final.
-                </p>
-              </div>
-            </div>
-          </div>
+          {/* Observações Manuais */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Observações do avaliador:
+            </label>
+            <Textarea
+              value={formData.observacoes}
+              onChange={(e) => handleInputChange('observacoes', e.target.value)}
+              rows={4}
+              placeholder="Digite suas observações adicionais aqui."
+              className="bg-white border-gray-300"
+            />
+          </div>   
         </div>
       </Card>
 

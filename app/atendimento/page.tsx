@@ -61,7 +61,8 @@ const AtendimentoPage: React.FC = () => {
   const router = useRouter();
   const { entities: tickets, setAll, addOrUpdate, getAll, clear, executarAcao } = useEntityManager<Ticket>([]);
   const [estatisticas, setEstatisticas] = useState({
-  aguardando: 0,
+  recepcaoAguardando: 0,
+  examesAguardando: 0,
   emAtendimento: 0,
   preparacao: 0,
   raiox: 0,
@@ -432,9 +433,11 @@ useEffect(() => {
     const senhasFiltradas = getAll();
     
     setEstatisticas({
-      aguardando:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO).length +
+      recepcaoAguardando:
+        senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.RECEPCAO).length +
         senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK).length,
+      examesAguardando:
+        senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.EXAME).length,
       emAtendimento:
         senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO).length +
         senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA).length,

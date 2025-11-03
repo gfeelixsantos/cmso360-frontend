@@ -51,7 +51,7 @@ const useExamProgress = (exames: ExamRegister[]) => {
     if (!exames || exames.length === 0) return { progress: 0, completed: 0, total: 0 };
     
     const completed = exames.filter(exame => 
-      exame.status === 'REALIZADO' || exame.status === 'FINALIZADO' || exame.status === ExamStatus.AGUARDANDO_RESULTADO
+      exame.status === ExamStatus.FINALIZADO || exame.status === ExamStatus.AGUARDANDO_RESULTADO
     ).length;
     
     const total = exames.length;
@@ -317,33 +317,26 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                 <TableRow key={exame.codigoExame || index} className="hover:bg-gray-50 transition-colors">
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-sm text-gray-900">{examName}</span>
-                      <span className="text-xs text-gray-400 font-mono">{exame.codigoExame}</span>
+                      <span className="font-medium text-xs text-gray-900">{examName}</span>
                     </div>
                   </TableCell>
                   
                   <TableCell>
                     <div className="flex justify-center">
-                      <Badge 
-                        size="sm" 
-                        variant="flat"
-                        className={`${statusColors.bg} ${statusColors.text} border-0 text-xs px-2 py-1`}
-                      >
-                        {exame.status}
-                      </Badge>
+                      <span className="font-medium text-xs text-gray-900 text-center">{exame.status.replace(/_/g, ' ')}</span>
                     </div>
                   </TableCell>
                   
                   <TableCell>
                     <div className="flex items-center gap-1 justify-center">
-                      <span className="text-xs text-gray-700 text-center">
+                      <span className="text-xs text-gray-700 text-left">
                         {exame.profissional?.split(" ")[0] || "—"}
                       </span>
                     </div>
                   </TableCell>
                   
                   <TableCell>
-                    <div className="flex items-center gap-1 justify-center">
+                    <div className="flex items-center gap-1 justify-left whitespace-nowrap">
                       <span className="text-xs text-gray-700">
                         {exame.sala || "—"}
                       </span>
@@ -355,7 +348,6 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       {formattedTime ? (
                         <Tooltip content={`Finalizado às ${formattedTime}`} placement="top">
                           <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <Clock className="h-3 w-3" />
                             <span className="text-xs">{formattedTime}</span>
                           </div>
                         </Tooltip>

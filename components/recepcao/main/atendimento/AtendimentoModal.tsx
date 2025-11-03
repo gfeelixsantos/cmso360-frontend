@@ -570,6 +570,7 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
       ticketResponse.grupo = TicketGroups.EXAME
 
       funcionarioSelecionado!.TICKET = ticketResponse
+      ticketSelecionado = ticketResponse
     }
     catch(e)
     {
