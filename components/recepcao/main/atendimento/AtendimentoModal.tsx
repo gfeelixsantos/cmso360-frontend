@@ -22,7 +22,7 @@ import {
   Pause,
   FileInput,
 } from "lucide-react"
-import { Input, Button, Chip, Textarea, Autocomplete, AutocompleteItem, Tooltip, Select, SelectItem, Switch, user, addToast, SharedSelection } from "@heroui/react"
+import { Input, Button, Chip, Textarea, Autocomplete, AutocompleteItem, Tooltip, Select, SelectItem, Switch, user, addToast, SharedSelection, Checkbox } from "@heroui/react"
 import { FixedSizeList as List, ListChildComponentProps } from "react-window"
 import { PreparationRequest, Ticket, TicketActionType, TicketEmitedDto, TicketGroups, TicketStatus, TicketTypes } from "@/lib/ticket/ticket"
 
@@ -379,6 +379,7 @@ const handleBuscarFuncionario = useCallback(async () => {
       setRecords([])
       setRecordsCodes(new Set())
       setFuncionarioSelecionado(null)
+      setPsicoPresencial(false)
   }, [])
 
 
@@ -432,23 +433,31 @@ const toggleExame = useCallback((exame: string) => {
 
 
 const handlePsicoExame = () => {
- 
-  setPsicoPresencial((prev) => {
-    if (funcionarioSelecionado) {
-      funcionarioSelecionado.EXAMES?.forEach(exam => {
-        if (exam.nomeExame.includes('Psico')) {
-          prev
-            ? exam.preparacao = ""
-            : exam.preparacao = "Entrevista presencial";
+  const novoValor = !psicoPresencial;
+  setPsicoPresencial(novoValor);
+
+  if (funcionarioSelecionado) {
+    const updatedFuncionario = {
+      ...funcionarioSelecionado,
+      EXAMES: funcionarioSelecionado.EXAMES?.map(exam => {
+        if (exam.grupo.includes("Psicossocial")) {
+          console.log("psico okssss")
+          return {
+            ...exam,
+            preparacao: novoValor ? "Entrevista presencial" : ""
+          };
         }
-      });
-    }
-    return !prev;
-  });
-}
+        return exam;
+      })
+    };
+    setFuncionarioSelecionado(updatedFuncionario);
+  }
+};
 
 
 
+
+ 
 
 
 // ---------------------------------------------------------
@@ -626,11 +635,19 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
 
     // Caso tiver vindo do preparo finalizado, limpa a listagem
     if(funcionarioSelecionado.TICKET.id) onSetPreparacaoFinalizada(prev => prev.filter(e => e.ticketId != funcionarioSelecionado.TICKET.id ))
+
+   if(psicoPresencial){
+    const psicoIndex = funcionarioSelecionado.EXAMES.findIndex(e => e.grupo === "Psicossocial")
+      funcionarioSelecionado.EXAMES[psicoIndex] = {
+        ...funcionarioSelecionado.EXAMES[psicoIndex],
+        preparacao: "Entrevista presencial",
+      };
+    }
     
-   
+  
     try {
       formData.append("scheduling", JSON.stringify(funcionarioSelecionado))
-      
+      console.log(funcionarioSelecionado)
       const submmitResponse = await fetch(NEST_SCHEDULINGS, 
       { method: "POST", 
         body: formData
@@ -657,7 +674,7 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
     } finally {
       setIsSubmitting(false)
     }
-  }, [validation.all, isSubmitting, codigoFuncionario, empresa, nome, tipoExame, codigoExames, preferencialTipo, anotacoes, filesUpload, recordsCodes,ticketSelecionado, selectedSchedulingId])
+  }, [validation.all, isSubmitting, codigoFuncionario, empresa, nome, tipoExame, codigoExames, preferencialTipo, anotacoes, filesUpload, recordsCodes,ticketSelecionado, selectedSchedulingId, funcionarioSelecionado, psicoPresencial])
 
   // Prevent rendering when closed
   if (!isOpen) return null
@@ -1179,7 +1196,7 @@ const PacienteItem = React.memo(function _PacienteItem({
               {exame.includes('Psico') && isSelected ? (
                 <div className="flex justify-between items-baseline-last w-full">
                   <span>{exame}</span>
-                  <span>Com psico. <Switch id="psicossocial-switch" size="sm" color="warning" checked={psicoPresencial} onValueChange={handlePsicoExame} disabled={isLoading}></Switch></span> 
+                  <span>Com psico. <Checkbox id="psicossocial-switch" size="md" color="warning" checked={psicoPresencial} onValueChange={handlePsicoExame} disabled={isLoading}></Checkbox></span> 
                 </div>
               ) : <span>{exame}</span>}
             </Button>
@@ -1238,13 +1255,13 @@ const PacienteItem = React.memo(function _PacienteItem({
     {/* Vincular prontuário */}
     <div>
       {(empresa && codigoFuncionario) && (
-        <Switch 
+        <Checkbox 
           isSelected={isBindServiceSelected} 
           onValueChange={handleBindService}
           disabled={isLoading}
         >
           <span className="text-sm text-gray-700">Vincular atendimento</span>
-        </Switch>
+        </Checkbox>
       )}
 
       {isBindServiceSelected && (
@@ -1471,7 +1488,7 @@ const PacienteItem = React.memo(function _PacienteItem({
             >
               {isSubmitting ? (
                 <>
-                  <Save className="h-4 w-4 mr-2" /> Salvando...
+                  <Save className="h-4 w-4 mr-2" /> Enviado...
                 </>
               ) : (
                 <>

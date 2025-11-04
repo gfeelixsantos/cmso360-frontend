@@ -49,12 +49,13 @@ const AtendimentoModalExames = ({
       codigosAtendimento.has(e.codigoExame)
     );
 
-    console.log("exame em atendimento", exameEmAtendimento)
+    
     if(exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento)
 
     // Verifica exame psiccosial se é no modelo com psicóloga
     const hasPsico = funcionarioSelecionado?.EXAMES.find(e => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE)
     if(hasPsico){
+      console.log("exame psico", hasPsico)
       setPsicossocial(true)
       setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"))
     }
@@ -71,7 +72,7 @@ const AtendimentoModalExames = ({
    */
   const handleSaveExam = async (data: any) => {
   if (!funcionarioSelecionado) return;
-
+   
   const isValidExamData = (data: any) => {
     return data && typeof data === "object" && Object.keys(data).length > 0;
   };
@@ -124,18 +125,18 @@ const AtendimentoModalExames = ({
       onClose()
       
     } catch (error) {
-      alert("Erro ao chamar a API");
+      alert(`Erro ao chamar a API ${error}`,);
       console.error("Erro ao chamar API:", error);
     } 
   }
 };
  
-
+  console.log(!entrevistaPsico && psicossocial ? "passar com a paula" : "somente questionário")
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
     "Audiometria": AudiometriaOcupacional,
     "Dinamometria": Dinamometria,
-    // "EEG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
+    "EEG": entrevistaPsico && psicossocial ? ExamePadrao : Psicossocial,
     // "ECG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
     "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
