@@ -120,11 +120,11 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       >
         {c.name != "" ? c.name : c.ticket}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-lg font-bold" style={{ color: COLOR_PALETTE.textLight }}>
+      <div className="mt-2 flex items-center gap-2 text-xl font-bold" style={{ color: COLOR_PALETTE.textLight }}>
         <span className="truncate">{c.sala}</span>
       </div>
       <div 
-        className="mt-2 inline-flex items-center gap-2 text-sm font-medium rounded-full px-3 py-1"
+        className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-xl rounded-full px-3 py-1"
         style={{ 
           backgroundColor: colors.primary, 
           color: colors.text 

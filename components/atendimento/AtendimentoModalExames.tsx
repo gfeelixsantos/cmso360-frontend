@@ -120,8 +120,6 @@ const AtendimentoModalExames = ({
         socket
       ) 
       alert("Exame atualizado com sucesso:");
-
-      if(!entrevistaPsico)
       onClose()
       
     } catch (error) {
@@ -131,13 +129,12 @@ const AtendimentoModalExames = ({
   }
 };
  
-  console.log(!entrevistaPsico && psicossocial ? "passar com a paula" : "somente questionário")
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
     "Audiometria": AudiometriaOcupacional,
     "Dinamometria": Dinamometria,
     "EEG": entrevistaPsico && psicossocial ? ExamePadrao : Psicossocial,
-    // "ECG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
+    "ECG": entrevistaPsico && psicossocial ? ExamePadrao : Psicossocial,
     "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
     "Psicossocial": Psicossocial,

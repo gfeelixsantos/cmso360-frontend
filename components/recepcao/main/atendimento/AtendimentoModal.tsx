@@ -22,7 +22,7 @@ import {
   Pause,
   FileInput,
 } from "lucide-react"
-import { Input, Button, Chip, Textarea, Autocomplete, AutocompleteItem, Tooltip, Select, SelectItem, Switch, user, addToast, SharedSelection, Checkbox } from "@heroui/react"
+import { Input, Button, Chip, Textarea, Autocomplete, AutocompleteItem, Tooltip, Select, SelectItem, Switch, user, addToast, SharedSelection, Checkbox, Spinner } from "@heroui/react"
 import { FixedSizeList as List, ListChildComponentProps } from "react-window"
 import { PreparationRequest, Ticket, TicketActionType, TicketEmitedDto, TicketGroups, TicketStatus, TicketTypes } from "@/lib/ticket/ticket"
 
@@ -314,8 +314,6 @@ const handleBuscarFuncionario = useCallback(async () => {
         .map((cod) => codigoToNome[cod]);
 
       setExamesImagem(examesImagem);
-
-      handlePsicoExame()
     }
 
     else
@@ -684,10 +682,7 @@ const LoadingOverlay = () => (
     <div className="text-center">
       <div className="flex flex-col items-center gap-4">
         {/* Spinner animado */}
-        <div className="relative">
-          <div className="w-12 h-12 border-4 border-[#104e35]/20 rounded-full"></div>
-          <div className="absolute top-0 left-0 w-12 h-12 border-4 border-[#104e35] border-t-transparent rounded-full animate-spin"></div>
-        </div>
+        <Spinner size="lg" variant="spinner" color="success" />
         
         {/* Texto de loading */}
         <div className="space-y-1">
@@ -696,9 +691,9 @@ const LoadingOverlay = () => (
         </div>
         
         {/* Barra de progresso sutil */}
-        <div className="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
+        {/* <div className="w-32 h-1 bg-gray-200 rounded-full overflow-hidden">
           <div className="h-full bg-gradient-to-r from-[#104e35] to-[#a6ce39] rounded-full animate-pulse"></div>
-        </div>
+        </div> */}
       </div>
     </div>
   </div>
@@ -1069,6 +1064,13 @@ const PacienteItem = React.memo(function _PacienteItem({
         size="sm"
         label={"Horário"}
         value={funcionarioSelecionado?.HORARIO ? funcionarioSelecionado.HORARIO : undefined}
+        className="text-xs"
+        disabled={isLoading}
+      />
+      <Input
+        size="sm"
+        label={"Telefone"}
+        value={funcionarioSelecionado?.TELEFONE ? funcionarioSelecionado.TELEFONE : undefined}
         className="text-xs"
         disabled={isLoading}
       />

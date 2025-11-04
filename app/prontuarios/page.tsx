@@ -594,9 +594,10 @@ export default function UnifiedProntuarioPage(){
   const saveOpinion = async () => {
     if (!opinion || !opinion.opinionType) {
       addToast({
+        variant: "solid",
         title: "Parecer incompleto",
         description: "Selecione um parecer médico antes de salvar.",
-        color: "warning",
+        color: "danger",
       });
       return;
     }
@@ -610,28 +611,42 @@ export default function UnifiedProntuarioPage(){
       return;
     };
     setIsSavingOpinion(true);
-    
-    const response = await fetch(NEST_SCHEDULINGS_FINISH, { 
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-        body: JSON.stringify({
-          scheduledId: selectedRecord._id,
-          user: user,
-          options: opinion
-      })
-    });
+    console.log("options do parecer", opinion)
+    try {
+      const response = await fetch(NEST_SCHEDULINGS_FINISH, { 
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+          body: JSON.stringify({
+            scheduledId: selectedRecord._id,
+            user: user,
+            options: opinion
+        })
+      });
 
-    await new Promise((r) => setTimeout(r, 900));
-    setRecords((prev) => prev.map((rec) => (rec._id === selectedRecord?._id ? { ...rec, currentStatus: AtendimentoStatus.FINALIZADO } : rec)));
-    setOpinion(null);
-    setIsSavingOpinion(false);
-    addToast({
-      title: "Parecer salvo",
-      description: "Parecer médico salvo com sucesso.",
-      color: "success",
-    });
+      setRecords((prev) => prev.map((rec) => (rec._id === selectedRecord?._id ? { ...rec, currentStatus: AtendimentoStatus.FINALIZADO } : rec)));
+      setOpinion(null);
+      setIsSavingOpinion(false);
+      setSelectedRecord(null);
+      // setCurrentPdfIndex(0);
+
+      addToast({
+        variant: "flat",
+        title: "Prontuário liberado",
+        description: "Parecer médico salvo com sucesso.",
+        color: "success",
+      });
+    }
+    catch(err){
+      console.error(err)
+      addToast({
+        variant: "solid",
+        title: "Erro ao finalizar prontuário",
+        description: "Verifique detalhes no console, se o erro persistir contate o suporte.",
+        color: "danger",
+      })
+    }
   };
 
   // Nova função para lidar com emissão de laudos
@@ -818,7 +833,7 @@ const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLIn
       <HeaderApp
         onLogout={logout}
         user={user}
-        children={<h1 className="text-2xl font-bold">Prontuários</h1>}
+        children={<h1 className="text-lg font-bold">Prontuários</h1>}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -1238,7 +1253,7 @@ const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLIn
                         </Select>
 
                         <Button
-                          color="secondary"
+                          color="warning"
                           variant="flat"
                           onPress={() => setLaudoModalOpen(true)}
                           startContent={<ClipboardList className="w-4 h-4" />}

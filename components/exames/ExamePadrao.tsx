@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Spinner, Radio, RadioGroup } from "@heroui/react";
+import { Card, Button, Input, Spinner, Radio, RadioGroup, Textarea } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Clock, FileText } from 'lucide-react';
+import { User, Clock, FileText, AlertTriangle, MessageSquare } from 'lucide-react';
 import HeaderExame from './HeaderExame';
 
 interface ExamePadraoProps {
@@ -27,12 +27,18 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [examesFiltrados, setExamesFiltrados] = useState<ExameFiltrado[]>([]);
   const [loading, setLoading] = useState(false);
+  const [observacoes, setObservacoes] = useState('');
 
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
       filtrarExamesPorGrupo(atendimento, exame);
+      
+      // Preenche o campo de observações com o valor existente, se houver
+      if (atendimento.ANOTACOES) {
+        setObservacoes(atendimento.ANOTACOES);
+      }
     }
   }, [atendimento, exame, formulario]);
 
@@ -47,7 +53,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
       exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase()
     ).map((exameItem: any) => ({
       ...exameItem,
-      realizado: true // Inicializa como não realizado
+      realizado: true // Inicializa como realizado
     }));
 
     setExamesFiltrados(examesFiltrados);
@@ -65,16 +71,18 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   }, []);
 
   const handleSave = useCallback(() => {
-
+    const anotacoesExistentes = agendamento?.ANOTACOES || '';
+    const anotacoesFinais = anotacoesExistentes 
+      ? `${anotacoesExistentes}\n${observacoes}`
+      : observacoes;
+    
     onSave?.({ 
       status: 'concluded',
+      anotacoes: anotacoesFinais
     });
-
-
-  }, [examesFiltrados, onSave]);
+  }, [onSave, observacoes, agendamento?.ANOTACOES]);
 
   const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
-    number, 
     title,
     icon 
   }) => (
@@ -151,29 +159,21 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
                 </div>
               </div>
             ))}
+            <div className="space-y-3">
+              <Textarea
+                label="Anotações do atendimento"
+                value={observacoes}
+                onValueChange={setObservacoes}
+                minRows={2}
+                classNames={{
+                  base: "w-full",
+                  label: "text-sm font-medium text-gray-700"
+                }}
+              />
+            </div>
           </div>
         </Card>
       )}
-
-      {/* Card Informativo */}
-      <Card className="p-5 shadow-md border border-blue-200 bg-blue-50">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0">
-            <Clock className="h-6 w-6 text-blue-600 mt-1" />
-          </div>
-          <div className="flex-1">
-            <h3 className="font-semibold text-blue-800 mb-2">
-              {examesFiltrados.length > 0 ? 'Confirmação de Exames' : 'Atendimento em Andamento'}
-            </h3>
-            <p className="text-blue-700 text-sm leading-relaxed">
-              {examesFiltrados.length > 0 
-                ? `Os resultados detalhados serão lançados posteriormente no sistema.`
-                : 'Este exame não possui questionário digital. O atendimento está sendo realizado e os resultados serão lançados posteriormente no sistema pelo profissional responsável.'
-              }
-            </p>
-          </div>
-        </div>
-      </Card>
 
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">

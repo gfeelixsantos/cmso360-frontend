@@ -96,6 +96,7 @@ export type Scheduling = {
   SEQUENCIAFICHA: string;
   SITUACAO: string;
   SUBGRUPOEMPRESA: string | null;
+  TELEFONE?: string;
   // TERM: boolean;
   TICKET: Ticket
   TIPOEXAME: string;

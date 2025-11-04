@@ -656,12 +656,12 @@ const TicketActions: React.FC<{
   const handleDisabledStatus = (ticket: Ticket) => {
     const currentUser = getCurrentUser();
 
-      // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
-      if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
-        && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
-      ) {
-        return true;
-      }
+      // // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
+      // if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
+      //   && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
+      // ) {
+      //   return true;
+      // }
     
       // 5. Para qualquer outra situação, o botão deve estar habilitado.
       return false;

@@ -5,8 +5,8 @@
 const PORT=3333
 const NEST_URL_DEVELOP = `http://localhost:${PORT}/`
 
-export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
-// export const NEST_URL = `http://192.168.0.131:${PORT}/`
+// export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
+export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace("https", "ws")
 
 const TICKETS_ENDPOINT = process.env.NEXT_PUBLIC_NEST_TICKET_ENDPOINT ?? "[.ENV] Ticket endpoint nulo"

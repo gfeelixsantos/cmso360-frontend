@@ -284,16 +284,16 @@ useEffect(() => {
   const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
 
     switch (operation) {
-      case MongoOperationTypes.INSERT:
-        setAgendamentos(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
-        break;
-      case MongoOperationTypes.UPDATE:
-        setAgendamentos(prev =>
-          prev
-            .map(ag => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag)
-            .sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }))
-        );
-        break;
+      // case MongoOperationTypes.INSERT:
+      //   setAgendamentos(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
+      //   break;
+      // case MongoOperationTypes.UPDATE:
+      //   setAgendamentos(prev =>
+      //     prev
+      //       .map(ag => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag)
+      //       .sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }))
+      //   );
+      //   break;
       case MongoOperationTypes.DELETE:
         setAgendamentos(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
         break;

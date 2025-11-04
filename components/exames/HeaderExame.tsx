@@ -1,13 +1,24 @@
+
 import { SECOND_COLOR } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { Input } from "@heroui/input";
 import { Card } from "@heroui/react";
-import { Eye } from "lucide-react";
+import { AlertTriangle, Eye } from "lucide-react";
+import { useEffect, useState } from "react";
 
 interface HeaderExameProp{
     agendamento?:Scheduling, exame: string
 }
 export default function HeaderExame({ agendamento, exame}: HeaderExameProp) {
+    const [isKitCredenciada, setIsKitCredenciada] = useState(false);
+
+    // Exibe mensagem de kit credenciada
+    useEffect(() => {
+        setIsKitCredenciada(true);
+        if (agendamento && agendamento.ASOSTATUS  === "KIT_CREDENCIADA") {
+            setIsKitCredenciada(true);
+        }
+    }, [agendamento, exame]);
 
     return(
         <div>
@@ -26,6 +37,30 @@ export default function HeaderExame({ agendamento, exame}: HeaderExameProp) {
                     />
                 </div>
             </div>
+            {/* Alerta para KIT_CREDENCIADA */}
+            {isKitCredenciada && (
+            <div className="p-5 m-4 shadow-md border border-amber-200 bg-amber-50">
+                <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                    <AlertTriangle className="h-6 w-6 text-amber-600 mt-1" />
+                </div>
+                <div className="flex-1">
+                    <h3 className="font-semibold text-amber-800 mb-2">
+                    Empresa com KIT Atendimento
+                    </h3>
+                    <p className="text-amber-700 text-sm leading-relaxed">
+                    O preenchimento da documentação deverá ser feito manualmente na documentação entregue pelo funcionário.
+                    </p>
+                    <div className="mt-3 p-3 bg-amber-100 rounded border border-amber-200">
+                    <p className="text-amber-800 text-xs font-medium">
+                        📝 <strong>Procedimento:</strong> Utilize os formulários físicos fornecidos 
+                        pela empresa credenciada para registrar todas as informações do atendimento.
+                    </p>
+                    </div>
+                </div>
+                </div>
+            </div>
+            )}
             <div className="flex items-center gap-3 mb-4">
                 <div className="flex items-center gap-2">
                     <span className="text-lg font-semibold text-gray-600">Informações cadastrais</span>
