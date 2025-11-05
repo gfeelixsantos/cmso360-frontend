@@ -3,7 +3,7 @@
 // NEST BACKEND
 // ---------------------------------------------------------
 const PORT=3333
-const NEST_URL_DEVELOP = `http://localhost:${PORT}/`
+const NEST_URL_DEVELOP = `http://127.0.0.1:${PORT}/`
 
 export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
@@ -26,6 +26,7 @@ export const NEST_SCHEDULINGS_TODAY = NEST_URL + SCHEDULINGS_TODAY
 
 const SCHEDULINGS_ALL = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_ALL ?? "[.ENV] Schedulings ALL nulo"
 export const NEST_SCHEDULINGS_ALL = NEST_URL + SCHEDULINGS_ALL
+
 
 const SCHEDULINGS_FINISH = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_FINISH ?? "[.ENV] Schedulings finish nulo"
 export const NEST_SCHEDULINGS_FINISH = NEST_URL + SCHEDULINGS_FINISH

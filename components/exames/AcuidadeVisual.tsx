@@ -918,4 +918,4 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
   );
 };
 
-export default AcuidadeVisual;
+export default React.memo(AcuidadeVisual);

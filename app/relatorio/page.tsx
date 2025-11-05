@@ -1,4 +1,3 @@
-// app/relatorios/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
@@ -9,8 +8,6 @@ import {
   Button,
   Select,
   SelectItem,
-  DatePicker,
-  DateValue,
   Table,
   TableHeader,
   TableColumn,
@@ -27,13 +24,16 @@ import {
   ModalFooter,
   useDisclosure,
   Spinner,
-  Tooltip,
   Skeleton
 } from '@heroui/react';
-import { SearchIcon, FilterIcon, DownloadIcon, EyeIcon, FileTextIcon, CalendarIcon, UserIcon, MapPinIcon, LoaderIcon, CheckIcon } from 'lucide-react';
+import { SearchIcon, FilterIcon, EyeIcon, CheckIcon } from 'lucide-react';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { useAppData } from '../context/AppDataContext';
 import { AtendimentoStatus } from '@/lib/scheduling/enum/scheduling.enum';
+import { NEST_SCHEDULINGS_ALL } from '@/config/constants';
+import { HeaderApp } from '@/components/shared/HeaderApp';
+import { formatCPF, logout } from '@/lib/utils';
+import { useRouter } from "next/navigation";
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import('./LazyModalContent'));
@@ -42,23 +42,6 @@ const LazyModalContent = lazy(() => import('./LazyModalContent'));
 interface OptimizedScheduling extends Scheduling {
   DATAAGENDAMENTO_DATE_OBJ: Date;
   SEARCH_INDEX: string;
-}
-
-// Hook para debounce
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(handler);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
 }
 
 // Hook para debounce do modal
@@ -128,9 +111,8 @@ const ModalSkeleton = () => (
 
 // Componente principal
 export default function RelatoriosPage() {
-  const { data } = useAppData();
-  const appAtendimentos: Scheduling[] = data?.atendimentos ?? [];
-  
+  const router = useRouter();
+  const [appAtendimentos, setAppAtendimentos] = useState<Scheduling[]>([]);
   const [optimizedAtendimentos, setOptimizedAtendimentos] = useState<OptimizedScheduling[]>([]);
   const [loading, setLoading] = useState(true);
   const [exportLoading, setExportLoading] = useState(false);
@@ -139,8 +121,8 @@ export default function RelatoriosPage() {
   
   // Filtros
   const [filters, setFilters] = useState({
-    dataInicio: null as DateValue | null,
-    dataFim: null as DateValue | null,
+    dataInicio: null as Date | null,
+    dataFim: null as Date | null,
     empresa: '',
     exame: '',
     status: '',
@@ -168,6 +150,34 @@ export default function RelatoriosPage() {
   // Estado para os atendimentos FILTRADOS
   const [filteredAtendimentos, setFilteredAtendimentos] = useState<OptimizedScheduling[]>([]);
 
+  useEffect(() => {
+    async function getData() {
+      try {
+        setLoading(true)
+        const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+    
+        if (!response.ok) {
+          console.error("Erro ao buscar dados iniciais:", response.statusText);
+          return null;
+        }
+    
+        const json: Scheduling[] = await response.json();
+        
+        const jsonOrdened = json.sort((a,b) => a.NOME.localeCompare(b.NOME, "pt-BR")) 
+        setAppAtendimentos(jsonOrdened)
+    
+      } catch (err) {
+        console.error("Erro ao carregar dados iniciais:", err);
+        return null;
+      }
+      finally{
+        setLoading(false)
+      }
+    }
+
+    getData()
+  }, [])
+
   // 1. Carregar e otimizar dados iniciais
   useEffect(() => {
     if (appAtendimentos.length === 0) {
@@ -189,7 +199,7 @@ export default function RelatoriosPage() {
           ...a,
           DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
           SEARCH_INDEX: searchIndex
-        };
+        } as OptimizedScheduling;
       });
 
       setOptimizedAtendimentos(optimized);
@@ -333,7 +343,64 @@ export default function RelatoriosPage() {
     onClose();
   }, [onClose]);
 
-  // 9. Memoizar dados paginados
+  // 9. Atualizar atendimento após upload (callback passado ao modal)
+  const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
+    // Atualizar appAtendimentos (array original)
+    setAppAtendimentos(prev => {
+      const foundIndex = prev.findIndex(p => (p._id && updated._id && p._id === updated._id) || (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO));
+      if (foundIndex === -1) {
+        return prev;
+      }
+      const copy = [...prev];
+      copy[foundIndex] = updated;
+      return copy;
+    });
+
+    // Atualizar optimizedAtendimentos
+    setOptimizedAtendimentos(prev => {
+      const foundIndex = prev.findIndex(p => (p._id && updated._id && p._id === updated._id) || (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO));
+      if (foundIndex === -1) {
+        return prev;
+      }
+      const copy = [...prev];
+      copy[foundIndex] = {
+        ...(updated as any),
+        DATAAGENDAMENTO_DATE_OBJ: new Date((updated as any).DATAAGENDAMENTO_DATE),
+        SEARCH_INDEX: [
+          updated.NOME?.toLowerCase() || '',
+          updated.CPFFUNCIONARIO || '',
+          updated.MATRICULAFUNCIONARIO?.toLowerCase() || '',
+          updated.NOMECARGO?.toLowerCase() || '',
+          updated.NOMEEMPRESA?.toLowerCase() || ''
+        ].join('|')
+      } as OptimizedScheduling;
+      return copy;
+    });
+
+    // Atualizar filteredAtendimentos (se o atendimento estiver presente nos filtrados)
+    setFilteredAtendimentos(prev => {
+      const foundIndex = prev.findIndex(p => (p._id && updated._id && p._id === updated._id) || (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO));
+      if (foundIndex === -1) return prev;
+      const copy = [...prev];
+      copy[foundIndex] = {
+        ...(updated as any),
+        DATAAGENDAMENTO_DATE_OBJ: new Date((updated as any).DATAAGENDAMENTO_DATE),
+        SEARCH_INDEX: [
+          updated.NOME?.toLowerCase() || '',
+          updated.CPFFUNCIONARIO || '',
+          updated.MATRICULAFUNCIONARIO?.toLowerCase() || '',
+          updated.NOMECARGO?.toLowerCase() || '',
+          updated.NOMEEMPRESA?.toLowerCase() || ''
+        ].join('|')
+      } as OptimizedScheduling;
+      return copy;
+    });
+
+    // Atualizar selectedAtendimento no modal se estiver aberto
+    setSelectedAtendimento(updated);
+  }, []);
+
+  // 9b. Memoizar dados paginados
   const paginatedItems = useMemo(() => {
     if (!showResults) return [];
     const startIndex = (page - 1) * rowsPerPage;
@@ -428,44 +495,26 @@ export default function RelatoriosPage() {
         <LazyModalContent
           atendimento={selectedAtendimento}
           onClose={handleCloseModal}
+          onUpdateScheduling={handleUpdateSchedulingFromModal}
         />
       </Suspense>
     );
-  }, [selectedAtendimento, handleCloseModal]);
+  }, [selectedAtendimento, handleCloseModal, handleUpdateSchedulingFromModal]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div>
+      <HeaderApp  onLogout={() => { logout(); router.push("/"); }} children={null} />
+
       {/* Cabeçalho */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center p-6 space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Relatórios de Atendimento</h1>
           <p className="text-gray-600">Configure os filtros e clique em "Aplicar Filtros" para ver os resultados</p>
         </div>
-        {/* <div className="flex gap-2">
-          <Button
-            color="primary"
-            variant="flat"
-            startContent={<DownloadIcon size={16} />}
-            isLoading={exportLoading}
-            onPress={() => exportRelatorio('csv')}
-            isDisabled={!showResults || filteredAtendimentos.length === 0}
-          >
-            Exportar CSV
-          </Button>
-          <Button
-            color="primary"
-            startContent={<DownloadIcon size={16} />}
-            isLoading={exportLoading}
-            onPress={() => exportRelatorio('pdf')}
-            isDisabled={!showResults || filteredAtendimentos.length === 0}
-          >
-            Exportar PDF
-          </Button>
-        </div> */}
       </div>
 
       {/* Filtros */}
-      <Card>
+      <Card className='m-6'>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <FilterIcon size={20} className="text-primary" />
@@ -473,11 +522,12 @@ export default function RelatoriosPage() {
           </div>
           <div className="flex gap-2">
             <Button
-              color="primary"
+              color="success"
               startContent={<CheckIcon size={16} />}
               onPress={handleApplyFilters}
               isLoading={isFiltering}
               isDisabled={!hasActiveFilters}
+              className='text-white'
             >
               Aplicar Filtros
             </Button>
@@ -491,19 +541,8 @@ export default function RelatoriosPage() {
         </CardHeader>
         <CardBody>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <DatePicker
-              label="Data Início"
-              value={filters.dataInicio}
-              onChange={(value) => handleFilterChange('dataInicio', value)}
-            />
-            
-            <DatePicker
-              label="Data Fim"
-              value={filters.dataFim}
-              onChange={(value) => handleFilterChange('dataFim', value)}
-            />
-            
             <Select
+              size='sm'
               label="Empresa"
               selectedKeys={filters.empresa ? [filters.empresa] : []}
               onSelectionChange={(keys) => handleFilterChange('empresa', Array.from(keys)[0] || '')}
@@ -516,6 +555,7 @@ export default function RelatoriosPage() {
             </Select>
             
             <Select
+              size='sm'
               label="Exame"
               selectedKeys={filters.exame ? [filters.exame] : []}
               onSelectionChange={(keys) => handleFilterChange('exame', Array.from(keys)[0] || '')}
@@ -528,6 +568,7 @@ export default function RelatoriosPage() {
             </Select>
             
             <Select
+              size='sm'
               label="Status"
               selectedKeys={filters.status ? [filters.status] : []}
               onSelectionChange={(keys) => handleFilterChange('status', Array.from(keys)[0] || '')}
@@ -566,7 +607,7 @@ export default function RelatoriosPage() {
 
       {/* Tabela de Resultados - Só mostra quando há resultados */}
       {showResults && (
-        <Card>
+        <Card className='m-6'>
           <CardHeader className="flex justify-between items-center">
             <h2 className="text-lg font-semibold">Resultados</h2>
             <div className="text-sm text-gray-500">
@@ -584,7 +625,7 @@ export default function RelatoriosPage() {
                   <Table aria-label="Tabela de atendimentos">
                     <TableHeader>
                       <TableColumn>DATA</TableColumn>
-                      <TableColumn>PACIENTE</TableColumn>
+                      <TableColumn>FUNCIONÁRIO</TableColumn>
                       <TableColumn>EMPRESA</TableColumn>
                       <TableColumn>CARGO</TableColumn>
                       <TableColumn>TIPO EXAME</TableColumn>
@@ -598,8 +639,8 @@ export default function RelatoriosPage() {
                           <TableCell>{atendimento.DATAAGENDAMENTO}</TableCell>
                           <TableCell>
                             <div>
-                              <p className="font-medium">{atendimento.NOME}</p>
-                              <p className="text-sm text-gray-500">{atendimento.CPFFUNCIONARIO}</p>
+                              <p className="font-medium text-sm">{atendimento.NOME}</p>
+                              <p className="text-xs text-gray-500">{formatCPF(atendimento.CPFFUNCIONARIO)}</p>
                             </div>
                           </TableCell>
                           <TableCell>{atendimento.NOMEEMPRESA}</TableCell>
@@ -662,7 +703,7 @@ export default function RelatoriosPage() {
       <Modal 
         isOpen={isOpen} 
         onClose={handleCloseModal} 
-        size="4xl"
+        size="5xl"
         scrollBehavior="inside"
         classNames={{
           base: "max-h-[90vh]",

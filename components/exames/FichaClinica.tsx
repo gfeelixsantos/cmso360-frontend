@@ -306,8 +306,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   
   const [formData, setFormData] = useState<FichaClinicaData>({
     ...VALOR_INICIAL,
-    codigoMedico: user?.perfil?.includes("MEDICO") ? user.codigo : "",
-    medico: user?.perfil?.includes("MEDICO") ? user.nome : "",
+    codigoMedico: user?.nome? user.codigo : "",
+    medico:user?.nome? user.nome : "",
   });
 
   const [showObservacoesPessoais, setShowObservacoesPessoais] = useState<boolean>(false);
@@ -484,7 +484,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     
     setIsLoading(true);
     try {
-      await onSave?.(formData);
+      onSave?.(formData);
     } finally {
       setIsLoading(false);
     }
@@ -632,7 +632,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       />
 
       {/* 2. Anamnese e Histórico Familiar */}
-      {tipoAdmissional && (
+      {(tipoAdmissional && !agendamento?.TIPOEXAMENOME.includes("ADM")) && (
         <>
           <Card className="p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle title="Anamnese e Histórico Familiar" />

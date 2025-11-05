@@ -14,7 +14,6 @@ export default function HeaderExame({ agendamento, exame}: HeaderExameProp) {
 
     // Exibe mensagem de kit credenciada
     useEffect(() => {
-        setIsKitCredenciada(true);
         if (agendamento && agendamento.ASOSTATUS  === "KIT_CREDENCIADA") {
             setIsKitCredenciada(true);
         }

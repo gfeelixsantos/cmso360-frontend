@@ -1,8 +1,10 @@
 import { IUserInfo } from "@/lib/user/interfaces/IUser"
+import { getCurrentUser } from "@/lib/utils"
 import { Link } from "@heroui/react"
 import { motion, AnimatePresence } from "framer-motion"
 import { LogOut, User, Settings, ChevronDown, Bell, AlertCircle, CheckCircle } from "lucide-react"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
 import { useState, useRef, useEffect } from "react"
 
 interface Notification {
@@ -85,19 +87,10 @@ const NotificationsPanel: React.FC<{
 }
 
 interface HeaderProps {
-  user: IUserInfo
   onLogout: () => void;
   children: React.ReactNode;
 }
 
-// Funções utilitárias
-const getInitials = (nome: string) =>
-  nome
-    .split(" ")
-    .map((n) => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
 
 const getSpecialtyColor = (especialidade: string) => {
   const colorMap: Record<string, string> = {
@@ -111,12 +104,23 @@ const getSpecialtyColor = (especialidade: string) => {
 }
 
 // Componente Header atualizado
-export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) => {
+export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
+  const router = useRouter();
+  const [user, setUser] = useState<IUserInfo | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [showNotifications, setShowNotifications] = useState(false)
   
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      router.push("/");
+    } else {
+      setUser(currentUser);
+    }
+  }, [router]);
 
   // Fechar dropdown ao clicar fora
   useEffect(() => {
@@ -244,14 +248,14 @@ export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) =
                   {/* Nome + perfil (visível em telas médias para cima) */}
                   <div className="hidden md:block text-left">
                     <p className="text-sm font-semibold text-gray-900">
-                      {user.nome}
+                      {user?.nome}
                     </p>
                     <p
                       className={`text-xs px-2 py-0.5 rounded-full font-medium text-center border shadow-sm ${getSpecialtyColor(
-                        user.perfil
+                        user?.perfil ?? ""
                       )}`}
                     >
-                      {user.perfil}
+                      {user?.perfil}
                     </p>
                   </div>
 
@@ -274,7 +278,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ user, onLogout, children }) =
                       aria-orientation="vertical"
                     >
                       <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">{user.nome}</p>
+                        <p className="text-sm font-medium text-gray-900">{user?.nome}</p>
                       </div>
                       
                       <button

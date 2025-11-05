@@ -736,45 +736,45 @@ const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLIn
 
       // Enviar para backend...
       
-      const res = await simulateUploadFile(state.file, (p) => {
-        setUploadStates((prev) => ({
-          ...prev,
-          [selectedRecord._id as string]: {
-            ...(prev[selectedRecord._id as string] || {}),
-            [codigoExame]: { ...(prev[selectedRecord._id as string]?.[codigoExame] || {}), file: state.file, uploading: true, progress: p },
-          },
-        }));
-      });
+      // const res = await simulateUploadFile(state.file, (p) => {
+      //   setUploadStates((prev) => ({
+      //     ...prev,
+      //     [selectedRecord._id as string]: {
+      //       ...(prev[selectedRecord._id as string] || {}),
+      //       [codigoExame]: { ...(prev[selectedRecord._id as string]?.[codigoExame] || {}), file: state.file, uploading: true, progress: p },
+      //     },
+      //   }));
+      // });
 
-      setRecords((prev) =>
-        prev.map((rec) => {
-          if (rec._id !== selectedRecord._id) return rec;
+      // setRecords((prev) =>
+      //   prev.map((rec) => {
+      //     if (rec._id !== selectedRecord._id) return rec;
           
-          const newExames = rec.EXAMES.map((ex) => (ex.codigoExame === codigoExame ? { ...ex, url: res.url, status: "CONCLUIDO" } : ex));
+      //     const newExames = rec.EXAMES.map((ex) => (ex.codigoExame === codigoExame ? { ...ex, url: res.url, status: "CONCLUIDO" } : ex));
           
-          const exameDetails = rec.EXAMES.find(e => e.codigoExame === codigoExame);
-          const newPdf: PdfUrl = { 
-            url: res.url, 
-            title: `Resultado: ${exameDetails?.grupo || codigoExame}`, 
-            type: "exame",
-            grupo: exameDetails?.grupo 
-          };
-          const pdfUrlExists = rec.pdfUrls.some(p => p.url === res.url);
-          const newPdfUrls = pdfUrlExists ? rec.pdfUrls : [...rec.pdfUrls, newPdf];
+      //     const exameDetails = rec.EXAMES.find(e => e.codigoExame === codigoExame);
+      //     const newPdf: PdfUrl = { 
+      //       url: res.url, 
+      //       title: `Resultado: ${exameDetails?.grupo || codigoExame}`, 
+      //       type: "exame",
+      //       grupo: exameDetails?.grupo 
+      //     };
+      //     const pdfUrlExists = rec.pdfUrls.some(p => p.url === res.url);
+      //     const newPdfUrls = pdfUrlExists ? rec.pdfUrls : [...rec.pdfUrls, newPdf];
           
-          return { ...rec, EXAMES: newExames, pdfUrls: newPdfUrls };
-        })
-      );
+      //     return { ...rec, EXAMES: newExames, pdfUrls: newPdfUrls };
+      //   })
+      // );
       
-      setTimeout(() => {
-        setUploadStates((prev) => {
-          const copy = { ...prev };
-          if (copy[selectedRecord._id as string] && copy[selectedRecord._id as string][codigoExame]) {
-            delete copy[selectedRecord._id as string][codigoExame];
-          }
-          return copy;
-        });
-      }, 1200);
+      // setTimeout(() => {
+      //   setUploadStates((prev) => {
+      //     const copy = { ...prev };
+      //     if (copy[selectedRecord._id as string] && copy[selectedRecord._id as string][codigoExame]) {
+      //       delete copy[selectedRecord._id as string][codigoExame];
+      //     }
+      //     return copy;
+      //   });
+      // }, 1200);
       
       addToast({
         title: "Upload realizado",
@@ -832,7 +832,6 @@ const handleFileSelected = (codigoExame: string, event: React.ChangeEvent<HTMLIn
     <div className="min-h-screen flex flex-col bg-default-50 antialiased">
       <HeaderApp
         onLogout={logout}
-        user={user}
         children={<h1 className="text-lg font-bold">Prontuários</h1>}
       />
 

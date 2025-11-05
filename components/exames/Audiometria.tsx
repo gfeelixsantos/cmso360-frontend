@@ -236,7 +236,7 @@ class AudiometriaCalculator {
   }
 
   static classificarPerdaLloydKaplan(media: number): string {
-    if (media <= 25) return 'Limiares auditivos dentro dos padrões da normalidade';
+    if (media <= 25) return 'Dentro dos padrões da normalidade';
     if (media <= 40) return 'Perda Auditiva Leve';
     if (media <= 70) return 'Perda Auditiva Moderada';
     if (media <= 90) return 'Perda Auditiva Severa';
@@ -304,6 +304,14 @@ class AudiometriaCalculator {
     const configuracaoOD = this.calcularConfiguracao(vaLimiaresOD);
     const configuracaoOE = this.calcularConfiguracao(vaLimiaresOE);
 
+    // ATUALIZAÇÃO: Definir "-" para Grau de Perda e Tipo de Perda quando dentro da normalidade
+    const tipoPerdaOD = classificacaoOD.includes('normalidade') ? '-' : 'Neurossensorial';
+    const tipoPerdaOE = classificacaoOE.includes('normalidade') ? '-' : 'Neurossensorial';
+    
+    // ATUALIZAÇÃO: Definir "-" para Grau de Perda quando dentro da normalidade
+    const grauPerdaOD = classificacaoOD.includes('normalidade') ? '-' : classificacaoOD;
+    const grauPerdaOE = classificacaoOE.includes('normalidade') ? '-' : classificacaoOE;
+
     const resultadoOD = classificacaoOD.includes('normalidade') 
       ? 'Limiares auditivos dentro dos padrões da normalidade'
       : `${classificacaoOD} Neurossensorial ${configuracaoOD} nas frequências ${frequenciasAlteradasOD || '250 a 8000 Hz'}`;
@@ -317,15 +325,17 @@ class AudiometriaCalculator {
       mediaTonalOE,
       perdaAuditivaOD: mediaTonalOD > 0 ? `${mediaTonalOD} dB` : '0 dB',
       perdaAuditivaOE: mediaTonalOE > 0 ? `${mediaTonalOE} dB` : '0 dB',
-      classificacaoOD,
-      classificacaoOE,
+      // ATUALIZAÇÃO: Usar os novos valores com "-" quando aplicável
+      classificacaoOD: grauPerdaOD,
+      classificacaoOE: grauPerdaOE,
       criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
       frequenciasAlteradasOD,
       frequenciasAlteradasOE,
       configuracaoOD,
       configuracaoOE,
-      tipoPerdaOD: 'Neurossensorial',
-      tipoPerdaOE: 'Neurossensorial',
+      // ATUALIZAÇÃO: Usar os novos valores com "-" quando aplicável
+      tipoPerdaOD,
+      tipoPerdaOE,
       resultadoOD,
       resultadoOE,
       conclusao: (classificacaoOD.includes('normalidade') && classificacaoOE.includes('normalidade')) 

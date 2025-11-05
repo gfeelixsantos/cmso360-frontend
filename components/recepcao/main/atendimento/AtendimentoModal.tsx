@@ -1308,6 +1308,7 @@ const PacienteItem = React.memo(function _PacienteItem({
     <div>
       {(empresa && codigoFuncionario) && (
         <Checkbox 
+          color="success"
           isSelected={isBindServiceSelected} 
           onValueChange={handleBindService}
           disabled={isLoading}

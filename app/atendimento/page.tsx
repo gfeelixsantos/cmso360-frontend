@@ -300,20 +300,20 @@ useEffect(() => {
   const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
   const handleTicketUpdated = (ticket: Ticket) => {
     addOrUpdate(ticket);
-    console.log("okss", ticket)
+
     // Atualiza o estado 'agendamentos' de forma imutável
-    // setAgendamentos(prev => {
-    //   return prev.map(agendamento => {
-    //     // Verifica se este agendamento tem o ticket que foi atualizado
-    //     if (agendamento.TICKET?.id === ticket.id) {
-    //       return {
-    //         ...agendamento,
-    //         TICKET: ticket // Atualiza o ticket dentro do agendamento
-    //       };
-    //     } 
-    //     return agendamento;
-    //   });
-    // });
+    setAgendamentos(prev => {
+      return prev.map(agendamento => {
+        // Verifica se este agendamento tem o ticket que foi atualizado
+        if (agendamento.TICKET?.id === ticket.id) {
+          return {
+            ...agendamento,
+            TICKET: ticket // Atualiza o ticket dentro do agendamento
+          };
+        } 
+        return agendamento;
+      });
+    });
   };
   const handleTicketError = (message: string) => console.error(JSON.parse(message));
   const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
@@ -404,17 +404,17 @@ useEffect(() => {
   s.on("connect_error", (err) => console.error("Erro ao conectar:", err));
 
   // Cleanup ao desmontar ou desconectar
-  // return () => {
-  //   s.off("connect");
-  //   s.off("disconnect");
-  //   s.off("connect_error");
-  //   s.off(EventType.TICKET_EMITED, handleTicketEmited);
-  //   s.off(EventType.TICKET_UPDATED, handleTicketUpdated);
-  //   s.off(EventType.TICKET_ERROR, handleTicketError);
-  //   s.off(EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
-  //   s.off(EventType.PREPARATION_REQUEST, handlePreparationRequest);
-  //   s.disconnect();
-  // };
+  return () => {
+    s.off("connect");
+    s.off("disconnect");
+    s.off("connect_error");
+    s.off(EventType.TICKET_EMITED, handleTicketEmited);
+    s.off(EventType.TICKET_UPDATED, handleTicketUpdated);
+    s.off(EventType.TICKET_ERROR, handleTicketError);
+    s.off(EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+    s.off(EventType.PREPARATION_REQUEST, handlePreparationRequest);
+    s.disconnect();
+  };
 }, [conectado]);
 
 
@@ -461,7 +461,6 @@ useEffect(() => {
   return (
     <div className="min-h-screen flex flex-col">
       <HeaderApp 
-        user={user} 
         onLogout={() => { logout(); router.push("/"); }}
         >
           {(conectado && socketState) && (

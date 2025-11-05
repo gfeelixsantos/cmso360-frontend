@@ -322,7 +322,7 @@ useEffect(() => {
     }
   };
 
-  // Registrar eventos
+  // Registrar eventos - DESABILITADO UPDATES DO BANCO EM 05/11/2025
   onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
   onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
   onEvent(s, EventType.TICKET_ERROR, handleTicketError);
@@ -424,7 +424,6 @@ useEffect(() => {
   return (
     <div className="min-h-screen flex flex-col">
       <HeaderApp 
-        user={user} 
         onLogout={() => { logout(); router.push("/"); }}
         >
           { conectado && (

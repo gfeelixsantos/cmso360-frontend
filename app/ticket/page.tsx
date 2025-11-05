@@ -295,19 +295,6 @@ const FullScreenFeedback = ({ type, message, ticketNumber, onClose }: {
           <XMarkIcon className="h-6 w-6 md:h-8 md:w-8" />
         </button>
         
-        <motion.div
-          initial={{ scale: 0.5, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.2, type: "spring", stiffness: 100 }}
-          className="mb-4 md:mb-6"
-        >
-          {type === 'success' ? (
-            <CheckBadgeIcon className="h-20 w-20 md:h-32 md:w-32 mx-auto" style={{ color: COLOR_PALETTE.secondary }} />
-          ) : (
-            <ExclamationTriangleIcon className="h-20 w-20 md:h-32 md:w-32 mx-auto text-red-200" />
-          )}
-        </motion.div>
-        
         <motion.h2 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -355,7 +342,7 @@ const FullScreenFeedback = ({ type, message, ticketNumber, onClose }: {
         <motion.div 
           initial={{ width: 0 }}
           animate={{ width: '100%' }}
-          transition={{ duration: 5, ease: "linear" }}
+          transition={{ duration: 3, ease: "linear" }}
           className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-3xl"
         />
       </div>
@@ -407,7 +394,7 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
 
       setFeedback({
         type: 'success',
-        message: 'Aguarde ser chamado pelo funcionário responsável.',
+        message: 'Aguarde ser chamado.',
         ticketNumber: formattedTicket
       });
       
