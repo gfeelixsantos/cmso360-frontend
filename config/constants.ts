@@ -6,6 +6,7 @@ const PORT=3333
 const NEST_URL_DEVELOP = `http://127.0.0.1:${PORT}/`
 
 export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
+console.log(NEST_URL)
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace("https", "ws")
 

@@ -15,16 +15,13 @@ import {
   Tooltip,
   Divider,
   Spinner,
-  Select,
-  SelectItem,
+  Input,
 } from '@heroui/react';
-import { FileTextIcon, UploadIcon, CheckCircleIcon } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User } from 'lucide-react';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus, ExamStatus } from '@/lib/scheduling/enum/scheduling.enum';
 import { NEST_SCHEDULINGS } from '@/config/constants';
 
-
-// Props corretas conforme o pai (page.tsx)
 interface LazyModalContentProps {
   atendimento: Scheduling;
   onClose: () => void;
@@ -99,74 +96,73 @@ const ExamesTable: React.FC<{
   atendimento: Scheduling;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }> = ({ exames, atendimento, onUpdateScheduling }) => {
-  // localExames para refletir alterações locais imediatamente
   const [localExames, setLocalExames] = useState<ExamRegister[]>(exames || []);
-  // mapa de arquivos selecionados por grupo
-  const [groupFiles, setGroupFiles] = useState<Record<string, File[]>>({});
-  // uploading flags por grupo
-  const [uploadingGroup, setUploadingGroup] = useState<Record<string, boolean>>({});
-  // success flags por grupo
-  const [successGroup, setSuccessGroup] = useState<Record<string, boolean>>({});
-  // error messages por grupo
-  const [errorGroup, setErrorGroup] = useState<Record<string, string>>({});
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, File>>({});
+  const [uploadingExams, setUploadingExams] = useState<Record<string, boolean>>({});
+  const [successExams, setSuccessExams] = useState<Record<string, boolean>>({});
+  const [errorExams, setErrorExams] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setLocalExames(exames || []);
   }, [exames]);
 
-  // Agrupa exames por grupo
-  const grupos = useMemo(() => {
-    const map = new Map<string, ExamRegister[]>();
-    for (const ex of localExames) {
-      const g = ex.grupo || 'Sem Grupo';
-      if (!map.has(g)) map.set(g, []);
-      map.get(g)!.push(ex);
+  // Filtra exames baseado no termo de busca
+  const filteredExames = useMemo(() => {
+    if (!searchTerm) return localExames;
+    return localExames.filter(exame =>
+      exame.nomeExame.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exame.codigoExame.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      exame.grupo?.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [localExames, searchTerm]);
+
+  const getExamStatusColor = (status: string) => {
+    switch (status) {
+      case 'FINALIZADO': return 'success';
+      case 'PENDENTE': return 'warning';
+      case 'AGUARDANDO_RESULTADO': return 'secondary';
+      default: return 'default';
     }
-    return Array.from(map.entries()); // [ [grupoName, exams[]], ... ]
-  }, [localExames]);
-
-  const canShowUploadForExamStatus = (status: string) => {
-    // Mostra o botão somente quando o exame estiver aguardando resultado.
-    // Aceitamos dois valores comuns: constante do enum ou string 'PENDENTE' presente nos dados.
-    const allowed = [
-      ExamStatus.AGUARDANDO_RESULTADO, // se existir no enum
-      'AGUARDANDO_RESULTADO',
-    ];
-    return allowed.includes(status);
   };
 
-  const handleGroupFilesChange = (groupName: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files ? Array.from(e.target.files) : [];
-    setGroupFiles(prev => ({ ...prev, [groupName]: files }));
-    setSuccessGroup(prev => ({ ...prev, [groupName]: false }));
-    setErrorGroup(prev => ({ ...prev, [groupName]: '' }));
+  const getExamStatusIcon = (status: string) => {
+    switch (status) {
+      case 'FINALIZADO': return <CheckCircle size={14} />;
+      case 'PENDENTE': return <Clock size={14} />;
+      case 'AGUARDANDO_RESULTADO': return <AlertCircle size={14} />;
+      default: return <Clock size={14} />;
+    }
   };
 
-  const handleUploadGroup = async (groupName: string) => {
-    const files = groupFiles[groupName];
-    if (!files || files.length === 0) {
-      setErrorGroup(prev => ({ ...prev, [groupName]: 'Selecione ao menos um PDF.' }));
+  const handleFileChange = (examKey: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFiles(prev => ({ ...prev, [examKey]: file }));
+      setSuccessExams(prev => ({ ...prev, [examKey]: false }));
+      setErrorExams(prev => ({ ...prev, [examKey]: '' }));
+    }
+  };
+
+  const handleUploadExam = async (exame: ExamRegister) => {
+    const examKey = exame.sequencialResultadoExame || exame.codigoExame;
+    const file = selectedFiles[examKey];
+
+    if (!file) {
+      setErrorExams(prev => ({ ...prev, [examKey]: 'Selecione um arquivo PDF.' }));
       return;
     }
 
-    setUploadingGroup(prev => ({ ...prev, [groupName]: true }));
-    setErrorGroup(prev => ({ ...prev, [groupName]: '' }));
-    setSuccessGroup(prev => ({ ...prev, [groupName]: false }));
+    setUploadingExams(prev => ({ ...prev, [examKey]: true }));
+    setErrorExams(prev => ({ ...prev, [examKey]: '' }));
+    setSuccessExams(prev => ({ ...prev, [examKey]: false }));
 
     try {
-      // Prepara scheduling para envio (marca url vazio nos exames do grupo para backend processar)
-      const schedulingToSend: Scheduling = {
-        ...atendimento,
-        EXAMES: atendimento.EXAMES.map(e => e.grupo === groupName ? { ...e, url: '' } : e)
-      };
-
       const formData = new FormData();
-      formData.append('schedulingid', schedulingToSend._id);
-      formData.append('grupo', groupName)
-      // múltiplos arquivos
-      for (const file of files) {
-        formData.append('files', file);
-      }
+      formData.append('schedulingid', atendimento._id);
+      formData.append('grupo', exame.grupo || '');
+      formData.append('codigoExame', exame.codigoExame);
+      formData.append('files', file);
 
       const resp = await fetch(`${NEST_SCHEDULINGS}/resultadoexame`, {
         method: 'POST',
@@ -178,145 +174,258 @@ const ExamesTable: React.FC<{
         throw new Error(text || 'Erro no upload');
       }
 
-      // backend deve retornar o scheduling atualizado (com EXAMES[].url preenchidos)
       const updatedScheduling: Scheduling = await resp.json();
-
-      // Atualiza localExames com a resposta do backend (fallback para objectURL se backend não retornar urls)
       if (updatedScheduling && updatedScheduling.EXAMES) {
         setLocalExames(updatedScheduling.EXAMES);
-      } else {
-        // fallback — cria URLs locais apenas para visualização
-        setLocalExames(prev => prev.map(e => e.grupo === groupName ? { ...e, url: URL.createObjectURL(files[0]) } : e));
+        setSelectedFiles(prev => {
+          const newFiles = { ...prev };
+          delete newFiles[examKey];
+          return newFiles;
+        });
       }
 
-      // sinaliza sucesso e chama callback para atualizar pai
-      setSuccessGroup(prev => ({ ...prev, [groupName]: true }));
+      setSuccessExams(prev => ({ ...prev, [examKey]: true }));
       if (onUpdateScheduling) onUpdateScheduling(updatedScheduling);
 
     } catch (err: any) {
-      console.error('Erro upload grupo', groupName, err);
-      setErrorGroup(prev => ({ ...prev, [groupName]: err?.message || 'Falha no upload' }));
+      console.error('Erro upload exame', examKey, err);
+      setErrorExams(prev => ({ ...prev, [examKey]: err?.message || 'Falha no upload' }));
     } finally {
-      setUploadingGroup(prev => ({ ...prev, [groupName]: false }));
-      // não limpar imediatamente os arquivos para o usuário ver os nomes — vamos manter por curto período
-      // se quiser limpar: setGroupFiles(prev => ({ ...prev, [groupName]: [] }));
+      setUploadingExams(prev => ({ ...prev, [examKey]: false }));
     }
   };
 
+  const formatDate = (dateString: string) => {
+    if (!dateString) return '-';
+    return new Date(dateString).toLocaleDateString('pt-BR');
+  };
+
   if (!localExames.length) {
-    return <div className="text-center py-8 text-gray-500 text-sm">Nenhum exame encontrado.</div>;
+    return (
+      <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
+        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum exame encontrado</h3>
+        <p className="text-gray-500">Não há exames cadastrados para este atendimento.</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      {grupos.map(([groupName, examsInGroup]) => (
-        <div key={groupName} className="bg-white border rounded-md p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <h4 className="font-semibold">{groupName}</h4>
-              <div className="text-sm text-gray-500">{examsInGroup.length} exame(s)</div>
-              {successGroup[groupName] && (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <CheckCircleIcon size={16} />
-                  <span>Arquivos enviados</span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {/* input file multiple (oculto) */}
-              <input
-                id={`group-file-${groupName}`}
-                type="file"
-                accept="application/pdf"
-                multiple
-                className="hidden"
-                onChange={(e) => handleGroupFilesChange(groupName, e)}
-              />
-
-              {/* label botão selecionar */}
-              <label
-                htmlFor={`group-file-${groupName}`}
-                className={`cursor-pointer px-3 py-2 rounded text-sm font-medium border ${
-                  groupFiles[groupName] && groupFiles[groupName].length > 0 ? 'bg-gray-100 border-gray-300' : 'bg-blue-600 text-white hover:bg-blue-700'
-                }`}
-              >
-                {groupFiles[groupName] && groupFiles[groupName].length > 0 ? `${groupFiles[groupName].length} arquivo(s) selecionado(s)` : 'Selecionar PDF(s)'}
-              </label>
-
-              {/* botão enviar — habilitado apenas se houver ao menos um exame do grupo com status elegível */}
-              <Button
-                size="sm"
-                disabled={!groupFiles[groupName] || groupFiles[groupName].length === 0 || uploadingGroup[groupName]}
-                onPress={() => handleUploadGroup(groupName)}
-                startContent={uploadingGroup[groupName] ? <Spinner size="sm" /> : <UploadIcon size={16} />}
-              >
-                {uploadingGroup[groupName] ? 'Enviando...' : 'Enviar grupo'}
-              </Button>
-            </div>
-          </div>
-
-          {/* exibe nomes dos arquivos selecionados */}
-          {groupFiles[groupName] && groupFiles[groupName].length > 0 && (
-            <div className="mt-3">
-              <div className="text-xs text-gray-600 mb-1">Arquivos selecionados:</div>
-              <div className="flex flex-wrap gap-2">
-                {groupFiles[groupName].map((f, idx) => (
-                  <Chip key={idx} size="sm">{f.name}</Chip>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* exibe erro se houver */}
-          {errorGroup[groupName] && (
-            <div className="mt-2 text-sm text-red-600">{errorGroup[groupName]}</div>
-          )}
-
-          {/* tabela interna com exames do grupo */}
-          <div className="mt-4 overflow-x-auto">
-            <Table aria-label={`Exames do grupo ${groupName}`}>
-              <TableHeader>
-                <TableColumn>EXAME</TableColumn>
-                <TableColumn>DATA</TableColumn>
-                <TableColumn>PROFISSIONAL</TableColumn>
-                <TableColumn>STATUS</TableColumn>
-                <TableColumn>RESULTADO</TableColumn>
-              </TableHeader>
-              <TableBody>
-                {examsInGroup.map((ex, idx) => (
-                  <TableRow key={ex.sequencialResultadoExame || ex.codigoExame || idx}>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        <span className="font-medium text-sm">{ex.nomeExame}</span>
-                        <span className="text-xs text-gray-500">{ex.codigoExame}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-sm">{ex.dataExame || '-'}</TableCell>
-                    <TableCell className="text-sm">{ex.profissional || '-'}</TableCell>
-                    <TableCell>
-                      <Chip color={ex.status === 'FINALIZADO' ? 'success' : ex.status === 'PENDENTE' ? 'warning' : 'default'} size="sm">
-                        {ex.status}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      {ex.url ? (
-                        <Tooltip content="Visualizar resultado em PDF">
-                          <Button isIconOnly size="sm" variant="light" onPress={() => window.open(ex.url, '_blank')}>
-                            <FileTextIcon size={16} />
-                          </Button>
-                        </Tooltip>
-                      ) : (
-                        <span className="text-xs text-gray-400">Sem resultado</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+    <div className="space-y-4">
+      {/* Header da Tabela */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">Exames Realizados</h3>
+          <p className="text-sm text-gray-600">
+            {filteredExames.length} de {localExames.length} exames
+          </p>
         </div>
-      ))}
+        
+        <Input
+          placeholder="Buscar exames..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          startContent={<FileText size={16} className="text-gray-400" />}
+          className="w-full sm:w-64"
+          size="sm"
+        />
+      </div>
+
+      {/* Tabela */}
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <Table 
+          aria-label="Tabela de exames"
+          removeWrapper
+          classNames={{
+            base: "min-w-full",
+            th: "bg-gray-50 text-gray-700 font-semibold text-sm border-b px-4 py-3",
+            td: "border-b border-gray-100 px-4 py-3",
+            tr: "hover:bg-gray-50 transition-colors"
+          }}
+        >
+          <TableHeader>
+            <TableColumn className="w-8/24">EXAME</TableColumn>
+            <TableColumn className="w-3/24">GRUPO</TableColumn>
+            <TableColumn className="w-2/24">DATA</TableColumn>
+            <TableColumn className="w-2/24">STATUS</TableColumn>
+            <TableColumn className="w-4/24">RESULTADO</TableColumn>
+            <TableColumn className="w-5/24 text-center">AÇÕES</TableColumn>
+          </TableHeader>
+          <TableBody>
+            {filteredExames.map((exame, index) => {
+              const examKey = exame.sequencialResultadoExame || exame.codigoExame || index.toString();
+              const hasFileSelected = !!selectedFiles[examKey];
+              const isUploading = uploadingExams[examKey];
+              const isSuccess = successExams[examKey];
+              const error = errorExams[examKey];
+
+              return (
+                <TableRow key={examKey}>
+                  {/* Coluna Exame */}
+                  <TableCell>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-gray-900 text-sm">{exame.nomeExame}</span>
+                      <span className="text-xs text-gray-500 mt-1">{exame.codigoExame}</span>
+                    </div>
+                  </TableCell>
+
+                  {/* Coluna Grupo */}
+                  <TableCell>
+                    <Chip size="sm" variant="flat" color="default" className="text-xs">
+                      {exame.grupo || 'Sem grupo'}
+                    </Chip>
+                  </TableCell>
+
+                  {/* Coluna Data */}
+                  <TableCell>
+                    <div className="text-sm text-gray-600">
+                      {formatDate(exame.dataExame)}
+                    </div>
+                  </TableCell>
+
+                  {/* Coluna Status */}
+                  <TableCell>
+                    <Chip 
+                      color={getExamStatusColor(exame.status)} 
+                      size="sm"
+                      variant="flat"
+                      startContent={getExamStatusIcon(exame.status)}
+                      classNames={{
+                        base: "px-2 py-1",
+                        content: "text-xs font-medium"
+                      }}
+                    >
+                      {exame.status}
+                    </Chip>
+                  </TableCell>
+
+                  {/* Coluna Resultado */}
+                  <TableCell>
+                    {exame.url ? (
+                      <div className="flex items-center gap-2">
+                        <FileText size={16} className="text-green-600" />
+                        <span className="text-sm text-green-600 font-medium">Disponível</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-400">Não enviado</span>
+                    )}
+                  </TableCell>
+
+                  {/* Coluna Ações */}
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-2">
+                      {exame.url ? (
+                        <>
+                          <Tooltip content="Visualizar">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => window.open(exame.url, '_blank')}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Eye size={16} />
+                            </Button>
+                          </Tooltip>
+                          <Tooltip content="Download">
+                            <Button
+                              isIconOnly
+                              size="sm"
+                              variant="light"
+                              onPress={() => {
+                                const link = document.createElement('a');
+                                link.href = exame.url;
+                                link.download = `${exame.nomeExame}.pdf`;
+                                link.click();
+                              }}
+                              className="text-gray-600 hover:text-gray-700"
+                            >
+                              <Download size={16} />
+                            </Button>
+                          </Tooltip>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          {/* Input file oculto */}
+                          <input
+                            id={`file-${examKey}`}
+                            type="file"
+                            accept="application/pdf"
+                            className="hidden"
+                            onChange={(e) => handleFileChange(examKey, e)}
+                          />
+                          
+                          {/* Botão selecionar arquivo */}
+                          <label
+                            htmlFor={`file-${examKey}`}
+                            className={`cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                              hasFileSelected
+                                ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                                : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                            }`}
+                          >
+                            <Upload size={12} />
+                            {hasFileSelected ? 'Arquivo Selecionado' : 'Selecionar PDF'}
+                          </label>
+
+                          {/* Botão enviar */}
+                          <Button
+                            size="sm"
+                            color="primary"
+                            disabled={!hasFileSelected || isUploading}
+                            onPress={() => handleUploadExam(exame)}
+                            startContent={isUploading ? <Spinner size="sm" /> : <Upload size={12} />}
+                            className="text-xs h-8 min-w-20"
+                          >
+                            {isUploading ? 'Enviando...' : 'Enviar'}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mensagens de feedback */}
+                    {hasFileSelected && selectedFiles[examKey] && (
+                      <div className="mt-2 text-xs text-gray-600">
+                        Arquivo: {selectedFiles[examKey].name}
+                      </div>
+                    )}
+                    
+                    {isSuccess && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-green-600">
+                        <CheckCircle size={12} />
+                        <span>Enviado com sucesso!</span>
+                      </div>
+                    )}
+                    
+                    {error && (
+                      <div className="mt-2 flex items-center gap-1 text-xs text-red-600">
+                        <AlertCircle size={12} />
+                        <span>{error}</span>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+
+      {/* Estatísticas */}
+      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+          <span>Finalizados: {localExames.filter(e => e.status === 'FINALIZADO').length}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+          <span>Pendentes: {localExames.filter(e => e.status === 'PENDENTE').length}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+          <span>Com resultado: {localExames.filter(e => e.url).length}</span>
+        </div>
+      </div>
     </div>
   );
 };
