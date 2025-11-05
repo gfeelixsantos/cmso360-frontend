@@ -63,7 +63,7 @@ const Header = ({ unidade }: { unidade?: string }) => {
 
   return (
     <header 
-      className="w-full text-white p-4 md:p-6 rounded-t-2xl shadow-lg"
+      className="w-full text-white p-2 md:p-6 rounded-t-2xl shadow-lg"
       style={{ 
         background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.dark} 100%)` 
       }}

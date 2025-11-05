@@ -82,6 +82,25 @@ export const formatCPF = (value: string) => {
   return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
 };
 
+export function formatPhone(value: string): string {
+  if (!value) return "";
+
+  // Remove tudo que não for número
+  const onlyNums = value.replace(/\D/g, "");
+
+  // Aplica a máscara passo a passo
+  if (onlyNums.length <= 2) {
+    return `(${onlyNums}`;
+  } else if (onlyNums.length <= 7) {
+    return `(${onlyNums.slice(0, 2)}) ${onlyNums.slice(2)}`;
+  } else if (onlyNums.length <= 11) {
+    return `(${onlyNums.slice(0, 2)}) ${onlyNums.slice(2, 7)}-${onlyNums.slice(7)}`;
+  } else {
+    return `(${onlyNums.slice(0, 2)}) ${onlyNums.slice(2, 7)}-${onlyNums.slice(7, 11)}`;
+  }
+}
+
+
 export function formatBrithdayDate(value: string) {
   const numeric = value.replace(/\D/g, "").slice(0,8);
   let formatted = numeric;

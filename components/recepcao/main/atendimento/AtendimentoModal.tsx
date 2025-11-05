@@ -27,11 +27,11 @@ import { FixedSizeList as List, ListChildComponentProps } from "react-window"
 import { PreparationRequest, Ticket, TicketActionType, TicketEmitedDto, TicketGroups, TicketStatus, TicketTypes } from "@/lib/ticket/ticket"
 
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa"
-import { EMPRESAS_COM_PSICOLOGA, EXAMES_LIST, NEST_SCHEDULINGS, NEST_SCHEDULINGS_RECORDS, NEST_SOC_PEDIDOEXAME, NEST_TICKETS_URL, PREFERENCIAL_OPTIONS, TIPOS_EXAME } from "@/config/constants"
+import { EMPRESAS_COM_PSICOLOGA, EMPRESAS_CREDENCIADAS_SOC, EXAMES_LIST, NEST_SCHEDULINGS, NEST_SCHEDULINGS_RECORDS, NEST_SOC_PEDIDOEXAME, NEST_SOC_PEDIDOEXAME_CREDENCIADAS, NEST_TICKETS_URL, PREFERENCIAL_OPTIONS, TIPOS_EXAME } from "@/config/constants"
 import { AsoStatus, AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum"
 import { InformationCircleIcon } from "@heroicons/react/24/outline"
 import { FileUpload, Scheduling } from "@/lib/scheduling/interface/scheduling"
-import { convertRespAso, convertTipoAsoNome, copyToClipboard, formatBrithdayDate, formatCPF, toBase64 } from "@/lib/utils"
+import { convertRespAso, convertTipoAsoNome, copyToClipboard, formatBrithdayDate, formatCPF, formatPhone, toBase64 } from "@/lib/utils"
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum"
 import { IUserInfo } from "@/lib/user/interfaces/IUser"
 import { AsoFuncionarioDto } from "@/lib/soc/interfaces/AsoFuncionario"
@@ -82,6 +82,7 @@ export default function AtendimentoModalComplete({
   const [nome, setNome] = useState<string>("")
   const [dataNascimento, setDataNascimento] = useState<string>("")
   const [cpf, setCpf] = useState<string>("")
+  const [telefone, setTelefone] = useState<string>("")
   const [tipoExame, setTipoExame] = useState<string>("") // ToggleGroup value
   const [codigoExames, setCodigoExames] = useState<string[]>([])
   const [psicoPresencial, setPsicoPresencial] = useState<boolean>(false)
@@ -222,35 +223,41 @@ const handleBuscarFuncionario = useCallback(async () => {
 
   try {
     setIsLoading(true);
-
+      // Se for KIT e sem exames -> chama a função de busca
+    if (funcionarioSelecionado && (funcionarioSelecionado.CODIGOINTERNOEMPRESA?.includes("KIT") && funcionarioSelecionado.EXAMES.length === 0)) {
+      await handleAtendimentoCredenciada(funcionarioSelecionado);
+      setIsLoading(false);
+      return; 
+    }
+    else {
     const response = await fetch(`${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`);
 
-    if (response.ok) {
-      const prontuario: Scheduling = await response.json();
+      if (response.ok) {
+        const prontuario: Scheduling = await response.json();
 
-      // Seleciona o paciente normalmente
-      // handleDeselecionarAgendamento()
-      await handleSelecionarPacienteAgendamento(prontuario);
+        // Seleciona o paciente normalmente
+        // handleDeselecionarAgendamento()
+        await handleSelecionarPacienteAgendamento(prontuario);
 
-      // Localiza o índice na lista
-      const index = filteredAgendamentos.findIndex(
-        (a) => a.CODIGOPRONTUARIO === prontuario.CODIGOPRONTUARIO
-      );
+        // Localiza o índice na lista
+        const index = filteredAgendamentos.findIndex(
+          (a) => a.CODIGOPRONTUARIO === prontuario.CODIGOPRONTUARIO
+        );
 
-      // Faz o scroll até o funcionário encontrado
-      if (index !== -1 && listRef.current) {
-        listRef.current.scrollToItem(index, "center"); // pode ser "auto", "center" ou "smart"
+        // Faz o scroll até o funcionário encontrado
+        if (index !== -1 && listRef.current) {
+          listRef.current.scrollToItem(index, "center"); // pode ser "auto", "center" ou "smart"
+        }
+
+        return;
+      } else {
+        const { message } = await response.json();
+        alert(message);
+        handleDeselecionarAgendamento()
       }
-
-      return;
-    } else {
-      const { message } = await response.json();
-      alert(message);
-      handleDeselecionarAgendamento()
     }
   } catch (err) {
     alert(`Erro ao buscar funcionário: ${err}`);
-    handleDeselecionarAgendamento()
 
   } finally {
     setIsLoading(false);
@@ -260,86 +267,120 @@ const handleBuscarFuncionario = useCallback(async () => {
 
 
 
+const handleAtendimentoCredenciada = useCallback(async (paciente: Scheduling) => {
+  if (paciente.CODIGOINTERNOEMPRESA?.includes("KIT") && paciente.EXAMES.length === 0) {
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(`${NEST_SOC_PEDIDOEXAME_CREDENCIADAS}cpf=${paciente.CPFFUNCIONARIO}`);
+
+      if (response.ok) {
+        const examesJson = await response.json();
+
+        // ✅ Cria nova cópia de paciente (imutável)
+        const pacienteAtualizado = {
+          ...paciente,
+          EXAMES: [...paciente.EXAMES, ...examesJson],
+        };
+
+        console.log("Funcionário atualizado com exames:", pacienteAtualizado);
+
+        // ✅ Atualiza o estado reativo — isso re-renderiza a UI
+        setFuncionarioSelecionado(pacienteAtualizado);
+
+        // Se quiser que o restante da lógica de seleção rode também:
+        await handleSelecionarPacienteAgendamento(pacienteAtualizado);
+
+      } else {
+        alert(await response.text());
+        
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Erro ao buscar exames credenciada");
+      
+      
+    } finally {
+      setIsLoading(false);
+    }
+  }
+}, []);
+
+
 
   // ---------------------------------------------------------
   // Quando seleciona um paciente no sidebar
   // caso estiver com ASO OK, preenche formulário
   // do contrário realiza fetch ASO no SOC para preenchimento
   // ---------------------------------------------------------
-  const handleSelecionarPacienteAgendamento = useCallback(async(paciente: Scheduling) => {
-    document.getElementById('empresa-autocomplete')?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+const handleSelecionarPacienteAgendamento = useCallback(async (paciente: Scheduling) => {
+  setIsLoading(true);
 
-    handleDeselecionarAgendamento()
-    setIsLoading(true)
-    setFuncionarioSelecionado(paciente)
-    
-    if((paciente.ASOSTATUS === AsoStatus.GERADO || paciente.ASOSTATUS === AsoStatus.KIT_CREDENCIADA) && paciente.EXAMES.length > 0)
-    {
-      const pedidos = paciente.EXAMES
-      
-      // 1. Cria dois mapas: código -> grupo e código -> nome real
-      const { codigoToGrupo, codigoToNome } = Object.entries(EXAMES_LIST).reduce(
-        (acc, [grupo, examList]) => {
-          examList.forEach((ex) => {
-            ex.codigos.forEach((codigo) => {
-              acc.codigoToGrupo[codigo] = grupo;
-              acc.codigoToNome[codigo] = ex.nome;
-            });
+  document.getElementById('empresa-autocomplete')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
+
+  handleDeselecionarAgendamento();
+  setFuncionarioSelecionado(paciente);
+
+  if ((paciente.ASOSTATUS === AsoStatus.GERADO || paciente.ASOSTATUS === AsoStatus.KIT_CREDENCIADA)
+    && paciente.EXAMES.length > 0) {
+
+    const pedidos = paciente.EXAMES;
+
+    // 1. Cria mapas de referência
+    const { codigoToGrupo, codigoToNome } = Object.entries(EXAMES_LIST).reduce(
+      (acc, [grupo, examList]) => {
+        examList.forEach((ex) => {
+          ex.codigos.forEach((codigo) => {
+            acc.codigoToGrupo[codigo] = grupo;
+            acc.codigoToNome[codigo] = ex.nome;
           });
-          return acc;
-        },
-        { codigoToGrupo: {} as Record<string, string>, codigoToNome: {} as Record<string, string> }
-      );
+        });
+        return acc;
+      },
+      { codigoToGrupo: {} as Record<string, string>, codigoToNome: {} as Record<string, string> }
+    );
 
-      // 2. Pega todos os códigos do paciente
-      const examesToSet = pedidos.map((e) => e.codigoExame) || [];
+    // 2. Processa os exames
+    const examesToSet = pedidos.map((e) => e.codigoExame) || [];
 
-      // 3. Converte códigos em nomes de grupos válidos
-      const examesSelecionados = examesToSet
-        .map((cod) => codigoToGrupo[cod])
-        .filter(Boolean);
+    const examesSelecionados = examesToSet
+      .map((cod) => codigoToGrupo[cod])
+      .filter(Boolean);
 
-      setCodigoExames(examesSelecionados);
+    setCodigoExames(examesSelecionados);
 
-      // 4. Filtra só laboratório -> pega nomes REAIS dos exames
-      const examesLaboratorio = examesToSet
-        .filter((cod) => codigoToGrupo[cod] === "Laboratório")
-        .map((cod) => codigoToNome[cod]);
+    const examesLaboratorio = examesToSet
+      .filter((cod) => codigoToGrupo[cod] === "Laboratório")
+      .map((cod) => codigoToNome[cod]);
 
-      setLaboratorioExames(examesLaboratorio);
+    setLaboratorioExames(examesLaboratorio);
 
-      // 5. Filtra só raio-x -> pega nomes REAIS dos exames
-      const examesImagem = examesToSet
-        .filter((cod) => codigoToGrupo[cod] === "Raio-X")
-        .map((cod) => codigoToNome[cod]);
+    const examesImagem = examesToSet
+      .filter((cod) => codigoToGrupo[cod] === "Raio-X")
+      .map((cod) => codigoToNome[cod]);
 
-      setExamesImagem(examesImagem);
-    }
+    setExamesImagem(examesImagem);
+  }
 
-    else
-    {
-      /*
-        Tratativa para ASO não OK - sem implementação no momento...
-      */
-    }
+  // Atualiza demais campos do formulário
+  setEmpresa(String(paciente.CODIGOEMPRESA) || "");
+  setCodigoFuncionario(paciente.CODIGO || "");
+  setNome(paciente.NOME || "");
+  setDataNascimento(paciente.DATANASCIMENTO || "");
+  setCpf(formatCPF(paciente.CPFFUNCIONARIO || ""));
+  setTelefone(formatPhone(paciente.TELEFONE || ""));
+  setTipoExame(TIPOS_EXAME[paciente.TIPOEXAMENOME] || "");
+  setSelectedSchedulingId(paciente.SCHEDULINGCODE || "");
+  setObservacoes(paciente.OBSERVACOES || "");
+  setAnotacoes("");
+  setPreferencialTipo("");
+  setAnexos(paciente.ANEXOS?.map(a => a) || []);
+  setIsBindServiceSelected(false);
 
- 
-    setEmpresa(String(paciente.CODIGOEMPRESA) || String(""))
-    setCodigoFuncionario(paciente.CODIGO || "")
-    setNome(paciente.NOME || "")
-    setDataNascimento(paciente.DATANASCIMENTO || "")
-    setCpf(formatCPF(paciente.CPFFUNCIONARIO || ""))
-    setTipoExame(TIPOS_EXAME[paciente.TIPOEXAMENOME] || "")
-    setSelectedSchedulingId(paciente.SCHEDULINGCODE || "")
-    setObservacoes(paciente.OBSERVACOES || "")
-    setAnotacoes("")
-    setPreferencialTipo("")
-    setAnexos(paciente.ANEXOS?.map(a => a) || [])
-    setIsBindServiceSelected(false)
+  setIsLoading(false);
+}, [handleAtendimentoCredenciada, funcionarioSelecionado]);
 
-    setIsLoading(false)
-     
-  }, [funcionarioSelecionado])
 
   
 
@@ -363,6 +404,7 @@ const handleBuscarFuncionario = useCallback(async () => {
       setNome("")
       setDataNascimento("")
       setCpf("")
+      setTelefone("")
       setTipoExame("")
       setCodigoExames([])
       setPsicoPresencial(false)
@@ -377,7 +419,6 @@ const handleBuscarFuncionario = useCallback(async () => {
       setRecords([])
       setRecordsCodes(new Set())
       setFuncionarioSelecionado(null)
-      setPsicoPresencial(false)
   }, [])
 
 
@@ -397,6 +438,15 @@ const handleBuscarFuncionario = useCallback(async () => {
     const formated = formatCPF(e)
     setCpf(formated)
   }
+
+  const handleTelefoneInput = (e: string) => {
+    const formated = formatPhone(e);
+    setFuncionarioSelecionado((prev: any) => ({
+      ...prev,
+      TELEFONE: formated,
+    }));
+    setTelefone(formated);
+  };
 
 
 
@@ -439,7 +489,7 @@ const handlePsicoExame = () => {
       ...funcionarioSelecionado,
       EXAMES: funcionarioSelecionado.EXAMES?.map(exam => {
         if (exam.grupo.includes("Psicossocial")) {
-          console.log("psico okssss")
+          
           return {
             ...exam,
             preparacao: novoValor ? "Entrevista presencial" : ""
@@ -645,7 +695,7 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
   
     try {
       formData.append("scheduling", JSON.stringify(funcionarioSelecionado))
-      console.log(funcionarioSelecionado)
+
       const submmitResponse = await fetch(NEST_SCHEDULINGS, 
       { method: "POST", 
         body: formData
@@ -1005,7 +1055,6 @@ const PacienteItem = React.memo(function _PacienteItem({
       {/* Nome do funcionário (obrigatório) */}
       <div className="w-full">
         <Input
-          readOnly
           size="sm"
           label={"Nome completo"}
           value={nome}
@@ -1070,7 +1119,8 @@ const PacienteItem = React.memo(function _PacienteItem({
       <Input
         size="sm"
         label={"Telefone"}
-        value={funcionarioSelecionado?.TELEFONE ? funcionarioSelecionado.TELEFONE : undefined}
+        value={telefone}
+        onChange={(e) => handleTelefoneInput(e.target.value)}
         className="text-xs"
         disabled={isLoading}
       />
@@ -1198,7 +1248,7 @@ const PacienteItem = React.memo(function _PacienteItem({
               {exame.includes('Psico') && isSelected ? (
                 <div className="flex justify-between items-baseline-last w-full">
                   <span>{exame}</span>
-                  <span>Com psico. <Checkbox id="psicossocial-switch" size="md" color="warning" checked={psicoPresencial} onValueChange={handlePsicoExame} disabled={isLoading}></Checkbox></span> 
+                  <span>Com psico. <Switch id="psicossocial-switch" size="md" color="warning" checked={psicoPresencial} onValueChange={handlePsicoExame} disabled={isLoading}></Switch></span> 
                 </div>
               ) : <span>{exame}</span>}
             </Button>
@@ -1454,7 +1504,6 @@ const PacienteItem = React.memo(function _PacienteItem({
         {/* FOOTER (fora do scroll) */}
         <footer className="border-t border-gray-200 bg-white p-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="text-sm text-gray-600">Observação: campos com * são obrigatórios</div>
             {showErrors && !validation.all && (
               <div className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
                 Corrija os campos obrigatórios

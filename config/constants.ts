@@ -5,8 +5,8 @@
 const PORT=3333
 const NEST_URL_DEVELOP = `http://localhost:${PORT}/`
 
-// export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
-export const NEST_URL = `http://192.168.0.222:${PORT}/`
+export const NEST_URL = process.env.NODE_ENV.includes("dev") ? NEST_URL_DEVELOP : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION
+// export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace("https", "ws")
 
 const TICKETS_ENDPOINT = process.env.NEXT_PUBLIC_NEST_TICKET_ENDPOINT ?? "[.ENV] Ticket endpoint nulo"
@@ -38,6 +38,9 @@ export const NEST_SOC_COMPANIES = NEST_URL + SOC_COMPANIES
 
 const SOC_PEDIDOEXAME = process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME ?? "[.ENV] SOC ASO Funcionário nulo"
 export const NEST_SOC_PEDIDOEXAME = NEST_URL + SOC_PEDIDOEXAME
+
+const SOC_PEDIDOEXAME_CREDENCIADAS = process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME_CREDENCIADAS ?? "[.ENV] SOC ASO Funcionário nulo"
+export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = NEST_URL + SOC_PEDIDOEXAME_CREDENCIADAS
 
 
 const NOTIFICATION_URL = process.env.NEXT_PUBLIC_NEST_NOTIFICATION_SUBSCRIBE ?? "[.ENV] Notification subscribe nulo"
@@ -95,6 +98,17 @@ export const EMPRESAS_COM_PSICOLOGA = new Set([
   "176792", // SEW
   "122878", // 3 FAZENDAS
   "821445", // EXPERT
+]);
+
+export const EMPRESAS_CREDENCIADAS_SOC = new Set([
+    // KIT SW OCUPACIONAL ---> Grupo savegnago
+    "1712886" ,
+    // KIT UNIMED SOU RJ ---> Grupo Bauminas / Nheel Quimica
+    "2008962",
+    // KIT SALU
+    "1246478",
+    // KIT ESMALGLASS
+    "353226"
 ]);
 
 type ExamToogle = {

@@ -161,8 +161,8 @@ const VALOR_INICIAL: AudiometriaData = {
   audiometriaReferenciaDisponivel: false,
   limiaresRAOD: {}, limiaresRAOE: {},
   classificacaoNR7OD: 'Não Classificado (RA Ausente)', classificacaoNR7OE: 'Não Classificado (RA Ausente)',
-  classificacaoOD: 'Limiares auditivos dentro dos padrões da normalidade', 
-  classificacaoOE: 'Limiares auditivos dentro dos padrões da normalidade', 
+  classificacaoOD: 'Dentro dos padrões da normalidade', 
+  classificacaoOE: 'Dentro dos padrões da normalidade', 
   configuracaoOD: 'Plana', configuracaoOE: 'Plana',
   
   perdaAuditivaOD: '0 dB', perdaAuditivaOE: '0 dB',
@@ -173,8 +173,8 @@ const VALOR_INICIAL: AudiometriaData = {
   classificacaoGeral: 'Limiares auditivos dentro dos padrões da normalidade.',
   conclusao: 'Limiares auditivos dentro dos padrões da normalidade.',
   observacoes: '',
-  resultadoOD: 'Limiares auditivos dentro dos padrões da normalidade.',
-  resultadoOE: 'Limiares auditivos dentro dos padrões da normalidade.',
+  resultadoOD: 'Dentro dos padrões da normalidade.',
+  resultadoOE: 'Dentro dos padrões da normalidade.',
 };
 
 // Componente de input ultra-leve para decibéis
