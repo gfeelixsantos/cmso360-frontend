@@ -342,46 +342,18 @@ const ExamesTable: React.FC<{
                   {/* Coluna Ações */}
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
-                      {/* Ícone de Sincronizar */}
-                      <Tooltip content="Sincronizar exame">
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant="light"
-                          onPress={() => handleSyncExam(exame)}
-                          className="text-purple-600 hover:text-purple-700"
-                        >
-                          <RefreshCw size={16} />
-                        </Button>
-                      </Tooltip>
-
-                      {exame.url ? (
+                      {exame.url && exame.status === ExamStatus.FINALIZADO ? (
                         <>
                           <Tooltip content="Visualizar">
                             <Button
-                              isIconOnly
+                              
                               size="sm"
                               variant="light"
                               onPress={() => window.open(exame.url, '_blank')}
                               className="text-blue-600 hover:text-blue-700"
                             >
                               <Eye size={16} />
-                            </Button>
-                          </Tooltip>
-                          <Tooltip content="Download">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onPress={() => {
-                                const link = document.createElement('a');
-                                link.href = exame.url;
-                                link.download = `${exame.nomeExame}.pdf`;
-                                link.click();
-                              }}
-                              className="text-gray-600 hover:text-gray-700"
-                            >
-                              <Download size={16} />
+                              Visualizar
                             </Button>
                           </Tooltip>
                         </>
@@ -399,7 +371,7 @@ const ExamesTable: React.FC<{
                           {/* Botão selecionar arquivo */}
                           <label
                             htmlFor={`file-${examKey}`}
-                            className={`cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors ${
+                            className={`cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors truncate ${
                               hasFileSelected
                                 ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
                                 : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'

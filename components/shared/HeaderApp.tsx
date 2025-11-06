@@ -209,10 +209,8 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
             </Link>
 
             {children && children}
-
             {/* User info + notifications + logout */}
             <div className="flex items-center gap-3">
-              {/* Botão de Notificações no Header */}
               <div className="relative">
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}

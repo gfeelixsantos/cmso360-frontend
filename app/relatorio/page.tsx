@@ -454,7 +454,7 @@ export default function RelatoriosPage() {
       <HeaderApp onLogout={() => { logout(); router.push("/"); }} children={<h2>Relatórios de Atendimento</h2>} />
 
       {/* Filtros - Design Conceitual do Modal */}
-      <Card className='mx-6 mb-6 mt-6 border border-gray-200 shadow-sm'>
+      <Card className='m-6 border border-gray-200 shadow-sm'>
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div>
@@ -623,7 +623,7 @@ export default function RelatoriosPage() {
 
       {/* Tabela de Resultados - Layout Compacto */}
       {showResults && (
-        <Card className='mx-6 mb-6 mt-6 p-2 border border-gray-200 shadow-sm'>
+        <Card className='m-6 p-4 border border-gray-200 shadow-sm'>
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Resultados</h2>
