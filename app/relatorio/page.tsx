@@ -29,14 +29,15 @@ import {
   DatePicker,
   Popover,
   PopoverTrigger,
-  PopoverContent
+  PopoverContent,
+  Autocomplete
 } from '@heroui/react';
 import { SearchIcon, FilterIcon, EyeIcon, CheckIcon, CalendarIcon, XIcon } from 'lucide-react';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus } from '@/lib/scheduling/enum/scheduling.enum';
 import { NEST_SCHEDULINGS_ALL } from '@/config/constants';
 import { HeaderApp } from '@/components/shared/HeaderApp';
-import { formatCPF, logout } from '@/lib/utils';
+import { formatCPF, logout, ordemAlfabetica } from '@/lib/utils';
 import { useRouter } from "next/navigation";
 
 // Componente lazy para o conteúdo pesado do modal
@@ -228,10 +229,14 @@ export default function RelatoriosPage() {
       const profissionaisUnicos = [...new Set(appAtendimentos.flatMap(a => a.EXAMES.map(e => e.profissional)).filter(Boolean))];
       const salasUnicas = [...new Set(appAtendimentos.flatMap(a => a.EXAMES.map(e => e.sala)).filter(Boolean))];
       
-      setEmpresas(empresasUnicas as string[]);
+      const empresasOrdenadas = ordemAlfabetica(empresasUnicas)
+      const profissionaisOrdenados = ordemAlfabetica(profissionaisUnicos as string[])
+      const salasOrdenadas = salasUnicas ?? ordemAlfabetica(salasUnicas as string[])
+
+      setEmpresas(empresasOrdenadas as string[]);
       setGruposExames(gruposUnicos as string[]);
-      setProfissionais(profissionaisUnicos as string[]);
-      setSalas(salasUnicas as string[]);
+      setProfissionais(profissionaisOrdenados as string[]);
+      setSalas(salasOrdenadas as string[]);
     };
 
     if ('requestIdleCallback' in window) {
@@ -445,28 +450,15 @@ export default function RelatoriosPage() {
   }, [filters]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <HeaderApp onLogout={() => { logout(); router.push("/"); }} children={null} />
-
-      {/* Cabeçalho */}
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Relatórios de Atendimento</h1>
-            <p className="text-gray-600">Gerencie e visualize resultados de exames</p>
-          </div>
-        </div>
-      </div>
+    <div className="min-h-screen bg-gray-50 mb-8">
+      <HeaderApp onLogout={() => { logout(); router.push("/"); }} children={<h2>Relatórios de Atendimento</h2>} />
 
       {/* Filtros - Design Conceitual do Modal */}
-      <Card className="mx-6 mb-6 border border-gray-200 shadow-sm">
-        <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-gray-100">
+      <Card className='mx-6 mb-6 mt-6 border border-gray-200 shadow-sm'>
+        <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <FilterIcon size={20} className="text-blue-600" />
-            </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Filtros Avançados</h2>
+              <h2 className="text-lg font-semibold text-gray-900">Filtros de atendimento</h2>
               <p className="text-sm text-gray-500">
                 {activeFiltersCount > 0 
                   ? `${activeFiltersCount} filtro(s) ativo(s)` 
@@ -477,12 +469,12 @@ export default function RelatoriosPage() {
           </div>
           <div className="flex gap-2">
             <Button
-              color="primary"
+              color="success"
               startContent={<CheckIcon size={16} />}
               onPress={handleApplyFilters}
               isLoading={isFiltering}
               isDisabled={!hasActiveFilters}
-              className="font-medium"
+              className="font-medium text-white"
             >
               Aplicar Filtros
             </Button>
@@ -497,7 +489,20 @@ export default function RelatoriosPage() {
           </div>
         </CardHeader>
         <CardBody className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Busca por Nome do Funcionário (ATUALIZADO) */}
+            <div className="lg:col-span-2 space-y-2">
+              <label className="text-sm font-medium text-gray-700">Buscar por Funcionário</label>
+              <Input
+                placeholder="Digite o nome do funcionário..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                startContent={<SearchIcon size={16} className="text-gray-400" />}
+                isClearable
+                onClear={() => handleFilterChange('search', '')}
+                size="lg"
+              />
+            </div>
             {/* Data Início */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Data Início</label>
@@ -509,6 +514,43 @@ export default function RelatoriosPage() {
                 granularity="day"
                 hideTimeZone
               />
+            </div>
+
+
+            {/* Empresa */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Empresa</label>
+              <Autocomplete
+                multiple={true}
+                size="lg"
+                selectedKey={filters.empresa || undefined}
+                onSelectionChange={(key) => handleFilterChange('empresa', key?.toString() || '')}
+                className="w-full"
+              >
+                {empresas.map((empresa) => (
+                  <SelectItem key={empresa} textValue={empresa}>
+                    {empresa}
+                  </SelectItem>
+                ))}
+              </Autocomplete>
+            </div>
+
+
+            {/* Grupo de Exame (ATUALIZADO) */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Exame</label>
+              <Select
+                size="lg"
+                selectedKeys={filters.grupoExame ? [filters.grupoExame] : []}
+                onSelectionChange={(keys) => handleFilterChange('grupoExame', Array.from(keys)[0] || '')}
+                className="w-full"
+              >
+                {gruposExames.map(grupo => (
+                  <SelectItem key={grupo}>
+                    {grupo}
+                  </SelectItem>
+                ))}
+              </Select>
             </div>
 
             {/* Data Fim */}
@@ -524,45 +566,12 @@ export default function RelatoriosPage() {
               />
             </div>
 
-            {/* Empresa */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Empresa</label>
-              <Select
-                size="sm"
-                selectedKeys={filters.empresa ? [filters.empresa] : []}
-                onSelectionChange={(keys) => handleFilterChange('empresa', Array.from(keys)[0] || '')}
-                className="w-full"
-              >
-                {empresas.map(empresa => (
-                  <SelectItem key={empresa}>
-                    {empresa}
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
-
-            {/* Grupo de Exame (ATUALIZADO) */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Grupo de Exame</label>
-              <Select
-                size="sm"
-                selectedKeys={filters.grupoExame ? [filters.grupoExame] : []}
-                onSelectionChange={(keys) => handleFilterChange('grupoExame', Array.from(keys)[0] || '')}
-                className="w-full"
-              >
-                {gruposExames.map(grupo => (
-                  <SelectItem key={grupo}>
-                    {grupo}
-                  </SelectItem>
-                ))}
-              </Select>
-            </div>
 
             {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Status</label>
               <Select
-                size="sm"
+                size="lg"
                 selectedKeys={filters.status ? [filters.status] : []}
                 onSelectionChange={(keys) => handleFilterChange('status', Array.from(keys)[0] || '')}
                 className="w-full"
@@ -579,7 +588,7 @@ export default function RelatoriosPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Profissional</label>
               <Select
-                size="sm"
+                size="lg"
                 selectedKeys={filters.profissional ? [filters.profissional] : []}
                 onSelectionChange={(keys) => handleFilterChange('profissional', Array.from(keys)[0] || '')}
                 className="w-full"
@@ -596,7 +605,7 @@ export default function RelatoriosPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Sala</label>
               <Select
-                size="sm"
+                size="lg"
                 selectedKeys={filters.sala ? [filters.sala] : []}
                 onSelectionChange={(keys) => handleFilterChange('sala', Array.from(keys)[0] || '')}
                 className="w-full"
@@ -608,27 +617,13 @@ export default function RelatoriosPage() {
                 ))}
               </Select>
             </div>
-
-            {/* Busca por Nome do Funcionário (ATUALIZADO) */}
-            <div className="lg:col-span-2 space-y-2">
-              <label className="text-sm font-medium text-gray-700">Buscar por Funcionário</label>
-              <Input
-                placeholder="Digite o nome do funcionário..."
-                value={filters.search}
-                onChange={(e) => handleFilterChange('search', e.target.value)}
-                startContent={<SearchIcon size={16} className="text-gray-400" />}
-                isClearable
-                onClear={() => handleFilterChange('search', '')}
-                size="sm"
-              />
-            </div>
           </div>
         </CardBody>
       </Card>
 
       {/* Tabela de Resultados - Layout Compacto */}
       {showResults && (
-        <Card className='mx-6 border border-gray-200 shadow-sm'>
+        <Card className='mx-6 mb-6 mt-6 p-2 border border-gray-200 shadow-sm'>
           <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
             <div>
               <h2 className="text-lg font-semibold text-gray-900">Resultados</h2>
@@ -659,13 +654,11 @@ export default function RelatoriosPage() {
                     }}
                   >
                     <TableHeader>
-                      <TableColumn className="w-20">DATA</TableColumn>
-                      <TableColumn className="w-40">FUNCIONÁRIO</TableColumn>
-                      <TableColumn className="w-30">CPF</TableColumn>
-                      <TableColumn className="w-40">EMPRESA</TableColumn>
-                      <TableColumn className="w-30">CARGO</TableColumn>
+                      <TableColumn className="w-50">FUNCIONÁRIO</TableColumn>
+                      <TableColumn className="w-50">EMPRESA</TableColumn>
+                      <TableColumn className="w-40">CARGO</TableColumn>
                       <TableColumn className="w-30">EXAME</TableColumn>
-                      <TableColumn className="w-20">STATUS</TableColumn>
+                      <TableColumn className="w-10">STATUS</TableColumn>
                       <TableColumn className="w-20">UNIDADE</TableColumn>
                       <TableColumn className="w-10">AÇÕES</TableColumn>
                     </TableHeader>
@@ -673,31 +666,22 @@ export default function RelatoriosPage() {
                       {paginatedItems.map((atendimento) => (
                         <TableRow key={atendimento._id || atendimento.CODIGOPRONTUARIO}>
                           <TableCell>
-                            <div className="text-xs text-gray-600">
-                              {atendimento.DATAAGENDAMENTO}
-                            </div>
-                          </TableCell>
-                          <TableCell>
                             <div>
-                              <p className="font-medium text-sm text-gray-900">{atendimento.NOME}</p>
-                              {atendimento.MATRICULAFUNCIONARIO && (
-                                <p className="text-xs text-gray-500">Mat: {atendimento.MATRICULAFUNCIONARIO}</p>
-                              )}
+                              <p className="font-medium text-xs text-gray-900">{atendimento.NOME}</p>
+                              <p className="text-xs text-gray-500">CPF: {formatCPF(atendimento.CPFFUNCIONARIO)}</p>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <span className="text-xs font-mono text-gray-600">
-                              {formatCPF(atendimento.CPFFUNCIONARIO)}
-                            </span>
+                            <span className="text-xs text-gray-700">{atendimento.NOMEEMPRESA}</span>
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm text-gray-700">{atendimento.NOMEEMPRESA}</span>
+                            <span className="text-xs text-gray-700">{atendimento.NOMECARGO}</span>
                           </TableCell>
                           <TableCell>
-                            <span className="text-sm text-gray-700">{atendimento.NOMECARGO}</span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-700">{atendimento.TIPOEXAMENOME}</span>
+                            <div className='flex flex-col'>
+                              <span className="text-sm text-gray-700">{atendimento.TIPOEXAMENOME}</span>
+                              <span className="text-xs text-gray-500">{atendimento.DATAAGENDAMENTO} - {atendimento.HORARIO}</span>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <Chip 

@@ -30,6 +30,58 @@ const IDLE_CONFIG = {
   duracaoIdleSegundos: 15,       // Tempo que o idle fica visível
 };
 
+// ======= CONFIGURAÇÕES DE DIVULGAÇÃO =======
+const DIVULGACAO_CONFIG = {
+  tempoExibicaoItem: 8,          // Tempo em segundos para cada item de divulgação
+  items: [
+    {
+      id: 1,
+      tipo: "imagem",
+      src: "/images/dramed.png",
+      titulo: "Novembro Azul",
+      subtitulo: "Mês de combate ao câncer de próstata",
+      conteudo: [
+        "Cuide da sua saúde, a prevenção é o melhor caminho contra o câncer de próstata.",
+      ]
+    },
+    {
+      id: 2,
+      tipo: "imagem",
+      src: "/images/rioclaro.jpg",
+      titulo: "Rio Claro",
+      subtitulo: "Matriz",
+      conteudo: [
+        "Atuando há mais de 20 anos",
+        "Infraestrutura completa",
+        "Gestão SST completa",
+      ]
+    },
+    {
+      id: 3,
+      tipo: "imagem",
+      src: "/images/cordeirópolis.jpg",
+      titulo: "Cordeirópolis",
+      subtitulo: "Filial",
+      conteudo: [
+        "Exames radiológicos",
+        "Atendimento Rio Claro e região",
+        "Ultrassonografia",
+      ]
+    },
+    {
+      id: 4,
+      tipo: "imagem",
+      src: "/images/araras.jpg",
+      titulo: "Araras",
+      subtitulo: "Filial",
+      conteudo: [
+        "Exames Ocupacionais",
+        "Excelente localização",
+      ]
+    }
+  ]
+};
+
 interface PainelSocket {
   type: WebsocketType.PAINEL;
   unidade: string | null;
@@ -115,21 +167,19 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       }}
     >
       <div 
-        className="text-xl font-bold truncate" 
+        className="text-2xl font-bold truncate" 
         style={{ color: colors.primary }}
       >
         {c.name != "" ? c.name : c.ticket}
       </div>
-      <div className="mt-2 flex items-center gap-2 text-xl font-bold" style={{ color: COLOR_PALETTE.textLight }}>
-        <span className="truncate">{c.sala}</span>
-      </div>
       <div 
-        className="mt-2 inline-flex items-center gap-2 text-sm font-bold text-xl rounded-full px-3 py-1"
+        className="mt-2 inline-flex items-center gap-2 font-bold text-xl rounded-full px-3 py-1"
         style={{ 
           backgroundColor: colors.primary, 
           color: colors.text 
         }}
       >
+        <span className="truncate">{c.sala}</span>
         <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
         {c.exame ?? "ATENDIMENTO"}
       </div>
@@ -137,102 +187,166 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
   );
 };
 
-// Componente Idle Screen atualizado
+// Componente Idle Screen atualizado para divulgação
 interface IdleProps {
   unidadeSelecionada: string
 }
-const IdleScreen = ({ unidadeSelecionada }: IdleProps) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
-    transition={{ duration: 1 }}
-    className="fixed inset-0 z-50 flex"
-    style={{
-      background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
-    }}
-  >
-    {/* Lado da imagem */}
-    <div className="flex-1 flex items-center justify-center p-8">
-      
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.8 }}
-        className="w-full h-full max-w-2xl max-h-2xl rounded-3xl overflow-hidden shadow-2xl"
-        style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)',
-        }}
-      >
-        <img 
-          src={`/images/${unidadeSelecionada.replace(/\s/g, "").toLowerCase()}.jpg`}
-          alt="CMSO Logo" 
-          className="w-full h-full object-contain p-8"
-        />
-      </motion.div>
-      
-    </div>
+const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
+  const [itemAtual, setItemAtual] = useState(0);
+  const timeoutRef = useRef<NodeJS.Timeout>();
 
-    {/* Lado das informações */}
-    <div className="flex-1 flex items-center justify-center p-8">
-      <motion.div
-        initial={{ x: 50, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ delay: 0.8, duration: 0.8 }}
-        className="text-white max-w-md"
-      >
-        <motion.h1
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="text-5xl lg:text-6xl font-black mb-6 uppercase tracking-wider"
-        >
-          CMSO
-        </motion.h1>
+  useEffect(() => {
+    const rotacionarItens = () => {
+      setItemAtual((prev) => 
+        prev === DIVULGACAO_CONFIG.items.length - 1 ? 0 : prev + 1
+      );
+    };
 
-        <motion.p
-          initial={{ y: 30, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 1.2, duration: 0.6 }}
-          className="text-2xl lg:text-3xl font-light mb-8 opacity-90"
-        >
-          Especialistas na gestão completa de SST.
-        </motion.p>
+    timeoutRef.current = setTimeout(
+      rotacionarItens, 
+      DIVULGACAO_CONFIG.tempoExibicaoItem * 1000
+    );
 
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [itemAtual]);
+
+  const item = DIVULGACAO_CONFIG.items[itemAtual];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 1 }}
+      className="fixed inset-0 z-50 flex flex-col lg:flex-row bg-white overflow-hidden"
+    >
+      {/* Indicadores de progresso */}
+      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
+        {DIVULGACAO_CONFIG.items.map((_, index) => (
+          <div
+            key={index}
+            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+              index === itemAtual 
+                ? 'bg-white scale-125' 
+                : 'bg-white/50'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Lado da mídia (imagem/vídeo) */}
+      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
         <motion.div
-          initial={{ scale: 0, opacity: 0 }}
+          key={item.id}
+          initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.5 }}
-          className="space-y-4"
+          transition={{ duration: 0.8 }}
+          className="w-full h-full max-w-4xl max-h-4xl rounded-3xl overflow-hidden shadow-2xl bg-white"
         >
-          <div className="flex items-center gap-3 text-lg font-semibold bg-white/20 px-6 py-3 rounded-full">
-            <div className="w-3 h-3 rounded-full bg-white animate-pulse" />
-            Aguardando próximas chamadas...
-          </div>
-          
-          <div className="bg-white/10 rounded-2xl p-4">
-            <h3 className="font-bold text-lg mb-2">Informações do Sistema</h3>
-            <ul className="space-y-2 text-sm">
-              <li className="flex justify-between">
-                <span>Status:</span>
-                <span className="font-semibold">Operacional</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Última atualização:</span>
-                <span className="font-semibold">{new Date().toLocaleDateString('pt-BR')}</span>
-              </li>
-              <li className="flex justify-between">
-                <span>Versão:</span>
-                <span className="font-semibold">1.0</span>
-              </li>
-            </ul>
-          </div>
+          {item.tipo === "video" ? (
+            <video
+              src={item.src}
+              autoPlay={true}
+              muted
+              loop
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <img 
+              src={item.src}
+              alt={item.titulo}
+              className="w-full h-full object-cover"
+            />
+          )}
         </motion.div>
-      </motion.div>
-    </div>
-  </motion.div>
-);
+      </div>
+
+      {/* Lado das informações */}
+      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-green-600 to-green-950">
+        <motion.div
+          key={`content-${item.id}`}
+          initial={{ x: 50, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 0.8 }}
+          className="text-white max-w-2xl w-full"
+        >
+          {/* Título */}
+          <motion.h1
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+            className="text-4xl lg:text-6xl font-black mb-4 leading-tight"
+          >
+            {item.titulo}
+          </motion.h1>
+
+          {/* Subtítulo (opcional) */}
+          {item.subtitulo && (
+            <motion.p
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+              className="text-xl lg:text-2xl font-light mb-8 text-blue-200"
+            >
+              {item.subtitulo}
+            </motion.p>
+          )}
+
+          {/* Conteúdo (lista ou texto) */}
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.6, duration: 0.6 }}
+            className="space-y-4"
+          >
+            {Array.isArray(item.conteudo) ? (
+              <ul className="space-y-3">
+                {item.conteudo.map((linha, index) => (
+                  <motion.li
+                    key={index}
+                    initial={{ x: -20, opacity: 0 }}
+                    animate={{ x: 0, opacity: 1 }}
+                    transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
+                    className="flex items-start gap-3 text-lg"
+                  >
+                    <div className="w-2 h-2 bg-orange-400 rounded-full mt-3 flex-shrink-0" />
+                    <span className="leading-relaxed text-xl">{linha}</span>
+                  </motion.li>
+                ))}
+              </ul>
+            ) : (
+              <motion.p
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.8, duration: 0.5 }}
+                className="text-xl leading-relaxed"
+              >
+                {item.conteudo}
+              </motion.p>
+            )}
+          </motion.div>
+
+          {/* Informações da unidade */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 1.2, duration: 0.5 }}
+            className="mt-8 pt-6 border-t border-white/20"
+          >
+            <div className="flex items-center justify-between text-sm text-white/70">
+              <span>{unidadeSelecionada}</span>
+              <span>{new Date().getFullYear()} • CMSO</span>
+            </div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+};
 
 // Componente para ativação de áudio
 const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
@@ -310,6 +424,8 @@ export default function PainelPage() {
   const [audioHabilitado, setAudioHabilitado] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
 
+  const [somChamada, setSomChamada] = useState<HTMLAudioElement|null>(null)
+
   // ======= ESTADOS IDLE =======
   const [isIdle, setIsIdle] = useState(false);
   const [showPainel, setShowPainel] = useState(true);
@@ -355,6 +471,10 @@ export default function PainelPage() {
       setTimeout(enterFullscreen, 1500);
       // Tentar ativar áudio automaticamente ao liberar o painel
       setTimeout(ativarAudio, 1000);
+
+      // carrega som de chamada
+      const toque = new Audio("/audio/painel9.mp3")
+      setSomChamada(toque)
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -504,8 +624,10 @@ export default function PainelPage() {
         return resolve();
       }
 
+      
       const audio = new Audio(`${NEST_URL}${call.audio}`);
       
+      somChamada?.play().catch(() => resolve());
       audio.play().catch(() => resolve());
       audio.onended = () => resolve();
       audio.onerror = () => resolve();
@@ -787,29 +909,6 @@ export default function PainelPage() {
                       {unidadeSelecionada}
                     </div>
                   </div>
-
-                  {/* ===== CONTROLE DE ÁUDIO FLUTUANTE ===== */}
-                  {/* <div className="">
-                    <button
-                      onClick={() => {
-                        if (!audioHabilitado) {
-                          ativarAudio();
-                        } else {
-                          setAudioHabilitado(false);
-                        }
-                      }}
-                      className="rounded-2xl p-3 shadow-sm border backdrop-blur-sm transition-all transform hover:scale-105"
-                      style={{
-                        backgroundColor: audioHabilitado ? COLOR_PALETTE.primary : COLOR_PALETTE.white,
-                        borderColor: COLOR_PALETTE.primary,
-                        color: audioHabilitado ? COLOR_PALETTE.white : COLOR_PALETTE.primary,
-                        boxShadow: '0 2px 12px rgba(68, 115, 94, 0.15)',
-                      }}
-                      title={audioHabilitado ? "Desativar áudio" : "Ativar áudio"}
-                    >
-                      {audioHabilitado ? <Volume2 size={20} /> : <VolumeX size={20} />}
-                    </button>
-                  </div> */}
                 </div>
 
                 {/* Data e Hora */}
@@ -872,34 +971,33 @@ export default function PainelPage() {
                       </motion.div>
 
                       {/* Sala e Exame - Com cores específicas do exame */}
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-6 lg:mb-8">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-1 mb-2 lg:mb-4">
                         <motion.div
                           initial={{ y: 10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           transition={{ delay: 0.2 }}
-                          className="flex items-center gap-3 text-xl sm:text-2xl lg:text-3xl font-black px-4 sm:px-6 py-2 sm:py-3 rounded-full border"
+                          className="flex items-center gap-3 text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 sm:py-3 rounded-full border"
                           style={{
                             backgroundColor: currentExamColors.primary,
                             color: currentExamColors.text,
                             borderColor: currentExamColors.primary,
                           }}
                         >
-                          <DoorOpen size={28} />
-                          <span className="text-4xl">{chamadaAtual.sala}</span>
+                          <span>{chamadaAtual.sala}</span>
                         </motion.div>
 
                         <motion.div
                           initial={{ y: 10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
                           transition={{ delay: 0.3 }}
-                          className="text-lg sm:text-xl lg:text-2xl font-black px-4 sm:px-6 py-2 rounded-full border-2"
+                          className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 rounded-full border-2"
                           style={{ 
                             borderColor: currentExamColors.primary,
                             color: currentExamColors.primary,
                             backgroundColor: currentExamColors.secondary,
                           }}
                         >
-                          <span className="text-4xl">{chamadaAtual.exame ?? "ATENDIMENTO"}</span>
+                          <span>{chamadaAtual.exame ?? "ATENDIMENTO"}</span>
                         </motion.div>
                       </div>
                     </motion.div>

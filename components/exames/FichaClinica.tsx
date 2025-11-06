@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, RadioGroup, Spinner } from "@heroui/react";
+import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, RadioGroup, Spinner, form } from "@heroui/react";
 import { Calendar, User, Building, Briefcase, Stethoscope, FileText, ClipboardList } from 'lucide-react';
 import { IUserInfo, useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
@@ -386,7 +386,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       }
       return { ...prev, pressaoArterial: novas };
     });
-  }, []);
+  }, [formData.pressaoArterial]);
 
   const handleMultiSelectChange = useCallback((field: keyof FichaClinicaData, value: string) => {
     setFormData(prev => {
@@ -430,7 +430,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
         }
       ]
     }));
-  }, [user?.nome]);
+  }, [atendimento, formulario]);
 
   const handleRemovePressaoArterial = useCallback((index: number) => {
     setFormData(prev => {

@@ -346,11 +346,9 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                   <TableCell>
                     <div className="flex justify-center">
                       {formattedTime ? (
-                        <Tooltip content={`Finalizado às ${formattedTime}`} placement="top">
-                          <div className="flex items-center gap-1 text-sm text-gray-600">
-                            <span className="text-xs">{formattedTime}</span>
-                          </div>
-                        </Tooltip>
+                        <div className="flex items-center gap-1 text-sm text-gray-600">
+                          <span className="text-xs">{formattedTime}</span>
+                        </div>
                       ) : (
                         <span className="text-gray-400 text-xs">—</span>
                       )}
@@ -602,7 +600,7 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
       {status === TicketStatus.EM_ATENDIMENTO && (
         <Spinner size="sm" color="white" variant="simple" className="mr-2" />
       )}
-      <span className="text-xs font-semibold uppercase">{status}</span>
+      <span className="text-xs font-semibold uppercase truncate">{status}</span>
     </div>
   );
 };
@@ -630,6 +628,8 @@ const TicketActions: React.FC<{
   exameSelecionado,
 }) => {
   const { executarAcao } = useEntityManager<Ticket>([]);
+    // 🔹 Armazena IDs que já tiveram o primeiro clique
+  const [firstClickMap, setFirstClickMap] = useState<Record<string, boolean>>({});
 
   // Utilizado para chamar e nas demais ações
   const handleExecutarAcao = (ticket: Ticket, action: TicketActionType) => {
@@ -639,9 +639,24 @@ const TicketActions: React.FC<{
 
   const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
     const currentUser = getCurrentUser();
-    executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome);
-    setFuncionarioSelecionado(funcionario);
-    onHandleModal(true);
+    
+    if (!firstClickMap[ticket.id]) {
+      // Primeiro clique: executa ação, mas não abre o modal
+      executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome);
+      setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
+
+    } else {
+      // 👉 Segundo clique: abre o modal de atendimento
+      setFuncionarioSelecionado(funcionario);
+      onHandleModal(true);
+
+      // Reseta o clique para permitir novo ciclo
+      setFirstClickMap((prev) => {
+        const updated = { ...prev };
+        delete updated[ticket.id];
+        return updated;
+      });
+    }
   };
 
 
@@ -650,6 +665,13 @@ const TicketActions: React.FC<{
       const response = confirm("Deseja retornar a senha da preparação?");
       return response ? executarAcao(ticket.id, action, unidadeSelecionada, socket) : null;
     }
+    // Reseta o clique para permitir novo ciclo
+    setFirstClickMap((prev) => {
+      const updated = { ...prev };
+      delete updated[ticket.id];
+      return updated;
+    });
+
     return executarAcao(ticket.id, action, unidadeSelecionada, socket);
   };
 
@@ -672,7 +694,7 @@ const TicketActions: React.FC<{
   return (
     <div className="flex items-center gap-2">
       {/* Botão Chamar - Amarelo */}
-      <Tooltip content="Chamar" placement="top">
+      <Tooltip content="Chamar" placement="bottom">
         <Button
           size="md"
           isIconOnly
@@ -685,7 +707,7 @@ const TicketActions: React.FC<{
       </Tooltip>
 
       {/* Botão Atender - Vermelho */}
-      <Tooltip content="Atender" placement="top">
+      <Tooltip content="Atender" placement="bottom">
         <Button
           size="md"
           isIconOnly
@@ -699,7 +721,7 @@ const TicketActions: React.FC<{
 
 
       {/* Botão Retornar - Cinza */}
-      <Tooltip content="Retornar" placement="top">
+      <Tooltip content="Retornar" placement="bottom">
         <Button
           size="md"
           isIconOnly

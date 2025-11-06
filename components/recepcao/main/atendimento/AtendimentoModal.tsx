@@ -1540,7 +1540,7 @@ const PacienteItem = React.memo(function _PacienteItem({
             >
               {isSubmitting ? (
                 <>
-                  <Save className="h-4 w-4 mr-2" /> Enviado...
+                  Enviado...
                 </>
               ) : (
                 <>

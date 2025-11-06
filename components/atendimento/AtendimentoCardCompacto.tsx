@@ -94,11 +94,9 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({ atendimento }
         {/* Header com nome e status */}
         <div className="flex justify-between items-start gap-2">
           <div className="min-w-0 flex-1">
-            <Tooltip content={atendimento.NOME}>
-              <h3 className="font-semibold text-sm text-gray-900 truncate">
+            <h3 className="font-semibold text-sm text-gray-900 truncate">
                 {atendimento.NOME}
               </h3>
-            </Tooltip>
             <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
               <span>{atendimento.TIPOEXAMENOME}</span>
             </div>
@@ -117,9 +115,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({ atendimento }
 
         {/* Empresa e cargo */}
         <div className="text-xs text-gray-600">
-          <Tooltip content={atendimento.NOMEEMPRESA}>
-            <div className="truncate">{atendimento.NOMEEMPRESA}</div>
-          </Tooltip>
+          <div className="truncate">{atendimento.NOMEEMPRESA}</div>
         </div>
 
         {/* Progresso dos exames */}

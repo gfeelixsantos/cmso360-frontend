@@ -71,6 +71,7 @@ const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
         <Alert
           color="success"
           variant="faded"
+          hideIcon={true}
         >
           <p className="font-bold">Nosso novo sistema de atendimento!</p>
           <p>Estamos em fase de testes, sugestões e melhorias serão bem vindas</p>
@@ -210,16 +211,11 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <main className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center" aria-label="Carregando">
-        <div className="relative">
-          <div className="animate-spin rounded-full h-16 w-16 border-4 border-[#104e35]/20 border-t-[#104e35]"></div>
-          <div className="absolute inset-0 rounded-full animate-ping h-16 w-16 border-4 border-[#104e35]/30 opacity-20"></div>
-        </div>
-      </main>
+      <CmsoLoading />
     )
   }
 
-  if (true) {
+  if (isLoading) {
     <CmsoLoading />
   }
 

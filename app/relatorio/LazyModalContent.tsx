@@ -17,7 +17,7 @@ import {
   Spinner,
   Input,
 } from '@heroui/react';
-import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User, Edit, RefreshCw } from 'lucide-react';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus, ExamStatus } from '@/lib/scheduling/enum/scheduling.enum';
 import { NEST_SCHEDULINGS } from '@/config/constants';
@@ -28,7 +28,10 @@ interface LazyModalContentProps {
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
 
-const InformacoesGerais: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) => {
+const InformacoesGerais: React.FC<{ 
+  atendimento: Scheduling;
+  onEditClick: () => void;
+}> = ({ atendimento, onEditClick }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case AtendimentoStatus.AGENDADO: return 'warning';
@@ -43,7 +46,21 @@ const InformacoesGerais: React.FC<{ atendimento: Scheduling }> = ({ atendimento 
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold mb-4 text-lg border-b pb-2">Informações do Atendimento</h3>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="font-semibold text-lg border-b pb-2">Informações do Atendimento</h3>
+          <Tooltip content="Editar cadastro do funcionário">
+            <Button
+              isIconOnly
+              variant="light"
+              color="primary"
+              size="sm"
+              onPress={onEditClick}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <Edit size={18} />
+            </Button>
+          </Tooltip>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-gray-600 mb-2">Dados do Paciente</h4>
@@ -195,6 +212,18 @@ const ExamesTable: React.FC<{
     }
   };
 
+  const handleSyncExam = (exame: ExamRegister) => {
+    // Implementação será feita posteriormente
+    console.log('Sincronizar exame:', exame);
+    // TODO: Implementar sincronização do exame
+  };
+
+  const handleViewMedicalRecord = () => {
+    // Implementação será feita posteriormente
+    console.log('Visualizar prontuário do atendimento:', atendimento._id);
+    // TODO: Implementar visualização do prontuário
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return '-';
     return new Date(dateString).toLocaleDateString('pt-BR');
@@ -214,21 +243,31 @@ const ExamesTable: React.FC<{
     <div className="space-y-4">
       {/* Header da Tabela */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="flex items-center gap-3">
           <h3 className="text-lg font-semibold text-gray-900">Exames Realizados</h3>
-          <p className="text-sm text-gray-600">
-            {filteredExames.length} de {localExames.length} exames
-          </p>
+          <Tooltip content="Visualizar prontuário completo">
+            <Button
+              isIconOnly
+              variant="light"
+              color="default"
+              size="sm"
+              onPress={handleViewMedicalRecord}
+              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+            >
+              <User size={18} />
+            </Button>
+          </Tooltip>
         </div>
         
-        <Input
-          placeholder="Buscar exames..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          startContent={<FileText size={16} className="text-gray-400" />}
-          className="w-full sm:w-64"
-          size="sm"
-        />
+        <div className="flex flex-col sm:flex-row gap-3">
+          <Input
+            placeholder="Buscar exames..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full sm:w-64"
+            size="sm"
+          />
+        </div>
       </div>
 
       {/* Tabela */}
@@ -244,9 +283,7 @@ const ExamesTable: React.FC<{
           }}
         >
           <TableHeader>
-            <TableColumn className="w-8/24">EXAME</TableColumn>
-            <TableColumn className="w-3/24">GRUPO</TableColumn>
-            <TableColumn className="w-2/24">DATA</TableColumn>
+            <TableColumn className="w-20">EXAME</TableColumn>
             <TableColumn className="w-2/24">STATUS</TableColumn>
             <TableColumn className="w-4/24">RESULTADO</TableColumn>
             <TableColumn className="w-5/24 text-center">AÇÕES</TableColumn>
@@ -264,22 +301,13 @@ const ExamesTable: React.FC<{
                   {/* Coluna Exame */}
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-gray-900 text-sm">{exame.nomeExame}</span>
-                      <span className="text-xs text-gray-500 mt-1">{exame.codigoExame}</span>
-                    </div>
-                  </TableCell>
-
-                  {/* Coluna Grupo */}
-                  <TableCell>
-                    <Chip size="sm" variant="flat" color="default" className="text-xs">
-                      {exame.grupo || 'Sem grupo'}
-                    </Chip>
-                  </TableCell>
-
-                  {/* Coluna Data */}
-                  <TableCell>
-                    <div className="text-sm text-gray-600">
-                      {formatDate(exame.dataExame)}
+                      <div className="font-medium text-gray-900 text-sm">{exame.nomeExame}</div>
+                      <div className="text-xs text-gray-600">
+                        {formatDate(exame.dataExame)} - {exame.profissional} 
+                      </div>
+                      <div className="text-xs text-gray-600">
+                        {exame.sala != "" ? new Date(exame.dataExame).toLocaleTimeString("pt-BR") : ''} {exame.sala} 
+                      </div>
                     </div>
                   </TableCell>
 
@@ -314,6 +342,19 @@ const ExamesTable: React.FC<{
                   {/* Coluna Ações */}
                   <TableCell>
                     <div className="flex items-center justify-center gap-2">
+                      {/* Ícone de Sincronizar */}
+                      <Tooltip content="Sincronizar exame">
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          onPress={() => handleSyncExam(exame)}
+                          className="text-purple-600 hover:text-purple-700"
+                        >
+                          <RefreshCw size={16} />
+                        </Button>
+                      </Tooltip>
+
                       {exame.url ? (
                         <>
                           <Tooltip content="Visualizar">
@@ -433,20 +474,55 @@ const ExamesTable: React.FC<{
 ExamesTable.displayName = 'ExamesTable';
 
 const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClose, onUpdateScheduling }) => {
+  const handleEditEmployee = () => {
+    // Implementação será feita posteriormente
+    console.log('Editar cadastro do funcionário:', atendimento._id);
+    // TODO: Implementar edição do cadastro do funcionário
+  };
+
   return (
     <>
-      <ModalHeader>
-        <h2 className="text-xl font-bold">Detalhes do Atendimento</h2>
+      <ModalHeader className="flex flex-col gap-1">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-bold">Detalhes do Atendimento</h2>
+            <p className="text-sm text-gray-600 mt-1">
+              {atendimento.NOME} - {atendimento.NOMEEMPRESA}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Tooltip content="Visualizar prontuário completo">
+              <Button
+                isIconOnly
+                variant="light"
+                color="default"
+                size="sm"
+                onPress={() => console.log('Visualizar prontuário')}
+                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+              >
+                <User size={20} />
+              </Button>
+            </Tooltip>
+          </div>
+        </div>
       </ModalHeader>
       <ModalBody>
-        <InformacoesGerais atendimento={atendimento} />
+        <InformacoesGerais 
+          atendimento={atendimento} 
+          onEditClick={handleEditEmployee}
+        />
         <div>
-          <h3 className="font-semibold mb-3 text-lg">Exames</h3>
-          <ExamesTable exames={atendimento.EXAMES} atendimento={atendimento} onUpdateScheduling={onUpdateScheduling} />
+          <ExamesTable 
+            exames={atendimento.EXAMES} 
+            atendimento={atendimento} 
+            onUpdateScheduling={onUpdateScheduling} 
+          />
         </div>
       </ModalBody>
       <ModalFooter>
-        <Button variant="light" onPress={onClose}>Fechar</Button>
+        <Button variant="light" onPress={onClose}>
+          Fechar
+        </Button>
       </ModalFooter>
     </>
   );

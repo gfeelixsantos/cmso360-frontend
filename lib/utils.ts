@@ -210,3 +210,10 @@ export const toBase64 = (file: File): Promise<string> => {
     reader.onerror = (error) => reject(error)
   })
 }
+
+
+export function ordemAlfabetica(data:string[]) {
+  if(data.length === 0) return
+
+  return data.sort((a,b) => a.localeCompare(b, "pt-BR"))
+}
