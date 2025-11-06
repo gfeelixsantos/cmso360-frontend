@@ -42,8 +42,8 @@ import { IUserInfo } from '@/lib/user/interfaces/IUser';
 import { AtendimentoStatus, ExamStatus, ParecerMedico } from '@/lib/scheduling/enum/scheduling.enum';
 import { USER_PROFILE } from '@/config/constants';
 import { NEST_SCHEDULINGS_FINISH } from '@/config/constants';
-import { MedicalRecord } from '../page';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
+import { MedicalRecord } from '../page';
 
 /* ---------------------- Tipos para Laudos ---------------------- */
 
@@ -288,9 +288,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
       if (!response.ok) throw new Error('Erro ao salvar parecer');
 
-      const updatedRecord: MedicalRecord = {
+      const updatedRecord = {
         ...selectedRecord,
-        currentStatus: "FINALIZADO" as any
       };
 
       onRecordUpdate(updatedRecord);

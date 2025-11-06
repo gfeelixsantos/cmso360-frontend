@@ -55,7 +55,7 @@ type PdfUrl = {
   grupo?: string 
 };
 
-type MedicalRecord = Scheduling & {
+export type MedicalRecord = Scheduling & {
   currentStatus: AtendimentoStatus;
   pdfUrls: PdfUrl[];
 };
