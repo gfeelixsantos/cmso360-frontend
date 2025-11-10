@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Card } from "@heroui/react";
 import { Clock } from "lucide-react";
 
@@ -97,6 +97,10 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
     return <EmptyState />;
   }
 
+  useEffect(() => {
+    console.log("Atendimento List", senhasOrdenadas)
+  }, [senhasOrdenadas])
+
   return (
     <section
       className="space-y-6 p-4 bg-gray-50 rounded-lg flex gap-4"
@@ -105,7 +109,8 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
       <div className='w-screen'>
         { senhasPreferenciais.length > 0 && (
           <AtendimentoSection
-            title={`Preferencial (${senhasPreferenciais.length})`}
+            key="senhas-preferenciais"
+            title={`Preferencial: ${senhasPreferenciais.length}`}
             senhas={senhasPreferenciais}
             emptyMessage="Nenhuma"
             setTicketSelecionado={setTicketSelecionado}
@@ -118,8 +123,25 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
             exameSelecionado={exameSelecionado}
           />
         )}
+        { senhasComPrefixo.length > 0 && (
+          <AtendimentoSection
+            key="senhas-prioridade"
+            title={`Prioridade: ${senhasComPrefixo.length}`}
+            senhas={senhasComPrefixo}
+            emptyMessage="Nenhuma"
+            setTicketSelecionado={setTicketSelecionado}
+            socket={socket}
+            salaSelecionada={salaSelecionada}
+            codigosDeAtendimento={codigosDeAtendimento}
+            unidadeSelecionada={unidadeSelecionada}
+            setFuncionarioSelecionado={setFuncionarioSelecionado}
+            onHandleModal={onHandleModal}
+            exameSelecionado={exameSelecionado}
+          />
+        )}
         <AtendimentoSection
-          title={`Atendimento (${senhasNormais.length})`}
+          key="senhas-normais"
+          title={`Atendimento: ${senhasNormais.length}`}
           senhas={senhasNormais}
           emptyMessage="Nenhuma"
           setTicketSelecionado={setTicketSelecionado}
@@ -135,6 +157,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
       <div className='w-md mb-2'>
         { senhasEmAtendimento.map(atend => (
             <AtendimentoCardCompacto
+              key={`compacto-${atend._id}`}
               atendimento={atend}
             // title={`Em exame (${senhasEmAtendimento.length})`}
             // senhas={senhasEmAtendimento}

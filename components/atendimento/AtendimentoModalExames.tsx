@@ -9,12 +9,13 @@ import { EXAMES_LIST, NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { Socket } from "socket.io-client";
-import AudiometriaOcupacional from "../exames/Audiometria";
 import AcuidadeVisual from "../exames/AcuidadeVisual";
 import Espirometria from "../exames/Espirometria";
 import Dinamometria from "../exames/Dinamometria";
 import Psicossocial from "../exames/Psicossocial";
 import ExamePadrao from "../exames/ExamePadrao";
+import AudiometriaOcupacional from "../exames/AudiometriaOcupacional";
+
 
 
 interface AtendimentoModalExamesProps {
@@ -54,8 +55,7 @@ const AtendimentoModalExames = ({
 
     // Verifica exame psiccosial se é no modelo com psicóloga
     const hasPsico = funcionarioSelecionado?.EXAMES.find(e => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE)
-    if(hasPsico){
-      console.log("exame psico", hasPsico)
+    if(hasPsico && hasPsico.status === ExamStatus.PENDENTE){
       setPsicossocial(true)
       setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"))
     }

@@ -1,3 +1,4 @@
+// Código
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Spinner } from "@heroui/react";
 import { useUser } from '@/hooks/useUser';
@@ -224,67 +225,103 @@ React.memo(({ number, title, icon }) => (
   </div>
 ));
 
-// Serviço de cálculos (separado do componente)
+// Serviço de cálculos (versão NR-7 + ajustes clínicos)
+// Observações:
+// - Textos padronizados para laudo ocupacional (NR-7).
+// - Quando "Audição dentro dos padrões de normalidade", o tipo/grau aparecem como '-'.
+// - Configuração da curva refinada: compara médias de baixas vs altas frequências.
+
 class AudiometriaCalculator {
+  // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
   static calcularMediaTonal(freqs: string[]): number {
     const valores = freqs
-      .map(v => parseFloat(v))
+      .map(v => parseFloat(String(v)))
       .filter(v => !isNaN(v));
-    
     if (valores.length === 0) return 0;
     return Math.round(valores.reduce((acc, val) => acc + val, 0) / valores.length);
   }
 
+  // === CLASSIFICAÇÃO (Lloyd & Kaplan) ===
   static classificarPerdaLloydKaplan(media: number): string {
-    if (media <= 25) return 'Dentro dos padrões da normalidade';
+    if (media <= 25) return 'Audição dentro dos padrões de normalidade';
     if (media <= 40) return 'Perda Auditiva Leve';
     if (media <= 70) return 'Perda Auditiva Moderada';
     if (media <= 90) return 'Perda Auditiva Severa';
     return 'Perda Auditiva Profunda';
   }
 
+  // === IDENTIFICAR FREQUÊNCIAS ALTERADAS (> 25 dB) ===
   static identificarFrequenciasAlteradas(vaLimiares: { [key: number]: string }): string {
-    return Object.keys(vaLimiares)
+    const alteradas = Object.keys(vaLimiares)
       .map(Number)
       .filter(freq => {
-        const valor = parseFloat(vaLimiares[freq]);
+        const valor = parseFloat(String(vaLimiares[freq]));
         return !isNaN(valor) && valor > 25;
       })
-      .map(freq => `${freq} Hz`)
-      .join(', ');
+      .sort((a, b) => a - b)
+      .map(freq => `${freq} Hz`);
+
+    return alteradas.length > 0 ? alteradas.join(', ') : 'sem alterações significativas';
   }
 
+  // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
   static verificarCriterioPCD(mediaOD: number, mediaOE: number): string {
     const melhorOrelha = Math.min(mediaOD, mediaOE);
     const piorOrelha = Math.max(mediaOD, mediaOE);
-    
+
     if (melhorOrelha >= 41) {
-      return `POSSIBILIDADE DE COTA PCD - Critério: Perda Auditiva Bilateral (Média Tonal na Melhor Orelha >= 41 dB NA). Ref: Decreto 5.296/2004.`;
+      return `Atende aos critérios legais de deficiência auditiva (perda bilateral; média tonal na melhor orelha ≥ 41 dB NA), conforme Decreto 5.296/2004.`;
     } else if (piorOrelha >= 95 && melhorOrelha < 41) {
-      return `POSSIBILIDADE DE COTA PCD - Critério: Surdez Unilateral Total/Profunda (Média Tonal na Pior Orelha >= 95 dB NA e Melhor Orelha < 41 dB NA). Ref: Lei 14.768/2023.`;
+      return `Atende aos critérios legais de deficiência auditiva unilateral (pior orelha ≥ 95 dB NA e melhor orelha < 41 dB NA), conforme Lei 14.768/2023.`;
     }
-    
-    return 'NÃO SE ENQUADRA. Limiares auditivos abaixo dos critérios federais (Média Tonal na Melhor Orelha < 41 dB NA).';
+    return `Não atende aos critérios legais de deficiência auditiva (média tonal na melhor orelha < 41 dB NA).`;
   }
 
+  // === CONFIGURAÇÃO DA CURVA (refinada) ===
+  // Compara média de baixas (500+1000) e média de altas (3000+4000+6000) para decidir:
+  // - Plana: diferenças pequenas
+  // - Descendente: altas ~ pior (indicando perda em altas freq)
+  // - Ascendente: baixas ~ pior (raro, mas possível)
+  // - Irregular: variação sem padrão definido
   static calcularConfiguracao(vaLimiares: { [key: number]: string }): string {
-    const val500 = parseFloat(vaLimiares[500]) || 0;
-    const val4000 = parseFloat(vaLimiares[4000]) || 0;
-    if (Math.abs(val500 - val4000) <= 10) return 'Plana';
-    if (val4000 > val500 + 15) return 'Descendente';
+    const get = (f: number) => {
+      const v = parseFloat(String(vaLimiares[f]));
+      return isNaN(v) ? null : v;
+    };
+
+    const baixas = [500, 1000].map(get).filter(v => v !== null) as number[];
+    const mediasAltas = [3000, 4000, 6000].map(get).filter(v => v !== null) as number[];
+
+    if (baixas.length === 0 || mediasAltas.length === 0) {
+      // Fallback para comparação 500 vs 4000 (como na versão anterior) quando faltam frequências
+      const v500 = get(500) ?? 0;
+      const v4000 = get(4000) ?? 0;
+      if (Math.abs(v500 - v4000) <= 10) return 'Plana';
+      if (v4000 > v500 + 15) return 'Descendente';
+      if (v500 > v4000 + 15) return 'Ascendente';
+      return 'Irregular';
+    }
+
+    const mediaBaixas = Math.round(baixas.reduce((a, b) => a + b, 0) / baixas.length);
+    const mediaAltas = Math.round(mediasAltas.reduce((a, b) => a + b, 0) / mediasAltas.length);
+
+    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return 'Plana';
+    if (mediaAltas > mediaBaixas + 15) return 'Descendente';
+    if (mediaBaixas > mediaAltas + 15) return 'Ascendente';
     return 'Irregular';
   }
 
+  // === CÁLCULO GERAL E MONTAGEM DE LAUDO ===
   static calcularTodosResultados(formData: AudiometriaData): Partial<AudiometriaData> {
     const vaLimiaresOD = {
-      250: formData.viaAereaOD250, 500: formData.viaAereaOD500, 1000: formData.viaAereaOD1000, 
-      2000: formData.viaAereaOD2000, 3000: formData.viaAereaOD3000, 4000: formData.viaAereaOD4000, 
+      250: formData.viaAereaOD250, 500: formData.viaAereaOD500, 1000: formData.viaAereaOD1000,
+      2000: formData.viaAereaOD2000, 3000: formData.viaAereaOD3000, 4000: formData.viaAereaOD4000,
       6000: formData.viaAereaOD6000, 8000: formData.viaAereaOD8000
     };
 
     const vaLimiaresOE = {
-      250: formData.viaAereaOE250, 500: formData.viaAereaOE500, 1000: formData.viaAereaOE1000, 
-      2000: formData.viaAereaOE2000, 3000: formData.viaAereaOE3000, 4000: formData.viaAereaOE4000, 
+      250: formData.viaAereaOE250, 500: formData.viaAereaOE500, 1000: formData.viaAereaOE1000,
+      2000: formData.viaAereaOE2000, 3000: formData.viaAereaOE3000, 4000: formData.viaAereaOE4000,
       6000: formData.viaAereaOE6000, 8000: formData.viaAereaOE8000
     };
 
@@ -304,49 +341,74 @@ class AudiometriaCalculator {
     const configuracaoOD = this.calcularConfiguracao(vaLimiaresOD);
     const configuracaoOE = this.calcularConfiguracao(vaLimiaresOE);
 
-    // ATUALIZAÇÃO: Definir "-" para Grau de Perda e Tipo de Perda quando dentro da normalidade
-    const tipoPerdaOD = classificacaoOD.includes('normalidade') ? '-' : 'Neurossensorial';
-    const tipoPerdaOE = classificacaoOE.includes('normalidade') ? '-' : 'Neurossensorial';
-    
-    // ATUALIZAÇÃO: Definir "-" para Grau de Perda quando dentro da normalidade
-    const grauPerdaOD = classificacaoOD.includes('normalidade') ? '-' : classificacaoOD;
-    const grauPerdaOE = classificacaoOE.includes('normalidade') ? '-' : classificacaoOE;
+    // Tipo/grau: '-' quando dentro da normalidade (profissionais pediram esse comportamento)
+    const isNormalOD = classificacaoOD.includes('normalidade');
+    const isNormalOE = classificacaoOE.includes('normalidade');
 
-    const resultadoOD = classificacaoOD.includes('normalidade') 
-      ? 'Limiares auditivos dentro dos padrões da normalidade'
-      : `${classificacaoOD} Neurossensorial ${configuracaoOD} nas frequências ${frequenciasAlteradasOD || '250 a 8000 Hz'}`;
-    
-    const resultadoOE = classificacaoOE.includes('normalidade')
-      ? 'Limiares auditivos dentro dos padrões da normalidade'
-      : `${classificacaoOE} Neurossensorial ${configuracaoOE} nas frequências ${frequenciasAlteradasOE || '250 a 8000 Hz'}`;
+    const tipoPerdaOD = isNormalOD ? '-' : 'Neurossensorial';
+    const tipoPerdaOE = isNormalOE ? '-' : 'Neurossensorial';
+
+    const grauPerdaOD = isNormalOD ? '-' : classificacaoOD;
+    const grauPerdaOE = isNormalOE ? '-' : classificacaoOE;
+
+    // Resultados textuais:
+    const resultadoOD = isNormalOD
+      ? 'Audição dentro dos padrões de normalidade.'
+      : `${grauPerdaOD} ${tipoPerdaOD} ${configuracaoOD} nas frequências ${frequenciasAlteradasOD}.`;
+
+    const resultadoOE = isNormalOE
+      ? 'Audição dentro dos padrões de normalidade.'
+      : `${grauPerdaOE} ${tipoPerdaOE} ${configuracaoOE} nas frequências ${frequenciasAlteradasOE}.`;
+
+    const conclusaoGeral = (isNormalOD && isNormalOE)
+      ? 'Audição dentro dos padrões de normalidade bilateralmente.'
+      : 'Alterações auditivas detectadas conforme descrição acima.';
+
+    // Classificação NR-7 para registro (RA = Resultado Audiométrico / quando não há comparativo anterior)
+    const classificacaoNR7OD = formData.audiometriaAnterior === 'Não'
+      ? (isNormalOD ? 'RA - Normal' : 'RA - Alterada')
+      : 'Alteração Não Ocupacional';
+
+    const classificacaoNR7OE = formData.audiometriaAnterior === 'Não'
+      ? (isNormalOE ? 'RA - Normal' : 'RA - Alterada')
+      : 'Alteração Não Ocupacional';
 
     return {
+      // === Dados numéricos ===
       mediaTonalOD,
       mediaTonalOE,
-      perdaAuditivaOD: mediaTonalOD > 0 ? `${mediaTonalOD} dB` : '0 dB',
-      perdaAuditivaOE: mediaTonalOE > 0 ? `${mediaTonalOE} dB` : '0 dB',
-      // ATUALIZAÇÃO: Usar os novos valores com "-" quando aplicável
-      classificacaoOD: grauPerdaOD,
-      classificacaoOE: grauPerdaOE,
-      criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
-      frequenciasAlteradasOD,
-      frequenciasAlteradasOE,
-      configuracaoOD,
-      configuracaoOE,
-      // ATUALIZAÇÃO: Usar os novos valores com "-" quando aplicável
+      perdaAuditivaOD: `${mediaTonalOD} dB`,
+      perdaAuditivaOE: `${mediaTonalOE} dB`,
+
+      // === Classificação / Tipo ===
+      classificacaoOD: isNormalOD ? 'Normal' : classificacaoOD,
+      classificacaoOE: isNormalOE ? 'Normal' : classificacaoOE,
       tipoPerdaOD,
       tipoPerdaOE,
+
+      // === Configuração e Frequências ===
+      configuracaoOD,
+      configuracaoOE,
+      frequenciasAlteradasOD,
+      frequenciasAlteradasOE,
+
+      // === Resultados textuais para o laudo ===
       resultadoOD,
       resultadoOE,
-      conclusao: (classificacaoOD.includes('normalidade') && classificacaoOE.includes('normalidade')) 
-        ? 'Limiares auditivos dentro dos padrões da normalidade.' 
-        : 'Alteração Auditiva Detectada',
-      classificacaoNR7OD: formData.audiometriaAnterior === 'Não' 
-        ? (classificacaoOD.includes('normalidade') ? 'RA - Normal' : 'RA - Alterada')
+      conclusao: conclusaoGeral,
+
+      // === Critérios legais e NR-7 ===
+      criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
+      classificacaoNR7OD: formData.audiometriaAnterior === 'Não'
+        ? (isNormalOD ? 'RA - Normal' : 'RA - Alterada')
+        : 'Alteração Não Ocupacional',
+      classificacaoNR7OE: formData.audiometriaAnterior === 'Não'
+        ? (isNormalOE ? 'RA - Normal' : 'RA - Alterada')
         : 'Alteração Não Ocupacional',
     };
   }
 }
+ 
 
 const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({ 
   atendimento, 
@@ -369,6 +431,10 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     }
     if (formulario) {
       setFormData(prev => ({ ...prev, ...formulario }));
+      // Se já existem dados do formulário, considerar que os resultados foram calculados
+      if (formulario.resultadoOD && formulario.resultadoOE) {
+        setResultadosCalculados(true);
+      }
     }
   }, [atendimento, formulario]);
 
@@ -410,9 +476,10 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   }, [formData]);
 
   const handleSave = useCallback(async () => {
+    // ATUALIZAÇÃO 2: Verificar se os resultados foram calculados antes de permitir salvar
     if (!resultadosCalculados) {
-      // Se não calculou ainda, calcular antes de salvar
-      await calcularResultados();
+      alert('É necessário calcular os resultados antes de finalizar o exame.');
+      return;
     }
     
     setIsLoading(true);
@@ -421,7 +488,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [formData, onSave, resultadosCalculados, calcularResultados]);
+  }, [formData, onSave, resultadosCalculados]);
 
   // Componente de checkbox Sim/Não reutilizável
   const SimNaoCheckbox = useCallback(({ field, label }: { field: keyof AudiometriaData; label: string }) => (
@@ -789,7 +856,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     ) : (
                       <div className="text-center text-gray-400 py-2 text-xs">-</div>
                     )}
-                  </td>
+                  </td> 
                 ))}
               </tr>
               
@@ -824,11 +891,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         <div>
                             <label className="block text-sm font-semibold text-red-700 mb-1">Classificação (Grau Lloyd & Kaplan)</label>
                             <div className={`text-center font-bold text-sm p-2 rounded ${ 
-                                formData.classificacaoOD.includes('normalidade') ? 'bg-green-100 text-green-800' : 
+                                formData.classificacaoOD.includes('normalidade') || formData.classificacaoOD === '-' ? 'bg-green-100 text-green-800' : 
                                 formData.classificacaoOD.includes('Leve') ? 'bg-amber-100 text-amber-800' : 
                                 formData.classificacaoOD.includes('Moderada') ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800' 
                             }`}>
-                                { formData.classificacaoOD }
+                                {formData.classificacaoOD === '-' ? 'Dentro dos padrões da normalidade' : formData.classificacaoOD}
                             </div>
                         </div>
                         
@@ -859,11 +926,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         <div>
                             <label className="block text-sm font-semibold text-blue-700 mb-1">Classificação (Grau Lloyd & Kaplan)</label>
                             <div className={`text-center font-bold text-sm p-2 rounded ${ 
-                                formData.classificacaoOE.includes('normalidade') ? 'bg-green-100 text-green-800' : 
+                                formData.classificacaoOE.includes('normalidade') || formData.classificacaoOE === '-' ? 'bg-green-100 text-green-800' : 
                                 formData.classificacaoOE.includes('Leve') ? 'bg-amber-100 text-amber-800' : 
                                 formData.classificacaoOE.includes('Moderada') ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800' 
                             }`}>
-                                { formData.classificacaoOE }
+                                {formData.classificacaoOE === '-' ? 'Dentro dos padrões da normalidade' : formData.classificacaoOE}
                             </div>
                         </div>
                         
@@ -953,7 +1020,8 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
           onPress={handleSave}
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
-          isDisabled={!formData.resultadoOD || !formData.resultadoOE || isLoading}
+          // ATUALIZAÇÃO 2: Desabilitar o botão se os resultados não foram calculados
+          isDisabled={!formData.resultadoOD || !formData.resultadoOE || isLoading || !resultadosCalculados}
         >
           {isLoading ? 'Salvando...' : 'Concluir exame'}
         </Button>

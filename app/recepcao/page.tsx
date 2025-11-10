@@ -142,7 +142,7 @@ const RecepcaoPage: React.FC = () => {
       // fallback: retorna dados do IndexedDB
       return await IndexDb.getCompanies();
     }
-  }, [conectado])
+  }, [])
 
 
 
@@ -387,9 +387,9 @@ useEffect(() => {
 
   
 
-  const handleModal = () => {
+  const handleModal = useCallback(() => {
     setModalAtendimentoAberto(!modalAtendimentoAberto)
-  }
+  }, [modalAtendimentoAberto])
 
 
   const calcularEstatisticas = () => {

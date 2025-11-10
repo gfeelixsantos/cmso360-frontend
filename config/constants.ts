@@ -38,6 +38,9 @@ export const NEST_SCHEDULINGS_RECORDS = NEST_URL + SCHEDULINGS_RECORDS
 const SOC_COMPANIES = process.env.NEXT_PUBLIC_NEST_SOC_COMPANIES ?? "[.ENV] SOC Companies nulo"
 export const NEST_SOC_COMPANIES = NEST_URL + SOC_COMPANIES
 
+const SOC_CADASTROPESSOAS = process.env.NEXT_PUBLIC_NEST_SOC_CADASTROPESSOAS ?? "[.ENV] SOC Cadastro pessoas nulo"
+export const NEST_SOC_CADASTROPESSOAS = NEST_URL + SOC_CADASTROPESSOAS
+
 const SOC_PEDIDOEXAME = process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME ?? "[.ENV] SOC ASO Funcionário nulo"
 export const NEST_SOC_PEDIDOEXAME = NEST_URL + SOC_PEDIDOEXAME
 
@@ -112,6 +115,28 @@ export const EMPRESAS_CREDENCIADAS_SOC = new Set([
     // KIT ESMALGLASS
     "353226"
 ]);
+
+export const CODIGOS_RISCO_ALTURA = new Set([
+  "179", // Trabalho em altura
+  "213", // Acidentes - trabalho em altura
+  "252", // Preventivo - Trabalho em Altura
+  "263", // Quedas de altura superior a 2 metros
+  "336", // Diferença de nível maior que 2 metros / Queda em altura
+  "395", // Queda em altura
+  "777", // Trabalho eventual em altura
+  "941", // Queda de pessoa com diferença de nível acima de dois metros (queda de altura)
+  "978", // Trabalho em altura no acesso a partes superiores de tanques e instalações do Binder
+  "1277", // Queda de altura em nivel dferente - ACID 1
+  "1379", // Queda - Altura - Diferença de nível maior que dois metros
+])
+
+export const CODIGOS_ESPACO_CONFINADO = new Set([
+  "237", // Espaço Confinado
+  "364", // Operações em Espaço Confinado
+  "382", // Trabalho em Espaço confinado
+  "666", // Catalogação dos espaços confinados
+  "977", // Espaço confinado no acesso a tanques para inspeção e limpeza
+])
 
 type ExamToogle = {
   codigos: string[],

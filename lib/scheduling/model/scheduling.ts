@@ -1,6 +1,6 @@
 import { Ticket } from "@/lib/ticket/ticket";
 import { AsoStatus, AtendimentoStatus, ExamStatus } from "../enum/scheduling.enum";
-import { Client, ExamRegister, FileUpload, Scheduling } from "../interface/scheduling";
+import { Client, ExamRegister, FileUpload, RiscosAso, Scheduling } from "../interface/scheduling";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import { TIPOS_EXAME } from "@/config/constants";
 
@@ -35,7 +35,7 @@ export class SchedulingClass implements Scheduling {
   PARECERMEDICO: string | null = null;
   PRONTUARIOSVINCULADOS: string[] = [];
   RECOMENDACAOMEDICA: string | null = null;
-  RISCOSASO: string | null = null;
+  RISCOSASO: RiscosAso[] | null = null;
   SCHEDULINGCODE: string = "";
   SEQUENCIAFICHA: string = "";
   SITUACAO: string = "";

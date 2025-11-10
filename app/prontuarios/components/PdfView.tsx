@@ -29,12 +29,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
     if (dir === "go" && typeof val === "number") onPdfIndexChange(Math.min(Math.max(val, 0), totalPdfs - 1));
   };
 
-  const handleZoom = (direction: 'in' | 'out' | 'reset') => {
-    if (direction === 'in') setZoom(prev => Math.min(prev + 25, 200));
-    if (direction === 'out') setZoom(prev => Math.max(prev - 25, 50));
-    if (direction === 'reset') setZoom(100);
-  };
-
   return (
     <main className="flex-1 bg-default-900 relative flex flex-col">
       {selectedRecord ? (
@@ -49,43 +43,6 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Controles de Zoom */}
-              <div className="flex items-center gap-1 mr-4">
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleZoom('out')}
-                  isDisabled={zoom <= 50}
-                  className="text-default-50"
-                >
-                  <ZoomOut className="w-4 h-4" />
-                </Button>
-                <span className="text-xs font-medium px-2 min-w-12 text-center">
-                  {zoom}%
-                </span>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  variant="light"
-                  onPress={() => handleZoom('in')}
-                  isDisabled={zoom >= 200}
-                  className="text-default-50"
-                >
-                  <ZoomIn className="w-4 h-4" />
-                </Button>
-                {zoom !== 100 && (
-                  <Button
-                    size="sm"
-                    variant="light"
-                    onPress={() => handleZoom('reset')}
-                    className="text-default-50 text-xs ml-2"
-                  >
-                    Resetar
-                  </Button>
-                )}
-              </div>
-
               {/* Navegação entre PDFs */}
               <Button
                 isIconOnly

@@ -309,14 +309,15 @@ export default function UnifiedProntuarioPage() {
     <div className="min-h-screen flex flex-col bg-default-50 antialiased">
       <HeaderApp
         onLogout={logout}
-        children={<h1 className="text-lg font-bold">Prontuários</h1>}
+        children={<h1 className="text-lg">Gestão de Prontuários</h1>}
       />
 
       <div className="flex flex-1 overflow-hidden">
         {/* LEFT: Lista / filtros */}
-        <aside className="w-74 bg-default-50 border-r border-divider p-4 flex flex-col flex-shrink-0">
+        <aside className="w-80 bg-default-50 border-r border-divider p-4 flex flex-col flex-shrink-0">
           <div className="space-y-4">
             <Select
+              size="sm"
               label="Status de Atendimento"
               placeholder="Selecione um Status"
               value={attendanceStatus || ""}
@@ -352,7 +353,7 @@ export default function UnifiedProntuarioPage() {
           <div className="flex-1 overflow-y-auto max-h-80 overflow-x-hidden space-y-3 p-1">
             {isLoadingInitialData ? (
               <div className="flex flex-col items-center justify-center p-8 text-default-500">
-                <Spinner color="primary" />
+                <Spinner color="success" variant="simple" size="lg" />
                 <p className="mt-2 text-sm">Carregando dados...</p>
               </div>
             ) : !attendanceStatus ? (
@@ -360,7 +361,7 @@ export default function UnifiedProntuarioPage() {
                 <CardBody className="text-center p-6">
                   <Zap className="w-8 h-8 mx-auto mb-3 text-primary" />
                   <p className="text-sm font-medium text-default-600">
-                    Selecione um status para carregar a lista de prontuários.
+                    Selecione um status para carregar os prontuários.
                   </p>
                 </CardBody>
               </Card>
@@ -378,7 +379,7 @@ export default function UnifiedProntuarioPage() {
                   onPress={() => selectRecord(r)}
                   className={`transition-all duration-200 w-3xs ${
                     selectedRecord?._id === r._id
-                      ? "ring-2 ring-success bg-success-50"
+                      ? "ring-2 ring-warning bg-warning-50"
                       : "hover:shadow-md"
                   }`}
                 >
@@ -388,8 +389,7 @@ export default function UnifiedProntuarioPage() {
                         <div className="flex items-center gap-2 mb-1">
                           <div className="min-w-0">
                             <h4 className="text-sm font-semibold text-default-800 truncate">{r.NOME}</h4>
-                            <p className="text-xs text-default-500">{r.TIPOEXAMENOME} • {r.DATAAGENDAMENTO}</p>
-                            <p className="text-xs text-default-500 truncate">{r.NOMEEMPRESA}</p>
+                            <p className="text-xs text-default-500">{r.DATAAGENDAMENTO} - {r.TIPOEXAMENOME}</p>
                             <Chip 
                               size="sm" 
                               color={getStatusColor(r.currentStatus)}

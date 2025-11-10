@@ -7,7 +7,7 @@ export interface IUserInfo {
   perfil: string
   codigo: string
   conselho?: string,
-  ufconselho: string,
+  ufconselho?: string,
 }
 
 export function useUser() {

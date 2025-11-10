@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Radio, RadioGroup, Spinner, form } from "@heroui/react";
-import { Calendar, User, Building, Briefcase, Stethoscope, FileText, ClipboardList } from 'lucide-react';
+import { Calendar, User, Building, Briefcase, Stethoscope, FileText, ClipboardList, Triangle, TriangleAlert } from 'lucide-react';
 import { IUserInfo, useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import HeaderExame from './HeaderExame';
@@ -32,7 +32,7 @@ interface RestricoesMedicas {
   descricaoOutros?: string;
 }
 
-interface FichaClinicaData {
+export interface FichaClinicaData {
   doencasFamiliares: string[];
   doencasPessoais: string[];
   afastamento: string;
@@ -500,9 +500,9 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     label: string; 
     options: readonly { value: string; label: string; }[] 
   }) => (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div className="p-4">
       <label className="block text-sm font-medium text-gray-700 mb-3">{label}</label>
-      <div className="flex flex-wrap gap-6">
+      <div className="flex gap-6">
         {options.map((option) => (
           <Checkbox
             color='success'
@@ -534,7 +534,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     label: string; 
     options: readonly string[] 
   }) => (
-    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+    <div className=" p-4">
       <label className="block text-sm font-medium text-gray-700 mb-3">{label}</label>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {options.map((option) => (
@@ -632,7 +632,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       />
 
       {/* 2. Anamnese e Histórico Familiar */}
-      {(tipoAdmissional && !agendamento?.TIPOEXAMENOME.includes("ADM")) && (
+      {(tipoAdmissional  && !exame.includes("Triagem")) && (
         <>
           <Card className="p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle title="Anamnese e Histórico Familiar" />
@@ -644,9 +644,9 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 options={DOENCAS_FAMILIARES_OPTIONS}
               />
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
-                  Doenças pessoais / antecedentes:
+                  Doenças pessoais / antecedentes
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                   {DOENCAS_PESSOAIS_OPTIONS.map((doenca) => (
@@ -666,10 +666,10 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 </div>
 
                 {showObservacoesPessoais && (
-                  <div className="mt-4 bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <div className="mt-4 p-4">
                     <label className="block text-sm font-medium text-blue-700 mb-2">
-                      Observações - Doenças Pessoais:
-                      <span className="text-red-500 ml-1">*</span>
+                      Observações - Doenças Pessoais
+                      <span className="text-blue-500 ml-1">*</span>
                     </label>
                     <Textarea
                       value={formData.observacoesDoencasPessoais}
@@ -687,11 +687,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                 )}
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Já sofreu acidente ou afastamento {'>'} 15 dias?
                 </label>
                 <RadioGroup
+                  color='success'
                   value={formData.afastamento}
                   onValueChange={(value) => handleInputChange('afastamento', value)}
                   orientation="horizontal"
@@ -705,7 +706,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               </div>
 
               {formData.afastamento === 'Sim' && (
-                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                <div className="p-4">
                   <label className="block text-sm font-medium text-amber-700 mb-2">
                     Observação - Motivo do Acidente/Afastamento:
                   </label>
@@ -725,7 +726,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           <Card className="p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle title="Hábitos e Condições Gerais" />
             
-            <div className="space-y-6">
+            <div>
               <SimNaoCheckboxGroup 
                 field="tabagismo"
                 label="Tabagismo:"
@@ -815,25 +816,24 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
         </div>
 
         {/* Pressões Arteriais */}
-        <div className="p-4 mb-6">
+        <div className="p-4">
           {(Array.isArray(formData.pressaoArterial) ? formData.pressaoArterial : []).map((pa, index) => (
             <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 align-center items-center bg-white mb-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Valor (mmHg):</label>
-                <FormattedInput
+                <Input
+                  variant='bordered'
+                  label={"Valor (mmHg)"}
                   value={pa.valor}
-                  onChange={(value) => handlePressaoArterialChange(index, value)}
+                  onChange={(value) => handlePressaoArterialChange(index, value.target.value)}
                   placeholder="000/00"
                   maxLength={7}
                 />
-                {pa.valor && ClinicaCalculator.verificarPressaoAlterada(pa.valor) && (
-                  <p className="text-xs text-red-600 font-medium mt-1">⚠️ Pressão arterial alterada</p>
-                )}
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Horário:</label>
                 <Input
+                  variant='bordered'
+                  label={"Horário"}
                   readOnly={true}
                   type="time"
                   value={pa.horario}
@@ -843,28 +843,32 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
               <div>
                 <Button
-                  size="sm"
                   color="danger"
-                  variant="flat"
+                  variant="light"
                   onPress={() => handleRemovePressaoArterial(index)}
                 >
                   Remover
                 </Button>
               </div>
+                {pa.valor && ClinicaCalculator.verificarPressaoAlterada(pa.valor) && (
+                  <div className='flex mt-2 gap-2'>
+                    <TriangleAlert className="w-5 h-5 text-xs text-red-600" />
+                    <p className="text-xs text-red-600 font-medium mt-1">Pressão arterial alterada</p>
+                  </div>
+                )}
             </div>
+            
           ))}
         </div>
 
         {/* Peso, altura e IMC */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 ">
           <div className="p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Peso (kg):
-              <span className="text-red-500 ml-1">*</span>
-            </label>
-            <FormattedInput
+            <Input
+              variant='bordered'
+              label="Peso (kg)"
               value={formData.peso}
-              onChange={(value) => handleInputChange("peso", value)}
+              onChange={(value) => handleInputChange("peso", value.target.value)}
               placeholder="00,0"
               type="text"
               className={formErrors.peso ? 'border-red-500' : ''}
@@ -873,13 +877,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           </div>
 
           <div className="p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Altura (m):
-              <span className="text-red-500 ml-1">*</span>
-            </label>
-            <FormattedInput
+            <Input
+              variant='bordered'
+              label="Altura (m)"
               value={formData.altura}
-              onChange={(value) => handleInputChange("altura", value)}
+              onChange={(value) => handleInputChange("altura", value.target.value)}
               placeholder="0,00"
               type="text"
               className={formErrors.altura ? 'border-red-500' : ''}
@@ -889,8 +891,9 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           </div>
 
           <div className="p-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">IMC:</label>
             <Input
+              label="IMC"
+              variant='bordered'
               value={formData.imc}
               isReadOnly
               className="bg-white border-gray-300"
@@ -972,17 +975,22 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               </div>
             )}
 
+            {/* Campos para "Apto com restrições" */}
             {formData.conclusao === 'Apto com restrições' && (
               <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-4">
                 <h3 className="text-sm font-semibold text-amber-800 mb-3">Restrições Médicas</h3>
                 
+                {/* Checkboxes de restrições */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Evitar carregar peso excessivo */}
                   <div className="space-y-2">
                     <Checkbox
                       color='danger'
                       isSelected={formData.restricoes?.evitarCarregarPeso || false}
                       onValueChange={(checked) => handleRestricoesChange('evitarCarregarPeso', checked)}
-                      classNames={{ label: "text-sm font-medium text-gray-700" }}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
                     >
                       Evitar carregar peso excessivo
                     </Checkbox>
@@ -1000,9 +1008,135 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                     )}
                   </div>
 
-                  {/* ... restante das restrições médicas mantido por brevidade */}
+                  {/* Evitar elevação dos braços */}
+                  <div className="space-y-2">
+                    <Checkbox
+                      color='danger'
+                      isSelected={formData.restricoes?.evitarElevacaoBracos || false}
+                      onValueChange={(checked) => handleRestricoesChange('evitarElevacaoBracos', checked)}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      Evitar elevação dos braços acima do nível dos ombros
+                    </Checkbox>
+                    {formData.restricoes?.evitarElevacaoBracos && (
+                      <div className="ml-6">
+                        <label className="block text-xs text-gray-600 mb-1">Tipo:</label>
+                        <div className="flex gap-4">
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'direito'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'direito' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Direito
+                          </Checkbox>
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'esquerdo'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'esquerdo' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Esquerdo
+                          </Checkbox>
+                          <Checkbox
+                            color='warning'
+                            isSelected={formData.restricoes?.tipoElevacaoBracos === 'ambos'}
+                            onValueChange={(checked) => 
+                              handleRestricoesChange('tipoElevacaoBracos', checked ? 'ambos' : undefined)
+                            }
+                            classNames={{
+                              label: "text-xs text-gray-700"
+                            }}
+                          >
+                            Ambos
+                          </Checkbox>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Outras restrições simples */}
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarCurvarTronco || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarCurvarTronco', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar curvar tronco com frequência
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarEscadas || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarEscadas', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar subir/descer escadas ou degraus
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarLongasCaminhadas || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarLongasCaminhadas', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar longas caminhadas
+                  </Checkbox>
+
+                  <Checkbox
+                    color='danger'
+                    isSelected={formData.restricoes?.evitarAlterarPostura || false}
+                    onValueChange={(checked) => handleRestricoesChange('evitarAlterarPostura', checked)}
+                    classNames={{
+                      label: "text-sm font-medium text-gray-700"
+                    }}
+                  >
+                    Evitar alterar postura sentado e em pé
+                  </Checkbox>
+
+                  {/* Outros */}
+                  <div className="space-y-2">
+                    <Checkbox
+                      color='danger'
+                      isSelected={formData.restricoes?.outros || false}
+                      onValueChange={(checked) => handleRestricoesChange('outros', checked)}
+                      classNames={{
+                        label: "text-sm font-medium text-gray-700"
+                      }}
+                    >
+                      Outros
+                    </Checkbox>
+                    {formData.restricoes?.outros && (
+                      <div className="ml-6">
+                        <label className="block text-xs text-gray-600 mb-1">Descrição:</label>
+                        <Input
+                          value={formData.restricoes?.descricaoOutros || ''}
+                          onChange={(e) => handleRestricoesChange('descricaoOutros', e.target.value)}
+                          placeholder="Descreva outras restrições..."
+                          className="w-full bg-white border-gray-300"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
 
+                {/* Duração e data de início */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-amber-200">
                   <div>
                     <label className="block text-sm font-medium text-amber-700 mb-2">
@@ -1056,6 +1190,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               />
             </div>
           </div>
+
         </Card>
       )}
 

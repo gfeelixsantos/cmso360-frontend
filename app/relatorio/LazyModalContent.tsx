@@ -17,10 +17,12 @@ import {
   Spinner,
   Input,
 } from '@heroui/react';
-import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User, Edit, RefreshCw } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User, Edit, RefreshCw, Printer, Save, X } from 'lucide-react';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus, ExamStatus } from '@/lib/scheduling/enum/scheduling.enum';
-import { NEST_SCHEDULINGS } from '@/config/constants';
+import { NEST_SCHEDULINGS, NEST_SCHEDULINGS_EXAM_UPDATE, NEST_SOC_CADASTROPESSOAS } from '@/config/constants';
+import { getCurrentUser, mapCadastroPessoasToUserInfo } from '@/lib/utils';
+import { ICadastroPessoas } from '@/lib/soc/interfaces/ICadastroPessoas';
 
 interface LazyModalContentProps {
   atendimento: Scheduling;
@@ -28,10 +30,19 @@ interface LazyModalContentProps {
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
 
+interface EditModeState {
+  isEditing: boolean;
+  editedData: Partial<Scheduling>;
+}
+
 const InformacoesGerais: React.FC<{ 
   atendimento: Scheduling;
-  onEditClick: () => void;
-}> = ({ atendimento, onEditClick }) => {
+  editMode: EditModeState;
+  onEditModeChange: (mode: EditModeState) => void;
+  onSave: (data: Partial<Scheduling>) => Promise<void>;
+}> = ({ atendimento, editMode, onEditModeChange, onSave }) => {
+  const [isSaving, setIsSaving] = useState(false);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case AtendimentoStatus.AGENDADO: return 'warning';
@@ -43,32 +54,147 @@ const InformacoesGerais: React.FC<{
     }
   };
 
+  const handleEditToggle = () => {
+    if (editMode.isEditing) {
+      // Cancelar edição
+      onEditModeChange({ isEditing: false, editedData: {} });
+    } else {
+      // Iniciar edição com dados atuais
+      onEditModeChange({ 
+        isEditing: true, 
+        editedData: { 
+          NOME: atendimento.NOME,
+          CPFFUNCIONARIO: atendimento.CPFFUNCIONARIO,
+          DATANASCIMENTO: atendimento.DATANASCIMENTO,
+          MATRICULAFUNCIONARIO: atendimento.MATRICULAFUNCIONARIO,
+        }
+      });
+    }
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await onSave(editMode.editedData);
+      onEditModeChange({ isEditing: false, editedData: {} });
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleFieldChange = (field: keyof Scheduling, value: string) => {
+    onEditModeChange({
+      ...editMode,
+      editedData: {
+        ...editMode.editedData,
+        [field]: value
+      }
+    });
+  };
+
+  const renderField = (field: keyof Scheduling, label: string, value: string) => {
+    if (editMode.isEditing && ['NOME', 'CPFFUNCIONARIO', 'DATANASCIMENTO', 'MATRICULAFUNCIONARIO'].includes(field)) {
+      return (
+        <div className="flex items-center gap-2">
+          <Input
+            value={editMode.editedData[field] as string || value}
+            onChange={(e) => handleFieldChange(field, e.target.value)}
+            size="sm"
+            className="max-w-xs text-sm"
+            placeholder={label}
+          />
+        </div>
+      );
+    }
+    return <span>{value || 'N/A'}</span>;
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-lg border-b pb-2">Informações do Atendimento</h3>
-          <Tooltip content="Editar cadastro do funcionário">
-            <Button
-              isIconOnly
-              variant="light"
-              color="primary"
-              size="sm"
-              onPress={onEditClick}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            >
-              <Edit size={18} />
-            </Button>
-          </Tooltip>
+          <div className="flex items-center gap-2">
+            {editMode.isEditing ? (
+              <>
+                <Tooltip content="Cancelar edição">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    color="danger"
+                    size="sm"
+                    onPress={handleEditToggle}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  >
+                    <X size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Salvar alterações">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    color="success"
+                    size="sm"
+                    onPress={handleSave}
+                    isLoading={isSaving}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  >
+                    <Save size={16} />
+                  </Button>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Tooltip content="Sincronizar dados">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    color="secondary"
+                    size="sm"
+                    onPress={() => console.log('Sincronizar dados')}
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                  >
+                    <RefreshCw size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Editar dados do paciente">
+                  <Button
+                    isIconOnly
+                    variant="light"
+                    color="primary"
+                    size="sm"
+                    onPress={handleEditToggle}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                  >
+                    <Edit size={16} />
+                  </Button>
+                </Tooltip>
+              </>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-3">
             <h4 className="font-medium text-sm text-gray-600 mb-2">Dados do Paciente</h4>
             <div className="space-y-2 text-sm">
-              <p><strong>Nome:</strong> {atendimento.NOME}</p>
-              <p><strong>CPF:</strong> {atendimento.CPFFUNCIONARIO}</p>
-              <p><strong>Data Nasc.:</strong> {atendimento.DATANASCIMENTO}</p>
-              <p><strong>Matrícula:</strong> {atendimento.MATRICULAFUNCIONARIO || 'N/A'}</p>
+              <div className="flex items-center justify-between">
+                <strong>Nome:</strong> 
+                {renderField('NOME', 'Nome', atendimento.NOME)}
+              </div>
+              <div className="flex items-center justify-between">
+                <strong>CPF:</strong> 
+                {renderField('CPFFUNCIONARIO', 'CPF', atendimento.CPFFUNCIONARIO)}
+              </div>
+              <div className="flex items-center justify-between">
+                <strong>Data Nasc.:</strong> 
+                {renderField('DATANASCIMENTO', 'Data Nascimento', atendimento?.DATANASCIMENTO ?? "")}
+              </div>
+              <div className="flex items-center justify-between">
+                <strong>Matrícula:</strong> 
+                {renderField('MATRICULAFUNCIONARIO', 'Matrícula', atendimento.MATRICULAFUNCIONARIO || 'N/A')}
+              </div>
             </div>
           </div>
 
@@ -119,6 +245,7 @@ const ExamesTable: React.FC<{
   const [uploadingExams, setUploadingExams] = useState<Record<string, boolean>>({});
   const [successExams, setSuccessExams] = useState<Record<string, boolean>>({});
   const [errorExams, setErrorExams] = useState<Record<string, string>>({});
+  const [reemitindoExams, setReemitindoExams] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     setLocalExames(exames || []);
@@ -212,16 +339,69 @@ const ExamesTable: React.FC<{
     }
   };
 
-  const handleSyncExam = (exame: ExamRegister) => {
-    // Implementação será feita posteriormente
-    console.log('Sincronizar exame:', exame);
-    // TODO: Implementar sincronização do exame
+  const handleReemitirExame = async (exame: ExamRegister) => {
+    const examKey = exame.sequencialResultadoExame || exame.codigoExame;
+    
+    setReemitindoExams(prev => ({ ...prev, [examKey]: true }));
+
+
+    try {
+      const responseCadastroPessoas = await fetch(NEST_SOC_CADASTROPESSOAS)
+    
+      if(responseCadastroPessoas.ok){
+        const cadastroPessoas: ICadastroPessoas[] = await responseCadastroPessoas.json()
+        const socUser = cadastroPessoas?.find(p => p.CODIGO == exame.codigoProfissional)
+
+        if (!socUser) {
+            return console.error("profissional não encontrado...")
+        }
+
+        const userInfo = mapCadastroPessoasToUserInfo(socUser)
+        
+        const response = await fetch(`${NEST_SCHEDULINGS_EXAM_UPDATE}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          funcionarioId: atendimento._id,
+          codigoExame: [exame.codigoExame],
+          formulario: exame.formulario,
+          sala: exame.sala || '',
+          profissional: userInfo
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao reemitir exame');
+      }
+
+      const result = await response.json();
+      console.log('Exame reemitido com sucesso:', result);
+      
+      // Feedback visual de sucesso
+      setSuccessExams(prev => ({ ...prev, [examKey]: true }));
+      setTimeout(() => {
+        setSuccessExams(prev => ({ ...prev, [examKey]: false }));
+      }, 3000);
+    }
+
+    } catch (error) {
+      console.error('Erro ao reemitir exame:', error);
+      setErrorExams(prev => ({ ...prev, [examKey]: 'Erro ao reemitir exame' }));
+      setTimeout(() => {
+        setErrorExams(prev => ({ ...prev, [examKey]: '' }));
+      }, 3000);
+    } finally {
+      setReemitindoExams(prev => ({ ...prev, [examKey]: false }));
+    }
+    
   };
 
   const handleViewMedicalRecord = () => {
-    // Implementação será feita posteriormente
-    console.log('Visualizar prontuário do atendimento:', atendimento._id);
-    // TODO: Implementar visualização do prontuário
+    // Abre em nova aba
+    const prontuarioUrl = `/prontuario/${atendimento._id}`;
+    window.open(prontuarioUrl, '_blank', 'noopener,noreferrer');
   };
 
   const formatDate = (dateString: string) => {
@@ -247,14 +427,14 @@ const ExamesTable: React.FC<{
           <h3 className="text-lg font-semibold text-gray-900">Exames Realizados</h3>
           <Tooltip content="Visualizar prontuário completo">
             <Button
-              isIconOnly
               variant="light"
-              color="default"
+              color="primary"
               size="sm"
               onPress={handleViewMedicalRecord}
-              className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              startContent={<User size={16} />}
             >
-              <User size={18} />
+              Prontuário
             </Button>
           </Tooltip>
         </div>
@@ -294,6 +474,7 @@ const ExamesTable: React.FC<{
               const hasFileSelected = !!selectedFiles[examKey];
               const isUploading = uploadingExams[examKey];
               const isSuccess = successExams[examKey];
+              const isReemitindo = reemitindoExams[examKey];
               const error = errorExams[examKey];
 
               return (
@@ -341,12 +522,26 @@ const ExamesTable: React.FC<{
 
                   {/* Coluna Ações */}
                   <TableCell>
-                    <div className="flex items-center justify-center gap-2">
-                      {exame.url && exame.status === ExamStatus.FINALIZADO ? (
+                    <div className="flex items-center justify-center gap-2 flex-wrap">
+                      {/* Botão Reemitir - Sempre visível */}
+                      {/* { (
+                        <Button
+                          size="sm"
+                          variant="light"
+                          color="secondary"
+                          onPress={() => handleReemitirExame(exame)}
+                          isLoading={isReemitindo}
+                          startContent={!isReemitindo && <Printer size={14} />}
+                          className="text-purple-600 hover:text-purple-700 text-xs"
+                        >
+                          {isReemitindo ? 'Reemitindo...' : 'Reemitir'}
+                        </Button>
+                      )} */}
+
+                      {exame.url && (
                         <>
                           <Tooltip content="Visualizar">
                             <Button
-                              
                               size="sm"
                               variant="light"
                               onPress={() => window.open(exame.url, '_blank')}
@@ -357,7 +552,7 @@ const ExamesTable: React.FC<{
                             </Button>
                           </Tooltip>
                         </>
-                      ) : (
+                      )}
                         <div className="flex items-center gap-2">
                           {/* Input file oculto */}
                           <input
@@ -365,6 +560,7 @@ const ExamesTable: React.FC<{
                             type="file"
                             accept="application/pdf"
                             className="hidden"
+                            multiple={true}
                             onChange={(e) => handleFileChange(examKey, e)}
                           />
                           
@@ -393,7 +589,6 @@ const ExamesTable: React.FC<{
                             {isUploading ? 'Enviando...' : 'Enviar'}
                           </Button>
                         </div>
-                      )}
                     </div>
 
                     {/* Mensagens de feedback */}
@@ -446,10 +641,45 @@ const ExamesTable: React.FC<{
 ExamesTable.displayName = 'ExamesTable';
 
 const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClose, onUpdateScheduling }) => {
-  const handleEditEmployee = () => {
-    // Implementação será feita posteriormente
-    console.log('Editar cadastro do funcionário:', atendimento._id);
-    // TODO: Implementar edição do cadastro do funcionário
+  const [editMode, setEditMode] = useState<EditModeState>({
+    isEditing: false,
+    editedData: {}
+  });
+
+  const handleSaveEmployeeData = async (data: Partial<Scheduling>) => {
+    try {
+      const response = await fetch(`${NEST_SCHEDULINGS}/update/document`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          atendimentoId: atendimento._id,
+          updates: data
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar dados do funcionário');
+      }
+
+      const updatedAtendimento = await response.json();
+      
+      if (onUpdateScheduling) {
+        onUpdateScheduling(updatedAtendimento);
+      }
+
+      return updatedAtendimento;
+    } catch (error) {
+      console.error('Erro ao salvar dados do funcionário:', error);
+      throw error;
+    }
+  };
+
+  const handleViewMedicalRecord = () => {
+    // Abre em nova aba
+    const prontuarioUrl = `/prontuario/${atendimento._id}`;
+    window.open(prontuarioUrl, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -465,14 +695,14 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClos
           <div className="flex items-center gap-2">
             <Tooltip content="Visualizar prontuário completo">
               <Button
-                isIconOnly
                 variant="light"
-                color="default"
+                color="primary"
                 size="sm"
-                onPress={() => console.log('Visualizar prontuário')}
-                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                onPress={handleViewMedicalRecord}
+                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                startContent={<User size={16} />}
               >
-                <User size={20} />
+                Visualizar Prontuário
               </Button>
             </Tooltip>
           </div>
@@ -481,7 +711,9 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClos
       <ModalBody>
         <InformacoesGerais 
           atendimento={atendimento} 
-          onEditClick={handleEditEmployee}
+          editMode={editMode}
+          onEditModeChange={setEditMode}
+          onSave={handleSaveEmployeeData}
         />
         <div>
           <ExamesTable 

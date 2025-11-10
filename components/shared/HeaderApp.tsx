@@ -212,7 +212,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
             {/* User info + notifications + logout */}
             <div className="flex items-center gap-3">
               <div className="relative">
-                <button
+                {/* <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
                   aria-label="Notificações"
@@ -230,7 +230,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                   isOpen={showNotifications}
                   onClose={() => setShowNotifications(false)}
                   onMarkAsRead={handleMarkAsRead}
-                />
+                /> */}
               </div>
 
               {/* User profile with dropdown */}

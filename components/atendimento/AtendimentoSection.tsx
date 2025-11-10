@@ -49,7 +49,7 @@ const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({ title
   <section aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, '-')}`}>
     <h3
       id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
-      className="text-lg font-semibold text-gray-900 mb-2"
+      className="text-lg font-semibold text-center mt-2 text-gray-900 mb-2"
     >
       {title}
     </h3>
@@ -80,11 +80,9 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   exameSelecionado,
 }) => {
 
-
   if (senhas.length === 0) {
     return <EmptySection title={title} emptyMessage={emptyMessage} />;
   }
-
 
   return (
     <section
@@ -93,7 +91,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
     >
       <h3
         id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
-        className="text-lg font-semibold text-gray-900"
+        className="text-lg mt-2 text-center font-semibold text-gray-900"
       >
         {title}
       </h3>

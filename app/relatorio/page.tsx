@@ -37,8 +37,9 @@ import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus } from '@/lib/scheduling/enum/scheduling.enum';
 import { NEST_SCHEDULINGS_ALL } from '@/config/constants';
 import { HeaderApp } from '@/components/shared/HeaderApp';
-import { formatCPF, logout, ordemAlfabetica } from '@/lib/utils';
+import { formatCPF, getCurrentUser, logout, ordemAlfabetica } from '@/lib/utils';
 import { useRouter } from "next/navigation";
+import { IUserInfo, useUser } from '@/hooks/useUser';
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import('./LazyModalContent'));
@@ -123,9 +124,9 @@ export default function RelatoriosPage() {
   const [appAtendimentos, setAppAtendimentos] = useState<Scheduling[]>([]);
   const [optimizedAtendimentos, setOptimizedAtendimentos] = useState<OptimizedScheduling[]>([]);
   const [loading, setLoading] = useState(true);
-  const [exportLoading, setExportLoading] = useState(false);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showResults, setShowResults] = useState(false);
+  const [user, setUser] = useState<IUserInfo | null>(null);
   
   // Filtros atualizados
   const [filters, setFilters] = useState({
@@ -162,6 +163,15 @@ export default function RelatoriosPage() {
   // Estado para os atendimentos FILTRADOS
   const [filteredAtendimentos, setFilteredAtendimentos] = useState<OptimizedScheduling[]>([]);
 
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+      router.push("/");
+    } else {
+      setUser(currentUser);
+    }
+  }, [router]);
+
   // Carregar dados iniciais
   const getData = useCallback(async () => {
     try {
@@ -185,7 +195,7 @@ export default function RelatoriosPage() {
     }
   }, []);
 
-  // 1. Carregar e otimizar dados iniciais
+  // Carregar dados quando o componente montar
   useEffect(() => {
     getData();
   }, [getData]);
@@ -250,7 +260,7 @@ export default function RelatoriosPage() {
     }
   }, [appAtendimentos]);
 
-  // 2. Função de filtragem otimizada
+  // Função de filtragem otimizada
   const applyFiltersFunction = useCallback((
     atendimentosList: OptimizedScheduling[], 
     currentFilters: typeof filters
@@ -314,23 +324,72 @@ export default function RelatoriosPage() {
     return filtered;
   }, []);
 
-  // 3. Aplicar filtros quando o usuário clicar no botão
-  const handleApplyFilters = useCallback(() => {
-    if (optimizedAtendimentos.length === 0) return;
+// 3. Aplicar filtros quando o usuário clicar no botão - CORRIGIDO
+const handleApplyFilters = useCallback(async () => {
+  setIsFiltering(true);
+  setShowResults(true);
+  setAppliedFilters(filters);
+  setPage(1);
 
-    setIsFiltering(true);
-    setShowResults(true);
-    setAppliedFilters(filters);
-    setPage(1);
+  try {
+    // PRIMEIRO: Buscar os dados MAIS RECENTES do servidor
+    const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+    
+    if (response.ok) {
+      const json: Scheduling[] = await response.json();
+      const jsonOrdened = json.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR"));
+      
+      // ATUALIZAR OS DADOS PRINCIPAIS
+      setAppAtendimentos(jsonOrdened);
+      
+      // AGUARDAR ATUALIZAÇÃO DO ESTADO E APLICAR FILTROS
+      setTimeout(() => {
+        if (jsonOrdened.length > 0) {
+          // Otimizar os dados mais recentes
+          const optimized = jsonOrdened.map((a: Scheduling) => {
+            const profissionaisUnicos = [...new Set(a.EXAMES.map(e => e.profissional).filter(Boolean))];
+            const salasUnicas = [...new Set(a.EXAMES.map(e => e.sala).filter(Boolean))];
+            const gruposUnicos = [...new Set(a.EXAMES.map(e => e.grupo).filter(Boolean))];
 
-    setTimeout(() => {
-      const result = applyFiltersFunction(optimizedAtendimentos, filters);
-      setFilteredAtendimentos(result);
+            const searchIndex = [
+              a.NOME?.toLowerCase() || '',
+              a.CPFFUNCIONARIO || '',
+              a.MATRICULAFUNCIONARIO?.toLowerCase() || '',
+              a.NOMECARGO?.toLowerCase() || '',
+              a.NOMEEMPRESA?.toLowerCase() || '',
+              ...profissionaisUnicos.map(p => p?.toLowerCase()),
+              ...salasUnicas.map(s => s?.toLowerCase()),
+              ...gruposUnicos.map(g => g.toLowerCase())
+            ].join('|');
+
+            return {
+              ...a,
+              DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
+              SEARCH_INDEX: searchIndex,
+              PROFISSIONAIS: profissionaisUnicos,
+              SALAS: salasUnicas,
+              GRUPOS_EXAMES: gruposUnicos
+            } as OptimizedScheduling;
+          });
+
+          // Aplicar filtros nos dados otimizados MAIS RECENTES
+          const result = applyFiltersFunction(optimized, filters);
+          setFilteredAtendimentos(result);
+        }
+        setIsFiltering(false);
+      }, 0);
+    } else {
+      console.error("Erro ao buscar dados atualizados");
       setIsFiltering(false);
-    }, 50);
-  }, [optimizedAtendimentos, filters, applyFiltersFunction]);
+    }
+    
+  } catch (error) {
+    console.error('Erro ao atualizar dados:', error);
+    setIsFiltering(false);
+  }
+}, [filters, applyFiltersFunction]); // Removida a dependência circular
 
-  // 4. Limpar filtros e resultados
+  // Limpar filtros e resultados
   const handleClearFilters = useCallback(() => {
     setFilters({
       dataInicio: null,
@@ -356,12 +415,12 @@ export default function RelatoriosPage() {
     setPage(1);
   }, []);
 
-  // 5. Handler para mudanças rápidas nos filtros
+  // Handler para mudanças rápidas nos filtros
   const handleFilterChange = useCallback((key: string, value: any) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }, []);
 
-  // 6. Calcular se há filtros ativos
+  // Calcular se há filtros ativos
   const hasActiveFilters = useMemo(() => {
     return Object.values(filters).some(value => 
       value !== null && value !== '' && 
@@ -369,42 +428,101 @@ export default function RelatoriosPage() {
     );
   }, [filters]);
 
-  // 7. Função para visualizar detalhes
-  const viewDetails = useCallback((atendimento: Scheduling) => {
-    setModalLoading(true);
+  // Adicionar esta função para atualização manual
+const handleForceRefresh = useCallback(async () => {
+  try {
+    const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
     
-    openModalWithDebounce(() => {
-      setSelectedAtendimento(atendimento);
-      setModalLoading(false);
-      onOpen();
-    });
-  }, [onOpen, openModalWithDebounce]);
+    if (response.ok) {
+      const json: Scheduling[] = await response.json();
+      const jsonOrdened = json.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR"));
+      setAppAtendimentos(jsonOrdened);
+      
+      // Se há filtros aplicados, reaplicá-los
+      if (showResults) {
+        setTimeout(() => {
+          handleApplyFilters();
+        }, 100);
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao forçar atualização:', error);
+  }
+}, [showResults, handleApplyFilters]);
 
-  // 8. Fechar modal - limpar estados
+
+// Função para visualizar detalhes - ATUALIZADA
+const viewDetails = useCallback((atendimento: Scheduling) => {
+  setModalLoading(true);
+  
+  openModalWithDebounce(() => {
+    // Buscar a versão mais recente do atendimento
+    const atendimentoAtualizado = appAtendimentos.find(a => 
+      (a._id && atendimento._id && a._id === atendimento._id) || 
+      (a.CODIGOPRONTUARIO && atendimento.CODIGOPRONTUARIO && a.CODIGOPRONTUARIO === atendimento.CODIGOPRONTUARIO)
+    ) || atendimento;
+    
+    setSelectedAtendimento(atendimentoAtualizado);
+    setModalLoading(false);
+    onOpen();
+  });
+}, [onOpen, openModalWithDebounce, appAtendimentos]); // Adicionada dependência de appAtendimentos
+
+  // Fechar modal - limpar estados
   const handleCloseModal = useCallback(() => {
     setSelectedAtendimento(null);
     onClose();
   }, [onClose]);
 
-  // 9. Atualizar atendimento após upload
-  const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
-    setAppAtendimentos(prev => {
-      const foundIndex = prev.findIndex(p => (p._id && updated._id && p._id === updated._id) || (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO));
-      if (foundIndex === -1) return prev;
-      const copy = [...prev];
-      copy[foundIndex] = updated;
-      return copy;
-    });
-  }, []);
+  // Atualizar atendimento após upload
+// Atualizar atendimento após upload - CORRIGIDA
+const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
+  // Atualizar na lista principal
+  setAppAtendimentos(prev => {
+    const foundIndex = prev.findIndex(p => 
+      (p._id && updated._id && p._id === updated._id) || 
+      (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
+    );
+    
+    if (foundIndex === -1) return prev;
+    
+    const copy = [...prev];
+    copy[foundIndex] = updated;
+    return copy;
+  });
 
-  // 10. Memoizar dados paginados
+  // Atualizar também na lista filtrada se estiver visível
+  setFilteredAtendimentos(prev => {
+    const foundIndex = prev.findIndex(p => 
+      (p._id && updated._id && p._id === updated._id) || 
+      (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
+    );
+    
+    if (foundIndex === -1) return prev;
+    
+    const copy = [...prev];
+    copy[foundIndex] = {
+      ...copy[foundIndex],
+      ...updated,
+      // Manter as propriedades otimizadas
+      DATAAGENDAMENTO_DATE_OBJ: copy[foundIndex].DATAAGENDAMENTO_DATE_OBJ,
+      SEARCH_INDEX: copy[foundIndex].SEARCH_INDEX,
+      PROFISSIONAIS: copy[foundIndex].PROFISSIONAIS,
+      SALAS: copy[foundIndex].SALAS,
+      GRUPOS_EXAMES: copy[foundIndex].GRUPOS_EXAMES
+    };
+    return copy;
+  });
+}, []);
+
+  // Memoizar dados paginados
   const paginatedItems = useMemo(() => {
     if (!showResults) return [];
     const startIndex = (page - 1) * rowsPerPage;
     return filteredAtendimentos.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredAtendimentos, page, rowsPerPage, showResults]);
 
-  // 11. Memoizar cálculos de paginação
+  // Memoizar cálculos de paginação
   const paginationInfo = useMemo(() => {
     if (!showResults) return { totalPages: 0, hasPagination: false };
     const totalPages = Math.ceil(filteredAtendimentos.length / rowsPerPage);
@@ -414,7 +532,7 @@ export default function RelatoriosPage() {
     };
   }, [filteredAtendimentos.length, rowsPerPage, showResults]);
 
-  // 12. Função para obter a cor do status
+  // Função para obter a cor do status
   const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case AtendimentoStatus.AGENDADO: return 'warning';
@@ -426,7 +544,7 @@ export default function RelatoriosPage() {
     }
   }, []);
 
-  // 13. Renderização otimizada do modal
+  // Renderização otimizada do modal
   const renderModalContent = useMemo(() => {
     if (!selectedAtendimento) return null;
 
@@ -441,7 +559,7 @@ export default function RelatoriosPage() {
     );
   }, [selectedAtendimento, handleCloseModal, handleUpdateSchedulingFromModal]);
 
-  // 14. Contador de filtros ativos
+  // Contador de filtros ativos
   const activeFiltersCount = useMemo(() => {
     return Object.values(filters).filter(value => 
       value !== null && value !== '' && 
@@ -467,26 +585,36 @@ export default function RelatoriosPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-2">
-            <Button
-              color="success"
-              startContent={<CheckIcon size={16} />}
-              onPress={handleApplyFilters}
-              isLoading={isFiltering}
-              isDisabled={!hasActiveFilters}
-              className="font-medium text-white"
-            >
-              Aplicar Filtros
-            </Button>
-            <Button
-              variant="light"
-              onPress={handleClearFilters}
-              startContent={<XIcon size={16} />}
-              isDisabled={!hasActiveFilters}
-            >
-              Limpar
-            </Button>
-          </div>
+{/* No CardHeader dos filtros, adicione: */}
+<div className="flex gap-2">
+  {/* <Button
+    variant="light"
+    color="primary"
+    onPress={handleForceRefresh}
+    className="font-medium"
+  >
+    Atualizar Dados
+  </Button> */}
+  <Button
+    color="success"
+    startContent={<CheckIcon size={16} />}
+    onPress={handleApplyFilters}
+    isLoading={isFiltering}
+    isDisabled={!hasActiveFilters}
+    className="font-medium text-white"
+  >
+    Aplicar Filtros
+  </Button>
+  <Button
+    color='primary'
+    variant="light"
+    onPress={handleClearFilters}
+    startContent={<XIcon size={16} />}
+    isDisabled={!hasActiveFilters}
+  >
+    Limpar
+  </Button>
+</div>
         </CardHeader>
         <CardBody className="pt-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -513,9 +641,9 @@ export default function RelatoriosPage() {
                 label=" "
                 granularity="day"
                 hideTimeZone
+                
               />
             </div>
-
 
             {/* Empresa */}
             <div className="space-y-2">
@@ -534,7 +662,6 @@ export default function RelatoriosPage() {
                 ))}
               </Autocomplete>
             </div>
-
 
             {/* Grupo de Exame (ATUALIZADO) */}
             <div className="space-y-2">
@@ -565,7 +692,6 @@ export default function RelatoriosPage() {
                 hideTimeZone
               />
             </div>
-
 
             {/* Status */}
             <div className="space-y-2">

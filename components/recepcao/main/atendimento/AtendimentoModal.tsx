@@ -61,7 +61,7 @@ interface AtendimentoModalProps {
   ) => void;
 }
 
-export default function AtendimentoModalComplete({
+const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   isOpen,
   onClose,
   agendamentos,
@@ -73,7 +73,7 @@ export default function AtendimentoModalComplete({
   socket,
   onSetPreparacaoFinalizada,
   onExecutarAcao,
-}: AtendimentoModalProps) {
+}: AtendimentoModalProps) => {
 
 
   const [isLoading, setIsLoading] = useState(false);
@@ -1568,3 +1568,5 @@ const PacienteItem = React.memo(function _PacienteItem({
     </div>
   )
 }
+
+export default React.memo(AtendimentoModal)

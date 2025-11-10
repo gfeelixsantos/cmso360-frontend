@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Card, Button, Spinner, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger, Tooltip, Badge, Progress, Accordion, AccordionItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, Chip } from "@heroui/react";
 import { 
   Clock, 
@@ -749,6 +749,10 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
 }) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg } = getStatusVisual(atendimento.TICKET.status);
+
+  useEffect(() => {
+    console.log("atendimento", atendimento)
+  }, [atendimento])
 
   const formatarTempoEspera = (emissao: string | Date) => {
     const dataEmissao = new Date(emissao);

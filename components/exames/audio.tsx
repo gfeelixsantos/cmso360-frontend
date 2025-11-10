@@ -115,7 +115,7 @@ interface AudiometriaData {
   
 }
 
-const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({ 
+const Audiometria: React.FC<AudiometriaProps> = ({ 
   atendimento, 
   exame,
   formulario,
@@ -1354,4 +1354,4 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   );
 };
 
-export default AudiometriaOcupacional;
+export default Audiometria;

@@ -32,7 +32,11 @@ export type Client = {
   Contract: boolean;
 }
 
-
+export type RiscosAso = {
+  codigo: string,
+  risco: string,
+  grupo: string,
+}
 
 
 export class ExamRegister {
@@ -91,7 +95,7 @@ export type Scheduling = {
   PARECERMEDICO: string | null;
   PRONTUARIOSVINCULADOS: string[];
   RECOMENDACAOMEDICA: string | null;
-  RISCOSASO: string | null;
+  RISCOSASO: RiscosAso[] | null;
   SCHEDULINGCODE: string;
   SEQUENCIAFICHA: string;
   SITUACAO: string;
