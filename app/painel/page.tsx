@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import io, { Socket } from "socket.io-client";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, DoorOpen, History, Info, Loader2, Monitor, UsersRound, Volume2, VolumeX } from "lucide-react";
@@ -10,29 +10,28 @@ import { PainelCall } from "@/lib/painel/interfaces/paniel.interface";
 import { Ticket } from "@/lib/ticket/ticket";
 import { NEST_URL, NEXT_WS_URL, SERVICES_KEY, UNIDADES_ATENDIMENTO } from "@/config/constants";
 
-// Paleta de cores atualizada com tons de branco e verde da empresa
+// Paleta de cores
 const COLOR_PALETTE = {
-  primary: "#44735e",       // Verde principal
-  secondary: "#b8d864",     // Verde claro
-  light: "#f8fcf9",         // Branco esverdeado muito claro
-  white: "#ffffff",         // Branco puro
-  lightGray: "#f0f5f2",     // Cinza muito claro
-  border: "#e1e9e4",        // Borda suave
-  text: "#2a4a3a",          // Texto escuro
-  textLight: "#6b7f76",     // Texto cinza
-  accent: "#5a8c7a",        // Verde médio
-  dark: "#1a2a1f",          // Verde muito escuro
+  primary: "#44735e",
+  secondary: "#b8d864",
+  light: "#f8fcf9",
+  white: "#ffffff",
+  lightGray: "#f0f5f2",
+  border: "#e1e9e4",
+  text: "#2a4a3a",
+  textLight: "#6b7f76",
+  accent: "#5a8c7a",
+  dark: "#1a2a1f",
 };
 
-// ======= CONFIGURAÇÕES IDLE =======
+// Configurações
 const IDLE_CONFIG = {
-  tempoInatividadeMinutos: 1,    // Tempo sem chamadas para ativar idle
-  duracaoIdleSegundos: 15,       // Tempo que o idle fica visível
+  tempoInatividadeMinutos: 1,
+  duracaoIdleSegundos: 15,
 };
 
-// ======= CONFIGURAÇÕES DE DIVULGAÇÃO =======
 const DIVULGACAO_CONFIG = {
-  tempoExibicaoItem: 8,          // Tempo em segundos para cada item de divulgação
+  tempoExibicaoItem: 8,
   items: [
     {
       id: 1,
@@ -89,13 +88,11 @@ interface PainelSocket {
 
 let socket: Socket;
 
-// ======= CONFIG TEMPOS =======
-const DELAY_ENTRE_CHAMADAS_MS = 1500;
-const DELAY_ENTRE_CICLOS_MS = 2500;
-// ==============================
+// Configurações de timing - confortável para clínica de saúde ocupacional
+const DELAY_ENTRE_CHAMADAS_MS = 5500; // 3 segundos entre chamadas diferentes (tempo para pessoa processar e se deslocar)
+const DELAY_ENTRE_CICLOS_MS = 9000; // 8 segundos antes de recomeçar o ciclo (tempo para deslocamento)
 
-
-// Cores específicas para cada tipo de exame - versão mais suave
+// Backgrounds por tipo de exame
 const examesBackground: Record<string, string> = {
   "RAIO X": `linear-gradient(135deg, ${COLOR_PALETTE.primary}15 0%, ${COLOR_PALETTE.accent}25 100%)`,
   "ATENDIMENTO": `linear-gradient(135deg, ${COLOR_PALETTE.accent}15 0%, ${COLOR_PALETTE.secondary}25 100%)`,
@@ -109,7 +106,7 @@ const examesBackground: Record<string, string> = {
   "ATENDIMENTO2": `linear-gradient(135deg, ${COLOR_PALETTE.primary}15 0%, ${COLOR_PALETTE.secondary}25 100%)`,
 };
 
-// Cores para os elementos de acordo com o exame
+// Cores por tipo de exame
 const examesColors: Record<string, { primary: string; secondary: string; text: string }> = {
   "Acuidade Visual": { primary: "#C6B100", secondary: "#C6B10020", text: COLOR_PALETTE.dark },
   "Audiometria": { primary: "#6B950B", secondary: "#6B950B20", text: COLOR_PALETTE.white },
@@ -126,7 +123,7 @@ const examesColors: Record<string, { primary: string; secondary: string; text: s
   "Ultrassom": { primary: "#2a9d8f", secondary: "#2a9d8f20", text: COLOR_PALETTE.white },
 };
 
-// ======= MICRO COMPONENTES =======
+// Componente CounterCard otimizado com memo
 const CounterCard = ({ label, value }: { label: string; value: number }) => (
   <div 
     className="rounded-2xl px-4 py-3 shadow-sm border min-w-[120px] backdrop-blur-sm"
@@ -151,9 +148,17 @@ const CounterCard = ({ label, value }: { label: string; value: number }) => (
   </div>
 );
 
+// Componente PreviousCallCard otimizado
 const PreviousCallCard = ({ c }: { c: PainelCall }) => {
-  const bgColor = examesBackground[c.exame ?? "ATENDIMENTO"] || examesBackground["BALCAO"];
-  const colors = examesColors[c.exame ?? "ATENDIMENTO"] || examesColors["RAIO X"];
+  const bgColor = useMemo(() => 
+    examesBackground[c.exame ?? "ATENDIMENTO"] || examesBackground["BALCAO"],
+    [c.exame]
+  );
+  
+  const colors = useMemo(() => 
+    examesColors[c.exame ?? "ATENDIMENTO"] || examesColors["RAIO X"],
+    [c.exame]
+  );
   
   return (
     <motion.div
@@ -187,10 +192,11 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
   );
 };
 
-// Componente Idle Screen atualizado para divulgação
+// Componente IdleScreen
 interface IdleProps {
   unidadeSelecionada: string
 }
+
 const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
   const [itemAtual, setItemAtual] = useState(0);
   const timeoutRef = useRef<NodeJS.Timeout>();
@@ -224,7 +230,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
       transition={{ duration: 1 }}
       className="fixed inset-0 z-50 flex flex-col lg:flex-row bg-white overflow-hidden"
     >
-      {/* Indicadores de progresso */}
       <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
@@ -238,7 +243,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         ))}
       </div>
 
-      {/* Lado da mídia (imagem/vídeo) */}
       <div className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
         <motion.div
           key={item.id}
@@ -265,7 +269,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         </motion.div>
       </div>
 
-      {/* Lado das informações */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-green-600 to-green-950">
         <motion.div
           key={`content-${item.id}`}
@@ -274,7 +277,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
           transition={{ duration: 0.8 }}
           className="text-white max-w-2xl w-full"
         >
-          {/* Título */}
           <motion.h1
             initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -284,7 +286,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
             {item.titulo}
           </motion.h1>
 
-          {/* Subtítulo (opcional) */}
           {item.subtitulo && (
             <motion.p
               initial={{ y: 20, opacity: 0 }}
@@ -296,7 +297,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
             </motion.p>
           )}
 
-          {/* Conteúdo (lista ou texto) */}
           <motion.div
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
@@ -330,7 +330,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
             )}
           </motion.div>
 
-          {/* Informações da unidade */}
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -338,7 +337,6 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
             className="mt-8 pt-6 border-t border-white/20"
           >
             <div className="flex items-center justify-between text-sm text-white/70">
-              <span>{unidadeSelecionada}</span>
               <span>{new Date().getFullYear()} • CMSO</span>
             </div>
           </motion.div>
@@ -348,7 +346,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
   );
 };
 
-// Componente para ativação de áudio
+// Modal de ativação de áudio
 const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
   <motion.div
     initial={{ opacity: 0 }}
@@ -424,13 +422,12 @@ export default function PainelPage() {
   const [audioHabilitado, setAudioHabilitado] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
 
-  const [somChamada, setSomChamada] = useState<HTMLAudioElement|null>(null)
+  // Pré-carregamento de áudios
+  const audioPoolRef = useRef<Map<string, HTMLAudioElement>>(new Map());
 
-  // ======= ESTADOS IDLE =======
   const [isIdle, setIsIdle] = useState(false);
   const [showPainel, setShowPainel] = useState(true);
 
-  // ======= FILAS =======
   const [ativas, setAtivas] = useState<PainelCall[]>([]);
   const [espera, setEspera] = useState<PainelCall[]>([]);
 
@@ -439,25 +436,74 @@ export default function PainelPage() {
   const loopRodando = useRef<boolean>(false);
   const cancelLoop = useRef<boolean>(false);
 
-  // ======= REFS IDLE =======
   const ultimaChamadaRef = useRef<number>(Date.now());
   const idleTimeoutRef = useRef<NodeJS.Timeout>();
   const returnTimeoutRef = useRef<NodeJS.Timeout>();
 
-  // Controle de tela cheia
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ======= ATIVAÇÃO AUTOMÁTICA DE ÁUDIO =======
+  // Função para obter data/hora no fuso horário de Brasília (UTC-3)
+  const getDataHoraBrasilia = useCallback(() => {
+    const now = new Date();
+    
+    // Opções para horário de Brasília
+    const horaOptions: Intl.DateTimeFormatOptions = {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "America/Sao_Paulo",
+      hour12: false
+    };
+    
+    const dataOptions: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: "America/Sao_Paulo"
+    };
+    
+    const horaFormatada = now.toLocaleTimeString("pt-BR", horaOptions);
+    const dataFormatada = now.toLocaleDateString("pt-BR", dataOptions);
+    
+    return { horaFormatada, dataFormatada };
+  }, []);
+
+  // Pré-carregar áudio de chamada na inicialização
+  useEffect(() => {
+    // Removido pré-carregamento do som de atenção
+    return () => {
+      // Limpeza ao desmontar
+      audioPoolRef.current.forEach(audio => {
+        audio.pause();
+        audio.src = '';
+      });
+      audioPoolRef.current.clear();
+    };
+  }, [isLiberado]);
+
+  // Função otimizada para pré-carregar áudio
+  const preloadAudio = useCallback((url: string): HTMLAudioElement => {
+    if (audioPoolRef.current.has(url)) {
+      return audioPoolRef.current.get(url)!;
+    }
+    
+    const audio = new Audio(`${NEST_URL}${url}`);
+    audio.preload = "auto";
+    audio.load();
+    audioPoolRef.current.set(url, audio);
+    
+    return audio;
+  }, []);
+
   const ativarAudio = async () => {
     try {
       setShowAudioModal(true);
-      
     } catch (error) {
       console.log('Falha na ativação automática de áudio:', error);
     }
   };
 
-  // ======= TELA CHEIA AUTOMÁTICA =======
   useEffect(() => {
     const enterFullscreen = () => {
       if (containerRef.current && !document.fullscreenElement) {
@@ -469,12 +515,7 @@ export default function PainelPage() {
 
     if (isLiberado) {
       setTimeout(enterFullscreen, 1500);
-      // Tentar ativar áudio automaticamente ao liberar o painel
       setTimeout(ativarAudio, 1000);
-
-      // carrega som de chamada
-      const toque = new Audio("/audio/painel9.mp3")
-      setSomChamada(toque)
     }
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -488,49 +529,42 @@ export default function PainelPage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isLiberado]);
 
-  // ======= SISTEMA IDLE =======
-  const iniciarIdle = () => {
+  // Sistema Idle
+  const iniciarIdle = useCallback(() => {
     if (isIdle) return;
-
-    // Animação de saída do painel
     setShowPainel(false);
     
     setTimeout(() => {
       setIsIdle(true);
-    }, 800); // Tempo da animação de saída
+    }, 800);
 
-    // Configurar retorno automático após 15 segundos
     returnTimeoutRef.current = setTimeout(() => {
       retornarAoPainel();
     }, IDLE_CONFIG.duracaoIdleSegundos * 1000);
-  };
+  }, [isIdle]);
 
-  const retornarAoPainel = () => {
+  const retornarAoPainel = useCallback(() => {
     if (!isIdle) return;
 
-    // Limpar timeout de retorno
     if (returnTimeoutRef.current) {
       clearTimeout(returnTimeoutRef.current);
     }
 
-    // Animação de entrada do painel
     setIsIdle(false);
     
     setTimeout(() => {
       setShowPainel(true);
       resetarIdleTimer();
-    }, 800); // Tempo da animação de entrada
-  };
+    }, 800);
+  }, [isIdle]);
 
-  const resetarIdleTimer = () => {
+  const resetarIdleTimer = useCallback(() => {
     ultimaChamadaRef.current = Date.now();
     
-    // Limpar timeout anterior
     if (idleTimeoutRef.current) {
       clearTimeout(idleTimeoutRef.current);
     }
 
-    // Configurar novo timeout
     if (isLiberado) {
       idleTimeoutRef.current = setTimeout(() => {
         const tempoInativo = Date.now() - ultimaChamadaRef.current;
@@ -539,40 +573,37 @@ export default function PainelPage() {
         if (tempoInativo >= tempoMinimo && !ativas.length && !espera.length) {
           iniciarIdle();
         } else {
-          resetarIdleTimer(); // Reconfigurar se ainda houver atividade
+          resetarIdleTimer();
         }
-      }, 60000); // Verificar a cada minuto
+      }, 60000);
     }
-  };
+  }, [isLiberado, ativas.length, espera.length, iniciarIdle]);
 
-  // Atualizar timer a cada nova chamada
-  const atualizarUltimaChamada = () => {
+  const atualizarUltimaChamada = useCallback(() => {
     ultimaChamadaRef.current = Date.now();
     if (isIdle) {
       retornarAoPainel();
     } else {
       resetarIdleTimer();
     }
-  };
+  }, [isIdle, retornarAoPainel, resetarIdleTimer]);
 
-  // helpers para manter state + ref sincronizados
-  const setAtivasSync = (updater: (prev: PainelCall[]) => PainelCall[]) => {
+  const setAtivasSync = useCallback((updater: (prev: PainelCall[]) => PainelCall[]) => {
     setAtivas((prev) => {
       const next = updater(prev);
       ativasRef.current = next;
       return next;
     });
-  };
+  }, []);
   
-  const setEsperaSync = (updater: (prev: PainelCall[]) => PainelCall[]) => {
+  const setEsperaSync = useCallback((updater: (prev: PainelCall[]) => PainelCall[]) => {
     setEspera((prev) => {
       const next = updater(prev);
       esperaRef.current = next;
       return next;
     });
-  };
+  }, []);
 
-  // ======= REGRAS DE ACESSO =======
   function validarAcesso() {
     if (serialInput.trim() === SERVICES_KEY && unidadeSelecionada) {
       setIsLiberado(true);
@@ -590,58 +621,86 @@ export default function PainelPage() {
     }
   }, []);
 
-  // ======= DATA/HORA HEADER =======
+  // Atualizar data/hora com fuso horário de Brasília
   useEffect(() => {
     const atualizar = () => {
-      const now = new Date();
-      setHora(now.toLocaleTimeString("pt-BR", { 
-        hour: "2-digit", 
-        minute: "2-digit",
-        second: "2-digit"
-      }));
-      
-      setDataCompleta(now.toLocaleDateString("pt-BR", { 
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      }));
+      const { horaFormatada, dataFormatada } = getDataHoraBrasilia();
+      setHora(horaFormatada);
+      setDataCompleta(dataFormatada);
     };
     
     atualizar();
     const t = setInterval(atualizar, 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [getDataHoraBrasilia]);
 
-  // ======= ÁUDIO =======
-  const tocarAudioDaChamada = (call: PainelCall) =>
+  // Função otimizada para tocar áudio - SEM toque de atenção, apenas o nome
+  const tocarAudioDaChamada = useCallback((call: PainelCall): Promise<void> => 
     new Promise<void>((resolve) => {
-      if (!audioHabilitado) {
-        setChamadaAtual(call);
-        // Atualizado para manter apenas as 3 últimas chamadas
-        setAnteriores((prev) => [call, ...prev].slice(0, 3));
-        atualizarUltimaChamada();
-        return resolve();
-      }
-
-      
-      const audio = new Audio(`${NEST_URL}${call.audio}`);
-      
-      somChamada?.play().catch(() => resolve());
-      audio.play().catch(() => resolve());
-      audio.onended = () => resolve();
-      audio.onerror = () => resolve();
-      
+      // Atualizar UI imediatamente
       setChamadaAtual(call);
-      // Atualizado para manter apenas as 3 últimas chamadas
       setAnteriores((prev) => [call, ...prev].slice(0, 3));
       atualizarUltimaChamada();
-    });
+
+      if (!audioHabilitado) {
+        // Tempo mínimo de exibição quando áudio está desabilitado
+        setTimeout(() => resolve(), 5000);
+        return;
+      }
+
+      const tocarAudio = async () => {
+        try {
+          // Criar novo áudio para cada chamada (evita conflitos)
+          const audioChamada = new Audio(`${NEST_URL}${call.audio}`);
+          audioChamada.preload = "auto";
+          
+          // Aguardar carregamento do áudio
+          await new Promise<void>((res, rej) => {
+            audioChamada.onloadeddata = () => res();
+            audioChamada.onerror = () => rej(new Error('Erro ao carregar áudio'));
+            
+            // Fallback se não carregar
+            setTimeout(() => rej(new Error('Timeout ao carregar áudio')), 5000);
+          });
+          
+          // Tocar o áudio
+          await audioChamada.play().catch((error) => {
+            console.error('Erro ao tocar áudio:', error);
+          });
+          
+          // Aguardar o áudio terminar completamente
+          await new Promise<void>((res) => {
+            const onEndHandler = () => {
+              audioChamada.removeEventListener('ended', onEndHandler);
+              res();
+            };
+            
+            audioChamada.addEventListener('ended', onEndHandler);
+            
+            // Fallback baseado na duração do áudio + margem de segurança
+            const duracao = audioChamada.duration || 5;
+            setTimeout(() => res(), (duracao + 1) * 1000);
+          });
+          
+          // Pausa adicional após o áudio terminar (tempo para pessoa processar e reagir)
+          await new Promise(res => setTimeout(res, 2000));
+          
+          resolve();
+          
+        } catch (error) {
+          console.error('Erro ao tocar áudio da chamada:', error);
+          // Mesmo com erro, aguardar um tempo mínimo antes de continuar
+          setTimeout(() => resolve(), 5000);
+        }
+      };
+      
+      tocarAudio();
+    }), [audioHabilitado, atualizarUltimaChamada]);
 
   const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-  // ======= LOOP PRINCIPAL =======
-  const iniciarLoop = async () => {
+  // Loop principal otimizado
+  const iniciarLoop = useCallback(async () => {
     if (loopRodando.current) return;
     loopRodando.current = true;
     cancelLoop.current = false;
@@ -657,18 +716,18 @@ export default function PainelPage() {
         }
         await wait(DELAY_ENTRE_CICLOS_MS);
       } else {
-        await wait(300);
+        await wait(2000);
       }
     }
 
     loopRodando.current = false;
-  };
+  }, [tocarAudioDaChamada]);
 
   useEffect(() => {
     if (ativas.length > 0) iniciarLoop();
-  }, [ativas]);
+  }, [ativas, iniciarLoop]);
 
-  // ======= SOCKET =======
+  // Socket otimizado
   useEffect(() => {
     if (!isLiberado) return;
 
@@ -676,18 +735,35 @@ export default function PainelPage() {
     socket = io(NEXT_WS_URL || "http://localhost:3333", {
       auth: painel,
       transports: ["websocket"],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
     });
 
     onEvent<EventType.CONNECTION_REQUEST>(socket, EventType.CONNECTION_REQUEST, (msg) => {
       console.log("Conectado ao WebSocket:", msg);
-      resetarIdleTimer(); // Iniciar timer idle após conexão
+      resetarIdleTimer();
     });
 
     onEvent<EventType.PAINEL_CALL>(socket, EventType.PAINEL_CALL, (call: PainelCall) => {
       const jaExiste = ativasRef.current.some((c) => c.id === call.id) || esperaRef.current.some((c) => c.id === call.id);
       if (jaExiste) return;
-      if (ativasRef.current.length < 3) setAtivasSync((prev) => [...prev, call]);
-      else setEsperaSync((prev) => [...prev, call]);
+      
+      // 🚀 PRÉ-CARREGAR ÁUDIO IMEDIATAMENTE quando recebe a chamada
+      if (call.audio && audioHabilitado) {
+        const audioPreload = new Audio(`${NEST_URL}${call.audio}`);
+        audioPreload.preload = "auto";
+        audioPreload.load(); // Força o carregamento imediato
+        audioPoolRef.current.set(call.id.toString(), audioPreload);
+        
+        console.log(`✅ Áudio pré-carregado para chamada ${call.id}`);
+      }
+      
+      if (ativasRef.current.length < 3) {
+        setAtivasSync((prev) => [...prev, call]);
+      } else {
+        setEsperaSync((prev) => [...prev, call]);
+      }
     });
 
     onEvent<EventType.TICKET_UPDATED>(socket, EventType.TICKET_UPDATED, (ticket: Ticket) => {
@@ -698,10 +774,16 @@ export default function PainelPage() {
         return next;
       });
       setEsperaSync((prev) => prev.filter((c) => c.id !== ticket.id));
+      
       if (liberouVaga && esperaRef.current.length > 0) {
         const [proxima, ...resto] = esperaRef.current;
         setEsperaSync(() => resto);
         setAtivasSync((prev) => [...prev, proxima]);
+        
+        // Pré-carregar áudio da próxima chamada
+        if (proxima.audio) {
+          preloadAudio(proxima.audio);
+        }
       }
     });
 
@@ -713,13 +795,33 @@ export default function PainelPage() {
       } catch {}
       cancelLoop.current = true;
       
-      // Limpar timeouts
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
       if (returnTimeoutRef.current) clearTimeout(returnTimeoutRef.current);
+      
+      // Limpar pool de áudios
+      audioPoolRef.current.forEach(audio => {
+        audio.pause();
+        audio.src = '';
+      });
+      audioPoolRef.current.clear();
     };
-  }, [isLiberado, unidadeSelecionada]);
+  }, [isLiberado, unidadeSelecionada, resetarIdleTimer, setAtivasSync, setEsperaSync, preloadAudio]);
 
-  // ======= UI =======
+  // Otimizar cores com useMemo
+  const currentExamColors = useMemo(() => 
+    chamadaAtual ? 
+      examesColors[chamadaAtual.exame ?? "ATENDIMENTO"] : 
+      { primary: COLOR_PALETTE.primary, secondary: `${COLOR_PALETTE.primary}20`, text: COLOR_PALETTE.white },
+    [chamadaAtual]
+  );
+
+  const bgExam = useMemo(() => 
+    chamadaAtual ? 
+      examesBackground[chamadaAtual.exame] || examesBackground["ATENDIMENTO"] : 
+      `linear-gradient(135deg, ${COLOR_PALETTE.primary}08 0%, ${COLOR_PALETTE.accent}08 100%)`,
+    [chamadaAtual]
+  );
+
   if (!isLiberado) {
     return (
       <div 
@@ -836,13 +938,6 @@ export default function PainelPage() {
     );
   }
 
-  const currentExamColors = chamadaAtual ? 
-    examesColors[chamadaAtual.exame ?? "ATENDIMENTO"] : 
-    { primary: COLOR_PALETTE.primary, secondary: `${COLOR_PALETTE.primary}20`, text: COLOR_PALETTE.white };
-
-  const bgExam = chamadaAtual ? examesBackground[chamadaAtual.exame] || examesBackground["ATENDIMENTO"] : 
-    `linear-gradient(135deg, ${COLOR_PALETTE.primary}08 0%, ${COLOR_PALETTE.accent}08 100%)`;
-
   return (
     <div 
       ref={containerRef}
@@ -852,7 +947,6 @@ export default function PainelPage() {
         backgroundImage: 'linear-gradient(135deg, #f8fcf9 0%, #f0f5f2 100%)'
       }}
     >
-      {/* ===== MODAL DE ATIVAÇÃO DE ÁUDIO ===== */}
       <AnimatePresence>
         {showAudioModal && (
           <AudioActivationModal onActivate={() => {
@@ -862,12 +956,10 @@ export default function PainelPage() {
         )}
       </AnimatePresence>
 
-      {/* ===== IDLE SCREEN ===== */}
       <AnimatePresence>
         {isIdle && <IdleScreen unidadeSelecionada={unidadeSelecionada} />}
       </AnimatePresence>
 
-      {/* ===== PAINEL PRINCIPAL ===== */}
       <AnimatePresence>
         {showPainel && (
           <motion.div
@@ -877,8 +969,6 @@ export default function PainelPage() {
             transition={{ duration: 0.8 }}
             className="flex-1 flex flex-col"
           >
-
-            {/* ===== HEADER ===== */}
             <header 
               className="w-full border-b py-2 px-4 lg:px-6 backdrop-blur-sm"
               style={{ 
@@ -888,7 +978,6 @@ export default function PainelPage() {
               }}
             >
               <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 items-center gap-4">
-                {/* Unidade */}
                 <div className="flex items-center gap-4 justify-center md:justify-start">
                   <div 
                     className="rounded-2xl p-3 shadow-sm border"
@@ -911,7 +1000,6 @@ export default function PainelPage() {
                   </div>
                 </div>
 
-                {/* Data e Hora */}
                 <div className="text-center order-first md:order-none">
                   <div 
                     className="text-lg font-semibold"
@@ -927,7 +1015,6 @@ export default function PainelPage() {
                   </div>
                 </div>
 
-                {/* Contadores */}
                 <div className="flex justify-center md:justify-end gap-4">
                   <CounterCard label="Chamando" value={ativas.length} />
                   <CounterCard label="Aguardando" value={espera.length} />
@@ -935,18 +1022,16 @@ export default function PainelPage() {
               </div>
             </header>
 
-            {/* ===== CONTEÚDO PRINCIPAL ===== */}
             <main className="flex-1 flex flex-col px-2 sm:px-4 py-4 max-w-7xl mx-auto w-full">
-              {/* CHAMADA ATUAL */}
               <section className="flex-1 flex items-center justify-center mb-4 sm:mb-6">
                 <AnimatePresence mode="wait">
                   {chamadaAtual ? (
                     <motion.div
                       key={chamadaAtual.id}
-                      initial={{ opacity: 0, scale: 0.95 }}
+                      initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 1.05 }}
-                      transition={{ duration: 0.5 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ duration: 0.3 }}
                       className="w-full max-w-6xl rounded-2xl p-6 lg:p-8 xl:p-12 shadow-lg border text-center backdrop-blur-sm mx-2"
                       style={{
                         background: bgExam,
@@ -955,11 +1040,10 @@ export default function PainelPage() {
                         boxShadow: '0 8px 32px rgba(68, 115, 94, 0.1)',
                       }}
                     >
-                      {/* Ticket/Name - Com cor específica do exame */}
                       <motion.div
-                        initial={{ scale: 0.98, opacity: 0 }}
+                        initial={{ scale: 0.95, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        transition={{ delay: 0.1 }}
+                        transition={{ delay: 0.05 }}
                         className="mb-6 lg:mb-8"
                       >
                         <div 
@@ -970,12 +1054,11 @@ export default function PainelPage() {
                         </div>
                       </motion.div>
 
-                      {/* Sala e Exame - Com cores específicas do exame */}
                       <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-1 mb-2 lg:mb-4">
                         <motion.div
                           initial={{ y: 10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.2 }}
+                          transition={{ delay: 0.1 }}
                           className="flex items-center gap-3 text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 sm:py-3 rounded-full border"
                           style={{
                             backgroundColor: currentExamColors.primary,
@@ -989,7 +1072,7 @@ export default function PainelPage() {
                         <motion.div
                           initial={{ y: 10, opacity: 0 }}
                           animate={{ y: 0, opacity: 1 }}
-                          transition={{ delay: 0.3 }}
+                          transition={{ delay: 0.15 }}
                           className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 rounded-full border-2"
                           style={{ 
                             borderColor: currentExamColors.primary,
@@ -1024,7 +1107,6 @@ export default function PainelPage() {
                 </AnimatePresence>
               </section>
 
-              {/* ===== CHAMADAS ANTERIORES (APENAS 3 ÚLTIMAS) ===== */}
               <section className="mt-auto px-2 w-full">
                 <div 
                   className="flex items-center gap-3 text-lg sm:text-xl font-bold mb-3 sm:mb-4"
@@ -1048,7 +1130,6 @@ export default function PainelPage() {
                         Nenhuma chamada recente
                       </div>
                     ) : (
-                      // Mostra apenas as 3 últimas chamadas ocupando toda a largura
                       anteriores.slice(0, 3).map((c, idx) => (
                         <PreviousCallCard key={`${c.id}-${idx}`} c={c} />
                       ))

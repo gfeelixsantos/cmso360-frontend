@@ -60,7 +60,7 @@ const AtendimentoModalExames = ({
       setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"))
     }
     
-  }, [codigosAtendimento, funcionarioSelecionado])
+  }, [codigosAtendimento, funcionarioSelecionado, sala, exame, isOpen])
 
 
 
@@ -127,14 +127,14 @@ const AtendimentoModalExames = ({
       console.error("Erro ao chamar API:", error);
     } 
   }
-};
+}; 
  
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = {
     "Acuidade Visual": AcuidadeVisual,
     "Audiometria": AudiometriaOcupacional,
     "Dinamometria": Dinamometria,
-    "EEG": entrevistaPsico && psicossocial ? ExamePadrao : Psicossocial,
-    "ECG": entrevistaPsico && psicossocial ? ExamePadrao : Psicossocial,
+    "EEG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
+    "ECG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
     "Espirometria": Espirometria,
     "Exame Clínico": FichaClinicaOcupacional,
     "Psicossocial": Psicossocial,

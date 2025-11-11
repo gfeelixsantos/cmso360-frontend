@@ -36,40 +36,16 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           {/* Header do PDF Viewer */}
           <div className="flex items-center justify-between px-4 py-3 bg-default-800 text-default-50 shadow-lg">
             <div className="truncate pr-4 flex-1">
-              <h3 className="font-semibold text-md truncate">{currentPdfTitle}</h3>
-              <p className="text-xs text-default-300 truncate">
+              <h3 className="font-semibold text-xl text-right truncate">{currentPdfTitle}</h3>
+              {/* <p className="text-xs text-default-300 truncate">
                 {selectedRecord.NOME} • {selectedRecord.TIPOEXAMENOME}
-              </p>
+              </p> */}
             </div>
 
             <div className="flex items-center gap-2">
-              {/* Navegação entre PDFs */}
-              <Button
-                isIconOnly
-                variant="light"
-                onPress={() => changePdfIndex("prev")}
-                isDisabled={currentPdfIndex === 0}
-                className="text-default-50"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
               
-              <span className="text-sm font-medium px-2">
-                {currentPdfIndex + 1} / {totalPdfs}
-              </span>
-              
-              <Button
-                isIconOnly
-                variant="light"
-                onPress={() => changePdfIndex("next")}
-                isDisabled={currentPdfIndex >= totalPdfs - 1}
-                className="text-default-50"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </Button>
-
               {/* Botão Tela Cheia */}
-              <Button
+              {/* <Button
                 isIconOnly
                 variant="light"
                 onPress={() => {
@@ -80,13 +56,38 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
                 }}
                 className="text-default-50 ml-2"
               >
-                <Maximize className="w-4 h-4" />
+                <Maximize className="w-6 h-6" />
+              </Button> */}
+
+              {/* Navegação entre PDFs */}
+              <Button
+                isIconOnly
+                variant="light"
+                onPress={() => changePdfIndex("prev")}
+                isDisabled={currentPdfIndex === 0}
+                className="text-default-50"
+              >
+                <ChevronLeft className="w-8 h-8" />
+              </Button>
+              
+              <span className="text-md font-medium px-2">
+                {currentPdfIndex + 1} / {totalPdfs}
+              </span>
+              
+              <Button
+                isIconOnly
+                variant="light"
+                onPress={() => changePdfIndex("next")}
+                isDisabled={currentPdfIndex >= totalPdfs - 1}
+                className="text-default-50"
+              >
+                <ChevronRight className="w-8 h-8" />
               </Button>
             </div>
           </div>
 
           {/* Área do PDF */}
-          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden">
+          <div className="flex-1 flex items-center justify-center p-4 overflow-hidden" id='pdf-viewer'>
             <iframe
               src={currentPdfUrl}
               title={currentPdfTitle}

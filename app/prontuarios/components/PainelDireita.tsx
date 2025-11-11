@@ -89,6 +89,7 @@ type PdfUrl = {
 
 interface RightPanelProps {
   selectedRecord: MedicalRecord | null;
+  setSelectedRecord: React.Dispatch<React.SetStateAction<MedicalRecord | null>>;
   currentPdfIndex: number;
   onPdfIndexChange: (index: number) => void;
   user: IUserInfo;
@@ -97,6 +98,7 @@ interface RightPanelProps {
 
 const PainelDireita: React.FC<RightPanelProps> = ({
   selectedRecord,
+  setSelectedRecord,
   currentPdfIndex,
   onPdfIndexChange,
   user,
@@ -323,6 +325,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       const pdfIndex = selectedRecord.pdfUrls.findIndex((pdf) => pdf.grupo === exameGrupo && pdf.type === "exame");
 
       if (pdfIndex !== -1) {
+        document.getElementById('pdf-viewer')?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' });
         onPdfIndexChange(pdfIndex);
       }
     },
@@ -400,6 +403,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
       onRecordUpdate(updatedRecord);
       setOpinion({ opinionType: null, altura: null, confinado: null, details: null, laudoPCD: null, laudoRestricao: null });
+      setSelectedRecord(null)
 
       addToast({
         title: "Prontuário liberado",
@@ -620,7 +624,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const showDetailsField = opinionRequiresDetails(opinion);
 
   return (
-    <aside className="w-86 bg-content1 border-l border-divider flex-shrink-0 flex flex-col">
+    <aside className="w-90 bg-content1 border-l border-divider flex-shrink-0 flex flex-col">
       <div className="flex flex-col flex-1">
         {/* Informações do Paciente */}
         <Card shadow="none" className="rounded-none border-b border-divider">
@@ -660,7 +664,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                   </div>
 
                   {selectedRecord.RISCOSASO && (
-                    <Alert title="Riscos" className="text-[0.6rem]" variant="flat" color="default" hideIcon={true}>
+                    <Alert title="Riscos" className="text-[0.7rem]" variant="flat" color="default" hideIcon={true}>
                       <ul className="list-disc pl-4">
                         {selectedRecord.RISCOSASO.map((risco, index) => (
                           <li key={index} className="capitalize">
@@ -687,64 +691,96 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
             {/* Lista de Exames */}
             {examesComSala.length > 0 && (
-              <Accordion
-                isCompact={true}
-                selectionMode="multiple"
-                selectedKeys={examesAccordionOpen}
-                onSelectionChange={(keys) => setExamesAccordionOpen(Array.from(keys as Set<string>))}
+            <Accordion
+              isCompact
+              selectionMode="multiple"
+              selectedKeys={examesAccordionOpen}
+              onSelectionChange={(keys) =>
+                setExamesAccordionOpen(Array.from(keys as Set<string>))
+              }
+            >
+              <AccordionItem
+                key="exames"
+                aria-label="Exames Realizados"
+                title={
+                  <div className="flex items-center gap-2 mt-2">
+                    <h5 className="font-semibold text-default-700">
+                      {selectedRecord.EXAMES.length} Exames
+                    </h5>
+                  </div>
+                }
               >
-                <AccordionItem
-                  key="exames"
-                  aria-label="Exames Realizados"
-                  title={
-                    <div className="flex items-center gap-2 mt-2">
-                      <h5 className="font-semibold text-default-700">{selectedRecord.EXAMES.length} Exames</h5>
-                    </div>
-                  }
-                >
-                  <div className="space-y-3 max-h-60 overflow-y-auto p-1">
-                    {examesComSala.map((exame) => {
-                      const uploadState = selectedRecord ? uploadStates[selectedRecord._id as string]?.[exame.codigoExame] : null;
+                <div className=" overflow-y-clip p-1">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead className="sticky top-0 bg-default-100 z-10">
+                      <tr className="text-default-700">
+                        <th className="p-2 font-semibold w-[50%]">Exame</th>
+                        <th className="p-2 font-semibold">Data/Hora</th>
+                        <th className="p-2 font-semibold text-center w-[60px]">Ação</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {examesComSala.map((exame) => {
+                        const isActive = isExamBeingDisplayed(exame.grupo);
+                        const data = exame.dataExame
+                          ? new Date(exame.dataExame).toLocaleDateString("pt-BR")
+                          : "N/A";
+                        const hora = exame.dataExame
+                          ? new Date(exame.dataExame).toLocaleTimeString("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "";
 
-                      return (
-                        <Card
-                          key={exame.codigoExame}
-                          className={`border-default-200 transition-all duration-200 ${
-                            isExamBeingDisplayed(exame.grupo) ? "ring-2 ring-primary bg-primary-50 border-primary-200" : ""
-                          }`}
-                        >
-                          <CardBody>
-                            <div className="flex justify-between items-start mb-2">
-                              <div className="items-center justify-between flex-1">
-                                {isExamBeingDisplayed(exame.grupo) && (
-                                  <Chip size="sm" color="primary" variant="flat">
+                        return (
+                          <tr
+                            key={exame.codigoExame}
+                            className={`transition-all border-b border-default-200 ${
+                              isActive ? "bg-primary-50" : "hover:bg-default-50"
+                            }`}
+                          >
+                            <td className="p-2 text-default-800">
+                              <div className="flex flex-col">
+                                <span className="font-medium truncate">{exame.grupo}</span>
+                                {isActive && (
+                                  <Chip
+                                    size="sm"
+                                    color="primary"
+                                    variant="flat"
+                                    className="mt-1 w-fit"
+                                  >
                                     Visualizando
                                   </Chip>
                                 )}
-                                <div className="flex justify-between items-center gap-2">
-                                  <h5 className="font-semibold text-sm text-default-800">{exame.grupo}</h5>
-                                  {hasPdfForExame(exame.grupo) && (
-                                    <Button size="sm" variant="ghost" color="primary" onPress={() => selectPdfFromExame(exame.grupo)} title="Visualizar PDF">
-                                      <Eye className="w-4 h-4" />
-                                      Ver
-                                    </Button>
-                                  )}
-                                </div>
                               </div>
-                            </div>
-                            <div className="flex gap-2 text-xs text-default-600 mb-3">
-                              <div>{exame.dataExame ? new Date(exame.dataExame).toLocaleDateString("pt-BR") : "N/A"}</div>
-                              <div>{exame.sala || "N/A"}</div>
-                              <div>{exame.dataExame ? new Date(exame.dataExame).toLocaleTimeString("pt-BR") : "N/A"}</div>
-                            </div>
-                            <div className="text-xs text-default-600 mb-3">{exame?.profissional ?? "-"}</div>
-                          </CardBody>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                </AccordionItem>
-              </Accordion>
+                            </td>
+                            <td className="p-2 text-default-600 whitespace-nowrap">
+                              {data} <br />
+                              <span className="text-[0.7rem]">{hora}</span>
+                            </td>
+                            <td className="p-2 text-center">
+                              {hasPdfForExame(exame.grupo) && (
+                                <Button
+                                  size="sm"
+                                  variant={isActive ? "solid" : "ghost"}
+                                  color="primary"
+                                  onPress={() => selectPdfFromExame(exame.grupo)}
+                                  title="Visualizar PDF"
+                                  isIconOnly
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </AccordionItem>
+            </Accordion>
+
             )}
           </CardBody>
         </Card>

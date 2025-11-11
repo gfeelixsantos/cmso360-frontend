@@ -46,6 +46,7 @@ const RecepcaoPage: React.FC = () => {
   const [salaSelecionada, setSalaSelecionada] = useState("");
   const [exameSelecionado, setExameSelecionado] = useState("");
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
+  const [agendamentosAtivos, setAgendamentosAtivos] = useState<Scheduling[]>([]);
   const [empreparacao, setEmPreparacao] = useState<PreparationRequest[]>([]);
   const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<PreparationRequest[]>([]);
   const [modalAtendimentoAberto, setModalAtendimentoAberto] = useState(false);
@@ -165,8 +166,9 @@ const RecepcaoPage: React.FC = () => {
       const schedulesFiltred = schedulesToUnit.filter(
         s => !agendamentos.some(a => a._id === s._id)
       )
-
+     
       setAgendamentos(schedulesFiltred)
+      
 
     } catch {
       return null;
@@ -326,7 +328,7 @@ useEffect(() => {
   onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
   onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
   onEvent(s, EventType.TICKET_ERROR, handleTicketError);
-  // onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+  onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
   onEvent(s, EventType.PREPARATION_REQUEST, handlePreparationRequest);
 
   s.on("connect", async() => {
@@ -383,13 +385,14 @@ useEffect(() => {
 
  
 
+ 
 
-
-  
+   
 
   const handleModal = useCallback(() => {
+    setAgendamentosAtivos(agendamentos)
     setModalAtendimentoAberto(!modalAtendimentoAberto)
-  }, [modalAtendimentoAberto])
+  }, [modalAtendimentoAberto, ticketSelecionado, socCompanies])
 
 
   const calcularEstatisticas = () => {
@@ -506,7 +509,7 @@ useEffect(() => {
         ticketSelecionado={ticketSelecionado}
         // teste sem filtro de atendimento
         // agendamentos={agendamentos.filter(a => a.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO)}
-        agendamentos={agendamentos}
+        agendamentos={agendamentosAtivos}
         socCompanies={socCompanies}
         unidadeSelecionada={unidadeSelecionada}
         salaSelecionada={salaSelecionada}

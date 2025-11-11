@@ -21,6 +21,7 @@ import {
   TimerIcon,
   Pause,
   FileInput,
+  PrinterCheck,
 } from "lucide-react"
 import { Input, Button, Chip, Textarea, Autocomplete, AutocompleteItem, Tooltip, Select, SelectItem, Switch, user, addToast, SharedSelection, Checkbox, Spinner } from "@heroui/react"
 import { FixedSizeList as List, ListChildComponentProps } from "react-window"
@@ -37,6 +38,7 @@ import { IUserInfo } from "@/lib/user/interfaces/IUser"
 import { AsoFuncionarioDto } from "@/lib/soc/interfaces/AsoFuncionario"
 import EmPreparacaoModal from "./PreparoModal"
 import { Socket } from "socket.io-client"
+import { reportInternal } from "@/lib/scheduling/report/reportInternal"
 
 
 
@@ -140,18 +142,19 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // ---------------------------------------------------------
   // Keyboard shortcuts: ESC close, Enter submit (if valid)
   // ---------------------------------------------------------
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    if (e.key === "Escape") {
-      onClose()
-    } else if (e.key === "Enter") {
-      // Avoid interfering with multi-line textarea Enter
-      const active = document.activeElement
-      const isTextarea = active && (active.tagName === "TEXTAREA" || (active as HTMLElement).getAttribute("role") === "textbox")
-      if (!isTextarea && validation.all && !isSubmitting) {
-        handleSubmit()
-      }
+const handleKeyDown = useCallback((e: KeyboardEvent) => {
+  if (!isOpen) return; // Previne execução quando fechado
+  
+  if (e.key === "Escape") {
+    onClose()
+  } else if (e.key === "Enter") {
+    const active = document.activeElement
+    const isTextarea = active && (active.tagName === "TEXTAREA" || (active as HTMLElement).getAttribute("role") === "textbox")
+    if (!isTextarea && validation.all && !isSubmitting) {
+      handleSubmit()
     }
-  }, [onClose, validation.all, isSubmitting])
+  }
+}, [isOpen, onClose, validation.all, isSubmitting])
 
 
 
@@ -645,9 +648,31 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
 
 
   const handlePreparationModal = () => {
+    console.log("Okss")
     setIsOpenPreparationModal(true)
   }
 
+
+  // Função que faz o print da guia de atendimento
+  const handlePrint = () => {
+
+    if(!funcionarioSelecionado) alert("Selecione um funcionário")
+    else {
+      const htmlContent = reportInternal(funcionarioSelecionado);
+      const printWindow = window.open("", "_blank", "width=900,height=800");
+
+      if (printWindow) {
+        printWindow.document.open();
+        printWindow.document.write(htmlContent);
+        printWindow.document.close();
+
+        // opcional: aguarda o carregamento antes de imprimir
+        printWindow.onload = () => {
+          printWindow.focus();
+        };
+      }
+    }
+  };
 
  
   // ---------------------------------------------------------
@@ -732,12 +757,12 @@ const LoadingOverlay = () => (
     <div className="text-center">
       <div className="flex flex-col items-center gap-4">
         {/* Spinner animado */}
-        <Spinner size="lg" variant="spinner" color="success" />
+        <Spinner size="lg" variant="default" color="success" />
         
         {/* Texto de loading */}
         <div className="space-y-1">
           <p className="text-sm font-medium text-gray-700">Processando...</p>
-          <p className="text-xs text-gray-500">Aguarde enquanto buscamos as informações</p>
+          <p className="text-xs text-gray-500">Buscando informações</p>
         </div>
         
         {/* Barra de progresso sutil */}
@@ -1513,8 +1538,7 @@ const PacienteItem = React.memo(function _PacienteItem({
           </div>
 
           <div className="flex items-center gap-3">
-            { ticketSelecionado && (
-                <Button 
+            <Button 
                 variant="flat" 
                 disabled={isSubmitting} 
                 className="px-4 py-2 rounded hover:bg-gray-100"
@@ -1522,7 +1546,14 @@ const PacienteItem = React.memo(function _PacienteItem({
               >
                 <FileInput className="h-4 w-4 mr-2" /> Preparar documentação
               </Button>
-            )}
+            <Button 
+              variant="flat" 
+              disabled={isSubmitting} 
+              className="px-4 py-2 rounded hover:bg-gray-100"
+              onPress={handlePrint}
+            >
+              <PrinterCheck className="h-4 w-4 mr-2" /> Guia
+            </Button>
             <Button 
               variant="flat" 
               onPress={onClose} 
@@ -1553,11 +1584,11 @@ const PacienteItem = React.memo(function _PacienteItem({
       </div>
 
       {
-        (ticketSelecionado && socket && funcionarioSelecionado) && (
+        (socket && funcionarioSelecionado) && (
           <EmPreparacaoModal
             isOpen={isOpenPreparationModal}
             onOpenChange={setIsOpenPreparationModal}
-            ticket={ticketSelecionado}
+            ticket={ticketSelecionado ?? null}
             salaSelecionada={salaSelecionada}
             socket={socket}
             unidadeSelecionada={unidadeSelecionada}

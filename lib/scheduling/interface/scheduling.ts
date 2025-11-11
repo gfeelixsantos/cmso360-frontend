@@ -30,6 +30,7 @@ export type Client = {
   Profile: string;
   Phone: string;
   Contract: boolean;
+  Email: string;
 }
 
 export type RiscosAso = {

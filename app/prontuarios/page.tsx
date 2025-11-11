@@ -418,6 +418,7 @@ export default function UnifiedProntuarioPage() {
         {/* RIGHT: Painel Lateral Componentizado */}
         <PainelDireita
           selectedRecord={selectedRecord}
+          setSelectedRecord={setSelectedRecord}
           currentPdfIndex={currentPdfIndex}
           onPdfIndexChange={handlePdfIndexChange}
           user={user}
