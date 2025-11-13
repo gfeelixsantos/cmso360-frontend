@@ -118,6 +118,13 @@ const ModalSkeleton = () => (
   </div>
 );
 
+// Função auxiliar para normalizar datas - CORREÇÃO PRINCIPAL
+const normalizeDate = (date: Date): Date => {
+  const normalized = new Date(date);
+  normalized.setHours(0, 0, 0, 0);
+  return normalized;
+};
+
 // Componente principal
 export default function RelatoriosPage() {
   const router = useRouter();
@@ -268,7 +275,7 @@ export default function RelatoriosPage() {
     }
   }, [appAtendimentos]);
 
-  // Função de filtragem otimizada incluindo UNIDADEATENDIMENTO
+  // CORREÇÃO PRINCIPAL: Função de filtragem otimizada com tratamento correto de datas
   const applyFiltersFunction = useCallback((
     atendimentosList: OptimizedScheduling[], 
     currentFilters: typeof filters
@@ -277,16 +284,21 @@ export default function RelatoriosPage() {
 
     let filtered = atendimentosList;
 
-    // Filtro por data
+    // Filtro por data - CORREÇÃO APLICADA
     if (currentFilters.dataInicio) {
-      const dataInicio = new Date(currentFilters.dataInicio.toString());
-      filtered = filtered.filter(a => a.DATAAGENDAMENTO_DATE_OBJ >= dataInicio);
+      const dataInicio = normalizeDate(new Date(currentFilters.dataInicio.toString()));
+      filtered = filtered.filter(a => {
+        const dataAtendimento = normalizeDate(a.DATAAGENDAMENTO_DATE_OBJ);
+        return dataAtendimento >= dataInicio;
+      });
     }
 
     if (currentFilters.dataFim) {
-      const dataFim = new Date(currentFilters.dataFim.toString());
-      dataFim.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(a => a.DATAAGENDAMENTO_DATE_OBJ <= dataFim);
+      const dataFim = normalizeDate(new Date(currentFilters.dataFim.toString()));
+      filtered = filtered.filter(a => {
+        const dataAtendimento = normalizeDate(a.DATAAGENDAMENTO_DATE_OBJ);
+        return dataAtendimento <= dataFim;
+      });
     }
 
     // Filtro por empresa

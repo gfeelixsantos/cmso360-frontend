@@ -38,8 +38,15 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
 }) => {
 
   const AtendimentosOrdenados = useMemo(() => {
-    return [...(agendamentos || [])].sort((a, b) => (a.EXAMES?.length ?? 0) > (b.EXAMES?.length ?? 0) ? 1 : -1);
+    return [...(agendamentos || [])].sort((a, b) => {
+      const pendentesA = a.EXAMES?.filter(ex => ex.status !== 'FINALIZADO').length ?? 0;
+      const pendentesB = b.EXAMES?.filter(ex => ex.status !== 'FINALIZADO').length ?? 0;
+
+      // quanto menos pendentes, mais acima na lista
+      return pendentesA - pendentesB;
+    });
   }, [agendamentos]);
+
 
 
 

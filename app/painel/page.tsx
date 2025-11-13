@@ -634,68 +634,70 @@ export default function PainelPage() {
     return () => clearInterval(t);
   }, [getDataHoraBrasilia]);
 
-  // Função otimizada para tocar áudio - SEM toque de atenção, apenas o nome
-  const tocarAudioDaChamada = useCallback((call: PainelCall): Promise<void> => 
-    new Promise<void>((resolve) => {
-      // Atualizar UI imediatamente
-      setChamadaAtual(call);
-      setAnteriores((prev) => [call, ...prev].slice(0, 3));
-      atualizarUltimaChamada();
+// Função otimizada para tocar áudio - com controle de fila e pausa segura
+const tocarAudioDaChamada = useCallback((call: PainelCall): Promise<void> =>
+  new Promise<void>((resolve) => {
+    setChamadaAtual(call);
+    setAnteriores((prev) => [call, ...prev].slice(0, 3));
+    atualizarUltimaChamada();
 
-      if (!audioHabilitado) {
-        // Tempo mínimo de exibição quando áudio está desabilitado
-        setTimeout(() => resolve(), 10000);
-        return;
+    // Evita tocar o mesmo nome em duplicidade
+    if (chamadaAtual && chamadaAtual.id === call.id) {
+      console.warn("🔁 Ignorando repetição imediata da mesma chamada:", call.name);
+      setTimeout(() => resolve(), 2000);
+      return;
+    }
+
+    if (!audioHabilitado) {
+      console.log("🔇 Áudio desabilitado — exibindo chamada sem som");
+      setTimeout(() => resolve(), 8000);
+      return;
+    }
+
+    const executar = async () => {
+      try {
+        const audio = new Audio(`${NEST_URL}${call.audio}`);
+        audio.preload = "auto";
+
+        // Espera o áudio carregar completamente antes de tocar
+        await new Promise<void>((res, rej) => {
+          let carregado = false;
+          audio.oncanplaythrough = () => {
+            carregado = true;
+            res();
+          };
+          audio.onerror = () => rej(new Error("Erro ao carregar áudio"));
+          setTimeout(() => {
+            if (!carregado) rej(new Error("Timeout ao carregar áudio"));
+          }, 7000);
+        });
+
+        console.log(`🎧 Tocando áudio da chamada: ${call.name}`);
+        await audio.play();
+
+        // Aguarda fim completo do áudio
+        await new Promise<void>((res) => {
+          const onEnd = () => {
+            audio.removeEventListener("ended", onEnd);
+            res();
+          };
+          audio.addEventListener("ended", onEnd);
+        });
+
+        console.log("✅ Áudio finalizado, aguardando 3 s...");
+        await new Promise((r) => setTimeout(r, 3000)); // pausa extra
+        resolve();
+
+      } catch (err) {
+        console.error("❌ Erro no áudio:", err);
+        setTimeout(() => resolve(), 5000);
       }
+    };
 
-      const tocarAudio = async () => {
-        try {
-          // Criar novo áudio para cada chamada (evita conflitos)
-          const audioChamada = new Audio(`${NEST_URL}${call.audio}`);
-          audioChamada.preload = "auto";
-          
-          // Aguardar carregamento do áudio
-          await new Promise<void>((res, rej) => {
-            audioChamada.onloadeddata = () => res();
-            audioChamada.onerror = () => rej(new Error('Erro ao carregar áudio'));
-            
-            // Fallback se não carregar
-            setTimeout(() => rej(new Error('Timeout ao carregar áudio')), 5000);
-          });
-          
-          // Tocar o áudio
-          await audioChamada.play().catch((error) => {
-            console.error('Erro ao tocar áudio:', error);
-          });
-          
-          // Aguardar o áudio terminar completamente
-          await new Promise<void>((res) => {
-            const onEndHandler = () => {
-              audioChamada.removeEventListener('ended', onEndHandler);
-              res();
-            };
-            
-            audioChamada.addEventListener('ended', onEndHandler);
-            
-            // Fallback baseado na duração do áudio + margem de segurança
-            const duracao = audioChamada.duration || 5;
-            setTimeout(() => res(), (duracao + 1) * 3000);
-          });
-          
-          // Pausa adicional após o áudio terminar (tempo para pessoa processar e reagir)
-          await new Promise(res => setTimeout(res, 3000));
-          
-          resolve();
-          
-        } catch (error) {
-          console.error('Erro ao tocar áudio da chamada:', error);
-          // Mesmo com erro, aguardar um tempo mínimo antes de continuar
-          setTimeout(() => resolve(), 5000);
-        }
-      };
-      
-      tocarAudio();
-    }), [audioHabilitado, atualizarUltimaChamada]);
+    executar();
+  })
+, [audioHabilitado, atualizarUltimaChamada, chamadaAtual]);
+
 
   const wait = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -711,7 +713,10 @@ export default function PainelPage() {
         for (const call of [...lista]) {
           if (!ativasRef.current.some((c) => c.id === call.id)) continue;
           await tocarAudioDaChamada(call);
-          await wait(DELAY_ENTRE_CHAMADAS_MS);
+          // Delay controlado — apenas entre chamadas diferentes
+          if (!cancelLoop.current) {
+            await wait(3000); // pequena pausa entre chamadas (já controlada dentro do áudio)
+          }
           if (cancelLoop.current) break;
         }
         await wait(DELAY_ENTRE_CICLOS_MS);
