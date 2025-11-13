@@ -26,6 +26,7 @@ export class SchedulingClass implements Scheduling {
   EXAMES: ExamRegister[] = [];
   HORARIO: string = "";
   MATRICULAFUNCIONARIO: string = "";
+  MEDICO: string = "";
   NOME: string = "";
   NOMECARGO: string = "";
   NOMEEMPRESA: string = "";
