@@ -128,7 +128,7 @@ export default function RelatoriosPage() {
   const [showResults, setShowResults] = useState(false);
   const [user, setUser] = useState<IUserInfo | null>(null);
   
-  // Filtros atualizados
+  // Filtros atualizados incluindo UNIDADEATENDIMENTO
   const [filters, setFilters] = useState({
     dataInicio: null as any,
     dataFim: null as any,
@@ -137,7 +137,8 @@ export default function RelatoriosPage() {
     status: '',
     search: '',
     profissional: '',
-    sala: ''
+    sala: '',
+    unidadeAtendimento: '' // NOVO FILTRO
   });
 
   const [appliedFilters, setAppliedFilters] = useState<typeof filters>(filters);
@@ -147,6 +148,7 @@ export default function RelatoriosPage() {
   const [gruposExames, setGruposExames] = useState<string[]>([]);
   const [profissionais, setProfissionais] = useState<string[]>([]);
   const [salas, setSalas] = useState<string[]>([]);
+  const [unidadesAtendimento, setUnidadesAtendimento] = useState<string[]>([]); // NOVO ESTADO
   
   // Paginação
   const [page, setPage] = useState(1);
@@ -200,22 +202,25 @@ export default function RelatoriosPage() {
     getData();
   }, [getData]);
 
+  // Otimizar dados e extrair opções para filtros
   useEffect(() => {
     if (appAtendimentos.length === 0) return;
 
     const optimizeData = () => {
       const optimized = appAtendimentos.map((a: Scheduling) => {
-        // Extrair profissionais e salas únicos dos exames
+        // Extrair profissionais, salas e grupos únicos dos exames
         const profissionaisUnicos = [...new Set(a.EXAMES.map(e => e.profissional).filter(Boolean))];
         const salasUnicas = [...new Set(a.EXAMES.map(e => e.sala).filter(Boolean))];
         const gruposUnicos = [...new Set(a.EXAMES.map(e => e.grupo).filter(Boolean))];
 
+        // Criar índice de busca incluindo UNIDADEATENDIMENTO
         const searchIndex = [
           a.NOME?.toLowerCase() || '',
           a.CPFFUNCIONARIO || '',
           a.MATRICULAFUNCIONARIO?.toLowerCase() || '',
           a.NOMECARGO?.toLowerCase() || '',
           a.NOMEEMPRESA?.toLowerCase() || '',
+          a.UNIDADEATENDIMENTO?.toLowerCase() || '', // INCLUÍDO NO ÍNDICE DE BUSCA
           ...profissionaisUnicos.map(p => p?.toLowerCase()),
           ...salasUnicas.map(s => s?.toLowerCase()),
           ...gruposUnicos.map(g => g.toLowerCase())
@@ -233,20 +238,23 @@ export default function RelatoriosPage() {
 
       setOptimizedAtendimentos(optimized);
       
-      // Extrair opções únicas para filtros
+      // Extrair opções únicas para filtros incluindo UNIDADEATENDIMENTO
       const empresasUnicas = [...new Set(appAtendimentos.map(a => a.NOMEEMPRESA).filter(Boolean))];
       const gruposUnicos = [...new Set(appAtendimentos.flatMap(a => a.EXAMES.map(e => e.grupo)).filter(Boolean))];
       const profissionaisUnicos = [...new Set(appAtendimentos.flatMap(a => a.EXAMES.map(e => e.profissional)).filter(Boolean))];
       const salasUnicas = [...new Set(appAtendimentos.flatMap(a => a.EXAMES.map(e => e.sala)).filter(Boolean))];
+      const unidadesUnicas = [...new Set(appAtendimentos.map(a => a.UNIDADEATENDIMENTO).filter(Boolean))]; // NOVO
       
       const empresasOrdenadas = ordemAlfabetica(empresasUnicas)
       const profissionaisOrdenados = ordemAlfabetica(profissionaisUnicos as string[])
       const salasOrdenadas = salasUnicas ?? ordemAlfabetica(salasUnicas as string[])
+      const unidadesOrdenadas = ordemAlfabetica(unidadesUnicas as string[]) // NOVO
 
       setEmpresas(empresasOrdenadas as string[]);
       setGruposExames(gruposUnicos as string[]);
       setProfissionais(profissionaisOrdenados as string[]);
       setSalas(salasOrdenadas as string[]);
+      setUnidadesAtendimento(unidadesOrdenadas as string[]); // NOVO
     };
 
     if ('requestIdleCallback' in window) {
@@ -260,7 +268,7 @@ export default function RelatoriosPage() {
     }
   }, [appAtendimentos]);
 
-  // Função de filtragem otimizada
+  // Função de filtragem otimizada incluindo UNIDADEATENDIMENTO
   const applyFiltersFunction = useCallback((
     atendimentosList: OptimizedScheduling[], 
     currentFilters: typeof filters
@@ -286,7 +294,7 @@ export default function RelatoriosPage() {
       filtered = filtered.filter(a => a.NOMEEMPRESA === currentFilters.empresa);
     }
 
-    // Filtro por grupo de exame (ATUALIZADO)
+    // Filtro por grupo de exame
     if (currentFilters.grupoExame) {
       filtered = filtered.filter(a => 
         a.GRUPOS_EXAMES.includes(currentFilters.grupoExame)
@@ -298,96 +306,105 @@ export default function RelatoriosPage() {
       filtered = filtered.filter(a => a.ATENDIMENTOSTATUS === currentFilters.status);
     }
 
-    // Filtro por profissional (NOVO)
+    // Filtro por profissional
     if (currentFilters.profissional) {
       filtered = filtered.filter(a => 
         a.PROFISSIONAIS.includes(currentFilters.profissional)
       );
     }
 
-    // Filtro por sala (NOVO)
+    // Filtro por sala
     if (currentFilters.sala) {
       filtered = filtered.filter(a => 
         a.SALAS.includes(currentFilters.sala)
       );
     }
 
-    // Filtro de busca geral (incluindo nome do funcionário)
+    // NOVO: Filtro por unidade de atendimento
+    if (currentFilters.unidadeAtendimento) {
+      filtered = filtered.filter(a => 
+        a.UNIDADEATENDIMENTO === currentFilters.unidadeAtendimento
+      );
+    }
+
+    // Filtro de busca geral (incluindo nome do funcionário e unidade)
     if (currentFilters.search) {
       const searchLower = currentFilters.search.toLowerCase();
       filtered = filtered.filter(a => 
         a.SEARCH_INDEX.includes(searchLower) ||
-        a.NOME?.toLowerCase().includes(searchLower)
+        a.NOME?.toLowerCase().includes(searchLower) ||
+        a.UNIDADEATENDIMENTO?.toLowerCase().includes(searchLower) // BUSCA TAMBÉM POR UNIDADE
       );
     }
 
     return filtered;
   }, []);
 
-// 3. Aplicar filtros quando o usuário clicar no botão - CORRIGIDO
-const handleApplyFilters = useCallback(async () => {
-  setIsFiltering(true);
-  setShowResults(true);
-  setAppliedFilters(filters);
-  setPage(1);
+  // Aplicar filtros quando o usuário clicar no botão
+  const handleApplyFilters = useCallback(async () => {
+    setIsFiltering(true);
+    setShowResults(true);
+    setAppliedFilters(filters);
+    setPage(1);
 
-  try {
-    // PRIMEIRO: Buscar os dados MAIS RECENTES do servidor
-    const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
-    
-    if (response.ok) {
-      const json: Scheduling[] = await response.json();
-      const jsonOrdened = json.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR"));
+    try {
+      // Buscar os dados MAIS RECENTES do servidor
+      const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
       
-      // ATUALIZAR OS DADOS PRINCIPAIS
-      setAppAtendimentos(jsonOrdened);
-      
-      // AGUARDAR ATUALIZAÇÃO DO ESTADO E APLICAR FILTROS
-      setTimeout(() => {
-        if (jsonOrdened.length > 0) {
-          // Otimizar os dados mais recentes
-          const optimized = jsonOrdened.map((a: Scheduling) => {
-            const profissionaisUnicos = [...new Set(a.EXAMES.map(e => e.profissional).filter(Boolean))];
-            const salasUnicas = [...new Set(a.EXAMES.map(e => e.sala).filter(Boolean))];
-            const gruposUnicos = [...new Set(a.EXAMES.map(e => e.grupo).filter(Boolean))];
+      if (response.ok) {
+        const json: Scheduling[] = await response.json();
+        const jsonOrdened = json.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR"));
+        
+        // Atualizar os dados principais
+        setAppAtendimentos(jsonOrdened);
+        
+        // Aguardar atualização do estado e aplicar filtros
+        setTimeout(() => {
+          if (jsonOrdened.length > 0) {
+            // Otimizar os dados mais recentes
+            const optimized = jsonOrdened.map((a: Scheduling) => {
+              const profissionaisUnicos = [...new Set(a.EXAMES.map(e => e.profissional).filter(Boolean))];
+              const salasUnicas = [...new Set(a.EXAMES.map(e => e.sala).filter(Boolean))];
+              const gruposUnicos = [...new Set(a.EXAMES.map(e => e.grupo).filter(Boolean))];
 
-            const searchIndex = [
-              a.NOME?.toLowerCase() || '',
-              a.CPFFUNCIONARIO || '',
-              a.MATRICULAFUNCIONARIO?.toLowerCase() || '',
-              a.NOMECARGO?.toLowerCase() || '',
-              a.NOMEEMPRESA?.toLowerCase() || '',
-              ...profissionaisUnicos.map(p => p?.toLowerCase()),
-              ...salasUnicas.map(s => s?.toLowerCase()),
-              ...gruposUnicos.map(g => g.toLowerCase())
-            ].join('|');
+              const searchIndex = [
+                a.NOME?.toLowerCase() || '',
+                a.CPFFUNCIONARIO || '',
+                a.MATRICULAFUNCIONARIO?.toLowerCase() || '',
+                a.NOMECARGO?.toLowerCase() || '',
+                a.NOMEEMPRESA?.toLowerCase() || '',
+                a.UNIDADEATENDIMENTO?.toLowerCase() || '', // INCLUÍDO
+                ...profissionaisUnicos.map(p => p?.toLowerCase()),
+                ...salasUnicas.map(s => s?.toLowerCase()),
+                ...gruposUnicos.map(g => g.toLowerCase())
+              ].join('|');
 
-            return {
-              ...a,
-              DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
-              SEARCH_INDEX: searchIndex,
-              PROFISSIONAIS: profissionaisUnicos,
-              SALAS: salasUnicas,
-              GRUPOS_EXAMES: gruposUnicos
-            } as OptimizedScheduling;
-          });
+              return {
+                ...a,
+                DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
+                SEARCH_INDEX: searchIndex,
+                PROFISSIONAIS: profissionaisUnicos,
+                SALAS: salasUnicas,
+                GRUPOS_EXAMES: gruposUnicos
+              } as OptimizedScheduling;
+            });
 
-          // Aplicar filtros nos dados otimizados MAIS RECENTES
-          const result = applyFiltersFunction(optimized, filters);
-          setFilteredAtendimentos(result);
-        }
+            // Aplicar filtros nos dados otimizados mais recentes
+            const result = applyFiltersFunction(optimized, filters);
+            setFilteredAtendimentos(result);
+          }
+          setIsFiltering(false);
+        }, 0);
+      } else {
+        console.error("Erro ao buscar dados atualizados");
         setIsFiltering(false);
-      }, 0);
-    } else {
-      console.error("Erro ao buscar dados atualizados");
+      }
+      
+    } catch (error) {
+      console.error('Erro ao atualizar dados:', error);
       setIsFiltering(false);
     }
-    
-  } catch (error) {
-    console.error('Erro ao atualizar dados:', error);
-    setIsFiltering(false);
-  }
-}, [filters, applyFiltersFunction]); // Removida a dependência circular
+  }, [filters, applyFiltersFunction]);
 
   // Limpar filtros e resultados
   const handleClearFilters = useCallback(() => {
@@ -399,7 +416,8 @@ const handleApplyFilters = useCallback(async () => {
       status: '',
       search: '',
       profissional: '',
-      sala: ''
+      sala: '',
+      unidadeAtendimento: '' // INCLUÍDO
     });
     setAppliedFilters({
       dataInicio: null,
@@ -409,7 +427,8 @@ const handleApplyFilters = useCallback(async () => {
       status: '',
       search: '',
       profissional: '',
-      sala: ''
+      sala: '',
+      unidadeAtendimento: '' // INCLUÍDO
     });
     setShowResults(false);
     setPage(1);
@@ -428,45 +447,22 @@ const handleApplyFilters = useCallback(async () => {
     );
   }, [filters]);
 
-  // Adicionar esta função para atualização manual
-const handleForceRefresh = useCallback(async () => {
-  try {
-    const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+  // Função para visualizar detalhes
+  const viewDetails = useCallback((atendimento: Scheduling) => {
+    setModalLoading(true);
     
-    if (response.ok) {
-      const json: Scheduling[] = await response.json();
-      const jsonOrdened = json.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR"));
-      setAppAtendimentos(jsonOrdened);
+    openModalWithDebounce(() => {
+      // Buscar a versão mais recente do atendimento
+      const atendimentoAtualizado = appAtendimentos.find(a => 
+        (a._id && atendimento._id && a._id === atendimento._id) || 
+        (a.CODIGOPRONTUARIO && atendimento.CODIGOPRONTUARIO && a.CODIGOPRONTUARIO === atendimento.CODIGOPRONTUARIO)
+      ) || atendimento;
       
-      // Se há filtros aplicados, reaplicá-los
-      if (showResults) {
-        setTimeout(() => {
-          handleApplyFilters();
-        }, 100);
-      }
-    }
-  } catch (error) {
-    console.error('Erro ao forçar atualização:', error);
-  }
-}, [showResults, handleApplyFilters]);
-
-
-// Função para visualizar detalhes - ATUALIZADA
-const viewDetails = useCallback((atendimento: Scheduling) => {
-  setModalLoading(true);
-  
-  openModalWithDebounce(() => {
-    // Buscar a versão mais recente do atendimento
-    const atendimentoAtualizado = appAtendimentos.find(a => 
-      (a._id && atendimento._id && a._id === atendimento._id) || 
-      (a.CODIGOPRONTUARIO && atendimento.CODIGOPRONTUARIO && a.CODIGOPRONTUARIO === atendimento.CODIGOPRONTUARIO)
-    ) || atendimento;
-    
-    setSelectedAtendimento(atendimentoAtualizado);
-    setModalLoading(false);
-    onOpen();
-  });
-}, [onOpen, openModalWithDebounce, appAtendimentos]); // Adicionada dependência de appAtendimentos
+      setSelectedAtendimento(atendimentoAtualizado);
+      setModalLoading(false);
+      onOpen();
+    });
+  }, [onOpen, openModalWithDebounce, appAtendimentos]);
 
   // Fechar modal - limpar estados
   const handleCloseModal = useCallback(() => {
@@ -475,45 +471,44 @@ const viewDetails = useCallback((atendimento: Scheduling) => {
   }, [onClose]);
 
   // Atualizar atendimento após upload
-// Atualizar atendimento após upload - CORRIGIDA
-const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
-  // Atualizar na lista principal
-  setAppAtendimentos(prev => {
-    const foundIndex = prev.findIndex(p => 
-      (p._id && updated._id && p._id === updated._id) || 
-      (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
-    );
-    
-    if (foundIndex === -1) return prev;
-    
-    const copy = [...prev];
-    copy[foundIndex] = updated;
-    return copy;
-  });
+  const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
+    // Atualizar na lista principal
+    setAppAtendimentos(prev => {
+      const foundIndex = prev.findIndex(p => 
+        (p._id && updated._id && p._id === updated._id) || 
+        (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
+      );
+      
+      if (foundIndex === -1) return prev;
+      
+      const copy = [...prev];
+      copy[foundIndex] = updated;
+      return copy;
+    });
 
-  // Atualizar também na lista filtrada se estiver visível
-  setFilteredAtendimentos(prev => {
-    const foundIndex = prev.findIndex(p => 
-      (p._id && updated._id && p._id === updated._id) || 
-      (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
-    );
-    
-    if (foundIndex === -1) return prev;
-    
-    const copy = [...prev];
-    copy[foundIndex] = {
-      ...copy[foundIndex],
-      ...updated,
-      // Manter as propriedades otimizadas
-      DATAAGENDAMENTO_DATE_OBJ: copy[foundIndex].DATAAGENDAMENTO_DATE_OBJ,
-      SEARCH_INDEX: copy[foundIndex].SEARCH_INDEX,
-      PROFISSIONAIS: copy[foundIndex].PROFISSIONAIS,
-      SALAS: copy[foundIndex].SALAS,
-      GRUPOS_EXAMES: copy[foundIndex].GRUPOS_EXAMES
-    };
-    return copy;
-  });
-}, []);
+    // Atualizar também na lista filtrada se estiver visível
+    setFilteredAtendimentos(prev => {
+      const foundIndex = prev.findIndex(p => 
+        (p._id && updated._id && p._id === updated._id) || 
+        (p.CODIGOPRONTUARIO && updated.CODIGOPRONTUARIO && p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO)
+      );
+      
+      if (foundIndex === -1) return prev;
+      
+      const copy = [...prev];
+      copy[foundIndex] = {
+        ...copy[foundIndex],
+        ...updated,
+        // Manter as propriedades otimizadas
+        DATAAGENDAMENTO_DATE_OBJ: copy[foundIndex].DATAAGENDAMENTO_DATE_OBJ,
+        SEARCH_INDEX: copy[foundIndex].SEARCH_INDEX,
+        PROFISSIONAIS: copy[foundIndex].PROFISSIONAIS,
+        SALAS: copy[foundIndex].SALAS,
+        GRUPOS_EXAMES: copy[foundIndex].GRUPOS_EXAMES
+      };
+      return copy;
+    });
+  }, []);
 
   // Memoizar dados paginados
   const paginatedItems = useMemo(() => {
@@ -568,11 +563,11 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
   }, [filters]);
 
   return (
-    <div className="min-h-screen bg-gray-50 mb-8">
+    <div className="min-h-screen bg-gray-100 mb-8">
       <HeaderApp onLogout={() => { logout(); router.push("/"); }} children={<h2>Relatórios de Atendimento</h2>} />
 
       {/* Filtros - Design Conceitual do Modal */}
-      <Card className='m-6 border border-gray-200 shadow-sm'>
+      <Card className='m-6 p-4 border border-gray-200 shadow-sm'>
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div>
@@ -585,41 +580,32 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
               </p>
             </div>
           </div>
-{/* No CardHeader dos filtros, adicione: */}
-<div className="flex gap-2">
-  {/* <Button
-    variant="light"
-    color="primary"
-    onPress={handleForceRefresh}
-    className="font-medium"
-  >
-    Atualizar Dados
-  </Button> */}
-  <Button
-    color="success"
-    startContent={<CheckIcon size={16} />}
-    onPress={handleApplyFilters}
-    isLoading={isFiltering}
-    isDisabled={!hasActiveFilters}
-    className="font-medium text-white"
-  >
-    Aplicar Filtros
-  </Button>
-  <Button
-    color='primary'
-    variant="light"
-    onPress={handleClearFilters}
-    startContent={<XIcon size={16} />}
-    isDisabled={!hasActiveFilters}
-  >
-    Limpar
-  </Button>
-</div>
+          <div className="flex gap-2">
+            <Button
+              color="success"
+              startContent={<CheckIcon size={16} />}
+              onPress={handleApplyFilters}
+              isLoading={isFiltering}
+              isDisabled={!hasActiveFilters}
+              className="font-medium text-white"
+            >
+              Aplicar Filtros
+            </Button>
+            <Button
+              color='primary'
+              variant="light"
+              onPress={handleClearFilters}
+              startContent={<XIcon size={16} />}
+              isDisabled={!hasActiveFilters}
+            >
+              Limpar
+            </Button>
+          </div>
         </CardHeader>
         <CardBody className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {/* Busca por Nome do Funcionário (ATUALIZADO) */}
-            <div className="lg:col-span-2 space-y-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* Busca por Nome do Funcionário */}
+            <div className="lg:col-span-2 xl:col-span-2 space-y-2">
               <label className="text-sm font-medium text-gray-700">Buscar por Funcionário</label>
               <Input
                 placeholder="Digite o nome do funcionário..."
@@ -631,6 +617,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
                 size="lg"
               />
             </div>
+
             {/* Data Início */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Data Início</label>
@@ -641,7 +628,19 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
                 label=" "
                 granularity="day"
                 hideTimeZone
-                
+              />
+            </div>
+
+            {/* Data Fim */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Data Fim</label>
+              <DatePicker
+                size="sm"
+                value={filters.dataFim}
+                onChange={(value) => handleFilterChange('dataFim', value)}
+                label=" "
+                granularity="day"
+                hideTimeZone
               />
             </div>
 
@@ -663,7 +662,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
               </Autocomplete>
             </div>
 
-            {/* Grupo de Exame (ATUALIZADO) */}
+            {/* Grupo de Exame */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Exame</label>
               <Select
@@ -678,19 +677,6 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
                   </SelectItem>
                 ))}
               </Select>
-            </div>
-
-            {/* Data Fim */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Data Fim</label>
-              <DatePicker
-                size="sm"
-                value={filters.dataFim}
-                onChange={(value) => handleFilterChange('dataFim', value)}
-                label=" "
-                granularity="day"
-                hideTimeZone
-              />
             </div>
 
             {/* Status */}
@@ -710,7 +696,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
               </Select>
             </div>
 
-            {/* Profissional (NOVO) */}
+            {/* Profissional */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Profissional</label>
               <Select
@@ -727,7 +713,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
               </Select>
             </div>
 
-            {/* Sala (NOVO) */}
+            {/* Sala */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Sala</label>
               <Select
@@ -739,6 +725,23 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
                 {salas.map(sala => (
                   <SelectItem key={sala}>
                     {sala}
+                  </SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            {/* NOVO: Unidade de Atendimento */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Unidade de Atendimento</label>
+              <Select
+                size="lg"
+                selectedKeys={filters.unidadeAtendimento ? [filters.unidadeAtendimento] : []}
+                onSelectionChange={(keys) => handleFilterChange('unidadeAtendimento', Array.from(keys)[0] || '')}
+                className="w-full"
+              >
+                {unidadesAtendimento.map(unidade => (
+                  <SelectItem key={unidade}>
+                    {unidade}
                   </SelectItem>
                 ))}
               </Select>
@@ -764,7 +767,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
           <CardBody className="p-0">
             {isFiltering ? (
               <div className="flex justify-center py-12">
-                <Spinner size="lg" label="Aplicando filtros..." />
+                <Spinner size="lg" color='success' label="Aplicando filtros..." />
               </div>
             ) : (
               <>
@@ -848,7 +851,8 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
                       total={paginationInfo.totalPages}
                       onChange={setPage}
                       showControls
-                      size="sm"
+                      size="lg"
+                      className='hover:cursor-pointer'
                     />
                   </div>
                 )}
@@ -879,7 +883,7 @@ const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
       {loading && (
         <Card className="mx-6">
           <CardBody className="text-center py-16">
-            <Spinner size="lg" label="Carregando atendimentos..." />
+            <Spinner size="lg" color='success' label="Carregando atendimentos..." />
           </CardBody>
         </Card>
       )}

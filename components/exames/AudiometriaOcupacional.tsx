@@ -5,6 +5,7 @@ import { useUser } from '@/hooks/useUser';
 import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { User, Ear, Stethoscope, FileText, Volume2, AlertTriangle, Calculator } from 'lucide-react';
 import HeaderExame from './HeaderExame';
+import { UNIDADES_ATENDIMENTO } from '@/config/constants';
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -428,6 +429,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
+
+      if(atendimento.UNIDADEATENDIMENTO === UNIDADES_ATENDIMENTO[1]){
+        formData.dataCalibracao = "2025-11-06"
+        formData.tipoAudiometro = "AS 60"
+      }
     }
     if (formulario) {
       setFormData(prev => ({ ...prev, ...formulario }));

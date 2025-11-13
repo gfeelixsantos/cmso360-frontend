@@ -17,11 +17,11 @@ import {
   Spinner,
   Input,
 } from '@heroui/react';
-import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User, Edit, RefreshCw, Printer, Save, X, Building, MapPin, Calendar, Briefcase, UserCheck } from 'lucide-react';
+import { FileText, Upload, CheckCircle, Download, Eye, Clock, AlertCircle, User, Edit, RefreshCw, Printer, Save, X } from 'lucide-react';
 import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
 import { AtendimentoStatus, ExamStatus } from '@/lib/scheduling/enum/scheduling.enum';
 import { NEST_SCHEDULINGS, NEST_SCHEDULINGS_EXAM_UPDATE, NEST_SOC_CADASTROPESSOAS } from '@/config/constants';
-import { getCurrentUser, mapCadastroPessoasToUserInfo, formatCPF } from '@/lib/utils';
+import { getCurrentUser, mapCadastroPessoasToUserInfo } from '@/lib/utils';
 import { ICadastroPessoas } from '@/lib/soc/interfaces/ICadastroPessoas';
 
 interface LazyModalContentProps {
@@ -34,27 +34,6 @@ interface EditModeState {
   isEditing: boolean;
   editedData: Partial<Scheduling>;
 }
-
-// Função para calcular tempo de espera
-const calculateWaitTime = (ticketTime: string | null | undefined, currentTime: Date = new Date()) => {
-  if (!ticketTime) return null;
-  
-  try {
-    const ticketDate = new Date(ticketTime);
-    const diffMs = currentTime.getTime() - ticketDate.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffMinutes < 60) {
-      return `${diffMinutes} min`;
-    } else {
-      const hours = Math.floor(diffMinutes / 60);
-      const minutes = diffMinutes % 60;
-      return `${hours}h ${minutes}min`;
-    }
-  } catch {
-    return null;
-  }
-};
 
 const InformacoesGerais: React.FC<{ 
   atendimento: Scheduling;
@@ -77,8 +56,10 @@ const InformacoesGerais: React.FC<{
 
   const handleEditToggle = () => {
     if (editMode.isEditing) {
+      // Cancelar edição
       onEditModeChange({ isEditing: false, editedData: {} });
     } else {
+      // Iniciar edição com dados atuais
       onEditModeChange({ 
         isEditing: true, 
         editedData: { 
@@ -127,14 +108,14 @@ const InformacoesGerais: React.FC<{
         </div>
       );
     }
-    return <span className="text-gray-900">{value || 'Não informado'}</span>;
+    return <span>{value || 'N/A'}</span>;
   };
 
   return (
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg border-b pb-2 text-left">Informações do Atendimento</h3>
+          <h3 className="font-semibold text-lg border-b pb-2">Informações do Atendimento</h3>
           <div className="flex items-center gap-2">
             {editMode.isEditing ? (
               <>
@@ -194,156 +175,56 @@ const InformacoesGerais: React.FC<{
             )}
           </div>
         </div>
-        
-        {/* Informações principais alinhadas à esquerda */}
-        <div className="space-y-6 text-left">
-          {/* Dados do Paciente */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-                <User size={16} />
-                Dados do Paciente
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Nome</label>
-                  {renderField('NOME', 'Nome', atendimento.NOME)}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">CPF</label>
-                  {renderField('CPFFUNCIONARIO', 'CPF', formatCPF(atendimento.CPFFUNCIONARIO))}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Data Nascimento</label>
-                  {renderField('DATANASCIMENTO', 'Data Nascimento', atendimento?.DATANASCIMENTO ?? "")}
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Matrícula</label>
-                  {renderField('MATRICULAFUNCIONARIO', 'Matrícula', atendimento.MATRICULAFUNCIONARIO || 'Não informado')}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm text-gray-600 mb-2">Dados do Paciente</h4>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <strong>Nome:</strong> 
+                {renderField('NOME', 'Nome', atendimento.NOME)}
               </div>
-            </div>
-
-            {/* Dados da Empresa */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-                <Building size={16} />
-                Dados da Empresa
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Empresa</label>
-                  <span className="text-gray-900">{atendimento.NOMEEMPRESA || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">CNPJ</label>
-                  <span className="text-gray-900">{atendimento.CNPJEMPRESA || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Cargo</label>
-                  <span className="text-gray-900">{atendimento.NOMECARGO || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Setor</label>
-                  <span className="text-gray-900">{atendimento.NOMESETOR || 'Não informado'}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <strong>CPF:</strong> 
+                {renderField('CPFFUNCIONARIO', 'CPF', atendimento.CPFFUNCIONARIO)}
               </div>
-            </div>
-
-            {/* Agendamento */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-                <Calendar size={16} />
-                Agendamento
-              </h4>
-              <div className="space-y-2 text-sm">
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Data</label>
-                  <span className="text-gray-900">{atendimento.DATAAGENDAMENTO || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Horário</label>
-                  <span className="text-gray-900">{atendimento.HORARIO || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Unidade</label>
-                  <span className="text-gray-900">{atendimento.UNIDADEATENDIMENTO || 'Não informado'}</span>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">Tipo Exame</label>
-                  <span className="text-gray-900">{atendimento.TIPOEXAMENOME || 'Não informado'}</span>
-                </div>
+              <div className="flex items-center justify-between">
+                <strong>Data Nasc.:</strong> 
+                {renderField('DATANASCIMENTO', 'Data Nascimento', atendimento?.DATANASCIMENTO ?? "")}
+              </div>
+              <div className="flex items-center justify-between">
+                <strong>Matrícula:</strong> 
+                {renderField('MATRICULAFUNCIONARIO', 'Matrícula', atendimento.MATRICULAFUNCIONARIO || 'N/A')}
               </div>
             </div>
           </div>
 
-          {/* Informações Adicionais */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Status */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-                <UserCheck size={16} />
-                Status
-              </h4>
-              <Chip 
-                color={getStatusColor(atendimento.ATENDIMENTOSTATUS)} 
-                size="lg"
-                className="text-left"
-              >
-                {atendimento.ATENDIMENTOSTATUS.replace(/_/g, ' ').toLowerCase()
-                  .replace(/\b\w/g, (l: string) => l.toUpperCase())}
-              </Chip>
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm text-gray-600 mb-2">Dados da Empresa</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Empresa:</strong> {atendimento.NOMEEMPRESA}</p>
+              <p><strong>CNPJ:</strong> {atendimento.CNPJEMPRESA}</p>
+              <p><strong>Cargo:</strong> {atendimento.NOMECARGO}</p>
+              <p><strong>Setor:</strong> {atendimento.NOMESETOR}</p>
             </div>
-
-            {/* Informações Adicionais */}
-            {atendimento.OBSERVACOES && (
-              <div className="space-y-3 md:col-span-2">
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Observações</h4>
-                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border">
-                  {atendimento.OBSERVACOES}
-                </p>
-              </div>
-            )}
-
-            {/* ASO Status */}
-            {atendimento.ASOSTATUS && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Status ASO</h4>
-                <span className="text-sm text-gray-900">{atendimento.ASOSTATUS}</span>
-              </div>
-            )}
           </div>
 
-          {/* Mais Informações */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Médico */}
-            {atendimento.MEDICO && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Médico</h4>
-                <span className="text-sm text-gray-900">{atendimento.MEDICO}</span>
-              </div>
-            )}
-
-            {/* Recomendação Médica */}
-            {atendimento.RECOMENDACAOMEDICA && (
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Recomendação Médica</h4>
-                <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border">
-                  {atendimento.RECOMENDACAOMEDICA}
-                </p>
-              </div>
-            )}
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm text-gray-600 mb-2">Agendamento</h4>
+            <div className="space-y-2 text-sm">
+              <p><strong>Data:</strong> {atendimento.DATAAGENDAMENTO}</p>
+              <p><strong>Horário:</strong> {atendimento.HORARIO}</p>
+              <p><strong>Unidade:</strong> {atendimento.UNIDADEATENDIMENTO}</p>
+              <p><strong>Tipo Exame:</strong> {atendimento.TIPOEXAMENOME}</p>
+            </div>
           </div>
 
-          {/* Anotações */}
-          {atendimento.ANOTACOES && (
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2">Anotações</h4>
-              <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg border">
-                {atendimento.ANOTACOES}
-              </p>
-            </div>
-          )}
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm text-gray-600 mb-2">Status</h4>
+            <Chip color={getStatusColor(atendimento.ATENDIMENTOSTATUS)} size="lg">
+              {atendimento.ATENDIMENTOSTATUS.replace(/_/g, ' ').toLowerCase()
+                .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+            </Chip>
+          </div>
         </div>
       </div>
       <Divider />
@@ -365,62 +246,10 @@ const ExamesTable: React.FC<{
   const [successExams, setSuccessExams] = useState<Record<string, boolean>>({});
   const [errorExams, setErrorExams] = useState<Record<string, string>>({});
   const [reemitindoExams, setReemitindoExams] = useState<Record<string, boolean>>({});
-  const [filesUpload, setFilesUpload] = useState<File[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     setLocalExames(exames || []);
   }, [exames]);
-
-  // Função para upload de documentos
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files && atendimento) {
-      const arrFiles = Array.from(files);
-      setFilesUpload((prev) => [...prev, ...arrFiles]);
-    }
-  };
-
-  const handleRemoveFile = (fileName: string) => {
-    setFilesUpload(prev => prev.filter(file => file.name !== fileName));
-  };
-
-  const handleSubmitFiles = async () => {
-    if (filesUpload.length === 0 || !atendimento) return;
-
-    setIsUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("scheduling", JSON.stringify(atendimento));
-      
-      filesUpload.forEach(file => {
-        formData.append("files", file);
-      });
-
-      const response = await fetch(NEST_SCHEDULINGS, {
-        method: "POST",
-        body: formData
-      });
-
-      if (response.ok) {
-        setFilesUpload([]);
-        // Recarregar dados para atualizar o atendimento
-        const updatedResponse = await fetch(`${NEST_SCHEDULINGS}/${atendimento._id}`);
-        if (updatedResponse.ok) {
-          const updatedAtendimento = await updatedResponse.json();
-          if (onUpdateScheduling) {
-            onUpdateScheduling(updatedAtendimento);
-          }
-        }
-      } else {
-        console.error("Erro ao fazer upload dos arquivos");
-      }
-    } catch (error) {
-      console.error("Erro no upload:", error);
-    } finally {
-      setIsUploading(false);
-    }
-  };
 
   // Filtra exames baseado no termo de busca
   const filteredExames = useMemo(() => {
@@ -515,6 +344,7 @@ const ExamesTable: React.FC<{
     
     setReemitindoExams(prev => ({ ...prev, [examKey]: true }));
 
+
     try {
       const responseCadastroPessoas = await fetch(NEST_SOC_CADASTROPESSOAS)
     
@@ -549,6 +379,7 @@ const ExamesTable: React.FC<{
       const result = await response.json();
       console.log('Exame reemitido com sucesso:', result);
       
+      // Feedback visual de sucesso
       setSuccessExams(prev => ({ ...prev, [examKey]: true }));
       setTimeout(() => {
         setSuccessExams(prev => ({ ...prev, [examKey]: false }));
@@ -568,6 +399,7 @@ const ExamesTable: React.FC<{
   };
 
   const handleViewMedicalRecord = () => {
+    // Abre em nova aba
     const prontuarioUrl = `/prontuario/${atendimento._id}`;
     window.open(prontuarioUrl, '_blank', 'noopener,noreferrer');
   };
@@ -588,7 +420,7 @@ const ExamesTable: React.FC<{
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Header da Tabela */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -618,67 +450,7 @@ const ExamesTable: React.FC<{
         </div>
       </div>
 
-      {/* Upload de Documentos */}
-      {/* <div className="bg-gray-50 p-4 rounded-lg border">
-        <h4 className="font-medium text-gray-900 mb-3">Upload de Documentos</h4>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div>
-            <input
-              id="file-upload"
-              type="file"
-              multiple
-              accept=".pdf,image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-              disabled={isUploading}
-            />
-            <label
-              htmlFor="file-upload"
-              className={`cursor-pointer inline-flex items-center px-4 py-2 rounded-lg border transition-colors ${
-                isUploading 
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed border-gray-300' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500'
-              }`}
-            >
-              <Upload size={16} className="mr-2" />
-              Selecionar Documentos {filesUpload.length > 0 ? `(${filesUpload.length})` : ""}
-            </label>
-          </div>
-          
-          {filesUpload.length > 0 && (
-            <Button
-              color="success"
-              onPress={handleSubmitFiles}
-              isLoading={isUploading}
-              className="text-white"
-            >
-              Enviar Arquivos
-            </Button>
-          )}
-        </div>
-
-        {filesUpload.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-gray-600">Arquivos selecionados:</p>
-            <div className="flex flex-wrap gap-2">
-              {filesUpload.map(file => (
-                <Chip
-                  key={file.name}
-                  size="sm"
-                  onClose={() => handleRemoveFile(file.name)}
-                  variant="flat"
-                  color="primary"
-                  className="text-xs"
-                >
-                  {file.name}
-                </Chip>
-              ))}
-            </div>
-          </div>
-        )}
-      </div> */}
-
-      {/* Tabela de Exames */}
+      {/* Tabela */}
       <div className="border border-gray-200 rounded-lg overflow-hidden">
         <Table 
           aria-label="Tabela de exames"
@@ -704,7 +476,6 @@ const ExamesTable: React.FC<{
               const isSuccess = successExams[examKey];
               const isReemitindo = reemitindoExams[examKey];
               const error = errorExams[examKey];
-              const waitTime = calculateWaitTime(atendimento.TICKET.emissao.toString());
 
               return (
                 <TableRow key={examKey}>
@@ -718,12 +489,6 @@ const ExamesTable: React.FC<{
                       <div className="text-xs text-gray-600">
                         {exame.sala != "" ? new Date(exame.dataExame).toLocaleTimeString("pt-BR") : ''} {exame.sala} 
                       </div>
-                      {waitTime && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-orange-600">
-                          {/* <Clock size={12} />
-                          <span>Espera: {waitTime}</span> */}
-                        </div>
-                      )}
                     </div>
                   </TableCell>
 
@@ -758,69 +523,72 @@ const ExamesTable: React.FC<{
                   {/* Coluna Ações */}
                   <TableCell>
                     <div className="flex items-center justify-center gap-2 flex-wrap">
-                      {/* Botão Reemitir */}
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="secondary"
-                        onPress={() => handleReemitirExame(exame)}
-                        isLoading={isReemitindo}
-                        startContent={!isReemitindo && <Printer size={14} />}
-                        className="text-purple-600 hover:text-purple-700 text-xs"
-                      >
-                        {isReemitindo ? 'Reemitindo...' : 'Reemitir'}
-                      </Button>
-
-                      {exame.url && (
-                        <Tooltip content="Visualizar">
-                          <Button
-                            size="sm"
-                            variant="light"
-                            onPress={() => window.open(exame.url, '_blank')}
-                            className="text-blue-600 hover:text-blue-700"
-                          >
-                            <Eye size={16} />
-                            Visualizar
-                          </Button>
-                        </Tooltip>
-                      )}
-                      
-                      <div className="flex items-center gap-2">
-                        {/* Input file oculto */}
-                        <input
-                          id={`file-${examKey}`}
-                          type="file"
-                          accept="application/pdf"
-                          className="hidden"
-                          multiple={true}
-                          onChange={(e) => handleFileChange(examKey, e)}
-                        />
-                        
-                        {/* Botão selecionar arquivo */}
-                        <label
-                          htmlFor={`file-${examKey}`}
-                          className={`cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors truncate ${
-                            hasFileSelected
-                              ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
-                              : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-                          }`}
-                        >
-                          <Upload size={12} />
-                          {hasFileSelected ? 'Arquivo Selecionado' : 'Selecionar PDF'}
-                        </label>
-
-                        {/* Botão enviar */}
+                      {/* Botão Reemitir - Sempre visível */}
+                      { (
                         <Button
                           size="sm"
-                          color="primary"
-                          disabled={!hasFileSelected || isUploading}
-                          onPress={() => handleUploadExam(exame)}
-                          startContent={isUploading ? <Spinner size="sm" /> : <Upload size={12} />}
-                          className="text-xs h-8 min-w-20"
+                          variant="light"
+                          color="secondary"
+                          onPress={() => handleReemitirExame(exame)}
+                          isLoading={isReemitindo}
+                          startContent={!isReemitindo && <Printer size={14} />}
+                          className="text-purple-600 hover:text-purple-700 text-xs"
                         >
-                          {isUploading ? 'Enviando...' : 'Enviar'}
+                          {isReemitindo ? 'Reemitindo...' : 'Reemitir'}
                         </Button>
-                      </div>
+                      )}
+
+                      {exame.url && (
+                        <>
+                          <Tooltip content="Visualizar">
+                            <Button
+                              size="sm"
+                              variant="light"
+                              onPress={() => window.open(exame.url, '_blank')}
+                              className="text-blue-600 hover:text-blue-700"
+                            >
+                              <Eye size={16} />
+                              Visualizar
+                            </Button>
+                          </Tooltip>
+                        </>
+                      )}
+                        <div className="flex items-center gap-2">
+                          {/* Input file oculto */}
+                          <input
+                            id={`file-${examKey}`}
+                            type="file"
+                            accept="application/pdf"
+                            className="hidden"
+                            multiple={true}
+                            onChange={(e) => handleFileChange(examKey, e)}
+                          />
+                          
+                          {/* Botão selecionar arquivo */}
+                          <label
+                            htmlFor={`file-${examKey}`}
+                            className={`cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium border transition-colors truncate ${
+                              hasFileSelected
+                                ? 'bg-green-50 border-green-200 text-green-700 hover:bg-green-100'
+                                : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                            }`}
+                          >
+                            <Upload size={12} />
+                            {hasFileSelected ? 'Arquivo Selecionado' : 'Selecionar PDF'}
+                          </label>
+
+                          {/* Botão enviar */}
+                          <Button
+                            size="sm"
+                            color="primary"
+                            disabled={!hasFileSelected || isUploading}
+                            onPress={() => handleUploadExam(exame)}
+                            startContent={isUploading ? <Spinner size="sm" /> : <Upload size={12} />}
+                            className="text-xs h-8 min-w-20"
+                          >
+                            {isUploading ? 'Enviando...' : 'Enviar'}
+                          </Button>
+                        </div>
                     </div>
 
                     {/* Mensagens de feedback */}
@@ -909,6 +677,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClos
   };
 
   const handleViewMedicalRecord = () => {
+    // Abre em nova aba
     const prontuarioUrl = `/prontuario/${atendimento._id}`;
     window.open(prontuarioUrl, '_blank', 'noopener,noreferrer');
   };
@@ -917,7 +686,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({ atendimento, onClos
     <>
       <ModalHeader className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
-          <div className="text-left">
+          <div>
             <h2 className="text-xl font-bold">Detalhes do Atendimento</h2>
             <p className="text-sm text-gray-600 mt-1">
               {atendimento.NOME} - {atendimento.NOMEEMPRESA}

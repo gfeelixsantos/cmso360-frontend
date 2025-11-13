@@ -644,7 +644,7 @@ export default function PainelPage() {
 
       if (!audioHabilitado) {
         // Tempo mínimo de exibição quando áudio está desabilitado
-        setTimeout(() => resolve(), 5000);
+        setTimeout(() => resolve(), 10000);
         return;
       }
 
@@ -679,11 +679,11 @@ export default function PainelPage() {
             
             // Fallback baseado na duração do áudio + margem de segurança
             const duracao = audioChamada.duration || 5;
-            setTimeout(() => res(), (duracao + 1) * 1000);
+            setTimeout(() => res(), (duracao + 1) * 3000);
           });
           
           // Pausa adicional após o áudio terminar (tempo para pessoa processar e reagir)
-          await new Promise(res => setTimeout(res, 2000));
+          await new Promise(res => setTimeout(res, 3000));
           
           resolve();
           
