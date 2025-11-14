@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import io, { Socket } from "socket.io-client";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, History, Loader2, Monitor, Settings, Volume2, VolumeX } from 'lucide-react';
-import { NEST_URL, NEXT_WS_URL } from "@/config/constants";
+import { NEST_URL, NEXT_WS_URL, SERVICES_KEY, UNIDADES_ATENDIMENTO } from "@/config/constants";
 
 type PainelCall = {
   id: number;
@@ -34,7 +34,7 @@ const PAINEL_CONFIG = {
 
 // Configurações do Idle Screen
 const IDLE_CONFIG = {
-  tempoInatividadeMinutos: 1,
+  tempoInatividadeMinutos: 2,
   duracaoIdleSegundos: 15,
 };
 
@@ -450,8 +450,11 @@ const ConfigModal = ({
                 backgroundColor: COLOR_PALETTE.lightGray,
               }}
             >
-              <option value="MATRIZ">Rio Claro - Matriz</option>
-              <option value="FILIAL_ARARAS">Araras - Filial</option>
+              {
+                UNIDADES_ATENDIMENTO.map(unidade => (
+                  <option value={unidade} >{unidade}</option>
+                ))
+              }
             </select>
           </div>
 
@@ -884,7 +887,7 @@ export default function PainelPage() {
   }, [isLiberado, audioHabilitado]);
 
   const validarAcesso = (serial: string, unidade: string) => {
-    if (serial === "CHAVE_SECRETA" && unidade) {
+    if (serial === SERVICES_KEY && unidade) {
       setUnidadeSelecionada(unidade);
       setIsLiberado(true);
       localStorage.setItem("painel_validate", unidade);

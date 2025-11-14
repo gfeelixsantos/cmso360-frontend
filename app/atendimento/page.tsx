@@ -247,9 +247,9 @@ const AtendimentoPage: React.FC = () => {
     const handleTicketError = (message: string) => console.error(JSON.parse(message));
     const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       switch (operation) {
-        case MongoOperationTypes.INSERT:
-          setAgendamentosGeral(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
-          break;
+        // case MongoOperationTypes.INSERT:
+        //   setAgendamentosGeral(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
+        //   break;
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral(prev =>
             prev
@@ -257,9 +257,9 @@ const AtendimentoPage: React.FC = () => {
               .sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }))
           );
           break;
-        case MongoOperationTypes.DELETE:
-          setAgendamentosGeral(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
-          break;
+        // case MongoOperationTypes.DELETE:
+        //   setAgendamentosGeral(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
+        //   break;
       }
     };
 
