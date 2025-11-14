@@ -16,6 +16,7 @@ import Psicossocial from "../exames/Psicossocial";
 import ExamePadrao from "../exames/ExamePadrao";
 import AudiometriaOcupacional from "../exames/AudiometriaOcupacional";
 import KitAtendimento from "../exames/KitAtendimento";
+import Ultrassom from "../exames/Ultrassom";
 
 interface AtendimentoModalExamesProps {
   isOpen: boolean;
@@ -76,6 +77,7 @@ const AtendimentoModalExames = ({
       "Exame Clínico": FichaClinicaOcupacional,
       "Psicossocial": Psicossocial,
       "Triagem": FichaClinicaOcupacional,
+      "Ultrassom": Ultrassom
     }),
     [entrevistaPsico, psicossocial]
   );

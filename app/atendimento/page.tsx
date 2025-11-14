@@ -143,13 +143,21 @@ const AtendimentoPage: React.FC = () => {
   // ----------------------------------------------------------
   const getSchedulings = async () => {
     try {
-      const response = await fetch(NEST_SCHEDULINGS_TODAY);
+      if(!unidadeSelecionada) throw new Error("Selecione uma unidade de atendimento")
+
+      const response = await fetch(NEST_SCHEDULINGS_TODAY, {
+          method: "POST",
+          headers: {
+              'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ unidade: unidadeSelecionada })
+      });
+
       if (!response.ok) return null;
       const schedules: Scheduling[] = await response.json();
-      const schedulesToUnit = schedules.filter((s) => s.UNIDADEATENDIMENTO == unidadeSelecionada || s.UNIDADEATENDIMENTO == "");
 
       // Evita duplicatas comparando com agendamentosGeral (não com agendamentos filtrados)
-      const schedulesFiltered = schedulesToUnit.filter(s => !agendamentosGeral.some(a => a._id === s._id));
+      const schedulesFiltered = schedules.filter(s => !agendamentosGeral.some(a => a._id === s._id));
 
       setAgendamentosGeral(prev => {
         // junta antigos + novos e ordena
@@ -247,9 +255,9 @@ const AtendimentoPage: React.FC = () => {
     const handleTicketError = (message: string) => console.error(JSON.parse(message));
     const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       switch (operation) {
-        // case MongoOperationTypes.INSERT:
-        //   setAgendamentosGeral(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
-        //   break;
+        case MongoOperationTypes.INSERT:
+          setAgendamentosGeral(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
+          break;
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral(prev =>
             prev
@@ -257,9 +265,9 @@ const AtendimentoPage: React.FC = () => {
               .sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }))
           );
           break;
-        // case MongoOperationTypes.DELETE:
-        //   setAgendamentosGeral(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
-        //   break;
+        case MongoOperationTypes.DELETE:
+          setAgendamentosGeral(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
+          break;
       }
     };
 
@@ -283,6 +291,30 @@ const AtendimentoPage: React.FC = () => {
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
     onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
     onEvent(s, EventType.PREPARATION_REQUEST, handlePreparationRequest);
+
+    // //@ts-ignore
+    // s.on("iniciar_exame", (funcionarioNovo: Scheduling) => { 
+    //   console.log("socket ok")
+    //   const isValid = funcionarioNovo.EXAMES.some(exame =>
+    //     codigosDeAtendimento.has(exame.codigoExame) &&
+    //     exame.status === ExamStatus.PENDENTE
+    //   )
+
+    //   if(isValid){
+    //     setAgendamentos(prev => [...prev, funcionarioNovo]);
+    //   }
+    // });
+
+    
+    //@ts-ignore
+    // s.on("exame_concluido", (funcionarioNovo: Scheduling) => { 
+    //   const isValid = funcionarioNovo.EXAMES.some(exame =>
+    //     codigosDeAtendimento.has(exame.codigoExame))
+
+    //   if(isValid){
+    //     setAgendamentos(prev => prev.filter(funcionario => funcionario.CODIGOPRONTUARIO != funcionarioNovo.CODIGOPRONTUARIO ));
+    //   }
+    // });
 
     s.on("connect", async() => {
       try {

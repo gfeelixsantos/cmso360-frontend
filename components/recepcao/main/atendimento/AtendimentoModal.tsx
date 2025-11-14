@@ -60,6 +60,7 @@ interface AtendimentoModalProps {
     socket: Socket,
     sala?: string,
     user?: string,
+    mongoId?: string,
   ) => void;
 }
 
@@ -734,7 +735,8 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
           unidadeSelecionada,
           socket,
           salaSelecionada,
-          user.nome
+          user.nome,
+          funcionarioSelecionado._id,
         )
         
         alert("Atendimento enviado com sucesso")

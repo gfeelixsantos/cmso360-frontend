@@ -20,9 +20,9 @@ type PainelCall = {
 // Configurações do painel
 const PAINEL_CONFIG = {
   tempoChamada: 2500,
-  timerVideo: 13000,
+  timerVideo: 10000,
   qtdChamadas: 1,
-  qtdFilaPainel: 4,
+  qtdFilaPainel: 3,
   tempoInatividadeMinutos: 1,
   duracaoIdleSegundos: 15,
   welcomeMessage: "Bem-vindo ao Centro Médico de Saúde Ocupacional.",
@@ -986,8 +986,11 @@ export default function PainelPage() {
                   }}
                 >
                   <option value="" disabled>Selecione a unidade</option>
-                  <option value="MATRIZ">Rio Claro - Matriz</option>
-                  <option value="FILIAL_ARARAS">Araras - Filial</option>
+                  {
+                    UNIDADES_ATENDIMENTO.map(unidade => (
+                      <option value={unidade}>{unidade}</option>
+                    ))
+                  }
                 </select>
               </div>
 

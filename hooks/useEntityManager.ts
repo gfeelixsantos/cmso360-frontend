@@ -32,6 +32,7 @@ export interface EntityManager<T extends BaseEntity> {
     user?: string,
     funcionario?: string,
     exame?: string,
+    mongoId?: string
   ) => void;
 }
 
@@ -85,6 +86,7 @@ export function useEntityManager<T extends BaseEntity>(
     user = "",
     funcionario = "",
     exame = "",
+    mongoId = ""
   ) => {
     if (!socket?.connected) {
       alert("Não conectado ao servidor WebSocket");
