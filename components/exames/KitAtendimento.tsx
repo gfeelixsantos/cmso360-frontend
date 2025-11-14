@@ -28,8 +28,6 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
   const [examesFiltrados, setExamesFiltrados] = useState<ExameFiltrado[]>([]);
   const [loading, setLoading] = useState(false);
   const [observacoes, setObservacoes] = useState('');
-  const [numeroFichas, setNumeroFichas] = useState('');
-  const [fichasEntregues, setFichasEntregues] = useState(false);
 
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
@@ -73,13 +71,8 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
   }, []);
 
   const handleSave = useCallback(() => {
-    if (!fichasEntregues) {
-      alert('Por favor, confirme que as fichas foram entregues pelo funcionário antes de concluir o atendimento.');
-      return;
-    }
-
     const anotacoesExistentes = agendamento?.ANOTACOES || '';
-    const observacoesCompleta = `KIT ATENDIMENTO - Fichas entregues: ${numeroFichas || 'Não informado'}\n${observacoes ? '\n' + observacoes : ''}`;
+    const observacoesCompleta = `KIT ATENDIMENTO\n${observacoes ? observacoes : 'Nenhuma observação registrada'}`;
     
     const anotacoesFinais = anotacoesExistentes 
       ? `${anotacoesExistentes}\n${observacoesCompleta}`
@@ -88,10 +81,12 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
     onSave?.({ 
       status: 'concluded',
       anotacoes: anotacoesFinais,
-      fichasEntregues: true,
-      numeroFichas: numeroFichas
+      examesRealizados: examesFiltrados.map(exame => ({
+        sequencialResultadoExame: exame.sequencialResultadoExame,
+        realizado: exame.realizado
+      }))
     });
-  }, [onSave, observacoes, agendamento?.ANOTACOES, fichasEntregues, numeroFichas]);
+  }, [onSave, observacoes, agendamento?.ANOTACOES, examesFiltrados]);
 
   const SectionTitle: React.FC<{ number?: string; title: string; icon?: React.ReactNode }> = ({ 
     title,
@@ -120,8 +115,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
               KIT ATENDIMENTO - Procedimento Especial
             </h3>
             <p className="text-amber-700 text-sm leading-relaxed">
-              <strong>Importante:</strong> Este atendimento utiliza fichas específicas fornecidas pela empresa. 
-              Certifique-se de utilizar as fichas entregues pelo funcionário para realizar o procedimento.
+              <strong>Observação:</strong> Registre se o exame foi realizado e quaisquer observações relevantes sobre o procedimento.
             </p>
           </div>
         </div>
@@ -137,7 +131,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
       {examesFiltrados.length > 0 && (
         <Card className="p-6 shadow-sm border border-gray-200 bg-white">
           <SectionTitle 
-            title={`Exame(s) - Realizar nas Fichas do Kit`} 
+            title={`Exame(s) - Status de Realização`} 
           />
           
           <div className="space-y-4">
@@ -151,15 +145,12 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
                     <h4 className="font-semibold text-gray-800 text-sm mb-1">
                       {exameItem.nomeExame}
                     </h4>
-                    <p className="text-xs text-blue-600 font-medium">
-                      📋 Realizar na ficha específica do kit
-                    </p>
                   </div>
                   
                   <div className="flex-shrink-0">
                     <RadioGroup
                       color='success'
-                      label="Exame realizado na ficha?"
+                      label="Exame realizado?"
                       orientation="horizontal"
                       value={exameItem.realizado ? "sim" : "nao"}
                       onValueChange={(value) => 
@@ -187,8 +178,8 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
             
             <div className="space-y-3 mt-6">
               <Textarea
-                label="Observações do atendimento (Kit)"
-                placeholder="Ex: Fichas em bom estado, procedimento realizado conforme orientação..."
+                label="Observações do atendimento"
+                placeholder="Ex: Procedimento realizado conforme orientação, condições do paciente, etc..."
                 value={observacoes}
                 onValueChange={setObservacoes}
                 minRows={3}
@@ -214,11 +205,10 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
         <Button
           color="primary"
           onPress={handleSave}
-          disabled={!fichasEntregues}
-          className="px-8 bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+          className="px-8 bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors"
           startContent={<FileText className="h-4 w-4" />}
         >
-          {fichasEntregues ? 'Concluir Atendimento' : 'Confirme as Fichas'}
+          Concluir Atendimento
         </Button>
       </div>
     </div>

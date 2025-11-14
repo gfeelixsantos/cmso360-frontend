@@ -42,8 +42,22 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       const pendentesA = a.EXAMES?.filter(ex => ex.status !== 'FINALIZADO').length ?? 0;
       const pendentesB = b.EXAMES?.filter(ex => ex.status !== 'FINALIZADO').length ?? 0;
 
-      // quanto menos pendentes, mais acima na lista
-      return pendentesA - pendentesB;
+      // 1. Prioridade Principal: Menos pendentes primeiro
+      const diferencaPendentes = pendentesA - pendentesB;
+
+      if (diferencaPendentes !== 0) {
+        // Se a contagem de pendentes for diferente, ordena por ela
+        return diferencaPendentes;
+      }
+
+      // 2. Desempate: Se a contagem for a mesma, prioriza o mais antigo
+      // A data mais antiga (menor valor) deve vir primeiro
+      const dataA = a.TICKET?.emissao ? new Date(a.TICKET.emissao).getTime() : 0;
+      const dataB = b.TICKET?.emissao ? new Date(b.TICKET.emissao).getTime() : 0;
+
+      // Subtrai dataA por dataB. Se dataA for mais antiga (menor valor),
+      // o resultado será negativo e 'a' será ordenado antes de 'b'.
+      return dataA - dataB;
     });
   }, [agendamentos]);
 

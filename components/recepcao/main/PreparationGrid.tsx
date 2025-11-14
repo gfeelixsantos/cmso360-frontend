@@ -16,64 +16,79 @@ import {
   Check,
   Clock,
 } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { emitEvent, EventType } from "@/lib/websocket/events/events";
 import { Socket } from "socket.io-client";
 import { PreparationRequestTypes } from "@/lib/websocket/enums/websocket.enum";
 import { IndexDb } from "@/lib/indexDb/indexdb";
 import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
 
-
 interface PreparationCardProps {
   request: PreparationRequest;
   ticket?: Ticket;
   onAttachments?: () => void;
   onComplete?: () => void;
-  disabled: boolean
+  disabled: boolean;
 }
 
 export function PreparationCard({ request, ticket, onAttachments, onComplete, disabled }: PreparationCardProps) {
   const [nomeEmpresa, setNomeEmpresa] = useState<string>();
 
-  const waitingMinutes = ticket?.emissao
-    ? Math.floor((Date.now() - new Date(ticket.emissao).getTime()) / 60000)
-    : 0;
+  const waitingMinutes = useMemo(() => {
+    return ticket?.emissao
+      ? Math.floor((Date.now() - new Date(ticket.emissao).getTime()) / 60000)
+      : 0;
+  }, [ticket?.emissao]);
 
   // Define status com base no tempo de espera
-  let statusColor: "default" | "danger" | "warning" = "default";
-  if (waitingMinutes > 60) statusColor = "danger";
-  else if (waitingMinutes > 30) statusColor = "warning";
+  const statusColor = useMemo((): "default" | "danger" | "warning" => {
+    if (waitingMinutes > 60) return "danger";
+    if (waitingMinutes > 30) return "warning";
+    return "default";
+  }, [waitingMinutes]);
 
-  const getRazaoSocialByIndexDb = async () => {
-    const empresa = await IndexDb.getCompanyById(request.empresa);
-    if (empresa) setNomeEmpresa(empresa.RAZAOSOCIAL);
-  };
+  const cardClasses = useMemo(() => {
+    const base = "w-full rounded-xl transition-all duration-200 hover:shadow-lg border-2";
+    const statusBorder = 
+      statusColor === "danger" ? "border-red-400" :
+      statusColor === "warning" ? "border-yellow-400" :
+      "border-gray-200";
+    
+    return `${base} ${statusBorder}`;
+  }, [statusColor]);
 
   useEffect(() => {
-    getRazaoSocialByIndexDb();
-  }, [request]);
+    let isMounted = true;
+    
+    const fetchEmpresa = async () => {
+      const empresa = await IndexDb.getCompanyById(request.empresa);
+      if (isMounted && empresa) {
+        setNomeEmpresa(empresa.RAZAOSOCIAL);
+      }
+    };
+    
+    fetchEmpresa();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [request.empresa]);
 
   return (
     <Card
       shadow="md"
-      className={`w-full rounded-xl transition-all duration-200 hover:shadow-lg border-2 ${
-        statusColor === "danger"
-          ? "border-red-400"
-          : statusColor === "warning"
-          ? "border-yellow-400"
-          : "border-gray-200"
-      }`}
+      className={cardClasses}
     >
       <CardHeader className="flex flex-col gap-2 font-bold">
         <Alert
           title={request.nome}
           color={statusColor as any}
           variant="solid"
-          description=
-            {<span className="flex gap-2  text-xs">
+          description={
+            <span className="flex gap-2 text-xs">
               {request.tipoExame}
-            </span> 
-            }
+            </span>
+          }
         />
         <Snippet
           hideSymbol
@@ -91,13 +106,11 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
         {/* Informações principais */}
         <div className="flex gap-3">
           <InfoItem
-            
             label="Nascimento"
             value={request.dataNascimento}
             copyable
           />
           <InfoItem
-            
             label="CPF"
             value={request.cpf}
             copyable
@@ -118,7 +131,7 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
             <div className="p-1 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-default-700">
-                  Senha { ticket.preferencial ? <Chip color="danger" className="text-xs">PREFERENCIAL</Chip> : "" }
+                  Senha {ticket.preferencial ? <Chip color="danger" className="text-xs">PREFERENCIAL</Chip> : ""}
                 </h3>
               </div>
 
@@ -185,7 +198,9 @@ interface InfoItemProps {
   copyable?: boolean;
 }
 
-function InfoItem({ icon, label, value, fullWidth = false, copyable = false }: InfoItemProps) {
+const InfoItem = React.memo(function InfoItem({ 
+  icon, label, value, fullWidth = false, copyable = false 
+}: InfoItemProps) {
   return (
     <div
       className={`flex items-start gap-2 ${
@@ -215,7 +230,7 @@ function InfoItem({ icon, label, value, fullWidth = false, copyable = false }: I
       </div>
     </div>
   );
-}
+});
 
 /* ========== GRID ========== */
 interface PreparationGridProps {
@@ -226,27 +241,33 @@ interface PreparationGridProps {
 export function PreparationGrid({ requests, socket }: PreparationGridProps) {
   const [requestToConfirm, setRequestToConfirm] = useState<PreparationRequest | null>(null);
 
-  const handleAttachments = (request: PreparationRequest) => {
+  const handleAttachments = useCallback((request: PreparationRequest) => {
     console.log("Anexos para:", request.nome);
-  };
+  }, []);
 
-  const handleComplete = (requestComplete: PreparationRequest) => {
-    setRequestToConfirm(requestComplete); // abre o modal de confirmação
-  };
+  const handleComplete = useCallback((requestComplete: PreparationRequest) => {
+    setRequestToConfirm(requestComplete);
+  }, []);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (requestToConfirm) {
       emitEvent(socket, EventType.PREPARATION_REQUEST, {
         type: PreparationRequestTypes.FINISHED,
         request: requestToConfirm,
       });
-      setRequestToConfirm(null); // fecha o modal
+      setRequestToConfirm(null);
     }
-  };
+  }, [requestToConfirm, socket]);
 
-  const handleCancel = () => {
-    setRequestToConfirm(null); // fecha o modal
-  };
+  const handleCancel = useCallback(() => {
+    setRequestToConfirm(null);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setRequestToConfirm(null);
+    };
+  }, []);
 
   return (
     <>
@@ -254,9 +275,9 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
         <div className="px-4 sm:px-6 lg:px-8">
           <h3 className="text-2xl font-bold mb-6">Solicitações de preparo</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {requests.map((req, idx) => (
+            {requests.map((req) => (
               <PreparationCard
-                key={idx}
+                key={`${req.cpf}-${req.dataNascimento}`}
                 request={req}
                 ticket={req.ticket}
                 onAttachments={() => handleAttachments(req)}
