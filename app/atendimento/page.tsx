@@ -6,7 +6,6 @@ import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
 import { CustomEventMap, emitEvent, EventType, onEvent } from "@/lib/websocket/events/events";
 import { PreparationRequestTypes, WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 
-
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout, urlBase64ToUint8Array } from "@/lib/utils";
 import EmptyState from "@/components/recepcao/main/EmptyState";
@@ -33,6 +32,31 @@ import AtendimentoModalExames from "@/components/atendimento/AtendimentoModalExa
 import CmsoLoading from "@/components/shared/CmsoLoading";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!; 
+
+// ============================================================
+// FUNÇÃO AUXILIAR: DEDUPLICAÇÃO DE AGENDAMENTOS
+// ============================================================
+const deduplicateSchedulings = (schedulings: Scheduling[]): Scheduling[] => {
+  const uniqueMap = new Map<string, Scheduling>();
+  
+  schedulings.forEach(scheduling => {
+    // Usa _id como chave primária, se não existir usa SCHEDULINGCODE
+    const key = scheduling._id || scheduling.SCHEDULINGCODE;
+    
+    if (key && !uniqueMap.has(key)) {
+      uniqueMap.set(key, scheduling);
+    }
+  });
+  
+  const deduplicated = Array.from(uniqueMap.values());
+  
+  // Log de duplicatas removidas (apenas em desenvolvimento)
+  if (schedulings.length !== deduplicated.length && process.env.NODE_ENV === 'development') {
+    console.warn(`⚠️ Removidas ${schedulings.length - deduplicated.length} duplicatas de agendamentos`);
+  }
+  
+  return deduplicated;
+};
 
 const AtendimentoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(null);
@@ -139,42 +163,37 @@ const AtendimentoPage: React.FC = () => {
   }, [conectado])
 
   // ---------------------------------------------------------
-  // Carrega agendamentos
-  // ----------------------------------------------------------
-  const getSchedulings = async () => {
+  // Carrega agendamentos (CORRIGIDO - SEM EFEITOS COLATERAIS)
+  // ---------------------------------------------------------
+  const getSchedulings = async (): Promise<Scheduling[]> => {
     try {
       if(!unidadeSelecionada) throw new Error("Selecione uma unidade de atendimento")
-        console.log("URL TODAY", NEST_SCHEDULINGS_TODAY)
+        
       const response = await fetch(NEST_SCHEDULINGS_TODAY, {
-          method: "POST",
-          headers: {
-              'Content-Type': 'application/json' 
-          },
-          body: JSON.stringify({ unidade: unidadeSelecionada })
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json' 
+        },
+        body: JSON.stringify({ unidade: unidadeSelecionada })
       });
 
-      if (!response.ok) return null;
+      if (!response.ok) return [];
+      
       const schedules: Scheduling[] = await response.json();
-
-      // Evita duplicatas comparando com agendamentosGeral (não com agendamentos filtrados)
-      const schedulesFiltered = schedules.filter(s => !agendamentosGeral.some(a => a._id === s._id));
-
-      setAgendamentosGeral(prev => {
-        // junta antigos + novos e ordena
-        const merged = [...prev, ...schedulesFiltered];
-        return merged.sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }) );
-      });
+      return schedules || [];
 
     } catch (err) {
       console.error("Erro ao buscar agendamentos:", err);
-      return null;
+      return [];
     }
   };
 
-  // Recalcula `agendamentos` a partir de `agendamentosGeral` e `codigosDeAtendimento`
+  // ---------------------------------------------------------
+  // Recalcula agendamentos filtrados quando mudam dependências
+  // ---------------------------------------------------------
   useEffect(() => {
     if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
-      setAgendamentos([]); // limpa caso não haja exame selecionado
+      setAgendamentos([]);
       return;
     }
     if (!agendamentosGeral || agendamentosGeral.length === 0) {
@@ -182,7 +201,10 @@ const AtendimentoPage: React.FC = () => {
       return;
     }
 
-    const emAtendimento = agendamentosGeral.filter(a => a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO);
+    const emAtendimento = agendamentosGeral.filter(a => 
+      a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO
+    );
+    
     const meusAtendimentos = emAtendimento.filter(atend =>
       Array.isArray(atend.EXAMES) &&
       atend.EXAMES.some(exame =>
@@ -197,7 +219,9 @@ const AtendimentoPage: React.FC = () => {
   // ---------------------------------------------------------
   // Faz a inscrição para recebimento de notificação web-push
   // ----------------------------------------------------------
-  const subscribeNotification = async() => { /* ... seu código comentado ... */ }
+  const subscribeNotification = async() => { 
+    // Seu código de notificação aqui
+  }
 
   // ---------------------------------------------------------
   // Conexão com socket, reconexão e eventos
@@ -206,10 +230,18 @@ const AtendimentoPage: React.FC = () => {
     if (conectado && socketState) {
       socketState.disconnect();
       setConectado(false);
-      addToast({ title: "Desconectado", description: "Você se desconectou do servidor.", severity: "warning", color: "foreground", variant: "flat" });
+      addToast({ 
+        title: "Desconectado", 
+        description: "Você se desconectou do servidor.", 
+        severity: "warning", 
+        color: "foreground", 
+        variant: "flat" 
+      });
     } else {
       if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) {
-        setModalText(<p>Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e <strong>EXAME</strong> antes de conectar.</p>);
+        setModalText(
+          <p>Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e <strong>EXAME</strong> antes de conectar.</p>
+        );
         setModalAlert(true)
         return;
       }
@@ -240,7 +272,11 @@ const AtendimentoPage: React.FC = () => {
 
     setSocketState(s);
 
+    // ---------------------------------------------------------
+    // HANDLERS DE EVENTOS (CORRIGIDOS)
+    // ---------------------------------------------------------
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
+    
     const handleTicketUpdated = (ticket: Ticket) => {
       addOrUpdate(ticket);
       setAgendamentos(prev => {
@@ -252,21 +288,47 @@ const AtendimentoPage: React.FC = () => {
         });
       });
     };
+    
     const handleTicketError = (message: string) => console.error(JSON.parse(message));
+    
+    // ⭐ HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
     const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       switch (operation) {
         case MongoOperationTypes.INSERT:
-          setAgendamentosGeral(prev => [...prev, schedule].sort( (a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })));
+          setAgendamentosGeral(prev => {
+            // Verifica se já existe antes de adicionar
+            const exists = prev.some(ag => 
+              ag._id === schedule._id || 
+              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE
+            );
+            
+            if (exists) {
+              console.warn(`Agendamento ${schedule.SCHEDULINGCODE} já existe, ignorando INSERT`);
+              return prev;
+            }
+            
+            const updated = deduplicateSchedulings([...prev, schedule]);
+            return updated.sort((a, b) => 
+              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+            );
+          });
           break;
+          
         case MongoOperationTypes.UPDATE:
-          setAgendamentosGeral(prev =>
-            prev
-              .map(ag => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag)
-              .sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }))
-          );
+          setAgendamentosGeral(prev => {
+            const updated = prev.map(ag => 
+              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag
+            );
+            return deduplicateSchedulings(updated).sort((a, b) => 
+              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+            );
+          });
           break;
+          
         case MongoOperationTypes.DELETE:
-          setAgendamentosGeral(prev => prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
+          setAgendamentosGeral(prev => 
+            prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE)
+          );
           break;
       }
     };
@@ -281,44 +343,43 @@ const AtendimentoPage: React.FC = () => {
           executarAcao(request.request.ticketId!, TicketActionType.PREPARO_OK, unidadeSelecionada, s);
           setEmPreparacao(prev => prev.filter(req => req.ticketId !== request.request.ticketId));
           setPreparacaoFinalizada(prev => [...prev, request.request]);
-          addToast({ title: "ASO Finalizado", description: <span>{request.request.nome}</span>, severity: "success", color: "foreground", size: "sm" });
+          addToast({ 
+            title: "ASO Finalizado", 
+            description: <span>{request.request.nome}</span>, 
+            severity: "success", 
+            color: "foreground", 
+            size: "sm" 
+          });
           break;
       }
     };
 
+    // Registra eventos
     onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
     onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
     onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
     onEvent(s, EventType.PREPARATION_REQUEST, handlePreparationRequest);
 
-    // //@ts-ignore
-    // s.on("iniciar_exame", (funcionarioNovo: Scheduling) => { 
-    //   console.log("socket ok")
-    //   const isValid = funcionarioNovo.EXAMES.some(exame =>
-    //     codigosDeAtendimento.has(exame.codigoExame) &&
-    //     exame.status === ExamStatus.PENDENTE
-    //   )
-
-    //   if(isValid){
-    //     setAgendamentos(prev => [...prev, funcionarioNovo]);
-    //   }
-    // });
-
-    
-    //@ts-ignore
-    // s.on("exame_concluido", (funcionarioNovo: Scheduling) => { 
-    //   const isValid = funcionarioNovo.EXAMES.some(exame =>
-    //     codigosDeAtendimento.has(exame.codigoExame))
-
-    //   if(isValid){
-    //     setAgendamentos(prev => prev.filter(funcionario => funcionario.CODIGOPRONTUARIO != funcionarioNovo.CODIGOPRONTUARIO ));
-    //   }
-    // });
-
+    // ---------------------------------------------------------
+    // CONEXÃO E CARREGAMENTO INICIAL
+    // ---------------------------------------------------------
     s.on("connect", async() => {
       try {
-        await Promise.all([ loadSocCompanies(), getSchedulings(), loadInitialTickets() ]);
+        const [_, schedulings] = await Promise.all([
+          loadSocCompanies(),
+          getSchedulings(),
+          loadInitialTickets()
+        ]);
+        
+        // Carrega agendamentos iniciais com deduplicação
+        if (schedulings && schedulings.length > 0) {
+          const deduplicated = deduplicateSchedulings(schedulings);
+          setAgendamentosGeral(deduplicated.sort((a, b) => 
+            a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+          ));
+        }
+        
         emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
         if (salaSelecionada.includes("PREPARO")) subscribeNotification();
       } catch (error) {
@@ -331,14 +392,21 @@ const AtendimentoPage: React.FC = () => {
     s.on("disconnect", (reason) => {
       setConectado(false);
       setAgendamentos([]);
+      setAgendamentosGeral([]); // Limpa também o estado geral
       setModalAtendimentoAberto(false);
       if (reason !== "io client disconnect") {
-        addToast({ title: "Conexão perdida", severity: "danger", color: "foreground", variant: "flat" });
+        addToast({ 
+          title: "Conexão perdida", 
+          severity: "danger", 
+          color: "foreground", 
+          variant: "flat" 
+        });
       }
     });
 
     s.on("connect_error", (err) => console.error("Erro ao conectar:", err));
 
+    // Cleanup
     return () => {
       s.off("connect");
       s.off("disconnect");
@@ -393,7 +461,12 @@ const AtendimentoPage: React.FC = () => {
       </HeaderApp>
 
       <div className="flex flex-1 overflow-hidden">
-        <motion.aside initial={{ x: -80, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }} className="w-60 bg-red shadow-sm">
+        <motion.aside 
+          initial={{ x: -80, opacity: 0 }} 
+          animate={{ x: 0, opacity: 1 }} 
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }} 
+          className="w-60 bg-red shadow-sm"
+        >
           <SidebarRecepcao
             unidadeSelecionada={unidadeSelecionada}
             setUnidadeSelecionada={setUnidadeSelecionada}
@@ -412,7 +485,10 @@ const AtendimentoPage: React.FC = () => {
           />
         </motion.aside>
 
-        <main className="flex-1 overflow-y-auto sm:p-6 lg:p-8  bg-gray-50" aria-label="Conteúdo principal do atendimento">
+        <main 
+          className="flex-1 overflow-y-auto sm:p-6 lg:p-8 bg-gray-50" 
+          aria-label="Conteúdo principal do atendimento"
+        >
           {(conectado && socketState) && !isLoading ? (
             <AtendimentoContent
               conectado={conectado}
@@ -430,21 +506,48 @@ const AtendimentoPage: React.FC = () => {
               exameSelecionado={exameSelecionado}
             />
           ) : (
-            <EmptyState title="Desconectado" description="Conecte-se para visualizar os atendimentos" />
+            <EmptyState 
+              title="Desconectado" 
+              description="Conecte-se para visualizar os atendimentos" 
+            />
           )}
         </main>
       </div>
 
-      <AtendimentoModalExames isOpen={modalAtendimentoAberto} onClose={handleModal} funcionarioSelecionado={funcionarioSelecionado} exame={exameSelecionado} sala={salaSelecionada} codigosAtendimento={codigosDeAtendimento} socket={socketState!} />
+      <AtendimentoModalExames 
+        isOpen={modalAtendimentoAberto} 
+        onClose={handleModal} 
+        funcionarioSelecionado={funcionarioSelecionado} 
+        exame={exameSelecionado} 
+        sala={salaSelecionada} 
+        codigosAtendimento={codigosDeAtendimento} 
+        socket={socketState!} 
+      />
 
-      <StatsModal isOpen={isStatsModalOpen} onClose={() => setIsStatsModalOpen(false)} estatisticasSenhas={estatisticas} tickets={tickets} agendamentos={agendamentos} preparationRequests={empreparacao} />
+      <StatsModal 
+        isOpen={isStatsModalOpen} 
+        onClose={() => setIsStatsModalOpen(false)} 
+        estatisticasSenhas={estatisticas} 
+        tickets={tickets} 
+        agendamentos={agendamentos} 
+        preparationRequests={empreparacao} 
+      />
 
       <Modal isOpen={modalAlert} disableAnimation={true} isDismissable={false}>
         <ModalContent>
-          <ModalHeader><ExclamationCircleIcon className="h-6 w-6" /> Atenção</ModalHeader>
+          <ModalHeader>
+            <ExclamationCircleIcon className="h-6 w-6" /> Atenção
+          </ModalHeader>
           <ModalBody>{ modalText }</ModalBody>
           <ModalFooter className="flex justify-end gap-2">
-            <Button variant="ghost" color="primary" size="sm" onPress={() => setModalAlert(false)}>Confirmar</Button>
+            <Button 
+              variant="ghost" 
+              color="primary" 
+              size="sm" 
+              onPress={() => setModalAlert(false)}
+            >
+              Confirmar
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

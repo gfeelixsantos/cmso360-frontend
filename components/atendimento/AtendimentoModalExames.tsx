@@ -244,7 +244,7 @@ const AtendimentoModalExames = ({
     [funcionarioSelecionado, exameParaAtualizar, closeNotificationModal, processarAtualizacaoExame]
   );
 
-  const empresaKit = funcionarioSelecionado?.CODIGOINTERNOEMPRESA?.toLocaleUpperCase().includes("KIT")
+  const empresaKit = funcionarioSelecionado?.CODIGOINTERNOEMPRESA?.toLocaleUpperCase().includes("KIT") || funcionarioSelecionado?.NOMECARGO?.toLocaleUpperCase().includes("KIT")
   let Formulario = EXAME_FORM_MAP[exame];
 
   if(empresaKit){
