@@ -154,7 +154,14 @@ const RecepcaoPage: React.FC = () => {
   // ----------------------------------------------------------
   const getSchedulings = async () => {
     try {
-      const response = await fetch(NEST_SCHEDULINGS_TODAY);
+      console.log("URL TODAY", NEST_SCHEDULINGS_TODAY)
+      const response = await fetch(NEST_SCHEDULINGS_TODAY, {
+          method: "POST",
+          headers: {
+              'Content-Type': 'application/json' 
+          },
+          body: JSON.stringify({ unidade: unidadeSelecionada })
+      });
       
       if (!response.ok) return null;
 

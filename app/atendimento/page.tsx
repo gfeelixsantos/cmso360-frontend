@@ -144,7 +144,7 @@ const AtendimentoPage: React.FC = () => {
   const getSchedulings = async () => {
     try {
       if(!unidadeSelecionada) throw new Error("Selecione uma unidade de atendimento")
-
+        console.log("URL TODAY", NEST_SCHEDULINGS_TODAY)
       const response = await fetch(NEST_SCHEDULINGS_TODAY, {
           method: "POST",
           headers: {
