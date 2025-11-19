@@ -160,7 +160,7 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       }}
     >
       <div className="text-2xl font-bold truncate" style={{ color: colors.primary }}>
-        SENHA {c.ticket}
+        SENHA {c.name ? c.name : c.ticket }
       </div>
       <div
         className="mt-2 inline-flex items-center gap-2 font-bold text-xl rounded-full px-3 py-1"
@@ -682,7 +682,7 @@ export default function PainelPage() {
             audio.onerror = () => rej(new Error("Erro ao carregar áudio"));
             setTimeout(() => {
               if (!carregado) rej(new Error("Timeout ao carregar áudio"));
-            }, 7000);
+            }, 5000);
           });
 
           await audio.play();
@@ -699,7 +699,7 @@ export default function PainelPage() {
           resolve();
         } catch (err) {
           console.error("Erro no áudio:", err);
-          setTimeout(() => resolve(), 5000);
+          setTimeout(() => resolve(), 3000);
         }
       };
 
@@ -723,7 +723,7 @@ export default function PainelPage() {
           }
           if (cancelLoop.current) break;
         }
-        await new Promise((r) => setTimeout(r, 9000));
+        await new Promise((r) => setTimeout(r, 6000));
       } else {
         await new Promise((r) => setTimeout(r, 2000));
       }
@@ -1179,7 +1179,7 @@ export default function PainelPage() {
                             backgroundColor: currentExamColors.primary + "20",
                           }}
                         >
-                          <span>{chamadaAtual.exame}</span>
+                          <span>{chamadaAtual.exame || "ATENDIMENTO"}</span>
                         </motion.div>
                       </div>
                     </motion.div>

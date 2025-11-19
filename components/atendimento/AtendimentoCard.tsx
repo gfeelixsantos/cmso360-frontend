@@ -634,8 +634,16 @@ const TicketActions: React.FC<{
   // Utilizado para chamar e nas demais ações
   const handleExecutarAcao = (ticket: Ticket, action: TicketActionType) => {
     const currentUser = getCurrentUser();
-    executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome, atendimento.NOME, exameSelecionado);
+    executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome);
   };
+
+  // const handleExecutarAcao = (ticket: Ticket, action: TicketActionType) => {
+  //   const currentUser = getCurrentUser();
+
+  //   console.log(action)
+  //   console.log(salaSelecionada)
+  //   executarAcao(ticket.id, action, unidadeSelecionada, socket, salaSelecionada, currentUser?.nome, atendimento.NOME, exameSelecionado);
+  // };
 
   const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
     const currentUser = getCurrentUser();
@@ -646,7 +654,7 @@ const TicketActions: React.FC<{
       setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
 
     } else {
-      // 👉 Segundo clique: abre o modal de atendimento
+      // Segundo clique: abre o modal de atendimento
       setFuncionarioSelecionado(funcionario);
       onHandleModal(true);
 
@@ -699,13 +707,13 @@ const TicketActions: React.FC<{
           size="md"
           isIconOnly
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          onPress={() => handleExecutarAcao(ticket, TicketActionType.CHAMAR)}
+          onPress={() => handleExecutarAcao(ticket, "CHAMAR" as TicketActionType)}
           disabled={isDisabled}
         >
           <Phone className="h-4 w-4" />
         </Button>
       </Tooltip>
-
+ 
       {/* Botão Atender - Vermelho */}
       <Tooltip content="Atender" placement="bottom">
         <Button

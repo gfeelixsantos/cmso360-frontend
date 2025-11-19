@@ -1,9 +1,9 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import { usePathname } from "next/navigation"
 import { Plus, Wifi, WifiOff, Users } from "lucide-react"
 import { Button, Chip } from "@heroui/react"
-
 
 import { EXAMES_LIST, SALAS_EXAMES, SALAS_RECEPCAO, UNIDADES_ATENDIMENTO } from "@/config/constants"
 import { Scheduling } from "@/lib/scheduling/interface/scheduling"
@@ -27,14 +27,14 @@ interface SidebarRecepcaoProps {
   onHandleExameSelecionado: (exame: string) => void
 }
 
-/* 🔹 Status Badge elegante */
+/* 🔹 Status Badge */
 const StatusBadge = ({ conectado }: { conectado: boolean }) => (
   <Chip
     size="sm"
     variant="flat"
     className={`font-semibold px-3 py-1 rounded-full shadow-sm ${
       conectado 
-        ? "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white" 
+        ? "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white"
         : "bg-gray-100 text-gray-600 border border-gray-300"
     }`}
   >
@@ -45,7 +45,7 @@ const StatusBadge = ({ conectado }: { conectado: boolean }) => (
   </Chip>
 )
 
-/* 🔹 SelectField com estilo do CMSO 360 */
+/* 🔹 SelectField CMSO */
 const SelectField = ({
   id,
   label,
@@ -62,15 +62,11 @@ const SelectField = ({
   conectado: boolean
 }) => (
   <div className="space-y-2">
-    <label
-      htmlFor={id}
-      className="text-sm font-medium text-gray-700"
-    >
+    <label htmlFor={id} className="text-sm font-medium text-gray-700">
       {label}
-      {conectado && (
-        <span className="text-xs text-gray-500 ml-1">(somente leitura)</span>
-      )}
+      {conectado && <span className="text-xs text-gray-500 ml-1">(somente leitura)</span>}
     </label>
+
     <div className="relative">
       <select
         id={id}
@@ -79,17 +75,18 @@ const SelectField = ({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${
-          conectado 
-            ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed" 
+          conectado
+            ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
             : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#4CAF50]"
         }`}
       >
         {options.map((opt) => (
-          <option key={opt.value} value={opt.value} disabled={!opt.value}>
+          <option key={opt.value} value={opt.value}>
             {opt.label}
           </option>
         ))}
       </select>
+
       <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -99,7 +96,7 @@ const SelectField = ({
   </div>
 )
 
-/* 🔹 Botão de ação elegante */
+/* 🔹 Botão Novo Atendimento */
 const ActionButtonGroup = ({ onAddAtendimento }: { onAddAtendimento: () => void }) => (
   <div className="flex flex-col gap-2 mt-4">
     <Button
@@ -129,14 +126,23 @@ export function SidebarRecepcao({
   onHandleExameSelecionado,
 }: SidebarRecepcaoProps) {
 
-  const [salaOpcoes, setSalaOpcoes] = useState<string[]>([]);
+  const pathname = usePathname()
+  const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO)
   const [examesAtendimento, setExamesAtendimento] = useState<string[]>([])
 
-
+  /* Atualiza opções de sala + lista de exames */
   useEffect(() => {
-    location.pathname.includes("atendimento") ? setSalaOpcoes(SALAS_EXAMES) : setSalaOpcoes(SALAS_RECEPCAO);
-    setExamesAtendimento(Object.keys(EXAMES_LIST).sort((a,b) => a.localeCompare(b, "pt-BR")))
-  },[])
+    if (!pathname) return;
+
+    const isAtendimento = pathname.includes("atendimento")
+    setSalaOpcoes(isAtendimento ? SALAS_EXAMES : SALAS_RECEPCAO)
+
+    setExamesAtendimento(
+      Object.keys(EXAMES_LIST).sort((a, b) =>
+        a.localeCompare(b, "pt-BR")
+      )
+    );
+  }, [pathname])
 
   const handleAddAtendimento = useCallback(() => {
     setTicketSelecionado(null)
@@ -147,21 +153,22 @@ export function SidebarRecepcao({
     <aside
       role="complementary"
       aria-label="Painel lateral de filtros e controles"
-      className="w-68 bg-gradient-to-b from-white via-gray-50 to-green-50 border-r border-gray-200 shadow-lg fixed h-screen overflow-y-auto transition-all"
+      className="w-68 bg-gradient-to-b from-white via-gray-50 to-green-50 border-r border-gray-200 shadow-lg h-screen overflow-y-auto transition-all relative"
     >
       <main className="p-5 pt-6">
+
         {/* Header */}
         <header className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-[#104e35]">
-              Controles
-            </h2>
+            <h2 className="text-lg font-bold text-[#104e35]">Controles</h2>
             <StatusBadge conectado={conectado && !onLoading} />
           </div>
         </header>
 
         {/* Filtros */}
         <section className="space-y-4 mb-6">
+
+          {/* Unidade */}
           <SelectField
             id="unidade"
             label="Unidade"
@@ -174,6 +181,7 @@ export function SidebarRecepcao({
             ]}
           />
 
+          {/* Sala */}
           <SelectField
             id="sala"
             label="Sala"
@@ -186,7 +194,8 @@ export function SidebarRecepcao({
             ]}
           />
 
-          {(location.pathname.includes("atendimento")) && (
+          {/* Exames — aparece só no atendimento */}
+          {pathname && pathname.includes("atendimento") && (
             <SelectField
               id="exames"
               label="Exames"
@@ -204,7 +213,7 @@ export function SidebarRecepcao({
         {/* Botão Conectar */}
         <div className="mb-6">
           <Button
-            onPress={handleConectar}
+            onPress={() => !onLoading && handleConectar()}
             aria-pressed={conectado}
             isLoading={onLoading}
             className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${
@@ -233,12 +242,12 @@ export function SidebarRecepcao({
           </Button>
         </div>
 
-        {/* Botões de Ação */}
-        {conectado && location.pathname.includes("recepcao") && (
+        {/* Botão Novo Atendimento — só na recepção */}
+        {conectado && pathname?.includes("recepcao") && (
           <ActionButtonGroup onAddAtendimento={handleAddAtendimento} />
         )}
 
-        {/* Agendamentos */}
+        {/* Lista de Agendamentos */}
         {conectado && (
           <aside aria-label="Lista de agendamentos" className="mt-6">
             <AgendamentosList
@@ -250,11 +259,12 @@ export function SidebarRecepcao({
         )}
 
         {/* Footer */}
-        <footer className="mt-10 pt-4 border-t border-gray-200">
+        <footer className="mt-10 pt-4 border-t border-gray-200 mb-8">
           <p className="text-xs text-gray-500 text-center font-medium">
             Sistema <span className="text-[#104e35] font-bold">CMSO 360°</span>
           </p>
         </footer>
+
       </main>
     </aside>
   )

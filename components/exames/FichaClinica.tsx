@@ -400,6 +400,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [tipoAdmissional, setTipoAdmissional] = useState<boolean>(false);
   const [pressaoAlterada, setPressaoAlterada] = useState<boolean>(false);
+  const [aplicarTesteArticular, setAplicarTesteArticular] = useState<boolean>(false)
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   
@@ -411,36 +412,49 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   const [showObservacoesPessoais, setShowObservacoesPessoais] = useState<boolean>(false);
 
-  // No useEffect de inicialização
-  useEffect(() => {
-    if (atendimento) {
-      setAgendamento(atendimento);
-    }
+useEffect(() => {
+  if (atendimento) {
+    setAgendamento(atendimento);
+  }
 
-    if (formulario) {
-      // Teste articular para RH Brasil Whirlpool e empresas Whirlpool - CODIGO SOC
-      const admissional = atendimento?.TIPOEXAMENOME.includes("ADM")
-      const rhBrasilWhirlpool = atendimento?.CODIGOEMPRESA == "230890" && atendimento.NOMEUNIDADE?.toUpperCase().includes("WHIRLPOOL");
-      const whirlpoolAdmissional = atendimento?.CODIGOEMPRESA == "238590";
-      const empresaTeste = atendimento?.CODIGOEMPRESA == "950646";
+  if (formulario) {
+    // Normaliza valores para evitar diferenças de tipo/grafia
+    const tipoExameNome = String(atendimento?.TIPOEXAMENOME ?? '').toUpperCase();
+    const nomeUnidade = String(atendimento?.NOMEUNIDADE ?? '').toUpperCase();
+    const codigoEmpresa = String(atendimento?.CODIGOEMPRESA ?? '').trim();
 
-      setFormData(prev => ({
-        ...prev,
-        ...formulario,
-        ...(admissional && (rhBrasilWhirlpool || whirlpoolAdmissional || empresaTeste) ? {
-          testesArticulares: TESTE_ARTICULAR_PADRAO
-        } : undefined)
-      }));
-    }
+    // Detecta admissional de forma robusta (aceita 'ADM' e 'ADMISS' etc)
+    const admissional = /ADM/i.test(tipoExameNome);
 
-    if (atendimento?.TIPOEXAME === "1" || atendimento?.TIPOEXAME === 1) {
-      setTipoAdmissional(true);
-    }
-  }, [atendimento, formulario]);
+    // Empresas/UNIDADES específicas (normalizadas)
+    const rhBrasilWhirlpool = (codigoEmpresa === '230890' && (nomeUnidade.includes('WHIRLPOOL') || nomeUnidade.includes('WHIRPOOL')));
+    const whirlpoolAdmissional = (codigoEmpresa === '238590');
 
-  useEffect(() => {
-    console.log("formuário")
-  }, [formulario])
+    // Regra atual: só aplica se for admissional E pertencer às empresas/unidades
+    // Se você quiser aplicar quando for admissional OU empresa, mude o operador abaixo.
+    const deveAplicar = admissional && (rhBrasilWhirlpool || whirlpoolAdmissional);
+
+    // Atualiza formData: mescla o formulário vindo e só injeta testesArticulares se for necessário
+    setFormData(prev => ({
+      ...prev,
+      ...formulario,
+      ...(deveAplicar ? { testesArticulares: TESTE_ARTICULAR_PADRAO } : undefined)
+    }));
+
+    console.log("deve aplicar resultado", deveAplicar)
+    // Atualiza o estado usado no render
+    // setAplicarTesteArticular(deveAplicar);
+  }
+
+  // Tipo exame (numérico/string) — normaliza também
+  const tipoExame = String(atendimento?.TIPOEXAME ?? '');
+  if (tipoExame === '1') {
+    setTipoAdmissional(true);
+  } else {
+    setTipoAdmissional(false);
+  }
+}, [atendimento, formulario]);
+
 
   // Verificar pressão arterial alterada - DEBOUNCED
   useEffect(() => {
@@ -923,9 +937,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               </div>
             )}
           </Card>
-
-          {/* 6. TESTES CLÍNICOS ARTICULARES/COLUNA */}
-          <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
+        </div>
+      )}
+                {/* 6. TESTES CLÍNICOS ARTICULARES/COLUNA */}
+          { aplicarTesteArticular && (
+                      <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle title="Testes Clínicos Articulares/Coluna" />
             
             {/* 1 - PUNHOS */}
@@ -1480,8 +1496,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
               </div>
             </div>
           </Card>
-        </div>
-      )}
+          )}
 
       {/* 6. Dados Vitais */}
       <Card className="p-6 shadow-none border border-gray-200 bg-white">

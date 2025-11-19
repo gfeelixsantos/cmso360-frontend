@@ -162,31 +162,6 @@ const AtendimentoPage: React.FC = () => {
     }
   }, [conectado])
 
-  // ---------------------------------------------------------
-  // Carrega agendamentos (CORRIGIDO - SEM EFEITOS COLATERAIS)
-  // ---------------------------------------------------------
-  const getSchedulings = async (): Promise<Scheduling[]> => {
-    try {
-      if(!unidadeSelecionada) throw new Error("Selecione uma unidade de atendimento")
-        
-      const response = await fetch(NEST_SCHEDULINGS_TODAY, {
-        method: "POST",
-        headers: {
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify({ unidade: unidadeSelecionada })
-      });
-
-      if (!response.ok) return [];
-      
-      const schedules: Scheduling[] = await response.json();
-      return schedules || [];
-
-    } catch (err) {
-      console.error("Erro ao buscar agendamentos:", err);
-      return [];
-    }
-  };
 
   // ---------------------------------------------------------
   // Recalcula agendamentos filtrados quando mudam dependências
@@ -275,6 +250,17 @@ const AtendimentoPage: React.FC = () => {
     // ---------------------------------------------------------
     // HANDLERS DE EVENTOS (CORRIGIDOS)
     // ---------------------------------------------------------
+    const handleAtendimentos = (schedules?: Scheduling[]) => {
+
+      if(schedules){
+          const schedulesFiltred = schedules.filter(
+          s => !agendamentos.some(a => a._id === s._id)
+        );
+        
+        setAgendamentosGeral(schedulesFiltred);
+      }
+    }; 
+
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
     
     const handleTicketUpdated = (ticket: Ticket) => {
@@ -355,6 +341,7 @@ const AtendimentoPage: React.FC = () => {
     };
 
     // Registra eventos
+    onEvent(s, EventType.CONNECTION_REQUEST, handleAtendimentos)
     onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
     onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
@@ -368,17 +355,8 @@ const AtendimentoPage: React.FC = () => {
       try {
         const [_, schedulings] = await Promise.all([
           loadSocCompanies(),
-          getSchedulings(),
           loadInitialTickets()
         ]);
-        
-        // Carrega agendamentos iniciais com deduplicação
-        if (schedulings && schedulings.length > 0) {
-          const deduplicated = deduplicateSchedulings(schedulings);
-          setAgendamentosGeral(deduplicated.sort((a, b) => 
-            a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
-          ));
-        }
         
         emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
         if (salaSelecionada.includes("PREPARO")) subscribeNotification();

@@ -2,7 +2,7 @@
 import { Socket } from 'socket.io-client';
 import { PainelCall } from '@/lib/painel/interfaces/paniel.interface';
 import { PreparationRequest, PreparationRequestModel, Ticket } from '@/lib/ticket/ticket';
-import { SchedulingChange } from '@/lib/scheduling/interface/scheduling';
+import { Scheduling, SchedulingChange } from '@/lib/scheduling/interface/scheduling';
 
 enum EventType {
   // Ticket
@@ -27,7 +27,7 @@ enum EventType {
 
 // Mapeamento de eventos para seus payloads
 interface EventPayloadMap {
-  [EventType.CONNECTION_REQUEST]: String;
+  [EventType.CONNECTION_REQUEST]: Scheduling[];
   [EventType.TICKET_EMITED]: Ticket;
   [EventType.TICKET_UPDATED]: Ticket;
   [EventType.TICKET_ACTION_SUCCESS]: Ticket;
