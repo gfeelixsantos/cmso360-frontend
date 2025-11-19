@@ -25,7 +25,7 @@ export enum TicketActionType {
   PREPARO_OK = "PREPARO OK",
   ENCAMINHADO_RX = "ENCAMINHADO RAIO-X",
   FINALIZAR = "FINALIZAR",
-  // EXAME = "EXAME",
+  EXAME = "EXAME",
 }
  
 export enum TicketTypes {
