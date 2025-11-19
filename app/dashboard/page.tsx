@@ -1,9 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { motion } from "framer-motion"
-import { Users, Stethoscope, UserCircle, Calendar, FileText,  CheckCircle, Clock, Eye, ChartNoAxesCombined } from "lucide-react"
+import { Users, Stethoscope, UserCircle, Calendar, FileText, CheckCircle, Clock, Eye, ChartNoAxesCombined } from "lucide-react"
 import { IUserInfo } from "@/lib/user/interfaces/IUser"
 import { getCurrentUser, logout } from "@/lib/utils"
 import { HeaderApp } from "@/components/shared/HeaderApp"
@@ -12,8 +12,9 @@ import { AtendimentoStatus, ExamStatus } from "@/lib/scheduling/enum/scheduling.
 import { useAppData } from "../context/AppDataContext"
 import CmsoLoading from "@/components/shared/CmsoLoading"
 import { Alert, Link } from "@heroui/react"
+import { NEST_SCHEDULINGS_ALL } from "@/config/constants"
 
-// Interfaces para tipagem robusta
+// Interfaces
 interface MenuCardProps {
   title: string
   description: string
@@ -36,8 +37,6 @@ interface StatsCardProps {
   }
 }
 
-
-
 interface DashboardStats {
   totalProntuarios: number
   agendados: number
@@ -51,7 +50,7 @@ interface DashboardStats {
   totalClinico: number
 }
 
-// Componente WelcomeSection atualizado
+// Componentes
 const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
   <motion.section
     initial={{ opacity: 0, y: 20 }}
@@ -68,11 +67,7 @@ const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
         <p className="text-lg text-gray-600 mt-2">Acesse as funcionalidades do sistema abaixo</p>
       </div>
       <div>
-        <Alert
-          color="success"
-          variant="faded"
-          hideIcon={true}
-        >
+        <Alert color="success" variant="faded" hideIcon={true}>
           <p className="font-bold">Nosso novo sistema de atendimento!</p>
           <p>Estamos em fase de testes, sugestões e melhorias serão bem vindas</p>
           <Link href="https://forms.gle/Yk34nUL6654x9MNC6" target="_blank">Formulário de sugestões</Link>
@@ -82,7 +77,6 @@ const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
   </motion.section>
 )
 
-// Componente MenuCard
 const MenuCard: React.FC<MenuCardProps> = ({ title, description, icon, subItems, onPress, index }) => (
   <motion.article
     initial={{ opacity: 0, y: 20 }}
@@ -126,7 +120,6 @@ const MenuCard: React.FC<MenuCardProps> = ({ title, description, icon, subItems,
   </motion.article>
 )
 
-// Componente StatsCard atualizado
 const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, index, description, trend }) => (
   <article
     className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden"
@@ -144,7 +137,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, index, descri
             <p className="text-xs text-gray-500 mt-1">{description}</p>
           )}
         </div>
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center  bg-[#44735E] text-white shadow-lg">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#44735E] text-white shadow-lg">
           {icon}
         </div>
       </div>
@@ -152,72 +145,85 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, index, descri
   </article>
 )
 
-
-
-// Componente Principal
+// Componente Principal CORRIGIDO
 export default function DashboardPage() {
   const { data } = useAppData();
-  const appAtendimentos: Scheduling[] = data?.atendimentos ?? [];
+  const router = useRouter()
+  
   const [user, setUser] = useState<IUserInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [atendimentos, setAtendimentos] = useState<Scheduling[] | null>(null)
-  const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
-    totalProntuarios: 0,
-    agendados: 0,
-    emAtendimento: 0,
-    aguardandoResultados: 0,
-    aguardandoAvaliacaoMedica: 0,
-    finalizados: 0,
-    consultasHoje: 0,
-    avaliacaoMedica: 0,
-    examesPendentes: 0,
-    totalClinico: 0
-  })
-  const router = useRouter()
+  const [atendimentos, setAtendimentos] = useState<Scheduling[]>([])
 
+  // ✅ FIX 1: useEffect com dependências corretas
   useEffect(() => {
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-      router.push("/");
-    } else {
-      setUser(currentUser);
-      setIsLoading(false);
+    const initDashboard = async () => {
+      const currentUser = getCurrentUser()
+
+      if (!currentUser) {
+        setIsLoading(false)
+        router.push("/")
+        return
+      }
+
+      setUser(currentUser)
+      
+      // ✅ FIX 2: Aguardar o fetch completar
+      try {
+        const res = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" })
+        
+        if (!res.ok) throw new Error("Erro ao buscar atendimentos")
+        
+        const fetchedData: Scheduling[] = await res.json()
+        setAtendimentos(fetchedData)
+      } catch (err) {
+        console.error("Erro ao carregar atendimentos:", err)
+        // ✅ Define array vazio em caso de erro
+        setAtendimentos([])
+      } finally {
+        setIsLoading(false)
+      }
     }
-  }, []);
 
+    initDashboard()
+  }, [router])
 
-  useEffect(() => {
-    // Agora só usamos a variável appAtendimentos, sem chamar hook aqui
-    if (appAtendimentos?.length) {
-      setAtendimentos(appAtendimentos);
-
-      setDashboardStats({
-        totalProntuarios: appAtendimentos.filter(item => new Date(item.DATAAGENDAMENTO_DATE) <= new Date()).length ?? 0,
-        agendados: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO).length ?? 0,
-        emAtendimento: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO).length ?? 0,
-        aguardandoResultados: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_RESULTADOS).length ?? 0,
-        aguardandoAvaliacaoMedica: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length ?? 0,
-        finalizados: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.FINALIZADO).length ?? 0,
-        consultasHoje: appAtendimentos.filter(item => item.DATAAGENDAMENTO === new Date().toLocaleDateString("pt-br")).length ?? 0,
-        avaliacaoMedica: appAtendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length ?? 0,
-        examesPendentes: appAtendimentos.reduce((pvalue, cvalue) => pvalue += cvalue.EXAMES.filter(e => e.status === ExamStatus.AGUARDANDO_RESULTADO).length, 0),
-        totalClinico: appAtendimentos.reduce((pvalue, cvalue) => pvalue += cvalue.EXAMES.filter(e => e.grupo === "clinico").length, 0),
-      });
+  // ✅ FIX 3: Usar useMemo para calcular estatísticas (evita recalcular a cada render)
+  const dashboardStats = useMemo<DashboardStats>(() => {
+    if (!atendimentos.length) {
+      return {
+        totalProntuarios: 0,
+        agendados: 0,
+        emAtendimento: 0,
+        aguardandoResultados: 0,
+        aguardandoAvaliacaoMedica: 0,
+        finalizados: 0,
+        consultasHoje: 0,
+        avaliacaoMedica: 0,
+        examesPendentes: 0,
+        totalClinico: 0
+      }
     }
-  }, [appAtendimentos, router,]); // <-- adicionamos appAtendimentos como dependência
 
+    const hoje = new Date().toLocaleDateString("pt-br")
+    const agora = new Date()
 
-
-
-  if (!user) {
-    return (
-      <CmsoLoading />
-    )
-  }
-
-  if (isLoading) {
-    <CmsoLoading />
-  }
+    return {
+      totalProntuarios: atendimentos.filter(item => new Date(item.DATAAGENDAMENTO_DATE) <= agora).length,
+      agendados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO).length,
+      emAtendimento: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO).length,
+      aguardandoResultados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_RESULTADOS).length,
+      aguardandoAvaliacaoMedica: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length,
+      finalizados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.FINALIZADO).length,
+      consultasHoje: atendimentos.filter(item => item.DATAAGENDAMENTO === hoje).length,
+      avaliacaoMedica: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length,
+      examesPendentes: atendimentos.reduce((acc, curr) => 
+        acc + curr.EXAMES.filter(e => e.status === ExamStatus.AGUARDANDO_RESULTADO).length, 0
+      ),
+      totalClinico: atendimentos.reduce((acc, curr) => 
+        acc + curr.EXAMES.filter(e => e.grupo === "clinico").length, 0
+      ),
+    }
+  }, [atendimentos])
 
   const menuItems = [
     {
@@ -278,79 +284,18 @@ export default function DashboardPage() {
     },
   ]
 
-  const statusStats = [
-    {
-      title: "Em Atendimento",
-      value: dashboardStats.emAtendimento.toString(),
-      icon: <Clock className="h-5 w-5" />,
-      color: "bg-yellow-100 text-yellow-600"
-    },
-    {
-      title: "Finalizados",
-      value: dashboardStats.finalizados.toString(),
-      icon: <CheckCircle className="h-5 w-5" />,
-      color: "bg-green-100 text-green-600"
-    },
-    {
-      title: "Clínico",
-      value: dashboardStats.aguardandoResultados.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "Audiometria",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "Acuidade Visual",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "Laboratório",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "Espirometria",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "Raio-X",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "ECG",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-    {
-      title: "EEG",
-      value: dashboardStats.aguardandoAvaliacaoMedica.toString(),
-      icon: <UserCircle className="h-5 w-5" />,
-      color: ""
-    },
-  ]
+  // ✅ FIX 4: Mostrar loading até carregar tudo
+  if (isLoading || !user) {
+    return <CmsoLoading />
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <HeaderApp onLogout={() => { logout(); router.push("/"); }} children={null} />
-        
-
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6" aria-label="Dashboard principal">
         <WelcomeSection name={user.nome} />
         
-        {/* Seção de Módulos */}
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8" aria-label="Menu de funcionalidades">
           {menuItems.map((item, index) => (
             <MenuCard
@@ -366,7 +311,6 @@ export default function DashboardPage() {
           ))}
         </section>
 
-        {/* Seção de Estatísticas Principais */}
         <section className="mt-8" aria-labelledby="stats-title">
           <motion.h2 
             id="stats-title" 
@@ -392,41 +336,6 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        {/* Seção de Status dos Atendimentos
-        <section className="mt-8" aria-labelledby="status-title">
-          <motion.h2 
-            id="status-title" 
-            className="text-xl font-semibold text-gray-800 flex items-center mb-6"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 1.0 }}
-          >
-            Status dos Atendimentos
-          </motion.h2>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-            {statusStats.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1.2 + index * 0.1 }}
-                className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-sm text-gray-600">{stat.title}</p>
-                  </div>
-                  <div className={`p-2 rounded-lg ${stat.color}`}>
-                    {stat.icon}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </section> */}
-
-        {/* Footer do Dashboard */}
         <motion.footer 
           className="mt-12 pt-8 border-t border-gray-200 text-center"
           initial={{ opacity: 0 }}

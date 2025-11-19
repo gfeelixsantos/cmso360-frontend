@@ -14,7 +14,6 @@ import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;
-  initialData: AppData | null;
 }
 
 declare module "@react-types/shared" {
@@ -26,17 +25,18 @@ declare module "@react-types/shared" {
 }
 
 
-export function Providers({ children, themeProps, initialData }: ProvidersProps) {
+export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
   return (
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <AppDataProvider initialData={initialData}>
+        <AppDataProvider initialData={null}>
           {children}
         </AppDataProvider>
       </NextThemesProvider>
     </HeroUIProvider>
   );
 }
+

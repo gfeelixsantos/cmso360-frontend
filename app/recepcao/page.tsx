@@ -312,7 +312,7 @@ const RecepcaoPage: React.FC = () => {
     onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
     onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
-    onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+    // onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
     onEvent(s, EventType.PREPARATION_REQUEST, handlePreparationRequest);
 
    
