@@ -434,6 +434,10 @@ useEffect(() => {
     // Se você quiser aplicar quando for admissional OU empresa, mude o operador abaixo.
     const deveAplicar = admissional && (rhBrasilWhirlpool || whirlpoolAdmissional);
 
+    console.log("deve aplicar", deveAplicar)
+    console.log("é admissional", admissional)
+    console.log("whirlpool adm", whirlpoolAdmissional)
+
     // Atualiza formData: mescla o formulário vindo e só injeta testesArticulares se for necessário
     setFormData(prev => ({
       ...prev,
@@ -441,7 +445,7 @@ useEffect(() => {
       ...(deveAplicar ? { testesArticulares: TESTE_ARTICULAR_PADRAO } : undefined)
     }));
 
-    console.log("deve aplicar resultado", deveAplicar)
+    
     // Atualiza o estado usado no render
     // setAplicarTesteArticular(deveAplicar);
   }
@@ -941,7 +945,7 @@ useEffect(() => {
       )}
                 {/* 6. TESTES CLÍNICOS ARTICULARES/COLUNA */}
           { aplicarTesteArticular && (
-                      <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
+          <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
             <SectionTitle title="Testes Clínicos Articulares/Coluna" />
             
             {/* 1 - PUNHOS */}

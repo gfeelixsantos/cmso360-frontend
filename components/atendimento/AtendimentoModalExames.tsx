@@ -250,6 +250,8 @@ const AtendimentoModalExames = ({
   if(empresaKit){
     Formulario = KitAtendimento
   } 
+
+  
   // Renderiza o modal de notificação
   const renderNotificationModal = () => {
     const { type, title, message, showCancel, onConfirm, onCancel, isLoading } = notificationModal;
@@ -285,6 +287,7 @@ const AtendimentoModalExames = ({
         onClose={showCancel ? closeNotificationModal : undefined}
         size="md"
         backdrop="blur"
+        disableAnimation={true}
         classNames={{
           base: "border-none shadow-2xl",
           backdrop: "bg-black/50",

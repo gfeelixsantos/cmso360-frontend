@@ -490,7 +490,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     
     setIsLoading(true);
     try {
-      await onSave?.(formData);
+      onSave?.(formData);
     } finally {
       setIsLoading(false);
     }

@@ -322,7 +322,7 @@ const AtendimentoPage: React.FC = () => {
     const handlePreparationRequest = (request: PreparationRequestModel) => {
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
-          addOrUpdate(request.request.ticket!);
+          addOrUpdate(request.request.tickets!);
           setEmPreparacao(prev => [...prev, request.request]);
           break;
         case PreparationRequestTypes.FINISHED:
@@ -353,7 +353,7 @@ const AtendimentoPage: React.FC = () => {
     // ---------------------------------------------------------
     s.on("connect", async() => {
       try {
-        const [_, schedulings] = await Promise.all([
+        await Promise.all([
           loadSocCompanies(),
           loadInitialTickets()
         ]);

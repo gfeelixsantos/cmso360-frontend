@@ -85,7 +85,7 @@ export type PreparationRequest = {
   atendente: string,
   sala: string,
   ticketId?: number,
-  ticket?: Ticket
+  tickets?: Ticket
 }
 
 export type PreparationRequestModel = {

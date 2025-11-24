@@ -235,10 +235,11 @@ const handleBuscarFuncionario = useCallback(async () => {
     }
     else {
     const response = await fetch(`${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`);
+    const prontuario: Scheduling = await response.json();
 
-      if (response.ok) {
-        const prontuario: Scheduling = await response.json();
-
+      if (response.ok && prontuario?.CODIGOPRONTUARIO) {
+        
+        
         // Seleciona o paciente normalmente
         // handleDeselecionarAgendamento()
         await handleSelecionarPacienteAgendamento(prontuario);
@@ -255,7 +256,7 @@ const handleBuscarFuncionario = useCallback(async () => {
 
         return;
       } else {
-        const { message } = await response.json();
+        const { message } = prontuario as any
         alert(message);
         handleDeselecionarAgendamento()
       }
@@ -649,7 +650,6 @@ const updateTicketFuncionarioSelecionado = useCallback( async(ticket: Ticket) =>
 
 
   const handlePreparationModal = () => {
-    console.log("Okss")
     setIsOpenPreparationModal(true)
   }
 

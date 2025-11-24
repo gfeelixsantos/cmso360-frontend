@@ -106,7 +106,7 @@ const RecepcaoPage: React.FC = () => {
         return console.info(`Não há tickets para a unidade ${unidade}`);
       }
       const data: initialTicketsRequest = await response.json();
-
+      
       if (Array.isArray(data.tickets)) setAll(data.tickets);
       if (Array.isArray(data.preparationRequests)) setEmPreparacao(data.preparationRequests);
       
@@ -286,9 +286,10 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
+      console.log(request)
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
-          addOrUpdate(request.request.ticket!);
+          addOrUpdate(request.request.tickets!);
           setEmPreparacao(prev => [...prev, request.request]);
           break;
         case PreparationRequestTypes.FINISHED:

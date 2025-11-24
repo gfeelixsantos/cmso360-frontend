@@ -29,9 +29,10 @@ interface PreparationCardProps {
   onAttachments?: () => void;
   onComplete?: () => void;
   disabled: boolean;
+  isLoading?: boolean;
 }
 
-export function PreparationCard({ request, ticket, onAttachments, onComplete, disabled }: PreparationCardProps) {
+export function PreparationCard({ request, ticket, onAttachments, onComplete, disabled, isLoading = false }: PreparationCardProps) {
   const [nomeEmpresa, setNomeEmpresa] = useState<string>();
 
   const waitingMinutes = useMemo(() => {
@@ -175,14 +176,20 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
         <div className="flex flex-wrap gap-2 w-full">
           <Button
             color="success"
-            variant="light"
+            variant={isLoading ? "flat" : "light"}
             fullWidth={true}
             onPress={onComplete}
-            disabled={disabled}
+            disabled={disabled || isLoading}
             className="flex-1 sm:flex-none text-xs"
-            startContent={<Check className="w-3 h-3" />}
+            startContent={
+              isLoading ? (
+                <Spinner size="sm" color="success" className="w-3 h-3" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )
+            }
           >
-            Finalizar
+            {isLoading ? "Finalizando..." : "Finalizar"}
           </Button>
         </div>
       </CardFooter>
@@ -240,6 +247,8 @@ interface PreparationGridProps {
 
 export function PreparationGrid({ requests, socket }: PreparationGridProps) {
   const [requestToConfirm, setRequestToConfirm] = useState<PreparationRequest | null>(null);
+  const [loadingRequest, setLoadingRequest] = useState<PreparationRequest | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAttachments = useCallback((request: PreparationRequest) => {
     console.log("Anexos para:", request.nome);
@@ -249,13 +258,27 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
     setRequestToConfirm(requestComplete);
   }, []);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
     if (requestToConfirm) {
-      emitEvent(socket, EventType.PREPARATION_REQUEST, {
-        type: PreparationRequestTypes.FINISHED,
-        request: requestToConfirm,
-      });
+      setIsProcessing(true);
+      setLoadingRequest(requestToConfirm);
       setRequestToConfirm(null);
+      
+      try {
+        // Simula um pequeno delay para mostrar o loading
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        emitEvent(socket, EventType.PREPARATION_REQUEST, {
+          type: PreparationRequestTypes.FINISHED,
+          request: requestToConfirm,
+        });
+        
+      } catch (error) {
+        console.error("Erro ao finalizar solicitação:", error);
+      } finally {
+        setIsProcessing(false);
+        setLoadingRequest(null);
+      }
     }
   }, [requestToConfirm, socket]);
 
@@ -266,6 +289,8 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
   useEffect(() => {
     return () => {
       setRequestToConfirm(null);
+      setLoadingRequest(null);
+      setIsProcessing(false);
     };
   }, []);
 
@@ -279,10 +304,11 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
               <PreparationCard
                 key={`${req.cpf}-${req.dataNascimento}`}
                 request={req}
-                ticket={req.ticket}
+                ticket={req.tickets}
                 onAttachments={() => handleAttachments(req)}
                 onComplete={() => handleComplete(req)}
-                disabled={!!requestToConfirm}
+                disabled={isProcessing}
+                isLoading={loadingRequest?.cpf === req.cpf && loadingRequest?.dataNascimento === req.dataNascimento}
               />
             ))}
           </div>
