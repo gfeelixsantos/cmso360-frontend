@@ -595,7 +595,6 @@ export default function RelatoriosPage() {
           <div className="flex gap-2">
             <Button
               color="success"
-              startContent={<CheckIcon size={16} />}
               onPress={handleApplyFilters}
               isLoading={isFiltering}
               isDisabled={!hasActiveFilters}

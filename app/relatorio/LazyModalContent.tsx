@@ -305,11 +305,11 @@ const InformacoesGerais: React.FC<{
               </div>
             )}
 
-            {/* ASO Status */}
-            {atendimento.ASOSTATUS && (
+            {/* Código interno */}
+            {atendimento.CODIGOINTERNOEMPRESA && (
               <div className="space-y-3">
-                <h4 className="font-medium text-sm text-gray-600 mb-2">Status ASO</h4>
-                <span className="text-sm text-gray-900">{atendimento.ASOSTATUS}</span>
+                <h4 className="font-medium text-sm text-gray-600 mb-2">Atendimento</h4>
+                <span className="text-sm text-gray-900">{atendimento.CODIGOINTERNOEMPRESA}</span>
               </div>
             )}
           </div>
@@ -321,6 +321,14 @@ const InformacoesGerais: React.FC<{
               <div className="space-y-3">
                 <h4 className="font-medium text-sm text-gray-600 mb-2">Médico</h4>
                 <span className="text-sm text-gray-900">{atendimento.MEDICO}</span>
+              </div>
+            )}
+
+           {/* Parecer médico */}
+            {atendimento.MEDICO && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm text-gray-600 mb-2">Parecer ASO</h4>
+                <span className="text-sm text-gray-900">{atendimento.PARECERMEDICO}</span>
               </div>
             )}
 
@@ -704,7 +712,7 @@ const ExamesTable: React.FC<{
               const isSuccess = successExams[examKey];
               const isReemitindo = reemitindoExams[examKey];
               const error = errorExams[examKey];
-              const waitTime = calculateWaitTime(atendimento.TICKET.emissao.toString());
+              const waitTime = calculateWaitTime(atendimento.TICKET?.emissao.toString());
 
               return (
                 <TableRow key={examKey}>

@@ -304,6 +304,10 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
       nome: "Hepatite B - HBCAC - IgG"
     },
     {
+      codigos: ['28061195'],
+      nome: 'Hepatite B - HBCAC - IgM',
+    },
+    {
       codigos: ['-'],
       nome: "Hepatite B - HBeAC (anti HBE)"
     },
