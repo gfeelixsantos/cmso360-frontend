@@ -22,7 +22,7 @@ const PAINEL_CONFIG = {
   tempoChamada: 2500,
   timerVideo: 10000,
   qtdChamadas: 1,
-  qtdFilaPainel: 3,
+  qtdFilaPainel: 5,
   tempoInatividadeMinutos: 1,
   duracaoIdleSegundos: 15,
   welcomeMessage: "Bem-vindo ao Centro Médico de Saúde Ocupacional.",
@@ -682,7 +682,7 @@ export default function PainelPage() {
             audio.onerror = () => rej(new Error("Erro ao carregar áudio"));
             setTimeout(() => {
               if (!carregado) rej(new Error("Timeout ao carregar áudio"));
-            }, 3500);
+            }, 3000);
           });
 
           await audio.play();
@@ -695,11 +695,11 @@ export default function PainelPage() {
             audio.addEventListener("ended", onEnd);
           });
 
-          await new Promise((r) => setTimeout(r, 3000));
+          await new Promise((r) => setTimeout(r, 2000));
           resolve();
         } catch (err) {
           console.error("Erro no áudio:", err);
-          setTimeout(() => resolve(), 3000);
+          setTimeout(() => resolve(), 2000);
         }
       };
 

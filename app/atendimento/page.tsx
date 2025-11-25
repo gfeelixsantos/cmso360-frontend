@@ -251,15 +251,17 @@ const AtendimentoPage: React.FC = () => {
     // HANDLERS DE EVENTOS (CORRIGIDOS)
     // ---------------------------------------------------------
     const handleAtendimentos = (schedules?: Scheduling[]) => {
-
       if(schedules){
-          const schedulesFiltred = schedules.filter(
-          s => !agendamentos.some(a => a._id === s._id)
-        );
-        
-        setAgendamentosGeral(schedulesFiltred);
+        setAgendamentosGeral(prev => {
+          const merged = [...prev];
+          schedules.forEach(schedule => {
+            const exists = merged.some(a => a._id === schedule._id);
+            if (!exists) merged.push(schedule);
+          });
+          return deduplicateSchedulings(merged);
+        });
       }
-    }; 
+    };
 
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
     
@@ -277,7 +279,7 @@ const AtendimentoPage: React.FC = () => {
     
     const handleTicketError = (message: string) => console.error(JSON.parse(message));
     
-    // ⭐ HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
+    // HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
     const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       switch (operation) {
         case MongoOperationTypes.INSERT:
@@ -298,7 +300,12 @@ const AtendimentoPage: React.FC = () => {
               a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
             );
           });
+
+          emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
           break;
+
+
+
           
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral(prev => {
@@ -309,12 +316,18 @@ const AtendimentoPage: React.FC = () => {
               a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
             );
           });
+
+          emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
           break;
           
+
+
         case MongoOperationTypes.DELETE:
           setAgendamentosGeral(prev => 
             prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE)
           );
+
+          emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
           break;
       }
     };

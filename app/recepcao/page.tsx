@@ -196,6 +196,7 @@ const RecepcaoPage: React.FC = () => {
   }, [conectado, unidadeSelecionada, salaSelecionada]); // Dependências corretas
 
 
+
   // ---------------------------------------------------------
   // Gerenciamento do Socket (Apenas Conexão e Eventos)
   // ----------------------------------------------------------  

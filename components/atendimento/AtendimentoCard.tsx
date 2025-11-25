@@ -750,10 +750,6 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg } = getStatusVisual(atendimento.TICKET.status);
 
-  useEffect(() => {
-    console.log("atendimento", atendimento)
-  }, [atendimento])
-
   const formatarTempoEspera = (emissao: string | Date) => {
     const dataEmissao = new Date(emissao);
     const agora = new Date();
