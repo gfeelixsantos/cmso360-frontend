@@ -19,6 +19,8 @@ export const NEST_TICKET_QUERY = NEST_URL + TICKET_QUERY
 const SCHEDULINGS = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS ?? "[.ENV] Schedulings url nulo"
 export const NEST_SCHEDULINGS = NEST_URL + SCHEDULINGS
 
+export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard"
+
 const SCHEDULINGS_EXAM_UPDATE = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_EXAM_UPDATE ?? "[.ENV] Scheduling exam update nulo"
 export const NEST_SCHEDULINGS_EXAM_UPDATE = NEST_URL + SCHEDULINGS_EXAM_UPDATE
 

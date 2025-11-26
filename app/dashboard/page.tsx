@@ -9,10 +9,8 @@ import { getCurrentUser, logout } from "@/lib/utils"
 import { HeaderApp } from "@/components/shared/HeaderApp"
 import { Scheduling } from "@/lib/scheduling/interface/scheduling"
 import { AtendimentoStatus, ExamStatus } from "@/lib/scheduling/enum/scheduling.enum"
-import { useAppData } from "../context/AppDataContext"
 import CmsoLoading from "@/components/shared/CmsoLoading"
-import { Alert, Link } from "@heroui/react"
-import { NEST_SCHEDULINGS_ALL } from "@/config/constants"
+import { NEST_DASHBOARD } from "@/config/constants"
 
 // Interfaces
 interface MenuCardProps {
@@ -38,16 +36,11 @@ interface StatsCardProps {
 }
 
 interface DashboardStats {
-  totalProntuarios: number
+  totalGeral: number
   agendados: number
-  emAtendimento: number
+  atendimento: number
   aguardandoResultados: number
   aguardandoAvaliacaoMedica: number
-  finalizados: number
-  consultasHoje: number
-  avaliacaoMedica: number
-  examesPendentes: number
-  totalClinico: number
 }
 
 // Componentes
@@ -65,13 +58,6 @@ const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
           Bem-vindo, <span>{name.split(" ")[0]} {name.split(" ")[1]}</span>
         </h1>
         <p className="text-lg text-gray-600 mt-2">Acesse as funcionalidades do sistema abaixo</p>
-      </div>
-      <div>
-        <Alert color="success" variant="faded" hideIcon={true}>
-          <p className="font-bold">Nosso novo sistema de atendimento!</p>
-          <p>Estamos em fase de testes, sugestões e melhorias serão bem vindas</p>
-          <Link href="https://forms.gle/Yk34nUL6654x9MNC6" target="_blank">Formulário de sugestões</Link>
-        </Alert>
       </div>
     </section>
   </motion.section>
@@ -147,14 +133,13 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, icon, index, descri
 
 // Componente Principal CORRIGIDO
 export default function DashboardPage() {
-  const { data } = useAppData();
   const router = useRouter()
   
   const [user, setUser] = useState<IUserInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [atendimentos, setAtendimentos] = useState<Scheduling[]>([])
+  const [dashboardStats, setDashboardStats] = useState<DashboardStats|null>(null)
 
-  // ✅ FIX 1: useEffect com dependências corretas
+
   useEffect(() => {
     const initDashboard = async () => {
       const currentUser = getCurrentUser()
@@ -167,18 +152,21 @@ export default function DashboardPage() {
 
       setUser(currentUser)
       
-      // ✅ FIX 2: Aguardar o fetch completar
+   
       try {
-        const res = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" })
+
+        const res = await fetch(NEST_DASHBOARD)
         
         if (!res.ok) throw new Error("Erro ao buscar atendimentos")
         
-        const fetchedData: Scheduling[] = await res.json()
-        setAtendimentos(fetchedData)
+        const responseStats: DashboardStats = await res.json()
+        console.log("Dashboard Stats:", responseStats)
+        setDashboardStats(responseStats)
+        
       } catch (err) {
         console.error("Erro ao carregar atendimentos:", err)
         // ✅ Define array vazio em caso de erro
-        setAtendimentos([])
+        setDashboardStats(null)
       } finally {
         setIsLoading(false)
       }
@@ -187,43 +175,7 @@ export default function DashboardPage() {
     initDashboard()
   }, [router])
 
-  // ✅ FIX 3: Usar useMemo para calcular estatísticas (evita recalcular a cada render)
-  const dashboardStats = useMemo<DashboardStats>(() => {
-    if (!atendimentos.length) {
-      return {
-        totalProntuarios: 0,
-        agendados: 0,
-        emAtendimento: 0,
-        aguardandoResultados: 0,
-        aguardandoAvaliacaoMedica: 0,
-        finalizados: 0,
-        consultasHoje: 0,
-        avaliacaoMedica: 0,
-        examesPendentes: 0,
-        totalClinico: 0
-      }
-    }
 
-    const hoje = new Date().toLocaleDateString("pt-br")
-    const agora = new Date()
-
-    return {
-      totalProntuarios: atendimentos.filter(item => new Date(item.DATAAGENDAMENTO_DATE) <= agora).length,
-      agendados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO).length,
-      emAtendimento: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO).length,
-      aguardandoResultados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_RESULTADOS).length,
-      aguardandoAvaliacaoMedica: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length,
-      finalizados: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.FINALIZADO).length,
-      consultasHoje: atendimentos.filter(item => item.DATAAGENDAMENTO === hoje).length,
-      avaliacaoMedica: atendimentos.filter(item => item.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA).length,
-      examesPendentes: atendimentos.reduce((acc, curr) => 
-        acc + curr.EXAMES.filter(e => e.status === ExamStatus.AGUARDANDO_RESULTADO).length, 0
-      ),
-      totalClinico: atendimentos.reduce((acc, curr) => 
-        acc + curr.EXAMES.filter(e => e.grupo === "clinico").length, 0
-      ),
-    }
-  }, [atendimentos])
 
   const menuItems = [
     {
@@ -259,28 +211,28 @@ export default function DashboardPage() {
   const stats = [
     { 
       title: "Total Prontuários", 
-      value: dashboardStats.totalProntuarios.toLocaleString(), 
+      value: dashboardStats?.totalGeral, 
       icon: <FileText className="h-6 w-6" />,
-      description: "Prontuários até dia atual"
+      description: "Até dia atual"
     },
     { 
-      title: "Consultas Hoje", 
-      value: dashboardStats.consultasHoje.toString(), 
+      title: "Atendimentos Hoje", 
+      value: dashboardStats?.agendados, 
       icon: <Calendar className="h-6 w-6" />,
-      description: "Atendimentos agendados",
+      description: "Todas as unidades",
       trend: { value: "+12%", isPositive: true }
     },
     { 
       title: "Aguardando Liberação", 
-      value: `${dashboardStats.avaliacaoMedica}`, 
+      value: `${dashboardStats?.aguardandoAvaliacaoMedica}`, 
       icon: <CheckCircle className="h-6 w-6" />,
-      description: "Em avaliação médica"
+      description: "Para avaliação médica"
     },
     { 
-      title: "Aguardando resultados", 
-      value: dashboardStats.examesPendentes.toString(), 
+      title: "Aguardando Resultados", 
+      value: dashboardStats?.aguardandoResultados, 
       icon: <Clock className="h-6 w-6" />,
-      description: "Exames complementares"
+      description: "Para finalização de exames"
     },
   ]
 
@@ -326,7 +278,7 @@ export default function DashboardPage() {
               <StatsCard
                 key={stat.title}
                 title={stat.title}
-                value={stat.value}
+                value={stat.value !== undefined ? stat.value.toString() : "N/A"}
                 icon={stat.icon}
                 index={index}
                 description={stat.description}
