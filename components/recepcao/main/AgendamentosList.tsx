@@ -468,11 +468,13 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
       </Button>
 
       <Drawer 
-        isOpen={isOpen} 
-        closeButton={false}
-        placement="left" 
-        onOpenChange={setIsOpen}
+        isOpen={isOpen}
+        placement="left"
         size="md"
+        isDismissable={false}     // Não fecha ao clicar fora
+        hideCloseButton={true}    // Remove botão de fechar
+        disableAnimation={false}  // (opcional)
+        onOpenChange={() => {}}   // Ignora eventos automáticos de fechamento
       >
         <DrawerContent className="max-w-lg mx-auto">
           <DrawerHeader className="flex flex-col border-b border-gray-200 px-5 py-4 bg-gray-50 rounded-t-xl">

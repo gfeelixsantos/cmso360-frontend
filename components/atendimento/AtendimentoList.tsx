@@ -97,10 +97,6 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
     return <EmptyState />;
   }
 
-  useEffect(() => {
-    console.log("Atendimento List", senhasOrdenadas)
-  }, [senhasOrdenadas])
-
   return (
     <section
       className="space-y-6 p-4 bg-gray-50 rounded-lg flex gap-4"

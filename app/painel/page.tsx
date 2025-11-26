@@ -643,7 +643,6 @@ export default function PainelPage() {
     if (!audioHabilitado) return;
     try {
       const notificacaoUrl = `${NEST_URL}${PAINEL_CONFIG.audioUrls.notificacao}`
-      console.log("SOM NOTIFICACAO", notificacaoUrl)
       const audio = new Audio(PAINEL_CONFIG.audioUrls.notificacao);
       audio.play().catch(() => console.log("Som de notificação não disponível"));
     } catch (e) {
@@ -658,7 +657,7 @@ export default function PainelPage() {
       console.log("Chamada recebida:", call);
       setAnteriores((prev) => {
         const nova = [call, ...prev];
-        return nova.slice(0, 2);
+        return nova.slice(0, 4);
       });
       atualizarUltimaChamada();
 
@@ -682,7 +681,7 @@ export default function PainelPage() {
             audio.onerror = () => rej(new Error("Erro ao carregar áudio"));
             setTimeout(() => {
               if (!carregado) rej(new Error("Timeout ao carregar áudio"));
-            }, 3000);
+            }, 2000);
           });
 
           await audio.play();
@@ -723,7 +722,7 @@ export default function PainelPage() {
           }
           if (cancelLoop.current) break;
         }
-        await new Promise((r) => setTimeout(r, 3500));
+        await new Promise((r) => setTimeout(r, 2000));
       } else {
         await new Promise((r) => setTimeout(r, 2000));
       }

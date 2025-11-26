@@ -46,10 +46,10 @@ export class ExamRegister {
     status: string
     preparacao:string  = ""
     dataExame: string = ""
-    sequencialResultadoExame?:string
-    sala?: string
-    profissional?:string
-    codigoProfissional?: string;
+    sequencialResultadoExame?:string = ""
+    sala?: string = ""
+    profissional?:string = ""
+    codigoProfissional?: string = "";
     url:string = ""
     formulario: any
     grupo: string = ""

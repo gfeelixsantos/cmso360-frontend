@@ -342,13 +342,6 @@ const AtendimentoPage: React.FC = () => {
           executarAcao(request.request.ticketId!, TicketActionType.PREPARO_OK, unidadeSelecionada, s);
           setEmPreparacao(prev => prev.filter(req => req.ticketId !== request.request.ticketId));
           setPreparacaoFinalizada(prev => [...prev, request.request]);
-          addToast({ 
-            title: "ASO Finalizado", 
-            description: <span>{request.request.nome}</span>, 
-            severity: "success", 
-            color: "foreground", 
-            size: "sm" 
-          });
           break;
       }
     };

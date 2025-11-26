@@ -525,17 +525,18 @@ const ExamesTable: React.FC<{
 
     try {
       const responseCadastroPessoas = await fetch(NEST_SOC_CADASTROPESSOAS)
-    
+      
       if(responseCadastroPessoas.ok){
         const cadastroPessoas: ICadastroPessoas[] = await responseCadastroPessoas.json()
+        
         const socUser = cadastroPessoas?.find(p => p.CODIGO == exame.codigoProfissional)
-
+        
         if (!socUser) {
             return console.error("profissional não encontrado...")
         }
 
         const userInfo = mapCadastroPessoasToUserInfo(socUser)
-        
+       
         const response = await fetch(`${NEST_SCHEDULINGS_EXAM_UPDATE}`, {
         method: 'POST',
         headers: {
