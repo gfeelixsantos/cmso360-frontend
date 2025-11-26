@@ -234,6 +234,7 @@ export default function UnifiedProntuarioPage() {
 
     s.on("connect", async () => {
       setConectado(true);
+      console.log("socket conectado")
     });
 
     s.on("disconnect", (reason) => {

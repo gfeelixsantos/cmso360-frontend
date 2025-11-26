@@ -106,10 +106,10 @@ const ExameCard = memo(({
   hasPdf: boolean; 
   onView: () => void;
 }) => {
-  const data = exame.dataExame
+  const data = exame?.dataExame
     ? new Date(exame.dataExame).toLocaleDateString("pt-BR")
     : "N/A";
-  const hora = exame.dataExame
+  const hora = exame?.dataExame
     ? new Date(exame.dataExame).toLocaleTimeString("pt-BR", {
         hour: "2-digit",
         minute: "2-digit",
@@ -173,8 +173,8 @@ const ExamesRepeticaoModal = memo(({
   const [searchTerm, setSearchTerm] = useState("");
 
   const examesFiltrados = useMemo(() => {
-    if (!searchTerm) return examesDisponiveis;
-    return examesDisponiveis.filter(e => 
+    if (!searchTerm) return examesDisponiveis || [];
+    return (examesDisponiveis || []).filter(e => 
       e.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [examesDisponiveis, searchTerm]);
@@ -667,15 +667,18 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   onRecordUpdate,
 }) => {
   /* ---------------------- Estados ---------------------- */
-  const [opinion, setOpinion] = useState<MedicalOpinionData>({
+
+  const initialOpinion: MedicalOpinionData = {
     opinionType: null,
-    details: null,
+    details: "",
     laudoPCD: null,
     laudoRestricao: null,
     altura: null,
     confinado: null,
     examesParaRepetir: [],
-  });
+  };
+
+  const [opinion, setOpinion] = useState<MedicalOpinionData>(initialOpinion);
 
   const [isSavingOpinion, setIsSavingOpinion] = useState(false);
   const [laudoModalOpen, setLaudoModalOpen] = useState(false);
@@ -692,52 +695,63 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }, []);
 
   /* ---------------------- Dados Derivados ---------------------- */
-  const examesComSala = useMemo(
-    () => (selectedRecord?.EXAMES || []).filter((e) => e.sala != ""),
-    [selectedRecord]
-  );
 
+  // exames com sala — depende explicitamente de EXAMES (defensivo)
+  const examesComSala = useMemo(() => {
+    const exames = selectedRecord?.EXAMES ?? [];
+    return exames.filter((e: any) => (e?.sala ?? "") !== "");
+  }, [selectedRecord?.EXAMES]);
+
+  // exames disponíveis para repetição — depende explicitamente de EXAMES
   const examesDisponiveisParaRepeticao = useMemo(() => {
     const grupos = new Set<string>();
-    selectedRecord?.EXAMES?.forEach(exame => {
-      if (exame.grupo) grupos.add(exame.grupo);
+    (selectedRecord?.EXAMES ?? []).forEach((exame: any) => {
+      if (exame?.grupo) grupos.add(exame.grupo);
     });
     return Array.from(grupos).sort();
-  }, [selectedRecord]);
+  }, [selectedRecord?.EXAMES]);
+
+  // normaliza a propriedade RISCOSASO como array seguro
+  const riscos = useMemo(() => {
+    const raw = selectedRecord?.RISCOSASO;
+    if (Array.isArray(raw)) return raw;
+    // se for string JSON, tentar parse (caso venha serializado)
+    if (typeof raw === "string") {
+      try {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // ignore parse error — retorna array vazio
+      }
+    }
+    return [];
+  }, [selectedRecord?.RISCOSASO]);
 
   const hasHeightRisk = useMemo(
-    () => Array.isArray(selectedRecord?.RISCOSASO)
-      ? selectedRecord?.RISCOSASO?.some((r) => CODIGOS_RISCO_ALTURA.has(r.codigo))
-      : false,
-    [selectedRecord]
+    () => riscos.some((r: any) => CODIGOS_RISCO_ALTURA.has(r?.codigo)),
+    [riscos]
   );
 
   const hasConfinedRisk = useMemo(
-    () => Array.isArray(selectedRecord?.RISCOSASO)
-      ? selectedRecord?.RISCOSASO?.some((r) => CODIGOS_ESPACO_CONFINADO.has(r.codigo))
-      : false,
-    [selectedRecord]
+    () => riscos.some((r: any) => CODIGOS_ESPACO_CONFINADO.has(r?.codigo)),
+    [riscos]
   );
 
   const hasPdfForExame = useCallback(
     (exameGrupo: string) =>
-      !!selectedRecord?.pdfUrls?.some((p) => p.grupo === exameGrupo && p.type === "exame"),
-    [selectedRecord]
+      !!(selectedRecord?.pdfUrls ?? []).some((p: any) => p.grupo === exameGrupo && p.type === "exame"),
+    [selectedRecord?.pdfUrls]
   );
 
   /* ---------------------- Lifecycle ---------------------- */
-  useEffect(() => {
-    if (!selectedRecord) return;
 
-    setOpinion((prev) => prev ?? {
-      opinionType: null,
-      details: "",
-      laudoPCD: null,
-      laudoRestricao: null,
-      altura: null,
-      confinado: null,
-      examesParaRepetir: [],
-    });
+  // Ao trocar de prontuário, resetamos o opinion para garantir que não haja estado stale entre prontuários
+  useEffect(() => {
+    if (!selectedRecord) {
+      setOpinion(initialOpinion);
+      return;
+    }
+    setOpinion(initialOpinion);
   }, [selectedRecord]);
 
   /* ---------------------- Handlers ---------------------- */
@@ -745,8 +759,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     (exameGrupo: string) => {
       if (!selectedRecord) return;
 
-      const pdfIndex = selectedRecord.pdfUrls.findIndex(
-        (pdf) => pdf.grupo === exameGrupo && pdf.type === "exame"
+      const pdfIndex = (selectedRecord.pdfUrls ?? []).findIndex(
+        (pdf: any) => pdf.grupo === exameGrupo && pdf.type === "exame"
       );
 
       if (pdfIndex !== -1) {
@@ -758,15 +772,16 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         onPdfIndexChange(pdfIndex);
       }
     },
-    [onPdfIndexChange, selectedRecord]
+    [onPdfIndexChange, selectedRecord?.pdfUrls]
   );
 
   const isExamBeingDisplayed = useCallback(
     (exameGrupo: string) => {
-      if (!selectedRecord || !selectedRecord.pdfUrls[currentPdfIndex]?.grupo) return false;
-      return selectedRecord.pdfUrls[currentPdfIndex].grupo === exameGrupo;
+      const currentPdf = (selectedRecord?.pdfUrls ?? [])[currentPdfIndex];
+      if (!currentPdf?.grupo) return false;
+      return currentPdf.grupo === exameGrupo;
     },
-    [currentPdfIndex, selectedRecord]
+    [currentPdfIndex, selectedRecord?.pdfUrls]
   );
 
   const opinionRequiresDetails = useCallback((op: MedicalOpinionData | null) => {
@@ -826,7 +841,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     if (!opinion || !opinion.opinionType || !selectedRecord) return;
 
     setIsSavingOpinion(true);
-    console.log(opinion)
     try {
       const response = await fetch(NEST_SCHEDULINGS_FINISH, {
         method: "POST",
@@ -842,20 +856,14 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
       if (!response.ok) throw new Error("Erro ao salvar parecer");
 
+      // NÃO mutamos selectedRecord diretamente. Se for necessário atualizar, faça de forma imutável
       const updatedRecord = {
         ...selectedRecord,
+        // se houve alterações retornadas do backend, aplique aqui (ex: status atualizado)
       };
 
       onRecordUpdate(updatedRecord);
-      setOpinion({ 
-        opinionType: null, 
-        altura: null, 
-        confinado: null, 
-        details: null, 
-        laudoPCD: null, 
-        laudoRestricao: null,
-        examesParaRepetir: [] 
-      });
+      setOpinion(initialOpinion);
       setSelectedRecord(null);
       setConfirmacaoModalOpen(false);
 
@@ -890,33 +898,27 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }, []);
 
   const handleLimparParecer = useCallback(() => {
-    setOpinion({ 
-      opinionType: null, 
-      altura: null, 
-      confinado: null, 
-      details: null, 
-      laudoPCD: null, 
-      laudoRestricao: null,
-      examesParaRepetir: [] 
-    });
+    setOpinion(initialOpinion);
   }, []);
 
-  const riscoCor = useCallback((risco: string) => {
-    switch (risco) {
+  const riscoCor = useCallback((risco: any) => {
+    // risco.grupo pode ser string ou number — mantemos defensivo
+    const grupo = String(risco);
+    switch (grupo) {
       case "1": // Físico
-          return "text-green-500"
+          return "text-green-500";
       case "2": // Químico
-          return "text-red-500"
+          return "text-red-500";
       case "4": // Ergonômicos
-          return "text-amber-500"
+          return "text-amber-500";
       case "5": // Acidentes
-          return "text-blue-700"
+          return "text-blue-700";
       case "6": // Inespecífico
-          return "text-purple-700"
+          return "text-purple-700";
       default:
-        break;
+        return "";
     }
-  }, [])
+  }, []);
 
   /* ---------------------- Render ---------------------- */
 
@@ -981,7 +983,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     />
                   </div>
 
-                  {selectedRecord.RISCOSASO && selectedRecord.RISCOSASO.length > 0 && (
+                  {riscos.length > 0 && (
                     <article 
                       title="Riscos" 
                       className="mt-6" 
@@ -990,9 +992,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         <h4 className="font-bold text-sm sm:text-base">Riscos</h4>
                       </div>
                       <ul className="list-disc pl-4 decoration-none text-[0.65rem] sm:text-[0.7rem] ">
-                        {selectedRecord.RISCOSASO.map((risco, index) => (
-                          <li key={index} className={`capitalize ${riscoCor(risco.grupo)}`}>
-                            {risco.risco}
+                        {riscos.map((risco: any, index: number) => (
+                          <li key={index} className={`capitalize ${riscoCor(risco?.grupo ?? risco)}`}>
+                            {risco?.risco ?? risco}
                           </li>
                         ))}
                       </ul>
@@ -1041,7 +1043,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                   title={
                       <div className="flex items-center gap-2 pb-2 hover:cursor-pointer">
                         <h4 className="font-bold text-sm sm:text-base">
-                          Exames realizados: {selectedRecord.EXAMES.length}
+                          Exames realizados: {(selectedRecord.EXAMES ?? []).length}
                         </h4>
                       </div>
                   }
@@ -1056,7 +1058,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         </tr>
                       </thead>
                       <tbody>
-                        {examesComSala.map((exame) => (
+                        {examesComSala.map((exame: any) => (
                           <ExameCard
                             key={exame.codigoExame}
                             exame={exame}
@@ -1184,9 +1186,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         setOpinion((prev) => ({
                           ...(prev || {}),
                           altura: val,
-                          details: val === (ParecerTrabalhoAltura as any).APTO_ALTURA 
-                            ? prev?.details ?? "" 
-                            : prev?.details ?? "",
+                          details: prev?.details ?? "",
                         }));
                       }}
                       classNames={{
@@ -1214,9 +1214,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         setOpinion((prev) => ({
                           ...(prev || {}),
                           confinado: val,
-                          details: val === (ParecerEspaçoConfinado as any).APTO_CONFINADO 
-                            ? prev?.details ?? "" 
-                            : prev?.details ?? "",
+                          details: prev?.details ?? "",
                         }));
                       }}
                       classNames={{
