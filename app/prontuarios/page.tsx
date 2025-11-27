@@ -1,10 +1,10 @@
 // page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback, use } from "react";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
-import { Eye, Zap, Loader2 } from "lucide-react";
+import { Eye, Zap, Loader2, Lightbulb, MessageCircleWarning } from "lucide-react";
 
 // Enums e interfaces
 import { AtendimentoStatus, ExamStatus, MongoOperationTypes, ParecerMedico } from "@/lib/scheduling/enum/scheduling.enum";
@@ -17,10 +17,9 @@ import { ExamRegister, FileUpload, Scheduling, SchedulingChange } from "@/lib/sc
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 
-
 // Utils e config
 import { getCurrentUser, logout } from "@/lib/utils";
-import { NEST_SCHEDULINGS_ALL, NEST_SCHEDULINGS_FINISH, NEST_URL, USER_PROFILE } from "@/config/constants";
+import { NEST_PRONTUARIO_PARAMETROS, NEST_PRONTUARIO_REGISTROS, NEST_URL } from "@/config/constants";
 
 // UI Components
 import { 
@@ -59,6 +58,21 @@ export type MedicalRecord = Scheduling & {
   currentStatus: AtendimentoStatus;
   pdfUrls: PdfUrl[];
 };
+
+
+type ParametrosResponse = {
+  medicos: { name: string }[];
+  empresas: { name: string }[];
+  status: { name: string }[];
+}
+
+interface Pagination<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
 
 /* ---------------------- Utils ---------------------- */
 
@@ -126,10 +140,26 @@ export default function UnifiedProntuarioPage() {
   const [search, setSearch] = useState<string>("");
   const [attendanceStatus, setAttendanceStatus] = useState<AtendimentoStatus | null>(null);
   
+  // Novos estados para empresas e médicos
+  const [empresa, setEmpresa] = useState<string>();
+  const [medicoExaminador, setMedicoExaminador] = useState<string>();
+  const [selectedEmpresas, setSelectedEmpresas] = useState<string[]>([]);
+  const [selectedMedicos, setSelectedMedicos] = useState<string[]>([]);
+
+  // Estados para uso de debounced
+  const ITEMS_PER_PAGE = 100;
+  const RETRY_DELAY_MS = 10000; // 5 segundos
+  const page = 1;
+  const [retryTrigger, setRetryTrigger] = useState(0)
+  const [currentPage, setCurrentPage] = useState(1);
+  const [paginationData, setPaginationData] = useState({ total: 0, totalPages: 1 });
+  
+  
   // Estados para WebSocket
   const [socketState, setSocketState] = useState<Socket | null>(null);
   const [conectado, setConectado] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
+  const [isLoadingEmpresasMedicos, setIsLoadingEmpresasMedicos] = useState(false);
 
   // Estados para controle de mudanças não salvas
   const [unsavedModalOpen, setUnsavedModalOpen] = useState(false);
@@ -137,6 +167,7 @@ export default function UnifiedProntuarioPage() {
 
   // Estados para PDF
   const [currentPdfIndex, setCurrentPdfIndex] = useState<number>(0);
+
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -147,42 +178,178 @@ export default function UnifiedProntuarioPage() {
     }
   }, [router]);
 
-  const loadInitialData = useCallback(async (status: AtendimentoStatus) => {
-    setIsLoadingInitialData(true);
-    setRecords([]);
-    setSelectedRecord(null);
 
+  const carregarEmpresasEMedicos = async () => {
+
+    setIsLoadingEmpresasMedicos(true);
     try {
-      const response = await fetch(NEST_SCHEDULINGS_ALL);
-          
-      if (!response.ok) return null;
 
-      const schedules: Scheduling[] = await response.json();
+      const response = await fetch(NEST_PRONTUARIO_PARAMETROS);
+
+      if (!response.ok) alert('Erro ao buscar parâmetros');
+
+      const parametrosData: ParametrosResponse = await response.json();
+
+      setSelectedEmpresas(parametrosData.empresas.map(e => e.name));
+      setSelectedMedicos(parametrosData.medicos.map(m => m.name));
       
-      const appAtendimentosFiltered = schedules.filter(a => a.ATENDIMENTOSTATUS === status);
-      const mapped = appAtendimentosFiltered.map(s => mapSchedulingToMedicalRecord(s, status));
-      const mappedOrdered = mapped.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }));
-
-      setAtendimentos(schedules)
-      setRecords(mappedOrdered);
-    } catch (err) {
-      console.error("Erro ao carregar dados iniciais:", err);
+    } catch (error) {
+      console.error('Erro ao carregar empresas e médicos:', error);
       addToast({
         title: "Erro ao carregar dados",
-        description: "Não foi possível carregar os prontuários",
+        description: "Não foi possível carregar empresas e médicos examinadores",
         color: "danger",
       });
     } finally {
-      setIsLoadingInitialData(false);
+      setIsLoadingEmpresasMedicos(false);
     }
+  }
+
+  // Função para carregar empresas e médicos examinadores
+  useEffect(() => {
+  carregarEmpresasEMedicos();
+
   }, []);
+
+
+
+
+
+  // Função para buscar dados com filtros
+const buscarDadosComFiltros = useCallback(async (
+        status: AtendimentoStatus,
+        page: number, // Argumento Page
+        limit: number, // Argumento Limit
+        empresasFiltro?: string,
+        medicosFiltro?: string,
+    ) => {
+        // Ativa o loading, limpa a lista para a nova busca
+        setIsLoadingInitialData(true);
+        setRecords([]);
+        setSelectedRecord(null);
+
+        try {
+            let url = NEST_PRONTUARIO_REGISTROS;
+            const params = new URLSearchParams();
+
+            params.append('status', status);
+            params.append('page', page.toString());
+            params.append('limit', limit.toString());
+            
+            if (empresasFiltro) params.append('empresa', empresasFiltro);
+            if (medicosFiltro) params.append('medico', medicosFiltro);
+
+            url = `${url}?${params.toString()}`;
+            const response = await fetch(url);
+                
+            if (!response.ok) throw new Error('Erro na resposta');
+
+            const paginationData: Pagination<Scheduling> = await response.json();
+            console.log(`Dados recebidos: ${paginationData.data.length} de ${paginationData.total}`);
+
+            const schedules = paginationData.data;
+            
+            // LÓGICA DE NOVA TENTATIVA (RETRY)
+            if (paginationData.total === 0) {
+                 console.warn(`Resultado vazio encontrado. Agendando nova tentativa em ${RETRY_DELAY_MS / 1000} segundos.`);
+                 // Agenda um novo disparo do useEffect de filtro após o delay
+                 setTimeout(() => {
+                     setRetryTrigger(c => c + 1); 
+                 }, RETRY_DELAY_MS);
+            }
+
+
+            const mapped = schedules.map(s => mapSchedulingToMedicalRecord(s, status));
+            const mappedOrdered = mapped.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }));
+
+            setAtendimentos(schedules);
+            setRecords(mappedOrdered);
+            setPaginationData({
+                total: paginationData.total,
+                totalPages: paginationData.totalPages,
+            });
+
+        } catch (err) {
+            console.error("Erro ao carregar dados iniciais:", err);
+            addToast({
+                title: "Erro ao carregar dados",
+                description: "Não foi possível carregar os prontuários",
+                color: "danger",
+            });
+            setRecords([]);
+            setPaginationData({ total: 0, totalPages: 1 });
+
+        } finally {
+            setIsLoadingInitialData(false);
+        }
+    }, [mapSchedulingToMedicalRecord]);
+
+
+
+    // EFEITO 1: FILTROS + DEBOUNCE + RETRY 
+    useEffect(() => {
+        const currentEmpresaFiltro = empresa; 
+        const currentMedicoFiltro = medicoExaminador; 
+
+        if (!attendanceStatus) return;
+
+        // Se o retryTrigger > 0, significa que é um re-disparo agendado, executamos imediatamente (0ms).
+        // Se retryTrigger for 0 (filtro normal), aplicamos o debounce de 300ms.
+        const delay = (retryTrigger > 0) ? 0 : 300;
+        
+        const timeoutId = setTimeout(() => {
+            
+            // ⚠️ Resetamos para a página 1 apenas se não for um Retry agendado
+            if (retryTrigger === 0) {
+               setCurrentPage(1); 
+            }
+
+            // Chamamos a busca com a página atual (1 se filtro, >1 se retry na página atual)
+            buscarDadosComFiltros(
+                attendanceStatus, 
+                currentPage, 
+                ITEMS_PER_PAGE,
+                currentEmpresaFiltro, 
+                currentMedicoFiltro, 
+            );
+            
+            // ⚠️ Resetamos o retryTrigger para 0 após a busca, para que o debounce volte a funcionar normalmente
+            if (retryTrigger > 0) {
+                 setRetryTrigger(0);
+            }
+
+        }, delay);
+
+        // Cleanup: Cancela o timeout se os filtros mudarem antes do debounce ou retry
+        return () => clearTimeout(timeoutId);
+    // Depende dos filtros (debounce) e do retryTrigger (polling)
+    }, [attendanceStatus, empresa, medicoExaminador, buscarDadosComFiltros, retryTrigger]);
+
+
+    // EFEITO 2: MUDANÇA DE PÁGINA 
+    useEffect(() => {
+        // Evita a dupla requisição na inicialização (a inicial é feita pelo effect acima)
+        if (currentPage === 1 && retryTrigger === 0) {
+            return; 
+        }
+        if (!attendanceStatus) return; 
+
+        buscarDadosComFiltros(
+            attendanceStatus,
+            currentPage, 
+            ITEMS_PER_PAGE,
+            empresa,
+            medicoExaminador,
+        );
+    // Escuta a mudança de página
+    }, [currentPage]);
+
+
 
   useEffect(() => {
     if (!attendanceStatus || !getCurrentUser()) {
       return;
     }
-
-    loadInitialData(attendanceStatus);
 
     const conectionType = WebsocketType.USER_ATENDIMENTO;
     const user: IUserWebsocket = {
@@ -234,7 +401,6 @@ export default function UnifiedProntuarioPage() {
 
     s.on("connect", async () => {
       setConectado(true);
-      console.log("socket conectado")
     });
 
     s.on("disconnect", (reason) => {
@@ -302,9 +468,20 @@ export default function UnifiedProntuarioPage() {
     setCurrentPdfIndex(index);
   };
 
-  if (!user) {
-    return <CmsoLoading />;
-  }
+  // Função para limpar filtros
+const limparFiltros = () => {
+  setEmpresa(undefined);
+  setMedicoExaminador(undefined);
+  setSearch("");
+  setSelectedEmpresas([]);
+  setSelectedMedicos([]);
+  
+};
+
+  // LOADING STATE --- Removido 26/11/2025 devido eficiencia do carregamento inicial
+  // if (!user || selectedEmpresas.length === 0 || selectedMedicos.length === 0) {
+  //   return <CmsoLoading />;
+  // }
 
   return (
     <div className="min-h-screen flex flex-col bg-default-50 antialiased">
@@ -323,14 +500,52 @@ export default function UnifiedProntuarioPage() {
               placeholder="Selecione um Status"
               value={attendanceStatus || ""}
               onChange={(e) => setAttendanceStatus(e.target.value as AtendimentoStatus)}
+              isDisabled={isLoadingEmpresasMedicos}
               className="w-full"
             >
-              {Object.values(AtendimentoStatus).map(status => (
-                <SelectItem key={status}>
-                  {status.replace(/_/g, ' ')}
+              {Object.values(AtendimentoStatus)
+                .filter(status => status !== AtendimentoStatus.AGENDADO)
+                .map(status => (
+                  <SelectItem key={status}>
+                    {status.replace(/_/g, ' ')}
+                  </SelectItem>
+                ))
+              }
+            </Select>
+
+            {/* Novo campo: Empresa */}
+            {/* <Select
+              size="sm"
+              label="Empresas"
+              placeholder="Todas"
+              value={empresa || ""}
+              onChange={(e) => setEmpresa(String(e.target.value))}
+              isDisabled={isLoadingEmpresasMedicos}
+              className="w-full"
+            >
+              {selectedEmpresas.map( empresa => (
+                <SelectItem key={empresa}>
+                  {empresa}
                 </SelectItem>
               ))}
-            </Select>
+            </Select> */}
+
+            {/* Novo campo: Médico Examinador */}
+            {/* <Select
+              size="sm"
+              label="Médico Examinador"
+              placeholder="Todos"
+              value={medicoExaminador || ""}
+              onChange={(e) => setMedicoExaminador(e.target.value)}
+              isDisabled={isLoadingEmpresasMedicos}
+              className="w-full"
+            >
+              {selectedMedicos.map( medico => (
+                <SelectItem key={medico}>
+                  {medico}
+                </SelectItem>
+              ))}
+            </Select> */}
 
             <Input
               placeholder="Buscar funcionário..."
@@ -339,28 +554,42 @@ export default function UnifiedProntuarioPage() {
               startContent={<Search className="w-4 h-4 text-default-400" />}
               isDisabled={!attendanceStatus || isLoadingInitialData}
             />
+
+            {/* Botão para limpar filtros */}
+            {(empresa || medicoExaminador || search)  && (
+              <Button
+                size="sm"
+                variant="light"
+                onPress={limparFiltros}
+                className="w-full"
+              >
+                Limpar Filtros
+              </Button>
+            )}
           </div>
 
           <Divider className="my-4" />
 
           <div className="flex justify-between items-center mb-3">
             <h3 className="text-sm font-semibold text-default-700">Prontuários</h3>
-            <Badge variant="solid" color="primary">
-              {filtered.length}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="solid" color="primary">
+                {filtered.length}
+              </Badge>
+            </div>
           </div>
 
           {/* Container com scroll independente */}
           <div className="flex-1 overflow-y-auto max-h-80 overflow-x-hidden space-y-3 p-1">
             {isLoadingInitialData ? (
               <div className="flex flex-col items-center justify-center p-8 text-default-500">
-                <Spinner color="success" variant="simple" size="lg" />
-                <p className="mt-2 text-sm">Carregando dados...</p>
+                <Spinner color="success"  size="lg" />
+                <p className="mt-2 text-sm">Carregando...</p>
               </div>
             ) : !attendanceStatus ? (
               <Card className="bg-default-100 border-default-200">
                 <CardBody className="text-center p-6">
-                  <Zap className="w-8 h-8 mx-auto mb-3 text-primary" />
+                  <MessageCircleWarning className="w-8 h-8 mx-auto mb-3 text-warning" />
                   <p className="text-sm font-medium text-default-600">
                     Selecione um status para carregar os prontuários.
                   </p>
@@ -369,6 +598,7 @@ export default function UnifiedProntuarioPage() {
             ) : filtered.length === 0 ? (
               <Card>
                 <CardBody className="text-center p-6">
+                  <MessageCircleWarning className="w-8 h-8 mx-auto mb-3 text-warning" />
                   <p className="text-default-500">Nenhum prontuário encontrado.</p>
                 </CardBody>
               </Card>
@@ -395,6 +625,7 @@ export default function UnifiedProntuarioPage() {
                               size="sm" 
                               color={getStatusColor(r.currentStatus)}
                               variant="flat"
+                              className="mt-1"
                             >
                               {r.currentStatus.replace(/_/g, ' ')}
                             </Chip>
@@ -422,7 +653,7 @@ export default function UnifiedProntuarioPage() {
           setSelectedRecord={setSelectedRecord}
           currentPdfIndex={currentPdfIndex}
           onPdfIndexChange={handlePdfIndexChange}
-          user={user}
+          user={user!}
           onRecordUpdate={(updatedRecord) => {
             setRecords(prev => 
               prev.map(rec => 

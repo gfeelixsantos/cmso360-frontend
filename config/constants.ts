@@ -20,6 +20,8 @@ const SCHEDULINGS = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS ?? "[.ENV] Scheduli
 export const NEST_SCHEDULINGS = NEST_URL + SCHEDULINGS
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard"
+export const NEST_PRONTUARIO_PARAMETROS = NEST_URL + "schedulings/record-params"
+export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records"
 
 const SCHEDULINGS_EXAM_UPDATE = process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_EXAM_UPDATE ?? "[.ENV] Scheduling exam update nulo"
 export const NEST_SCHEDULINGS_EXAM_UPDATE = NEST_URL + SCHEDULINGS_EXAM_UPDATE
