@@ -1,9 +1,8 @@
-import { IUserRegister } from "@/lib/user/interfaces/IUser";
 import { supabase } from "../supabase";
 
+import { IUserRegister } from "@/lib/user/interfaces/IUser";
+
 export class SupabaseService {
-
-
   static async getUserByCpf(cpf: string): Promise<IUserRegister> {
     const { data, error } = await supabase
       .from("clients")
@@ -14,6 +13,7 @@ export class SupabaseService {
     if (error) {
       console.error("Error fetching client:", error);
     }
+
     return data;
   }
 
@@ -33,25 +33,22 @@ export class SupabaseService {
   }
 
   static async deleteUserByCPF(cpf: string) {
-  try {
-    const { error } = await supabase
-      .from("clients") 
-      .delete()
-      .eq("cpf", cpf);
+    try {
+      const { error } = await supabase.from("clients").delete().eq("cpf", cpf);
 
-    if (error) {
-      throw new Error(`Erro ao deletar usuário: ${error.message}`);
+      if (error) {
+        throw new Error(`Erro ao deletar usuário: ${error.message}`);
+      }
+
+      return {
+        status: 200,
+        message: "Usuário deletado com sucesso",
+      };
+    } catch (err: any) {
+      return {
+        status: 500,
+        message: err.message || "Erro inesperado",
+      };
     }
-
-    return {
-      status: 200,
-      message: "Usuário deletado com sucesso",
-    };
-  } catch (err: any) {
-    return {
-      status: 500,
-      message: err.message || "Erro inesperado",
-    };
   }
-}
 }

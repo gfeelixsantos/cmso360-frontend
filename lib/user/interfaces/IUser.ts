@@ -3,19 +3,19 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 export interface IUserInfo {
   codigo: string;
   nome: string;
-  cpf: string,
+  cpf: string;
   conselho?: string;
   ufconselho?: string;
   perfil: string;
 }
 
 export interface IUserLogin {
-  cpf: string
-  password: string
+  cpf: string;
+  password: string;
 }
 
 export interface IUserRegister extends IUserLogin {
-  codigo: string
+  codigo: string;
 }
 
 export interface IUserWebsocket {
@@ -24,5 +24,5 @@ export interface IUserWebsocket {
   sala: string;
   id?: string;
   nome: string;
-  type: WebsocketType
+  type: WebsocketType;
 }

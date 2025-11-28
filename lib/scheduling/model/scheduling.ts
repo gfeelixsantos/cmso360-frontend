@@ -1,6 +1,17 @@
+import {
+  AsoStatus,
+  AtendimentoStatus,
+  ExamStatus,
+} from "../enum/scheduling.enum";
+import {
+  Client,
+  ExamRegister,
+  FileUpload,
+  RiscosAso,
+  Scheduling,
+} from "../interface/scheduling";
+
 import { Ticket } from "@/lib/ticket/ticket";
-import { AsoStatus, AtendimentoStatus, ExamStatus } from "../enum/scheduling.enum";
-import { Client, ExamRegister, FileUpload, RiscosAso, Scheduling } from "../interface/scheduling";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import { TIPOS_EXAME } from "@/config/constants";
 
@@ -47,21 +58,17 @@ export class SchedulingClass implements Scheduling {
   UNIDADEATENDIMENTO: string = "";
   _id: string = "";
 
-  
-
   constructor(data?: Partial<Scheduling>) {
     if (data) {
       Object.assign(this, data);
 
-      this.SCHEDULINGCODE = this.CODIGOEMPRESA + this.CODIGO + this.TIPOEXAME
-      this.CODIGOPRONTUARIO = `${this.CODIGOEMPRESA}-${this.CODIGO}-${this.TIPOEXAME}-${this.DATAAGENDAMENTO.replace("/","").replace("/", "")}`
-      this.convertTypeExamNumberToString(this.TIPOEXAME)
+      this.SCHEDULINGCODE = this.CODIGOEMPRESA + this.CODIGO + this.TIPOEXAME;
+      this.CODIGOPRONTUARIO = `${this.CODIGOEMPRESA}-${this.CODIGO}-${this.TIPOEXAME}-${this.DATAAGENDAMENTO.replace("/", "").replace("/", "")}`;
+      this.convertTypeExamNumberToString(this.TIPOEXAME);
     }
   }
 
-
-  private convertTypeExamNumberToString(type:string) {
-
+  private convertTypeExamNumberToString(type: string) {
     let result;
 
     switch (type) {
@@ -90,32 +97,34 @@ export class SchedulingClass implements Scheduling {
         result = "";
         break;
     }
-  
+
     this.TIPOEXAMENOME = result;
   }
 
-
-
   // Método para mapear exames selecionados para ExamRegister[]
-  mapExamesSelecionados(codigoExames: string[], examesList: any): ExamRegister[] {
+  mapExamesSelecionados(
+    codigoExames: string[],
+    examesList: any,
+  ): ExamRegister[] {
     const exames: ExamRegister[] = [];
-    
-    codigoExames.forEach(grupo => {
+
+    codigoExames.forEach((grupo) => {
       const examesDoGrupo = examesList[grupo] || [];
+
       examesDoGrupo.forEach((exame: any) => {
         exame.codigos.forEach((codigo: string) => {
           exames.push({
             codigoExame: codigo,
             nomeExame: exame.nome,
             status: ExamStatus.PENDENTE,
-            dataExame: new Date().toISOString().split('T')[0],
+            dataExame: new Date().toISOString().split("T")[0],
             sequencialResultadoExame: "",
             preparacao: "",
             profissional: "",
             sala: "",
             url: "",
             formulario: null,
-            grupo: grupo
+            grupo: grupo,
           });
         });
       });
@@ -138,49 +147,57 @@ export class SchedulingClass implements Scheduling {
     examesList: any;
   }): SchedulingClass {
     const scheduling = new SchedulingClass();
-    
+
     // Encontrar empresa selecionada
-    const empresaSelecionada = formData.socCompanies.find(emp => emp.CODIGO === formData.empresa);
-    
+    const empresaSelecionada = formData.socCompanies.find(
+      (emp) => emp.CODIGO === formData.empresa,
+    );
+
     // Preencher dados básicos
     scheduling.CODIGOEMPRESA = formData.empresa;
     scheduling.NOMEEMPRESA = empresaSelecionada?.RAZAOSOCIAL || "";
     scheduling.CNPJEMPRESA = empresaSelecionada?.CNPJ || "";
     scheduling.NOME = formData.nome;
     scheduling.TIPOEXAME = formData.tipoExame;
-    scheduling.TIPOEXAMENOME = Object.entries(TIPOS_EXAME).find(([_, value]) => value === formData.tipoExame)?.[0] || formData.tipoExame;
+    scheduling.TIPOEXAMENOME =
+      Object.entries(TIPOS_EXAME).find(
+        ([_, value]) => value === formData.tipoExame,
+      )?.[0] || formData.tipoExame;
     scheduling.ANOTACOES = formData.anotacoes;
     scheduling.DATAAGENDAMENTO = new Date().toLocaleDateString("pt-br");
     scheduling.DATAAGENDAMENTO_DATE = new Date();
-    scheduling.HORARIO = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    scheduling.HORARIO = new Date().toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
     scheduling.ANEXOS = formData.filesUpload;
-    
+
     // Mapear exames selecionados
-    scheduling.EXAMES = scheduling.mapExamesSelecionados(formData.codigoExames, formData.examesList);
-    
+    scheduling.EXAMES = scheduling.mapExamesSelecionados(
+      formData.codigoExames,
+      formData.examesList,
+    );
+
     // Configurar ticket se existir
     if (formData.ticketSelecionado) {
       scheduling.TICKET = {
         prefixo: formData.ticketSelecionado.prefixo,
         numero: formData.ticketSelecionado.numero,
         preferencial: formData.ticketSelecionado.preferencial,
-        tipoPreferencial: formData.preferencialTipo
+        tipoPreferencial: formData.preferencialTipo,
       };
     }
-    
+
     // Status ASO
-    scheduling.ASOSTATUS = AsoStatus.NAO_GERADO
-    
+    scheduling.ASOSTATUS = AsoStatus.NAO_GERADO;
+
     return scheduling;
   }
 
   toJSON(): Scheduling {
     return { ...this };
   }
-
-
 }
-
 
 /*
   "SCHEDULINGCODE": "1975781264",

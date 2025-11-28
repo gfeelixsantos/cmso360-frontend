@@ -17,11 +17,12 @@ import {
   addToast,
 } from "@heroui/react";
 import { FileClock } from "lucide-react";
+import { Socket } from "socket.io-client";
+
 import { IndexDb } from "@/lib/indexDb/indexdb";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import { Ticket, PreparationRequest } from "@/lib/ticket/ticket";
 import { formatBrithdayDate, formatCPF, getCurrentUser } from "@/lib/utils";
-import { Socket } from "socket.io-client";
 import { TIPOS_EXAME } from "@/config/constants";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { emitEvent, EventType } from "@/lib/websocket/events/events";
@@ -30,30 +31,46 @@ import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 // ---------- Memoized Inputs ----------
 const NomeInput = React.memo(
-  ({ value, onChange }: { value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
-    <Input label="Nome" value={value} onChange={onChange} size="sm" classNames={{ input: "uppercase" }} />
-  )
+  ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  }) => (
+    <Input
+      classNames={{ input: "uppercase" }}
+      label="Nome"
+      size="sm"
+      value={value}
+      onChange={onChange}
+    />
+  ),
 );
 
 const CpfInput = React.memo(
   ({ value, onChange, isInvalid, errorMessage }: any) => (
     <Input
+      errorMessage={errorMessage}
+      isInvalid={isInvalid}
       label="CPF"
       placeholder="000.000.000-00"
+      size="sm"
       value={value}
       onChange={onChange}
-      isInvalid={isInvalid}
-      errorMessage={errorMessage}
-      size="sm"
     />
-  )
+  ),
 );
 
-const DataNascimentoInput = React.memo(
-  ({ value, onChange }: any) => (
-    <Input label="Data Nasc." placeholder="DD/MM/AAAA" value={value} onChange={onChange} size="sm" />
-  )
-);
+const DataNascimentoInput = React.memo(({ value, onChange }: any) => (
+  <Input
+    label="Data Nasc."
+    placeholder="DD/MM/AAAA"
+    size="sm"
+    value={value}
+    onChange={onChange}
+  />
+));
 
 // ---------- Main Component ----------
 interface EmPreparacaoModalProps {
@@ -94,7 +111,10 @@ export default function EmPreparacaoModal({
 
   // ---------- Memoized Values ----------
   const tiposExames = useMemo(() => Object.values(TIPOS_EXAME), []);
-  const isCpfValid = useMemo(() => /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(solicitacao.cpf), [solicitacao.cpf]);
+  const isCpfValid = useMemo(
+    () => /^\d{3}\.\d{3}\.\d{3}-\d{2}$/.test(solicitacao.cpf),
+    [solicitacao.cpf],
+  );
   const isFormValid = useMemo(
     () =>
       isCpfValid &&
@@ -102,7 +122,7 @@ export default function EmPreparacaoModal({
       solicitacao.dataNascimento &&
       solicitacao.empresa &&
       solicitacao.nome,
-    [isCpfValid, solicitacao]
+    [isCpfValid, solicitacao],
   );
 
   const empresaItems = useMemo(
@@ -112,12 +132,12 @@ export default function EmPreparacaoModal({
           {item.RAZAOSOCIAL}
         </AutocompleteItem>
       )),
-    [empresasSoc]
+    [empresasSoc],
   );
 
   const exameItems = useMemo(
     () => tiposExames.map((tipo) => <SelectItem key={tipo}>{tipo}</SelectItem>),
-    [tiposExames]
+    [tiposExames],
   );
 
   // ---------- Effects ----------
@@ -125,11 +145,16 @@ export default function EmPreparacaoModal({
     if (!isOpen) return;
 
     let active = true;
+
     setLoadingData(true);
 
     const loadInitialData = async () => {
       try {
-        const [companies, user] = await Promise.all([IndexDb.getCompanies(), getCurrentUser()]);
+        const [companies, user] = await Promise.all([
+          IndexDb.getCompanies(),
+          getCurrentUser(),
+        ]);
+
         if (!active) return;
         setEmpresasSoc(companies);
         if (user) setCurrentUser(user);
@@ -153,6 +178,7 @@ export default function EmPreparacaoModal({
     };
 
     loadInitialData();
+
     return () => {
       active = false;
     };
@@ -163,30 +189,35 @@ export default function EmPreparacaoModal({
     (field: keyof PreparationRequest, value: string) => {
       setSolicitacao((prev) => ({ ...prev, [field]: value }));
     },
-    []
+    [],
   );
 
   const handleNomeChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => handleFieldChange("nome", e.target.value.toUpperCase()),
-    [handleFieldChange]
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      handleFieldChange("nome", e.target.value.toUpperCase()),
+    [handleFieldChange],
   );
 
   const handleCpfChange = useCallback((value: string) => {
     const numeric = value.replace(/\D/g, "").slice(0, 11);
     let formatted = numeric;
+
     if (numeric.length > 9)
       formatted = `${numeric.slice(0, 3)}.${numeric.slice(3, 6)}.${numeric.slice(6, 9)}-${numeric.slice(9)}`;
-    else if (numeric.length > 6) formatted = `${numeric.slice(0, 3)}.${numeric.slice(3, 6)}.${numeric.slice(6)}`;
-    else if (numeric.length > 3) formatted = `${numeric.slice(0, 3)}.${numeric.slice(3)}`;
+    else if (numeric.length > 6)
+      formatted = `${numeric.slice(0, 3)}.${numeric.slice(3, 6)}.${numeric.slice(6)}`;
+    else if (numeric.length > 3)
+      formatted = `${numeric.slice(0, 3)}.${numeric.slice(3)}`;
     setSolicitacao((prev) => ({ ...prev, cpf: formatted }));
   }, []);
 
   const handleDataNascimentoChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const formatted = formatBrithdayDate(e.target.value);
+
       setSolicitacao((prev) => ({ ...prev, dataNascimento: formatted }));
     },
-    []
+    [],
   );
 
   const handleFinalizarSolicitacao = useCallback(() => {
@@ -198,6 +229,7 @@ export default function EmPreparacaoModal({
         color: "danger",
         variant: "flat",
       });
+
       return;
     }
 
@@ -237,15 +269,20 @@ export default function EmPreparacaoModal({
         onOpenChange(false);
       }
     }
-  }, [solicitacao, ticket?.id, socket, currentUser, salaSelecionada, unidadeSelecionada, onOpenChange]);
+  }, [
+    solicitacao,
+    ticket?.id,
+    socket,
+    currentUser,
+    salaSelecionada,
+    unidadeSelecionada,
+    onOpenChange,
+  ]);
 
   // ---------- Render ----------
   return (
     <Modal
-      isOpen={isOpen}
-      onOpenChange={onOpenChange}
       disableAnimation
-      size="md"
       backdrop="blur"
       classNames={{
         base: "rounded-xl shadow-xl bg-white",
@@ -253,19 +290,24 @@ export default function EmPreparacaoModal({
         body: "px-5 py-4",
         footer: "border-t border-gray-100 px-5 py-3",
       }}
+      isOpen={isOpen}
+      size="md"
+      onOpenChange={onOpenChange}
     >
       <ModalContent>
         {(onClose) => (
           <>
             <ModalHeader className="flex items-center justify-between gap-3 p-4">
               <div className="flex items-center gap-2">
-                <FileClock size={20} className="text-blue-600" />
-                <span className="text-lg font-semibold text-gray-800">Solicitar Documentação</span>
+                <FileClock className="text-blue-600" size={20} />
+                <span className="text-lg font-semibold text-gray-800">
+                  Solicitar Documentação
+                </span>
               </div>
               <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-1"
                 aria-label="Fechar"
+                className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-1"
+                onClick={onClose}
               />
             </ModalHeader>
 
@@ -278,55 +320,78 @@ export default function EmPreparacaoModal({
                     label="Empresa"
                     placeholder="Selecione a empresa"
                     selectedKey={solicitacao.empresa}
-                    onSelectionChange={(key) => handleFieldChange("empresa", key as string)}
                     size="sm"
+                    onSelectionChange={(key) =>
+                      handleFieldChange("empresa", key as string)
+                    }
                   >
                     {empresaItems}
                   </Autocomplete>
 
-                  <NomeInput value={solicitacao.nome} onChange={handleNomeChange} />
+                  <NomeInput
+                    value={solicitacao.nome}
+                    onChange={handleNomeChange}
+                  />
 
                   <div className="grid grid-cols-2 gap-3">
                     <CpfInput
+                      errorMessage={
+                        solicitacao.cpf.length > 0 && !isCpfValid
+                          ? "CPF inválido"
+                          : ""
+                      }
+                      isInvalid={solicitacao.cpf.length > 0 && !isCpfValid}
                       value={solicitacao.cpf}
                       onChange={(e: any) => handleCpfChange(e.target.value)}
-                      isInvalid={solicitacao.cpf.length > 0 && !isCpfValid}
-                      errorMessage={solicitacao.cpf.length > 0 && !isCpfValid ? "CPF inválido" : ""}
                     />
-                    <DataNascimentoInput value={solicitacao.dataNascimento} onChange={handleDataNascimentoChange} />
+                    <DataNascimentoInput
+                      value={solicitacao.dataNascimento}
+                      onChange={handleDataNascimentoChange}
+                    />
                   </div>
 
                   <Select
                     label="Tipo de Exame"
-                    selectedKeys={solicitacao.tipoExame ? [solicitacao.tipoExame] : []}
-                    onChange={(e) => handleFieldChange("tipoExame", e.target.value)}
+                    selectedKeys={
+                      solicitacao.tipoExame ? [solicitacao.tipoExame] : []
+                    }
                     size="sm"
+                    onChange={(e) =>
+                      handleFieldChange("tipoExame", e.target.value)
+                    }
                   >
                     {exameItems}
                   </Select>
 
                   <Textarea
                     label="Informações Adicionais"
-                    value={solicitacao.informacoes}
-                    onChange={(e) => handleFieldChange("informacoes", e.target.value)}
-                    minRows={2}
                     maxRows={4}
+                    minRows={2}
                     size="sm"
+                    value={solicitacao.informacoes}
+                    onChange={(e) =>
+                      handleFieldChange("informacoes", e.target.value)
+                    }
                   />
                 </>
               )}
             </ModalBody>
 
             <ModalFooter className="flex justify-end gap-2">
-              <Button variant="light" onPress={onClose} size="sm" className="text-gray-600 hover:text-gray-800 px-4">
+              <Button
+                className="text-gray-600 hover:text-gray-800 px-4"
+                size="sm"
+                variant="light"
+                onPress={onClose}
+              >
                 Cancelar
               </Button>
               <Button
                 className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium shadow-sm hover:from-blue-700 hover:to-blue-800 px-4"
                 isDisabled={!isFormValid}
                 isLoading={loading}
-                onPress={handleFinalizarSolicitacao}
                 size="sm"
+                onPress={handleFinalizarSolicitacao}
               >
                 {loading ? "Enviando..." : "Enviar"}
               </Button>

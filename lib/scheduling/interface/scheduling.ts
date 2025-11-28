@@ -1,5 +1,6 @@
-import { Ticket } from "@/lib/ticket/ticket";
 import { MongoOperationTypes } from "../enum/scheduling.enum";
+
+import { Ticket } from "@/lib/ticket/ticket";
 
 export type FileUpload = {
   Name: string;
@@ -9,7 +10,7 @@ export type FileUpload = {
   StoragePath?: string;
   UploadedAt: Date;
   Origin: string;
-}
+};
 
 type CompanyRegister = {
   CODIGO: string | null;
@@ -20,7 +21,7 @@ type CompanyRegister = {
   CNPJ: string | null;
   ATIVO: string | null;
   CODIGOINTERNO: string;
-}
+};
 
 export type Client = {
   Id: string;
@@ -31,41 +32,37 @@ export type Client = {
   Phone: string;
   Contract: boolean;
   Email: string;
-}
+};
 
 export type RiscosAso = {
-  codigo: string,
-  risco: string,
-  grupo: string,
-}
-
+  codigo: string;
+  risco: string;
+  grupo: string;
+};
 
 export class ExamRegister {
-    codigoExame:string
-    nomeExame:string
-    status: string
-    preparacao:string  = ""
-    dataExame: string = ""
-    sequencialResultadoExame?:string = ""
-    sala?: string = ""
-    profissional?:string = ""
-    codigoProfissional?: string = "";
-    url:string = ""
-    formulario: any
-    grupo: string = ""
+  codigoExame: string;
+  nomeExame: string;
+  status: string;
+  preparacao: string = "";
+  dataExame: string = "";
+  sequencialResultadoExame?: string = "";
+  sala?: string = "";
+  profissional?: string = "";
+  codigoProfissional?: string = "";
+  url: string = "";
+  formulario: any;
+  grupo: string = "";
 
-    constructor(codigoExame:string, nomeExame:string, status:string)
-    {
-        this.codigoExame = codigoExame
-        this.nomeExame = nomeExame
-        this.status = status
-    }
+  constructor(codigoExame: string, nomeExame: string, status: string) {
+    this.codigoExame = codigoExame;
+    this.nomeExame = nomeExame;
+    this.status = status;
+  }
 }
 
-
 export type Scheduling = {
-
-  ANEXOS: FileUpload[]; 
+  ANEXOS: FileUpload[];
   ANOTACOES: string | null;
   ASOSTATUS: string;
   ATENDIMENTOSTATUS: string;
@@ -84,7 +81,7 @@ export type Scheduling = {
   DATAAGENDAMENTO: string;
   DATAAGENDAMENTO_DATE: Date;
   DATANASCIMENTO: string | null;
-  EXAMES: ExamRegister[]; 
+  EXAMES: ExamRegister[];
   HORARIO: string;
   MATRICULAFUNCIONARIO: string;
   MEDICO: string;
@@ -104,17 +101,14 @@ export type Scheduling = {
   SUBGRUPOEMPRESA: string | null;
   TELEFONE?: string;
   // TERM: boolean;
-  TICKET: Ticket
+  TICKET: Ticket;
   TIPOEXAME: string;
   TIPOEXAMENOME: string;
   UNIDADEATENDIMENTO: string;
   _id: string;
-}
-
-
-
+};
 
 export type SchedulingChange = {
-  operation: MongoOperationTypes,
-  schedule: Scheduling
-}
+  operation: MongoOperationTypes;
+  schedule: Scheduling;
+};

@@ -1,28 +1,13 @@
 // page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState, useCallback, use } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
-import { Eye, Zap, Loader2, Lightbulb, MessageCircleWarning } from "lucide-react";
+import { MessageCircleWarning, ChevronDown, ChevronUp } from "lucide-react";
 
 // Enums e interfaces
-import { AtendimentoStatus, ExamStatus, MongoOperationTypes, ParecerMedico } from "@/lib/scheduling/enum/scheduling.enum";
-import { CustomEventMap, EventType, onEvent } from "@/lib/websocket/events/events";
-import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
-import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
-import { ExamRegister, FileUpload, Scheduling, SchedulingChange } from "@/lib/scheduling/interface/scheduling";
-
-// Componentes
-import { HeaderApp } from "@/components/shared/HeaderApp";
-import CmsoLoading from "@/components/shared/CmsoLoading";
-
-// Utils e config
-import { getCurrentUser, logout } from "@/lib/utils";
-import { NEST_PRONTUARIO_PARAMETROS, NEST_PRONTUARIO_REGISTROS, NEST_URL } from "@/config/constants";
-
-// UI Components
-import { 
+import {
   addToast,
   Button,
   Card,
@@ -38,20 +23,52 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalFooter
+  ModalFooter,
 } from "@heroui/react";
 import { Search } from "lucide-react";
+
 import PdfViewer from "./components/PdfView";
 import PainelDireita from "./components/PainelDireita";
 
+import {
+  AtendimentoStatus,
+  MongoOperationTypes,
+} from "@/lib/scheduling/enum/scheduling.enum";
+import {
+  CustomEventMap,
+  EventType,
+  onEvent,
+} from "@/lib/websocket/events/events";
+import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
+import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
+import {
+  ExamRegister,
+  FileUpload,
+  Scheduling,
+  SchedulingChange,
+} from "@/lib/scheduling/interface/scheduling";
+
+// Componentes
+import { HeaderApp } from "@/components/shared/HeaderApp";
+
+// Utils e config
+import { getCurrentUser, logout } from "@/lib/utils";
+import {
+  NEST_PRONTUARIO_PARAMETROS,
+  NEST_PRONTUARIO_REGISTROS,
+  NEST_URL,
+} from "@/config/constants";
+
+// UI Components
+
 /* ---------------------- Tipos ---------------------- */
 
-type PdfUrl = { 
-  url: string; 
-  title: string; 
-  type: "exame" | "anexo"; 
-  examName?: string; 
-  grupo?: string 
+type PdfUrl = {
+  url: string;
+  title: string;
+  type: "exame" | "anexo";
+  examName?: string;
+  grupo?: string;
 };
 
 export type MedicalRecord = Scheduling & {
@@ -59,12 +76,11 @@ export type MedicalRecord = Scheduling & {
   pdfUrls: PdfUrl[];
 };
 
-
 type ParametrosResponse = {
   medicos: { name: string }[];
   empresas: { name: string }[];
   status: { name: string }[];
-}
+};
 
 interface Pagination<T> {
   data: T[];
@@ -76,25 +92,30 @@ interface Pagination<T> {
 
 /* ---------------------- Utils ---------------------- */
 
-const mapSchedulingToMedicalRecord = (s: Scheduling, status: string): MedicalRecord => {
+const mapSchedulingToMedicalRecord = (
+  s: Scheduling,
+  status: string,
+): MedicalRecord => {
   const exameUrls: PdfUrl[] =
     (s.EXAMES || [])
       .filter((e: ExamRegister) => e && e.url && e.url.trim() !== "")
-      .map((e) => ({ 
-        url: e.url!, 
-        title: `${e.grupo}`, 
-        type: "exame" as const, 
+      .map((e) => ({
+        url: e.url!,
+        title: `${e.grupo}`,
+        type: "exame" as const,
         examName: e.nomeExame,
-        grupo: e.grupo 
+        grupo: e.grupo,
       })) || [];
 
   const anexoUrls: PdfUrl[] =
     (s.ANEXOS || [])
-      .filter((a: FileUpload) => a && a.StoragePath && a.StoragePath.trim() !== "")
-      .map((a: any) => ({ 
-        url: a.StoragePath, 
-        title: a.Name || "Anexo", 
-        type: "anexo" as const 
+      .filter(
+        (a: FileUpload) => a && a.StoragePath && a.StoragePath.trim() !== "",
+      )
+      .map((a: any) => ({
+        url: a.StoragePath,
+        title: a.Name || "Anexo",
+        type: "anexo" as const,
       })) || [];
 
   const allPdfUrls = [...exameUrls, ...anexoUrls];
@@ -102,12 +123,16 @@ const mapSchedulingToMedicalRecord = (s: Scheduling, status: string): MedicalRec
   if (allPdfUrls.length === 0) {
     allPdfUrls.push({
       url: "https://google.com.br",
-      title: "Documento Exemplo (Placeholder)",
+      title: "Sem PDF Disponível",
       type: "exame",
     });
   }
 
-  const id = typeof s._id === "string" ? s._id : (s._id as any).$oid ?? JSON.stringify(s._id);
+  const id =
+    typeof s._id === "string"
+      ? s._id
+      : ((s._id as any).$oid ?? JSON.stringify(s._id));
+
   return {
     ...s,
     _id: id,
@@ -136,41 +161,53 @@ export default function UnifiedProntuarioPage() {
   const [atendimentos, setAtendimentos] = useState<Scheduling[]>([]);
   const [user, setUser] = useState<IUserInfo | null>(null);
   const [records, setRecords] = useState<MedicalRecord[]>([]);
-  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(
+    null,
+  );
   const [search, setSearch] = useState<string>("");
-  const [attendanceStatus, setAttendanceStatus] = useState<AtendimentoStatus | null>(null);
-  
+  const [attendanceStatus, setAttendanceStatus] =
+    useState<AtendimentoStatus | null>(null);
+
   // Novos estados para empresas e médicos
-  const [empresa, setEmpresa] = useState<string>();
-  const [medicoExaminador, setMedicoExaminador] = useState<string>();
-  const [selectedEmpresas, setSelectedEmpresas] = useState<string[]>([]);
-  const [selectedMedicos, setSelectedMedicos] = useState<string[]>([]);
+  const [empresa, setEmpresa] = useState<string>("");
+  const [medicoExaminador, setMedicoExaminador] = useState<string>("");
+  const [empresas, setEmpresas] = useState<string[]>([]);
+  const [medicos, setMedicos] = useState<string[]>([]);
 
   // Estados para uso de debounced
-  const ITEMS_PER_PAGE = 100;
-  const RETRY_DELAY_MS = 10000; // 5 segundos
-  const page = 1;
-  const [retryTrigger, setRetryTrigger] = useState(0)
+  const ITEMS_PER_PAGE = 50;
+  const RETRY_DELAY_MS = 10000; // 10 segundos
+  const [retryTrigger, setRetryTrigger] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [paginationData, setPaginationData] = useState({ total: 0, totalPages: 1 });
-  
-  
+  const [paginationData, setPaginationData] = useState({
+    total: 0,
+    totalPages: 1,
+  });
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMoreRecords, setHasMoreRecords] = useState(false);
+
   // Estados para WebSocket
   const [socketState, setSocketState] = useState<Socket | null>(null);
   const [conectado, setConectado] = useState(false);
   const [isLoadingInitialData, setIsLoadingInitialData] = useState(false);
-  const [isLoadingEmpresasMedicos, setIsLoadingEmpresasMedicos] = useState(false);
+  const [isLoadingEmpresasMedicos, setIsLoadingEmpresasMedicos] =
+    useState(false);
 
   // Estados para controle de mudanças não salvas
   const [unsavedModalOpen, setUnsavedModalOpen] = useState(false);
-  const [nextSelectedRecordIfDiscard, setNextSelectedRecordIfDiscard] = useState<MedicalRecord | null>(null);
+  const [nextSelectedRecordIfDiscard, setNextSelectedRecordIfDiscard] =
+    useState<MedicalRecord | null>(null);
 
   // Estados para PDF
   const [currentPdfIndex, setCurrentPdfIndex] = useState<number>(0);
 
+  // Estado para controle de scroll e carregamento de mais itens
+  const [scrollContainerRef, setScrollContainerRef] =
+    useState<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
+
     if (!currentUser) {
       router.push("/");
     } else {
@@ -178,180 +215,231 @@ export default function UnifiedProntuarioPage() {
     }
   }, [router]);
 
-
   const carregarEmpresasEMedicos = async () => {
-
     setIsLoadingEmpresasMedicos(true);
     try {
-
       const response = await fetch(NEST_PRONTUARIO_PARAMETROS);
 
-      if (!response.ok) alert('Erro ao buscar parâmetros');
+      if (!response.ok) alert("Erro ao buscar parâmetros");
 
       const parametrosData: ParametrosResponse = await response.json();
 
-      setSelectedEmpresas(parametrosData.empresas.map(e => e.name));
-      setSelectedMedicos(parametrosData.medicos.map(m => m.name));
-      
+      setEmpresas(parametrosData.empresas.map((e) => e.name));
+      setMedicos(parametrosData.medicos.map((m) => m.name));
     } catch (error) {
-      console.error('Erro ao carregar empresas e médicos:', error);
+      console.error("Erro ao carregar empresas e médicos:", error);
       addToast({
         title: "Erro ao carregar dados",
-        description: "Não foi possível carregar empresas e médicos examinadores",
+        description:
+          "Não foi possível carregar empresas e médicos examinadores",
         color: "danger",
       });
     } finally {
       setIsLoadingEmpresasMedicos(false);
     }
-  }
+  };
 
   // Função para carregar empresas e médicos examinadores
   useEffect(() => {
-  carregarEmpresasEMedicos();
-
+    carregarEmpresasEMedicos();
   }, []);
 
-
-
-
-
   // Função para buscar dados com filtros
-const buscarDadosComFiltros = useCallback(async (
-        status: AtendimentoStatus,
-        page: number, // Argumento Page
-        limit: number, // Argumento Limit
-        empresasFiltro?: string,
-        medicosFiltro?: string,
+  const buscarDadosComFiltros = useCallback(
+    async (
+      status: AtendimentoStatus,
+      page: number,
+      limit: number,
+      empresasFiltro?: string,
+      medicosFiltro?: string,
+      loadMore: boolean = false,
     ) => {
-        // Ativa o loading, limpa a lista para a nova busca
+      if (loadMore) {
+        setIsLoadingMore(true);
+      } else {
         setIsLoadingInitialData(true);
         setRecords([]);
         setSelectedRecord(null);
+      }
 
-        try {
-            let url = NEST_PRONTUARIO_REGISTROS;
-            const params = new URLSearchParams();
+      try {
+        let url = NEST_PRONTUARIO_REGISTROS;
+        const params = new URLSearchParams();
 
-            params.append('status', status);
-            params.append('page', page.toString());
-            params.append('limit', limit.toString());
-            
-            if (empresasFiltro) params.append('empresa', empresasFiltro);
-            if (medicosFiltro) params.append('medico', medicosFiltro);
+        params.append("status", status);
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
 
-            url = `${url}?${params.toString()}`;
-            const response = await fetch(url);
-                
-            if (!response.ok) throw new Error('Erro na resposta');
+        if (empresasFiltro) params.append("empresa", empresasFiltro);
+        if (medicosFiltro) params.append("medico", medicosFiltro);
 
-            const paginationData: Pagination<Scheduling> = await response.json();
-            console.log(`Dados recebidos: ${paginationData.data.length} de ${paginationData.total}`);
+        url = `${url}?${params.toString()}`;
+        const response = await fetch(url);
 
-            const schedules = paginationData.data;
-            
-            // LÓGICA DE NOVA TENTATIVA (RETRY)
-            if (paginationData.total === 0) {
-                 console.warn(`Resultado vazio encontrado. Agendando nova tentativa em ${RETRY_DELAY_MS / 1000} segundos.`);
-                 // Agenda um novo disparo do useEffect de filtro após o delay
-                 setTimeout(() => {
-                     setRetryTrigger(c => c + 1); 
-                 }, RETRY_DELAY_MS);
-            }
+        if (!response.ok) throw new Error("Erro na resposta");
 
+        const paginationData: Pagination<Scheduling> = await response.json();
 
-            const mapped = schedules.map(s => mapSchedulingToMedicalRecord(s, status));
-            const mappedOrdered = mapped.sort((a, b) => a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }));
+        const schedules = paginationData.data;
 
-            setAtendimentos(schedules);
-            setRecords(mappedOrdered);
-            setPaginationData({
-                total: paginationData.total,
-                totalPages: paginationData.totalPages,
-            });
-
-        } catch (err) {
-            console.error("Erro ao carregar dados iniciais:", err);
-            addToast({
-                title: "Erro ao carregar dados",
-                description: "Não foi possível carregar os prontuários",
-                color: "danger",
-            });
-            setRecords([]);
-            setPaginationData({ total: 0, totalPages: 1 });
-
-        } finally {
-            setIsLoadingInitialData(false);
+        // LÓGICA DE NOVA TENTATIVA (RETRY)
+        if (paginationData.total === 0) {
+          console.warn(
+            `Resultado vazio encontrado. Agendando nova tentativa em ${RETRY_DELAY_MS / 1000} segundos.`,
+          );
+          setTimeout(() => {
+            setRetryTrigger((c) => c + 1);
+          }, RETRY_DELAY_MS);
         }
-    }, [mapSchedulingToMedicalRecord]);
 
-
-
-    // EFEITO 1: FILTROS + DEBOUNCE + RETRY 
-    useEffect(() => {
-        const currentEmpresaFiltro = empresa; 
-        const currentMedicoFiltro = medicoExaminador; 
-
-        if (!attendanceStatus) return;
-
-        // Se o retryTrigger > 0, significa que é um re-disparo agendado, executamos imediatamente (0ms).
-        // Se retryTrigger for 0 (filtro normal), aplicamos o debounce de 300ms.
-        const delay = (retryTrigger > 0) ? 0 : 300;
-        
-        const timeoutId = setTimeout(() => {
-            
-            // ⚠️ Resetamos para a página 1 apenas se não for um Retry agendado
-            if (retryTrigger === 0) {
-               setCurrentPage(1); 
-            }
-
-            // Chamamos a busca com a página atual (1 se filtro, >1 se retry na página atual)
-            buscarDadosComFiltros(
-                attendanceStatus, 
-                currentPage, 
-                ITEMS_PER_PAGE,
-                currentEmpresaFiltro, 
-                currentMedicoFiltro, 
-            );
-            
-            // ⚠️ Resetamos o retryTrigger para 0 após a busca, para que o debounce volte a funcionar normalmente
-            if (retryTrigger > 0) {
-                 setRetryTrigger(0);
-            }
-
-        }, delay);
-
-        // Cleanup: Cancela o timeout se os filtros mudarem antes do debounce ou retry
-        return () => clearTimeout(timeoutId);
-    // Depende dos filtros (debounce) e do retryTrigger (polling)
-    }, [attendanceStatus, empresa, medicoExaminador, buscarDadosComFiltros, retryTrigger]);
-
-
-    // EFEITO 2: MUDANÇA DE PÁGINA 
-    useEffect(() => {
-        // Evita a dupla requisição na inicialização (a inicial é feita pelo effect acima)
-        if (currentPage === 1 && retryTrigger === 0) {
-            return; 
-        }
-        if (!attendanceStatus) return; 
-
-        buscarDadosComFiltros(
-            attendanceStatus,
-            currentPage, 
-            ITEMS_PER_PAGE,
-            empresa,
-            medicoExaminador,
+        const mapped = schedules.map((s) =>
+          mapSchedulingToMedicalRecord(s, status),
         );
-    // Escuta a mudança de página
-    }, [currentPage]);
+        const mappedOrdered = mapped.sort((a, b) =>
+          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+        );
 
+        setAtendimentos(schedules);
 
+        if (loadMore) {
+          // Adiciona os novos registros aos existentes
+          setRecords((prev) => [...prev, ...mappedOrdered]);
+        } else {
+          // Substitui os registros existentes
+          setRecords(mappedOrdered);
+        }
+
+        setPaginationData({
+          total: paginationData.total,
+          totalPages: paginationData.totalPages,
+        });
+
+        // Calcula se há mais registros para carregar
+        const currentTotalLoaded = loadMore
+          ? records.length + mappedOrdered.length
+          : mappedOrdered.length;
+
+        setHasMoreRecords(currentTotalLoaded < paginationData.total);
+      } catch (err) {
+        console.error("Erro ao carregar dados:", err);
+        addToast({
+          title: "Erro ao carregar dados",
+          description: "Não foi possível carregar os prontuários",
+          color: "danger",
+        });
+
+        if (!loadMore) {
+          setRecords([]);
+          setPaginationData({ total: 0, totalPages: 1 });
+        }
+      } finally {
+        setIsLoadingInitialData(false);
+        setIsLoadingMore(false);
+      }
+    },
+    [mapSchedulingToMedicalRecord],
+  );
+
+  // EFEITO 1: FILTROS + DEBOUNCE + RETRY
+  useEffect(() => {
+    const currentEmpresaFiltro = empresa;
+    const currentMedicoFiltro = medicoExaminador;
+
+    if (!attendanceStatus) return;
+
+    const delay = retryTrigger > 0 ? 0 : 300;
+
+    const timeoutId = setTimeout(() => {
+      if (retryTrigger === 0) {
+        setCurrentPage(1);
+      }
+
+      buscarDadosComFiltros(
+        attendanceStatus,
+        currentPage,
+        ITEMS_PER_PAGE,
+        currentEmpresaFiltro,
+        currentMedicoFiltro,
+        false,
+      );
+
+      if (retryTrigger > 0) {
+        setRetryTrigger(0);
+      }
+    }, delay);
+
+    return () => clearTimeout(timeoutId);
+  }, [
+    attendanceStatus,
+    empresa,
+    medicoExaminador,
+    buscarDadosComFiltros,
+    retryTrigger,
+  ]);
+
+  // EFEITO 2: MUDANÇA DE PÁGINA
+  useEffect(() => {
+    if (currentPage === 1 && retryTrigger === 0) {
+      return;
+    }
+    if (!attendanceStatus) return;
+
+    buscarDadosComFiltros(
+      attendanceStatus,
+      currentPage,
+      ITEMS_PER_PAGE,
+      empresa,
+      medicoExaminador,
+      currentPage > 1, // loadMore = true se for página > 1
+    );
+  }, [currentPage]);
+
+  // Função para carregar mais registros
+  const carregarMaisRegistros = () => {
+    if (hasMoreRecords && !isLoadingMore) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  // Configura o observer para scroll infinito
+  useEffect(() => {
+    if (!scrollContainerRef || !hasMoreRecords || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          carregarMaisRegistros();
+        }
+      },
+      {
+        root: scrollContainerRef,
+        rootMargin: "100px", // Carrega 100px antes de chegar no final
+        threshold: 0.1,
+      },
+    );
+
+    // Observa o último elemento da lista
+    const lastCard = scrollContainerRef.querySelector(
+      ".prontuario-card:last-child",
+    );
+
+    if (lastCard) {
+      observer.observe(lastCard);
+    }
+
+    return () => {
+      if (lastCard) {
+        observer.unobserve(lastCard);
+      }
+    };
+  }, [scrollContainerRef, hasMoreRecords, isLoadingMore, records]);
 
   useEffect(() => {
     if (!attendanceStatus || !getCurrentUser()) {
       return;
     }
 
-    const conectionType = WebsocketType.USER_ATENDIMENTO;
+    const conectionType = WebsocketType.PRONTUARIO;
     const user: IUserWebsocket = {
       nome: getCurrentUser()?.nome!,
       sala: "prontuario",
@@ -368,11 +456,14 @@ const buscarDadosComFiltros = useCallback(async (
     });
 
     setSocketState(s);
-    
-    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
-      const newRecord = mapSchedulingToMedicalRecord(schedule, schedule.ATENDIMENTOSTATUS);
 
-      setRecords(prev => {
+    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
+      const newRecord = mapSchedulingToMedicalRecord(
+        schedule,
+        schedule.ATENDIMENTOSTATUS,
+      );
+
+      setRecords((prev) => {
         let updatedRecords = [...prev];
 
         switch (operation) {
@@ -380,24 +471,24 @@ const buscarDadosComFiltros = useCallback(async (
             updatedRecords = [...prev, newRecord];
             break;
           case MongoOperationTypes.UPDATE:
-            updatedRecords = prev.map(ag => 
-              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE 
-                ? { ...ag, ...newRecord } 
-                : ag
+            updatedRecords = prev.map((ag) =>
+              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? newRecord : ag,
             );
             break;
           case MongoOperationTypes.DELETE:
-            updatedRecords = prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE);
+            updatedRecords = prev.filter(
+              (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE,
+            );
             break;
         }
 
         return updatedRecords.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
         );
       });
     };
 
-    onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+    onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
 
     s.on("connect", async () => {
       setConectado(true);
@@ -427,7 +518,7 @@ const buscarDadosComFiltros = useCallback(async (
       s.off("connect");
       s.off("disconnect");
       s.off("connect_error");
-      s.off(EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+      s.off(EventType.UPDATE_SCHEDULE, handleUpdateRecord);
       s.disconnect();
       setSocketState(null);
     };
@@ -435,7 +526,8 @@ const buscarDadosComFiltros = useCallback(async (
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
-      const nameMatch = !search || r.NOME.toLowerCase().includes(search.toLowerCase());
+      const nameMatch =
+        !search || r.NOME.toLowerCase().includes(search.toLowerCase());
       const statusMatch = attendanceStatus === r.currentStatus;
 
       return nameMatch && statusMatch;
@@ -443,12 +535,12 @@ const buscarDadosComFiltros = useCallback(async (
   }, [records, search, attendanceStatus]);
 
   const selectRecord = (r: MedicalRecord) => {
-    // Verifica se há mudanças não salvas no painel direito
-    const hasUnsavedChanges = false; // Esta lógica será implementada no componente RightPanel
-    
+    const hasUnsavedChanges = false;
+
     if (hasUnsavedChanges) {
       setNextSelectedRecordIfDiscard(r);
       setUnsavedModalOpen(true);
+
       return;
     }
     setSelectedRecord(r);
@@ -469,25 +561,21 @@ const buscarDadosComFiltros = useCallback(async (
   };
 
   // Função para limpar filtros
-const limparFiltros = () => {
-  setEmpresa(undefined);
-  setMedicoExaminador(undefined);
-  setSearch("");
-  setSelectedEmpresas([]);
-  setSelectedMedicos([]);
-  
-};
+  const limparFiltros = () => {
+    setAttendanceStatus(null);
+    setEmpresa("");
+    setMedicoExaminador("");
+    setSearch("");
+  };
 
-  // LOADING STATE --- Removido 26/11/2025 devido eficiencia do carregamento inicial
-  // if (!user || selectedEmpresas.length === 0 || selectedMedicos.length === 0) {
-  //   return <CmsoLoading />;
-  // }
+  // Indicador visual de mais registros - aparece quando há 40+ registros carregados
+  const showLoadMoreIndicator = records.length >= 40 && hasMoreRecords;
 
   return (
     <div className="min-h-screen flex flex-col bg-default-50 antialiased">
       <HeaderApp
-        onLogout={logout}
         children={<h1 className="text-lg">Gestão de Prontuários</h1>}
+        onLogout={logout}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -495,73 +583,78 @@ const limparFiltros = () => {
         <aside className="w-80 bg-default-50 border-r border-divider p-4 flex flex-col flex-shrink-0">
           <div className="space-y-4">
             <Select
-              size="sm"
+              className="w-full"
+              isDisabled={isLoadingEmpresasMedicos}
               label="Status de Atendimento"
               placeholder="Selecione um Status"
-              value={attendanceStatus || ""}
-              onChange={(e) => setAttendanceStatus(e.target.value as AtendimentoStatus)}
-              isDisabled={isLoadingEmpresasMedicos}
-              className="w-full"
+              selectedKeys={attendanceStatus ? [attendanceStatus] : []}
+              size="sm"
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as
+                  | AtendimentoStatus
+                  | undefined;
+
+                setAttendanceStatus(value ?? ("" as AtendimentoStatus));
+              }}
             >
               {Object.values(AtendimentoStatus)
-                .filter(status => status !== AtendimentoStatus.AGENDADO)
-                .map(status => (
+                .filter((status) => status !== AtendimentoStatus.AGENDADO)
+                .map((status) => (
                   <SelectItem key={status}>
-                    {status.replace(/_/g, ' ')}
+                    {status.replace(/_/g, " ")}
                   </SelectItem>
-                ))
-              }
+                ))}
             </Select>
 
             {/* Novo campo: Empresa */}
-            {/* <Select
-              size="sm"
+            <Select
+              isDisabled={isLoadingEmpresasMedicos}
               label="Empresas"
               placeholder="Todas"
-              value={empresa || ""}
-              onChange={(e) => setEmpresa(String(e.target.value))}
-              isDisabled={isLoadingEmpresasMedicos}
-              className="w-full"
+              selectedKeys={empresa ? [empresa] : []}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string | undefined;
+
+                setEmpresa(value ?? "");
+              }}
             >
-              {selectedEmpresas.map( empresa => (
-                <SelectItem key={empresa}>
-                  {empresa}
-                </SelectItem>
+              {empresas.map((emp) => (
+                <SelectItem key={emp}>{emp}</SelectItem>
               ))}
-            </Select> */}
+            </Select>
 
             {/* Novo campo: Médico Examinador */}
-            {/* <Select
-              size="sm"
+            <Select
+              isDisabled={isLoadingEmpresasMedicos}
               label="Médico Examinador"
               placeholder="Todos"
-              value={medicoExaminador || ""}
-              onChange={(e) => setMedicoExaminador(e.target.value)}
-              isDisabled={isLoadingEmpresasMedicos}
-              className="w-full"
+              selectedKeys={medicoExaminador ? [medicoExaminador] : []}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string | undefined;
+
+                setMedicoExaminador(value ?? "");
+              }}
             >
-              {selectedMedicos.map( medico => (
-                <SelectItem key={medico}>
-                  {medico}
-                </SelectItem>
+              {medicos.map((med) => (
+                <SelectItem key={med}>{med}</SelectItem>
               ))}
-            </Select> */}
+            </Select>
 
             <Input
+              isDisabled={!attendanceStatus || isLoadingInitialData}
               placeholder="Buscar funcionário..."
+              startContent={<Search className="w-4 h-4 text-default-400" />}
               value={search}
               onValueChange={setSearch}
-              startContent={<Search className="w-4 h-4 text-default-400" />}
-              isDisabled={!attendanceStatus || isLoadingInitialData}
             />
 
             {/* Botão para limpar filtros */}
-            {(empresa || medicoExaminador || search)  && (
+            {(empresa || medicoExaminador || search) && (
               <Button
+                className="w-full"
                 size="sm"
                 variant="light"
                 onPress={limparFiltros}
-                className="w-full"
               >
                 Limpar Filtros
               </Button>
@@ -571,19 +664,29 @@ const limparFiltros = () => {
           <Divider className="my-4" />
 
           <div className="flex justify-between items-center mb-3">
-            <h3 className="text-sm font-semibold text-default-700">Prontuários</h3>
+            <h3 className="text-sm font-semibold text-default-700">
+              Prontuários
+            </h3>
             <div className="flex items-center gap-2">
-              <Badge variant="solid" color="primary">
+              <Badge color="primary" variant="solid">
                 {filtered.length}
               </Badge>
+              {paginationData.total > 0 && (
+                <span className="text-xs text-default-500">
+                  de {paginationData.total}
+                </span>
+              )}
             </div>
           </div>
 
           {/* Container com scroll independente */}
-          <div className="flex-1 overflow-y-auto max-h-80 overflow-x-hidden space-y-3 p-1">
+          <div
+            ref={setScrollContainerRef}
+            className="flex-1 overflow-y-auto max-h-80 overflow-x-hidden space-y-3 p-1"
+          >
             {isLoadingInitialData ? (
               <div className="flex flex-col items-center justify-center p-8 text-default-500">
-                <Spinner color="success"  size="lg" />
+                <Spinner color="success" size="lg" />
                 <p className="mt-2 text-sm">Carregando...</p>
               </div>
             ) : !attendanceStatus ? (
@@ -599,66 +702,161 @@ const limparFiltros = () => {
               <Card>
                 <CardBody className="text-center p-6">
                   <MessageCircleWarning className="w-8 h-8 mx-auto mb-3 text-warning" />
-                  <p className="text-default-500">Nenhum prontuário encontrado.</p>
+                  <p className="text-default-500">
+                    Nenhum prontuário encontrado.
+                  </p>
                 </CardBody>
               </Card>
             ) : (
-              filtered.map((r) => (
-                <Card 
-                  key={r._id.toString()}
-                  isPressable
-                  onPress={() => selectRecord(r)}
-                  className={`transition-all duration-200 w-3xs ${
-                    selectedRecord?._id === r._id
-                      ? "ring-2 ring-warning bg-warning-50"
-                      : "hover:shadow-md"
-                  }`}
-                >
-                  <CardBody className="p-4">
-                    <div className="flex justify-between items-start gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="min-w-0">
-                            <h4 className="text-sm font-semibold text-default-800 truncate">{r.NOME}</h4>
-                            <p className="text-xs text-default-500">{r.DATAAGENDAMENTO} - {r.TIPOEXAMENOME}</p>
-                            <Chip 
-                              size="sm" 
-                              color={getStatusColor(r.currentStatus)}
-                              variant="flat"
-                              className="mt-1"
-                            >
-                              {r.currentStatus.replace(/_/g, ' ')}
-                            </Chip>
+              <>
+                {filtered.map((r, index) => (
+                  <Card
+                    key={r._id.toString()}
+                    isPressable
+                    className={`prontuario-card transition-all duration-200 w-3xs ${
+                      selectedRecord?._id === r._id
+                        ? "ring-2 ring-warning bg-warning-50"
+                        : "hover:shadow-md"
+                    }`}
+                    onPress={() => selectRecord(r)}
+                  >
+                    <CardBody className="p-4">
+                      <div className="flex justify-between items-start gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="min-w-0">
+                              <h4 className="text-sm font-semibold text-default-800 truncate">
+                                {r.NOME}
+                              </h4>
+                              <p className="text-xs text-default-500">
+                                {r.DATAAGENDAMENTO} - {r.TIPOEXAMENOME}
+                              </p>
+                              <Chip
+                                className="mt-1"
+                                color={getStatusColor(r.currentStatus)}
+                                size="sm"
+                                variant="flat"
+                              >
+                                {r.currentStatus.replace(/_/g, " ")}
+                              </Chip>
+                            </div>
                           </div>
                         </div>
                       </div>
+                    </CardBody>
+                  </Card>
+                ))}
+
+                {/* Indicador de mais registros disponíveis */}
+                {showLoadMoreIndicator && (
+                  <div className="flex flex-col items-center justify-center p-4 bg-default-100 rounded-lg border border-default-200">
+                    <div className="flex items-center gap-2 text-default-600 mb-2">
+                      <ChevronDown className="w-4 h-4 animate-bounce" />
+                      <span className="text-sm font-medium">
+                        Mais prontuários disponíveis
+                      </span>
+                      <ChevronDown className="w-4 h-4 animate-bounce" />
                     </div>
-                  </CardBody>
-                </Card>
-              ))
+                    <p className="text-xs text-default-500 text-center mb-3">
+                      {paginationData.total - records.length} prontuários
+                      restantes
+                    </p>
+
+                    {/* Botão para carregar mais manualmente */}
+                    <Button
+                      className="w-full"
+                      color="primary"
+                      isLoading={isLoadingMore}
+                      size="sm"
+                      startContent={
+                        !isLoadingMore && <ChevronDown className="w-4 h-4" />
+                      }
+                      variant="flat"
+                      onPress={carregarMaisRegistros}
+                    >
+                      {isLoadingMore ? "Carregando..." : "Carregar Mais"}
+                    </Button>
+
+                    {/* Indicador de carregamento automático */}
+                    {isLoadingMore && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <Spinner color="primary" size="sm" />
+                        <span className="text-xs text-default-500">
+                          Carregando mais prontuários...
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Indicador de fim dos registros */}
+                {!hasMoreRecords && records.length > 0 && (
+                  <div className="flex flex-col items-center justify-center p-4 bg-success-50 rounded-lg border border-success-200">
+                    <div className="flex items-center gap-2 text-success-600 mb-1">
+                      <ChevronUp className="w-4 h-4" />
+                      <span className="text-sm font-medium">
+                        Todos os prontuários carregados
+                      </span>
+                      <ChevronUp className="w-4 h-4" />
+                    </div>
+                    <p className="text-xs text-success-500 text-center">
+                      {records.length} de {paginationData.total} prontuários
+                      visualizados
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
+
+          {/* Status da paginação no rodapé */}
+          {records.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-default-200">
+              <div className="flex justify-between items-center text-xs text-default-500">
+                <span>
+                  Visualizando {records.length} de {paginationData.total}
+                </span>
+                {hasMoreRecords && (
+                  <span className="text-primary-600 font-medium">
+                    +{paginationData.total - records.length} disponíveis
+                  </span>
+                )}
+              </div>
+
+              {/* Barra de progresso visual */}
+              {paginationData.total > 0 && (
+                <div className="w-full bg-default-200 rounded-full h-1.5 mt-2">
+                  <div
+                    className="bg-primary-500 h-1.5 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(records.length / paginationData.total) * 100}%`,
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
         </aside>
 
         {/* MIDDLE: PDF Viewer Componentizado */}
         <PdfViewer
-          selectedRecord={selectedRecord}
           currentPdfIndex={currentPdfIndex}
+          selectedRecord={selectedRecord}
           onPdfIndexChange={handlePdfIndexChange}
         />
 
         {/* RIGHT: Painel Lateral Componentizado */}
         <PainelDireita
+          currentPdfIndex={currentPdfIndex}
           selectedRecord={selectedRecord}
           setSelectedRecord={setSelectedRecord}
-          currentPdfIndex={currentPdfIndex}
-          onPdfIndexChange={handlePdfIndexChange}
           user={user!}
+          onPdfIndexChange={handlePdfIndexChange}
           onRecordUpdate={(updatedRecord) => {
-            setRecords(prev => 
-              prev.map(rec => 
-                rec._id === updatedRecord._id ? updatedRecord : rec
-              )
+            setRecords((prev) =>
+              prev.map((rec) =>
+                rec._id === updatedRecord._id ? updatedRecord : rec,
+              ),
             );
             if (selectedRecord && selectedRecord._id === updatedRecord._id) {
               setSelectedRecord(updatedRecord);
@@ -668,17 +866,20 @@ const limparFiltros = () => {
       </div>
 
       {/* Modal Confirmar Descarte */}
-      <HeroModal 
+      <HeroModal
+        backdrop="blur"
         isOpen={unsavedModalOpen}
         onClose={() => setUnsavedModalOpen(false)}
-        backdrop="blur"
       >
         <ModalContent>
           <ModalHeader>
             <h3 className="text-lg font-bold">Alterações não salvas</h3>
           </ModalHeader>
           <ModalBody>
-            <p>Existem alterações não salvas. Deseja descartá-las para mudar de prontuário?</p>
+            <p>
+              Existem alterações não salvas. Deseja descartá-las para mudar de
+              prontuário?
+            </p>
           </ModalBody>
           <ModalFooter>
             <Button variant="light" onPress={() => setUnsavedModalOpen(false)}>

@@ -1,7 +1,23 @@
+import { AnimatePresence } from "framer-motion";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  FilePlus,
+  Pause,
+  TrendingUp,
+  Users,
+  X,
+  Activity,
+  BarChart3,
+  Download,
+  FileText,
+  Building,
+  Eye,
+} from "lucide-react";
+import { useMemo } from "react";
+
 import { Ticket, TicketStatus } from "@/lib/ticket/ticket";
-import { AnimatePresence, motion } from "framer-motion";
-import { AlertCircle, CheckCircle, Clock, FilePlus, Pause, TrendingUp, Users, X, Activity, BarChart3, Download, FileText, Building, Eye } from "lucide-react";
-import { useState, useMemo } from "react";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { PreparationRequest } from "@/lib/ticket/ticket";
 
@@ -17,7 +33,7 @@ const StatCard: React.FC<{
 }> = ({ title, value, icon, color, trend, description, onClick }) => (
   <div
     className={`bg-white rounded-lg p-3 border border-gray-200 transition-all duration-200 hover:shadow-md ${
-      onClick ? 'cursor-pointer hover:border-gray-300' : ''
+      onClick ? "cursor-pointer hover:border-gray-300" : ""
     }`}
     onClick={onClick}
   >
@@ -26,14 +42,18 @@ const StatCard: React.FC<{
         <p className="text-xs font-medium text-gray-600 mb-1">{title}</p>
         <p className="text-xl font-bold text-gray-900">{value}</p>
       </div>
-      <div className={`w-4 h-4 rounded-full flex items-center justify-center ${color}`}>
+      <div
+        className={`w-4 h-4 rounded-full flex items-center justify-center ${color}`}
+      >
         {icon}
       </div>
     </div>
     {trend !== undefined && (
-      <div className={`flex items-center mt-1 text-xs font-medium ${
-        trend >= 0 ? 'text-green-600' : 'text-red-600'
-      }`}>
+      <div
+        className={`flex items-center mt-1 text-xs font-medium ${
+          trend >= 0 ? "text-green-600" : "text-red-600"
+        }`}
+      >
         {trend >= 0 ? <TrendingUp size={10} /> : <AlertCircle size={10} />}
         <span className="ml-1">{Math.abs(trend)}%</span>
       </div>
@@ -50,15 +70,19 @@ const StatButton: React.FC<{
   onClick?: () => void;
 }> = ({ icon, value, label, color, onClick }) => (
   <button
-    onClick={onClick}
-    className="flex gap-2 items-center justify-center p-2 rounded-lg transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#104e35] min-w-[50px]"
     aria-label={label}
+    className="flex gap-2 items-center justify-center p-2 rounded-lg transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#104e35] min-w-[50px]"
+    onClick={onClick}
   >
-    <div className={`w-4 h-4 rounded-full flex items-center justify-center mb-1 ${color}`}>
+    <div
+      className={`w-4 h-4 rounded-full flex items-center justify-center mb-1 ${color}`}
+    >
       {icon}
     </div>
     <span className="text-lg font-bold text-gray-900">{value}</span>
-    <span className="text-xs text-gray-600 text-center leading-tight mt-1">{label}</span>
+    <span className="text-xs text-gray-600 text-center leading-tight mt-1">
+      {label}
+    </span>
   </button>
 );
 
@@ -69,10 +93,10 @@ const ProgressBar: React.FC<{
   color: string;
 }> = ({ value, max, color }) => (
   <div className="w-full bg-gray-200 rounded-full h-1.5">
-    <div 
-      className={`h-1.5 rounded-full ${color}`} 
+    <div
+      className={`h-1.5 rounded-full ${color}`}
       style={{ width: `${(value / max) * 100}%` }}
-    ></div>
+    />
   </div>
 );
 
@@ -81,134 +105,182 @@ export const StatsModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
   estatisticasSenhas: {
-    recepcaoAguardando: number,
-    examesAguardando: number,
-    emAtendimento: number,
-    preparacao: number
-    raiox: number,
-    finalizados: number,
-    total: number,
+    recepcaoAguardando: number;
+    examesAguardando: number;
+    emAtendimento: number;
+    preparacao: number;
+    raiox: number;
+    finalizados: number;
+    total: number;
   };
   tickets: Ticket[];
   agendamentos: Scheduling[];
   preparationRequests: PreparationRequest[];
-}> = ({ isOpen, onClose, estatisticasSenhas, tickets, agendamentos, preparationRequests }) => {
-  
+}> = ({
+  isOpen,
+  onClose,
+  estatisticasSenhas,
+  tickets,
+  agendamentos,
+  preparationRequests,
+}) => {
   // Calcular estatísticas adicionais
   const estatisticasAdicionais = useMemo(() => {
-    const ticketsFinalizados = tickets.filter(t => t.status === TicketStatus.FINALIZADO);
+    const ticketsFinalizados = tickets.filter(
+      (t) => t.status === TicketStatus.FINALIZADO,
+    );
     const tempoTotal = ticketsFinalizados.reduce((acc, ticket) => {
       if (ticket.emissao) {
         const criacao = new Date(ticket.emissao).getTime();
         const finalizacao = new Date(ticket.emissao).getTime();
+
         return acc + (finalizacao - criacao);
       }
+
       return acc;
     }, 0);
-    
-    const tempoMedio = ticketsFinalizados.length > 0 
-      ? Math.round((tempoTotal / ticketsFinalizados.length) / 60000) 
-      : 0;
-    
-    const taxaConclusao = estatisticasSenhas.total > 0
-      ? Math.round((estatisticasSenhas.finalizados / estatisticasSenhas.total) * 100)
-      : 0;
-    
-    const ticketsAguardando = tickets.filter(t => 
-      t.status === TicketStatus.AGUARDANDO || 
-      t.status === TicketStatus.PREPARO_OK ||
-      t.status === TicketStatus.EM_PREPARACAO
+
+    const tempoMedio =
+      ticketsFinalizados.length > 0
+        ? Math.round(tempoTotal / ticketsFinalizados.length / 60000)
+        : 0;
+
+    const taxaConclusao =
+      estatisticasSenhas.total > 0
+        ? Math.round(
+            (estatisticasSenhas.finalizados / estatisticasSenhas.total) * 100,
+          )
+        : 0;
+
+    const ticketsAguardando = tickets.filter(
+      (t) =>
+        t.status === TicketStatus.AGUARDANDO ||
+        t.status === TicketStatus.PREPARO_OK ||
+        t.status === TicketStatus.EM_PREPARACAO,
     );
-    
+
     let maiorTempoEspera = 0;
+
     if (ticketsAguardando.length > 0) {
       const agora = new Date().getTime();
-      ticketsAguardando.forEach(ticket => {
+
+      ticketsAguardando.forEach((ticket) => {
         if (ticket.emissao) {
           const criacao = new Date(ticket.emissao).getTime();
           const tempoEspera = Math.round((agora - criacao) / 60000);
+
           if (tempoEspera > maiorTempoEspera) {
             maiorTempoEspera = tempoEspera;
           }
         }
       });
     }
-    
-    // SUGESTÃO 1: Estatísticas por Tipo de Exame
-    const examesRealizados = agendamentos.reduce((acc, agendamento) => {
-      agendamento.EXAMES.forEach(exame => {
-        acc[exame.nomeExame] = (acc[exame.nomeExame] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
 
-    const examesPorStatus = agendamentos.reduce((acc, agendamento) => {
-      agendamento.EXAMES.forEach(exame => {
-        const status = exame.status || 'Pendente';
-        acc[status] = (acc[status] || 0) + 1;
-      });
-      return acc;
-    }, {} as Record<string, number>);
+    // SUGESTÃO 1: Estatísticas por Tipo de Exame
+    const examesRealizados = agendamentos.reduce(
+      (acc, agendamento) => {
+        agendamento.EXAMES.forEach((exame) => {
+          acc[exame.nomeExame] = (acc[exame.nomeExame] || 0) + 1;
+        });
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const examesPorStatus = agendamentos.reduce(
+      (acc, agendamento) => {
+        agendamento.EXAMES.forEach((exame) => {
+          const status = exame.status || "Pendente";
+
+          acc[status] = (acc[status] || 0) + 1;
+        });
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
 
     // SUGESTÃO 2: Estatísticas por Tipo de ASO
-    const tiposASO = agendamentos.reduce((acc, agendamento) => {
-      const tipo = agendamento.TIPOEXAMENOME || 'Não especificado';
-      acc[tipo] = (acc[tipo] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
+    const tiposASO = agendamentos.reduce(
+      (acc, agendamento) => {
+        const tipo = agendamento.TIPOEXAMENOME || "Não especificado";
 
-    const examesPorTipo = agendamentos.reduce((acc, agendamento) => {
-      const tipo = agendamento.TIPOEXAMENOME || 'Não especificado';
-      acc[tipo] = (acc[tipo] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
-    const empresasCount = agendamentos.reduce((acc, agendamento) => {
-      const empresa = agendamento.NOMEEMPRESA || 'Não especificada';
-      acc[empresa] = (acc[empresa] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+        acc[tipo] = (acc[tipo] || 0) + 1;
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const examesPorTipo = agendamentos.reduce(
+      (acc, agendamento) => {
+        const tipo = agendamento.TIPOEXAMENOME || "Não especificado";
+
+        acc[tipo] = (acc[tipo] || 0) + 1;
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const empresasCount = agendamentos.reduce(
+      (acc, agendamento) => {
+        const empresa = agendamento.NOMEEMPRESA || "Não especificada";
+
+        acc[empresa] = (acc[empresa] || 0) + 1;
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
     const topEmpresas = Object.entries(empresasCount)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
-    
+
     const totalAgendamentos = agendamentos.length;
-    const compareceram = tickets.filter(t => 
-      t.status === TicketStatus.FINALIZADO || 
-      t.status === TicketStatus.EM_ATENDIMENTO ||
-      t.status === TicketStatus.EM_CHAMADA
+    const compareceram = tickets.filter(
+      (t) =>
+        t.status === TicketStatus.FINALIZADO ||
+        t.status === TicketStatus.EM_ATENDIMENTO ||
+        t.status === TicketStatus.EM_CHAMADA,
     ).length;
-    
+
     // SUGESTÃO 3: Métricas de Tempo de Atendimento por Exame
     const tempoPorExame = {
-      'CLINICO': 30,
-      'AUDIOMETRIA': 45,
-      'ACUIDADE VISUAL': 20,
-      'LABORATORIO': 60,
-      'RAIO-X': 25,
-      'ECG': 15,
-      'TRIAGEM': 10,
-      'Admissional': 30,
-      'Periódico': 45,
-      'Demissional': 25,
-      'Mudança de Função': 40,
-      'Retorno ao Trabalho': 35,
-      'Não especificado': 30
+      CLINICO: 30,
+      AUDIOMETRIA: 45,
+      "ACUIDADE VISUAL": 20,
+      LABORATORIO: 60,
+      "RAIO-X": 25,
+      ECG: 15,
+      TRIAGEM: 10,
+      Admissional: 30,
+      Periódico: 45,
+      Demissional: 25,
+      "Mudança de Função": 40,
+      "Retorno ao Trabalho": 35,
+      "Não especificado": 30,
     };
-    
+
     let tempoTotalEstimado = 0;
-    agendamentos.forEach(agendamento => {
-      const tipo = agendamento.TIPOEXAMENOME || 'Não especificado';
-      tempoTotalEstimado += tempoPorExame[tipo as keyof typeof tempoPorExame] || 30;
+
+    agendamentos.forEach((agendamento) => {
+      const tipo = agendamento.TIPOEXAMENOME || "Não especificado";
+
+      tempoTotalEstimado +=
+        tempoPorExame[tipo as keyof typeof tempoPorExame] || 30;
     });
-    
+
     return {
       tempoMedioAtendimento: tempoMedio,
       taxaConclusao: taxaConclusao,
       maiorTempoEspera: maiorTempoEspera,
       ticketsPorStatus: {
-        aguardando: estatisticasSenhas.recepcaoAguardando + estatisticasSenhas.examesAguardando,
+        aguardando:
+          estatisticasSenhas.recepcaoAguardando +
+          estatisticasSenhas.examesAguardando,
         emAtendimento: estatisticasSenhas.emAtendimento,
         preparacao: estatisticasSenhas.preparacao,
         raiox: estatisticasSenhas.raiox,
@@ -219,11 +291,14 @@ export const StatsModal: React.FC<{
       examesPorStatus,
       tiposASO,
       topEmpresas,
-      taxaComparecimento: totalAgendamentos > 0 ? Math.round((compareceram / totalAgendamentos) * 100) : 0,
+      taxaComparecimento:
+        totalAgendamentos > 0
+          ? Math.round((compareceram / totalAgendamentos) * 100)
+          : 0,
       tempoTotalEstimado: Math.round(tempoTotalEstimado / 60),
       totalAgendamentos,
       compareceram,
-      tempoMedioPorExame: tempoPorExame
+      tempoMedioPorExame: tempoPorExame,
     };
   }, [estatisticasSenhas, tickets, agendamentos, preparationRequests]);
 
@@ -234,66 +309,78 @@ export const StatsModal: React.FC<{
   // Cores baseadas nas ações do componente de tickets (apenas para ícones)
   const getStatusColor = (status: string) => {
     const colors = {
-      total: 'bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white',
-      aguardando: 'bg-amber-100 text-amber-600',
-      emAtendimento: 'bg-red-100 text-red-600',
-      preparacao: 'bg-blue-100 text-blue-600',
-      raiox: 'bg-purple-100 text-purple-600',
-      finalizados: 'bg-green-100 text-green-600',
+      total: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white",
+      aguardando: "bg-amber-100 text-amber-600",
+      emAtendimento: "bg-red-100 text-red-600",
+      preparacao: "bg-blue-100 text-blue-600",
+      raiox: "bg-purple-100 text-purple-600",
+      finalizados: "bg-green-100 text-green-600",
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-600';
+
+    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-600";
   };
 
   const getIconColor = (status: string) => {
     const colors = {
-      total: 'text-white',
-      aguardando: 'text-amber-600',
-      emAtendimento: 'text-red-600',
-      preparacao: 'text-blue-600',
-      raiox: 'text-purple-600',
-      finalizados: 'text-green-600',
+      total: "text-white",
+      aguardando: "text-amber-600",
+      emAtendimento: "text-red-600",
+      preparacao: "text-blue-600",
+      raiox: "text-purple-600",
+      finalizados: "text-green-600",
     };
-    return colors[status as keyof typeof colors] || 'text-gray-600';
+
+    return colors[status as keyof typeof colors] || "text-gray-600";
   };
 
   // Seção de estatísticas empresariais
   const renderEstatisticasEmpresariais = () => (
     <div className="bg-white rounded-lg p-4 border border-gray-200">
       <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <Building size={18} className="text-[#104e35]" />
+        <Building className="text-[#104e35]" size={18} />
         Estatísticas por Empresa
       </h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Top 5 Empresas</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Top 5 Empresas
+          </h4>
           <div className="space-y-1">
-            {estatisticasAdicionais.topEmpresas.map(([empresa, quantidade], index) => (
-              <div key={empresa} className="flex justify-between items-center py-1">
-                <span className="text-xs text-gray-600 truncate">
-                  {index + 1}. {empresa}
-                </span>
-                <span className="text-xs font-medium text-gray-900 bg-gray-50 px-2 py-1 rounded">
-                  {quantidade}
-                </span>
-              </div>
-            ))}
+            {estatisticasAdicionais.topEmpresas.map(
+              ([empresa, quantidade], index) => (
+                <div
+                  key={empresa}
+                  className="flex justify-between items-center py-1"
+                >
+                  <span className="text-xs text-gray-600 truncate">
+                    {index + 1}. {empresa}
+                  </span>
+                  <span className="text-xs font-medium text-gray-900 bg-gray-50 px-2 py-1 rounded">
+                    {quantidade}
+                  </span>
+                </div>
+              ),
+            )}
           </div>
         </div>
-        
+
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Comparecimento</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Comparecimento
+          </h4>
           <div className="text-center p-3 bg-gray-50 rounded-lg">
             <div className="text-2xl font-bold text-gray-900 mb-1">
               {estatisticasAdicionais.taxaComparecimento}%
             </div>
-            <ProgressBar 
-              value={estatisticasAdicionais.taxaComparecimento} 
-              max={100} 
-              color="bg-gradient-to-r from-[#104e35] to-[#a6ce39]" 
+            <ProgressBar
+              color="bg-gradient-to-r from-[#104e35] to-[#a6ce39]"
+              max={100}
+              value={estatisticasAdicionais.taxaComparecimento}
             />
             <p className="text-xs text-gray-500 mt-1">
-              {estatisticasAdicionais.compareceram}/{estatisticasAdicionais.totalAgendamentos}
+              {estatisticasAdicionais.compareceram}/
+              {estatisticasAdicionais.totalAgendamentos}
             </p>
           </div>
         </div>
@@ -305,20 +392,24 @@ export const StatsModal: React.FC<{
   const renderEstatisticasExames = () => (
     <div className="bg-white rounded-lg p-4 border border-gray-200 mt-4">
       <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <FileText size={18} className="text-[#104e35]" />
+        <FileText className="text-[#104e35]" size={18} />
         Estatísticas por Exame
       </h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Exames Mais Solicitados</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Exames Mais Solicitados
+          </h4>
           <div className="space-y-2 max-h-40 overflow-y-auto">
             {Object.entries(estatisticasAdicionais.examesRealizados)
               .sort((a, b) => b[1] - a[1])
               .slice(0, 5)
               .map(([exame, quantidade]) => (
                 <div key={exame} className="flex justify-between items-center">
-                  <span className="text-xs text-gray-600 truncate">{exame}</span>
+                  <span className="text-xs text-gray-600 truncate">
+                    {exame}
+                  </span>
                   <span className="text-xs font-medium bg-gray-100 px-2 py-1 rounded">
                     {quantidade}
                   </span>
@@ -326,18 +417,22 @@ export const StatsModal: React.FC<{
               ))}
           </div>
         </div>
-        
+
         <div>
-          <h4 className="text-sm font-medium text-gray-700 mb-2">Status dos Exames</h4>
+          <h4 className="text-sm font-medium text-gray-700 mb-2">
+            Status dos Exames
+          </h4>
           <div className="space-y-2">
-            {Object.entries(estatisticasAdicionais.examesPorStatus).map(([status, quantidade]) => (
-              <div key={status} className="flex justify-between items-center">
-                <span className="text-xs text-gray-600">{status}</span>
-                <span className="text-xs font-medium bg-gray-100 px-2 py-1 rounded">
-                  {quantidade}
-                </span>
-              </div>
-            ))}
+            {Object.entries(estatisticasAdicionais.examesPorStatus).map(
+              ([status, quantidade]) => (
+                <div key={status} className="flex justify-between items-center">
+                  <span className="text-xs text-gray-600">{status}</span>
+                  <span className="text-xs font-medium bg-gray-100 px-2 py-1 rounded">
+                    {quantidade}
+                  </span>
+                </div>
+              ),
+            )}
           </div>
         </div>
       </div>
@@ -348,10 +443,10 @@ export const StatsModal: React.FC<{
   const renderTiposASO = () => (
     <div className="bg-white rounded-lg p-4 border border-gray-200 mt-4">
       <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <Activity size={18} className="text-[#104e35]" />
+        <Activity className="text-[#104e35]" size={18} />
         Distribuição por Tipo de ASO
       </h3>
-      
+
       <div className="space-y-2 max-h-40 overflow-y-auto">
         {Object.entries(estatisticasAdicionais.tiposASO)
           .sort((a, b) => b[1] - a[1])
@@ -363,7 +458,11 @@ export const StatsModal: React.FC<{
                   {quantidade}
                 </span>
                 <span className="text-xs text-gray-500">
-                  {Math.round((quantidade / estatisticasAdicionais.totalAgendamentos) * 100)}%
+                  {Math.round(
+                    (quantidade / estatisticasAdicionais.totalAgendamentos) *
+                      100,
+                  )}
+                  %
                 </span>
               </div>
             </div>
@@ -376,10 +475,10 @@ export const StatsModal: React.FC<{
   const renderMetricasEficiencia = () => (
     <div className="bg-white rounded-lg p-4 border border-gray-200 mt-4">
       <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-        <BarChart3 size={18} className="text-[#104e35]" />
+        <BarChart3 className="text-[#104e35]" size={18} />
         Métricas de Eficiência
       </h3>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-600 mb-1">Capacidade Diária</p>
@@ -388,18 +487,21 @@ export const StatsModal: React.FC<{
           </p>
           <p className="text-xs text-gray-500">horas/dia</p>
         </div>
-        
+
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-600 mb-1">Exames/Hora</p>
           <p className="text-lg font-bold text-gray-900">
-            {estatisticasAdicionais.totalAgendamentos > 0 
-              ? Math.round((estatisticasAdicionais.totalAgendamentos / estatisticasAdicionais.tempoTotalEstimado) * 60)
-              : 0
-            }
+            {estatisticasAdicionais.totalAgendamentos > 0
+              ? Math.round(
+                  (estatisticasAdicionais.totalAgendamentos /
+                    estatisticasAdicionais.tempoTotalEstimado) *
+                    60,
+                )
+              : 0}
           </p>
           <p className="text-xs text-gray-500">média</p>
         </div>
-        
+
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-600 mb-1">Taxa de Absenteísmo</p>
           <p className="text-lg font-bold text-gray-900">
@@ -407,7 +509,7 @@ export const StatsModal: React.FC<{
           </p>
           <p className="text-xs text-gray-500">não compareceram</p>
         </div>
-        
+
         <div className="text-center p-3 bg-gray-50 rounded-lg">
           <p className="text-xs text-gray-600 mb-1">Tempo Total Estimado</p>
           <p className="text-lg font-bold text-gray-900">
@@ -428,109 +530,131 @@ export const StatsModal: React.FC<{
               {/* Cabeçalho do modal */}
               <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">Estatísticas de Atendimentos</h2>
-                  <p className="text-sm text-gray-600 mt-1">Visão geral do desempenho</p>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    Estatísticas de Atendimentos
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Visão geral do desempenho
+                  </p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={handleExport}
-                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#104e35] text-white rounded-lg hover:bg-[#0d3d29] transition-all focus:outline-none focus:ring-1 focus:ring-[#104e35]"
                     aria-label="Exportar estatísticas"
+                    className="flex items-center gap-2 px-3 py-1.5 text-sm bg-[#104e35] text-white rounded-lg hover:bg-[#0d3d29] transition-all focus:outline-none focus:ring-1 focus:ring-[#104e35]"
+                    onClick={handleExport}
                   >
                     <Download size={14} />
                     Exportar
                   </button>
                   <button
-                    onClick={onClose}
-                    className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-1 focus:ring-[#104e35]"
                     aria-label="Fechar"
+                    className="w-7 h-7 flex items-center justify-center text-gray-500 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors focus:outline-none focus:ring-1 focus:ring-[#104e35]"
+                    onClick={onClose}
                   >
                     <X size={16} />
                   </button>
                 </div>
               </div>
-              
+
               {/* Conteúdo do modal */}
               <div className="flex-1 overflow-y-auto p-4">
                 {/* Estatísticas principais */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
                   <StatCard
+                    color={getStatusColor("total")}
+                    icon={<Users className={getIconColor("total")} size={16} />}
                     title="Total"
                     value={estatisticasSenhas.total}
-                    icon={<Users size={16} className={getIconColor('total')} />}
-                    color={getStatusColor('total')}
                   />
                   <StatCard
+                    color={getStatusColor("aguardando")}
+                    icon={
+                      <Clock className={getIconColor("aguardando")} size={16} />
+                    }
                     title="Aguardando"
                     value={estatisticasSenhas.recepcaoAguardando}
-                    icon={<Clock size={16} className={getIconColor('aguardando')} />}
-                    color={getStatusColor('aguardando')}
                   />
                   <StatCard
+                    color={getStatusColor("aguardando")}
+                    icon={
+                      <Clock className={getIconColor("aguardando")} size={16} />
+                    }
                     title="Aguardando"
                     value={estatisticasSenhas.examesAguardando}
-                    icon={<Clock size={16} className={getIconColor('aguardando')} />}
-                    color={getStatusColor('aguardando')}
                   />
                   <StatCard
+                    color={getStatusColor("emAtendimento")}
+                    icon={
+                      <FilePlus
+                        className={getIconColor("emAtendimento")}
+                        size={16}
+                      />
+                    }
                     title="Atendimento"
                     value={estatisticasSenhas.emAtendimento}
-                    icon={<FilePlus size={16} className={getIconColor('emAtendimento')} />}
-                    color={getStatusColor('emAtendimento')}
                   />
                   <StatCard
+                    color={getStatusColor("preparacao")}
+                    icon={
+                      <Pause className={getIconColor("preparacao")} size={16} />
+                    }
                     title="Preparação"
                     value={estatisticasSenhas.preparacao}
-                    icon={<Pause size={16} className={getIconColor('preparacao')} />}
-                    color={getStatusColor('preparacao')}
                   />
                   <StatCard
+                    color={getStatusColor("raiox")}
+                    icon={<Eye className={getIconColor("raiox")} size={16} />}
                     title="Raio-X"
                     value={estatisticasSenhas.raiox}
-                    icon={<Eye size={16} className={getIconColor('raiox')} />}
-                    color={getStatusColor('raiox')}
                   />
                   <StatCard
+                    color={getStatusColor("finalizados")}
+                    icon={
+                      <CheckCircle
+                        className={getIconColor("finalizados")}
+                        size={16}
+                      />
+                    }
                     title="Concluídos"
                     value={estatisticasSenhas.finalizados}
-                    icon={<CheckCircle size={16} className={getIconColor('finalizados')} />}
-                    color={getStatusColor('finalizados')}
                   />
                 </div>
-                
+
                 {/* Estatísticas empresariais */}
                 {renderEstatisticasEmpresariais()}
-                
+
                 {/* Estatísticas de exames */}
                 {renderEstatisticasExames()}
-                
+
                 {/* Tipos de ASO */}
                 {renderTiposASO()}
-                
+
                 {/* Métricas de eficiência */}
                 {renderMetricasEficiencia()}
-                
+
                 {/* Análise de desempenho */}
                 <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 mt-4">
                   <h3 className="text-md font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <BarChart3 size={18} className="text-[#104e35]" />
+                    <BarChart3 className="text-[#104e35]" size={18} />
                     Análise de Desempenho
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
-                      <p className="text-xs text-gray-600 mb-1">Taxa de Conclusão</p>
+                      <p className="text-xs text-gray-600 mb-1">
+                        Taxa de Conclusão
+                      </p>
                       <div className="flex items-end justify-between mb-2">
                         <span className="text-lg font-bold text-gray-900">
                           {estatisticasAdicionais.taxaConclusao}%
                         </span>
                       </div>
-                      <ProgressBar 
-                        value={estatisticasAdicionais.taxaConclusao} 
-                        max={100} 
-                        color="bg-gradient-to-r from-[#104e35] to-[#a6ce39]" 
+                      <ProgressBar
+                        color="bg-gradient-to-r from-[#104e35] to-[#a6ce39]"
+                        max={100}
+                        value={estatisticasAdicionais.taxaConclusao}
                       />
                     </div>
-                    
+
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-600 mb-1">Tempo Médio</p>
                       <div className="flex items-end justify-between mb-2">
@@ -540,7 +664,7 @@ export const StatsModal: React.FC<{
                       </div>
                       <p className="text-xs text-gray-500">por atendimento</p>
                     </div>
-                    
+
                     <div className="bg-white p-3 rounded-lg border border-gray-200">
                       <p className="text-xs text-gray-600 mb-1">Maior Espera</p>
                       <div className="flex items-end justify-between mb-2">
@@ -563,39 +687,39 @@ export const StatsModal: React.FC<{
 
 interface SenhasEstatisticasProps {
   estatisticasSenhas: {
-    recepcaoAguardando: number,
-    examesAguardando: number,
-    emAtendimento: number,
-    preparacao: number
-    raiox: number,
-    finalizados: number,
-    total: number,
+    recepcaoAguardando: number;
+    examesAguardando: number;
+    emAtendimento: number;
+    preparacao: number;
+    raiox: number;
+    finalizados: number;
+    total: number;
   };
-  onSetStatsModalOpen: (status:boolean) => void;
+  onSetStatsModalOpen: (status: boolean) => void;
   agendamentos: Scheduling[];
   preparationRequests: PreparationRequest[];
   tickets: Ticket[];
 }
 
-export default function SenhasEstatisticas({ 
-  estatisticasSenhas, 
-  onSetStatsModalOpen, 
-  agendamentos, 
-  preparationRequests, 
-  tickets 
+export default function SenhasEstatisticas({
+  estatisticasSenhas,
+  onSetStatsModalOpen,
+  agendamentos,
+  preparationRequests,
+  tickets,
 }: SenhasEstatisticasProps) {
-  
   // Cores apenas para ícones (fundo branco no header)
   const getIconColor = (status: string) => {
     const colors = {
-      total: 'bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white',
-      aguardando: 'bg-amber-100 text-amber-600',
-      emAtendimento: 'bg-red-100 text-red-600',
-      preparacao: 'bg-blue-100 text-blue-600',
-      raiox: 'bg-purple-100 text-purple-600',
-      finalizados: 'bg-green-100 text-green-600',
+      total: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white",
+      aguardando: "bg-amber-100 text-amber-600",
+      emAtendimento: "bg-red-100 text-red-600",
+      preparacao: "bg-blue-100 text-blue-600",
+      raiox: "bg-purple-100 text-purple-600",
+      finalizados: "bg-green-100 text-green-600",
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-600';
+
+    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-600";
   };
 
   return (
@@ -603,64 +727,64 @@ export default function SenhasEstatisticas({
       {/* Grupo de botões de estatísticas - Desktop (compacto para header) */}
       <div className="hidden lg:flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
         <StatButton
+          color={getIconColor("aguardando")}
           icon={<Clock size={12} />}
-          value={estatisticasSenhas.recepcaoAguardando}
           label="Recep."
-          color={getIconColor('aguardando')}
+          value={estatisticasSenhas.recepcaoAguardando}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("aguardando")}
           icon={<Clock size={12} />}
-          value={estatisticasSenhas.examesAguardando}
           label="Exames"
-          color={getIconColor('aguardando')}
+          value={estatisticasSenhas.examesAguardando}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("emAtendimento")}
           icon={<FilePlus size={12} />}
-          value={estatisticasSenhas.emAtendimento}
           label="Atend."
-          color={getIconColor('emAtendimento')}
+          value={estatisticasSenhas.emAtendimento}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("preparacao")}
           icon={<Pause size={12} />}
-          value={estatisticasSenhas.preparacao}
           label="Prep."
-          color={getIconColor('preparacao')}
+          value={estatisticasSenhas.preparacao}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("raiox")}
           icon={<Eye size={12} />}
-          value={estatisticasSenhas.raiox}
           label="Raio-X"
-          color={getIconColor('raiox')}
+          value={estatisticasSenhas.raiox}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("finalizados")}
           icon={<CheckCircle size={12} />}
-          value={estatisticasSenhas.finalizados}
           label="Concl."
-          color={getIconColor('finalizados')}
+          value={estatisticasSenhas.finalizados}
           onClick={() => onSetStatsModalOpen(true)}
         />
         <StatButton
+          color={getIconColor("total")}
           icon={<Users size={12} />}
-          value={estatisticasSenhas.total}
           label="Total"
-          color={getIconColor('total')}
+          value={estatisticasSenhas.total}
           onClick={() => onSetStatsModalOpen(true)}
         />
       </div>
 
       {/* Versão mobile */}
       <div className="lg:hidden">
-        <button 
-          onClick={() => onSetStatsModalOpen(true)}
-          className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-1 focus:ring-[#104e35]"
+        <button
           aria-label="Ver estatísticas"
+          className="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-1 focus:ring-[#104e35]"
+          onClick={() => onSetStatsModalOpen(true)}
         >
-          <BarChart3 size={16} className="text-[#104e35]" />
+          <BarChart3 className="text-[#104e35]" size={16} />
         </button>
       </div>
     </>

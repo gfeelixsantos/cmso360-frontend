@@ -2,7 +2,8 @@ export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
   name: "CMSO 360 - Sistema Médico Integrado",
-  description: "Sistema médico moderno e integrado para gestão de saúde ocupacional",
+  description:
+    "Sistema médico moderno e integrado para gestão de saúde ocupacional",
   navItems: [
     {
       label: "Home",
@@ -14,5 +15,5 @@ export const siteConfig = {
       label: "Profile",
       href: "/profile",
     },
-  ]
+  ],
 };

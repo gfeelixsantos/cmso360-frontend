@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, RadioGroup, Radio, Textarea, Spinner } from "@heroui/react";
-import { useUser } from '@/hooks/useUser';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Brain, Heart, Eye, FileText, Scale } from 'lucide-react';
-import HeaderExame from './HeaderExame';
+import React, { useState, useEffect, useCallback } from "react";
+import { Card, Button, RadioGroup, Radio, Textarea } from "@heroui/react";
+import { FileText } from "lucide-react";
+
+import HeaderExame from "./HeaderExame";
+
+import { useUser } from "@/hooks/useUser";
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface PsicossocialProps {
   atendimento: any;
@@ -18,57 +20,57 @@ interface PsicossocialData {
   transtornoEmocional: string;
   medicamentosControlados: string;
   usoAlcoolDrogas: string;
-  
+
   // Condições Clínicas e Sensoriais
   tonturaDesmaios: string;
   problemasSensoriais: string;
   hipertensaoDiabetes: string;
-  
+
   // Aspectos Psicossociais
   relacionamentoFamiliar: string;
   medoAlturaEspacos: string;
   experienciaAlturaConfinado: string;
-  
+
   // Autoavaliação
   autoAvaliacaoAltura: string;
   autoAvaliacaoConfinado: string;
-  
+
   // Conclusão
   observacoes: string;
 }
 
-const Psicossocial: React.FC<PsicossocialProps> = ({ 
-  atendimento, 
+const Psicossocial: React.FC<PsicossocialProps> = ({
+  atendimento,
   exame,
   formulario,
-  onSave, 
-  onClose 
+  onSave,
+  onClose,
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
-  
+
   const [formData, setFormData] = useState<PsicossocialData>({
     // Saúde Mental e Hábitos
-    transtornoEmocional: 'Não',
-    medicamentosControlados: 'Não',
-    usoAlcoolDrogas: 'Não',
-    
+    transtornoEmocional: "Não",
+    medicamentosControlados: "Não",
+    usoAlcoolDrogas: "Não",
+
     // Condições Clínicas e Sensoriais
-    tonturaDesmaios: 'Não',
-    problemasSensoriais: 'Não',
-    hipertensaoDiabetes: 'Não',
-    
+    tonturaDesmaios: "Não",
+    problemasSensoriais: "Não",
+    hipertensaoDiabetes: "Não",
+
     // Aspectos Psicossociais
-    relacionamentoFamiliar: 'Sim',
-    medoAlturaEspacos: 'Não',
-    experienciaAlturaConfinado: 'Não',
-    
+    relacionamentoFamiliar: "Sim",
+    medoAlturaEspacos: "Não",
+    experienciaAlturaConfinado: "Não",
+
     // Autoavaliação
-    autoAvaliacaoAltura: 'Sim',
-    autoAvaliacaoConfinado: 'Sim',
-    
+    autoAvaliacaoAltura: "Sim",
+    autoAvaliacaoConfinado: "Sim",
+
     // Conclusão
-    observacoes: ''
+    observacoes: "",
   });
 
   // Preenchimento automático dos dados do atendimento
@@ -78,23 +80,26 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
     }
 
     if (formulario) {
-      setFormData(prev => ({ ...prev, ...formulario }));
+      setFormData((prev) => ({ ...prev, ...formulario }));
     }
   }, [atendimento, formulario]);
 
-  const handleInputChange = useCallback((field: keyof PsicossocialData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  const handleInputChange = useCallback(
+    (field: keyof PsicossocialData, value: any) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
   const handleSave = useCallback(() => {
     onSave?.(formData);
   }, [formData, onSave]);
 
-  const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
-    number, 
-    title,
-    icon 
-  }) => (
+  const SectionTitle: React.FC<{
+    number: string;
+    title: string;
+    icon?: React.ReactNode;
+  }> = ({ number, title, icon }) => (
     <div className="flex items-start gap-3 mb-4">
       <div className="flex-1">
         <div className="flex items-center gap-2">
@@ -107,38 +112,34 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
-      <HeaderExame 
-        agendamento={agendamento}
-        exame={exame}
-      />
+      <HeaderExame agendamento={agendamento} exame={exame} />
 
       {/* 2. Saúde Mental e Hábitos */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="2" 
-          title="Saúde Mental e Hábitos" 
-        />
-        
+        <SectionTitle number="2" title="Saúde Mental e Hábitos" />
+
         <div className="space-y-6">
           <div className=" p-4">
             <div className="space-y-4">
               {[
                 {
-                  label: "Você tem ou já teve algum transtorno emocional (depressão, ansiedade, insônia)?",
+                  label:
+                    "Você tem ou já teve algum transtorno emocional (depressão, ansiedade, insônia)?",
                   field: "transtornoEmocional" as keyof PsicossocialData,
                   options: [
                     { value: "Não", label: "Não" },
                     { value: "Sim", label: "Sim" },
-                    { value: "Teve no passado", label: "Teve no passado" }
-                  ]
+                    { value: "Teve no passado", label: "Teve no passado" },
+                  ],
                 },
                 {
-                  label: "Faz uso atual de medicamentos controlados (sono, ansiedade, humor)?",
+                  label:
+                    "Faz uso atual de medicamentos controlados (sono, ansiedade, humor)?",
                   field: "medicamentosControlados" as keyof PsicossocialData,
                   options: [
                     { value: "Não", label: "Não" },
-                    { value: "Sim", label: "Sim" }
-                  ]
+                    { value: "Sim", label: "Sim" },
+                  ],
                 },
                 {
                   label: "Faz uso frequente de álcool ou drogas?",
@@ -146,20 +147,22 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                   options: [
                     { value: "Não", label: "Não" },
                     { value: "Sim", label: "Sim" },
-                    { value: "Usou no passado", label: "Usou no passado" }
-                  ]
-                }
+                    { value: "Usou no passado", label: "Usou no passado" },
+                  ],
+                },
               ].map((item) => (
                 <div key={item.field}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {item.label}
                   </label>
                   <RadioGroup
-                    color="success"
-                    value={formData[item.field] as string}
-                    onValueChange={(value) => handleInputChange(item.field, value)}
-                    orientation="horizontal"
                     classNames={{ wrapper: "flex gap-6" }}
+                    color="success"
+                    orientation="horizontal"
+                    value={formData[item.field] as string}
+                    onValueChange={(value) =>
+                      handleInputChange(item.field, value)
+                    }
                   >
                     {item.options.map((option) => (
                       <Radio key={option.value} value={option.value}>
@@ -176,38 +179,38 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
       {/* 3. Condições Clínicas e Sensoriais */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="3" 
-          title="Condições Clínicas e Sensoriais" 
-        />
-        
+        <SectionTitle number="3" title="Condições Clínicas e Sensoriais" />
+
         <div className="space-y-6">
           <div className="p-4">
             <div className="space-y-4">
               {[
                 {
                   label: "Já teve tontura, desmaios ou convulsões?",
-                  field: "tonturaDesmaios" as keyof PsicossocialData
+                  field: "tonturaDesmaios" as keyof PsicossocialData,
                 },
                 {
-                  label: "Tem labirintite, problema de visão ou audição que dificulte o trabalho?",
-                  field: "problemasSensoriais" as keyof PsicossocialData
+                  label:
+                    "Tem labirintite, problema de visão ou audição que dificulte o trabalho?",
+                  field: "problemasSensoriais" as keyof PsicossocialData,
                 },
                 {
                   label: "Possui hipertensão ou diabetes sob controle?",
-                  field: "hipertensaoDiabetes" as keyof PsicossocialData
-                }
+                  field: "hipertensaoDiabetes" as keyof PsicossocialData,
+                },
               ].map((item) => (
                 <div key={item.field}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {item.label}
                   </label>
                   <RadioGroup
-                    color="success"
-                    value={formData[item.field] as string}
-                    onValueChange={(value) => handleInputChange(item.field, value)}
-                    orientation="horizontal"
                     classNames={{ wrapper: "flex gap-6" }}
+                    color="success"
+                    orientation="horizontal"
+                    value={formData[item.field] as string}
+                    onValueChange={(value) =>
+                      handleInputChange(item.field, value)
+                    }
                   >
                     <Radio value="Sim">Sim</Radio>
                     <Radio value="Não">Não</Radio>
@@ -221,11 +224,8 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
       {/* 4. Aspectos Psicossociais */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="4" 
-          title="Aspectos Psicossociais" 
-        />
-        
+        <SectionTitle number="4" title="Aspectos Psicossociais" />
+
         <div className="space-y-6">
           <div className="p-4">
             <div className="space-y-4">
@@ -234,11 +234,13 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                   Seu relacionamento familiar e social é satisfatório?
                 </label>
                 <RadioGroup
-                  color="success"
-                  value={formData.relacionamentoFamiliar}
-                  onValueChange={(value) => handleInputChange('relacionamentoFamiliar', value)}
-                  orientation="horizontal"
                   classNames={{ wrapper: "flex gap-6" }}
+                  color="success"
+                  orientation="horizontal"
+                  value={formData.relacionamentoFamiliar}
+                  onValueChange={(value) =>
+                    handleInputChange("relacionamentoFamiliar", value)
+                  }
                 >
                   <Radio value="Sim">Sim</Radio>
                   <Radio value="Com dificuldades">Com dificuldades</Radio>
@@ -247,24 +249,27 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
               {[
                 {
-                  label: "Já sentiu medo ou ansiedade em locais altos ou fechados?",
-                  field: "medoAlturaEspacos" as keyof PsicossocialData
+                  label:
+                    "Já sentiu medo ou ansiedade em locais altos ou fechados?",
+                  field: "medoAlturaEspacos" as keyof PsicossocialData,
                 },
                 {
                   label: "Já trabalhou em altura ou em espaço confinado antes?",
-                  field: "experienciaAlturaConfinado" as keyof PsicossocialData
-                }
+                  field: "experienciaAlturaConfinado" as keyof PsicossocialData,
+                },
               ].map((item) => (
                 <div key={item.field}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {item.label}
                   </label>
                   <RadioGroup
-                    color='success'
-                    value={formData[item.field] as string}
-                    onValueChange={(value) => handleInputChange(item.field, value)}
-                    orientation="horizontal"
                     classNames={{ wrapper: "flex gap-6" }}
+                    color="success"
+                    orientation="horizontal"
+                    value={formData[item.field] as string}
+                    onValueChange={(value) =>
+                      handleInputChange(item.field, value)
+                    }
                   >
                     <Radio value="Sim">Sim</Radio>
                     <Radio value="Não">Não</Radio>
@@ -278,11 +283,8 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
       {/* 5. Autoavaliação */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="5" 
-          title="Autoavaliação" 
-        />
-        
+        <SectionTitle number="5" title="Autoavaliação" />
+
         <div className="space-y-6">
           <div className="p-4">
             <div className="space-y-4">
@@ -293,29 +295,32 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                   options: [
                     { value: "Sim", label: "Sim" },
                     { value: "Não", label: "Não" },
-                    { value: "Indefinido", label: "Indefinido" }
-                  ]
+                    { value: "Indefinido", label: "Indefinido" },
+                  ],
                 },
                 {
-                  label: "Você se considera apto para trabalhar em espaço confinado?",
+                  label:
+                    "Você se considera apto para trabalhar em espaço confinado?",
                   field: "autoAvaliacaoConfinado" as keyof PsicossocialData,
                   options: [
                     { value: "Sim", label: "Sim" },
                     { value: "Não", label: "Não" },
-                    { value: "Indefinido", label: "Indefinido" }
-                  ]
-                }
+                    { value: "Indefinido", label: "Indefinido" },
+                  ],
+                },
               ].map((item) => (
                 <div key={item.field}>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {item.label}
                   </label>
                   <RadioGroup
-                    color='success'
-                    value={formData[item.field] as string}
-                    onValueChange={(value) => handleInputChange(item.field, value)}
-                    orientation="horizontal"
                     classNames={{ wrapper: "flex gap-6" }}
+                    color="success"
+                    orientation="horizontal"
+                    value={formData[item.field] as string}
+                    onValueChange={(value) =>
+                      handleInputChange(item.field, value)
+                    }
                   >
                     {item.options.map((option) => (
                       <Radio key={option.value} value={option.value}>
@@ -332,11 +337,8 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 
       {/* 6. Conclusão */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="6" 
-          title="Conclusão" 
-        />
-        
+        <SectionTitle number="6" title="Conclusão" />
+
         <div className="space-y-6">
           <div className="p-4">
             <div>
@@ -344,11 +346,13 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
                 Observações do avaliador:
               </label>
               <Textarea
-                value={formData.observacoes}
-                onChange={(e) => handleInputChange('observacoes', e.target.value)}
-                rows={3}
-                placeholder="Observações sobre a avaliação psicossocial..."
                 className="bg-white border-gray-300"
+                placeholder="Observações sobre a avaliação psicossocial..."
+                rows={3}
+                value={formData.observacoes}
+                onChange={(e) =>
+                  handleInputChange("observacoes", e.target.value)
+                }
               />
             </div>
           </div>
@@ -358,17 +362,17 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
         <Button
+          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
           variant="flat"
           onPress={onClose}
-          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
         >
           Cancelar
         </Button>
         <Button
-          color="primary"
-          onPress={handleSave}
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          color="primary"
           startContent={<FileText className="h-4 w-4" />}
+          onPress={handleSave}
         >
           Salvar / Concluir Avaliação
         </Button>

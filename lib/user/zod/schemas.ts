@@ -1,4 +1,4 @@
-import { z } from "zod"
+import { z } from "zod";
 
 export const userRegisterSchema = z.object({
   cpf: z.string().min(14),
@@ -7,11 +7,8 @@ export const userRegisterSchema = z.object({
 });
 export type IUserRegister = z.infer<typeof userRegisterSchema>;
 
-
-
-
 export const userLoginSchema = z.object({
   cpf: z.string().min(14),
   password: z.string(),
-})
+});
 export type IUserLogin = z.infer<typeof userLoginSchema>;

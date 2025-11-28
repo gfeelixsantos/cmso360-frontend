@@ -5,7 +5,6 @@
 // import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 // import { FichaClinicaData } from '../exames/FichaClinica';
 
-
 // interface FichaClinicaProps {
 //   atendimento: any;
 //   exame: string;
@@ -13,7 +12,6 @@
 //   onSave?: (data: any) => void;
 //   onClose?: () => void;
 // }
-
 
 // interface RestricoesMedicas {
 //   evitarCarregarPeso: boolean;
@@ -29,8 +27,8 @@
 // }
 
 // // Componente de input otimizado
-// const FormattedInput = React.memo(({ 
-//   value, 
+// const FormattedInput = React.memo(({
+//   value,
 //   onChange,
 //   placeholder = "",
 //   type = "text",
@@ -57,7 +55,7 @@
 // });
 
 // // Componente de seção
-// const SectionTitle: React.FC<{ title: string; icon?: React.ReactNode }> = 
+// const SectionTitle: React.FC<{ title: string; icon?: React.ReactNode }> =
 // React.memo(({ title, icon }) => (
 //   <div className="flex items-center gap-3 mb-4">
 //     {icon}
@@ -71,32 +69,32 @@
 // class ClinicaCalculator {
 //   static formatarData(value: string): string {
 //     const numbers = value.replace(/\D/g, '');
-    
+
 //     if (numbers.length <= 2) {
 //       return numbers;
 //     }
-    
+
 //     if (numbers.length <= 4) {
 //       return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}`;
 //     }
-    
+
 //     return `${numbers.slice(0, 2)}/${numbers.slice(2, 4)}/${numbers.slice(4, 8)}`;
 //   }
 // }
 
-// const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({ 
-//   atendimento, 
+// const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
+//   atendimento,
 //   exame,
 //   formulario,
-//   onSave, 
-//   onClose 
+//   onSave,
+//   onClose
 // }) => {
 //   const user = useUser();
 //   const [agendamento, setAgendamento] = useState<Scheduling>();
 //   const [tipoAdmissional, setTipoAdmissional] = useState<boolean>(false);
 //   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 //   const [isLoading, setIsLoading] = useState(false);
-  
+
 //   const [formData, setFormData] = useState<FichaClinicaData>({
 //     ...formulario,
 //     codigoMedico: user?.nome? user.codigo : "",
@@ -120,22 +118,16 @@
 //     }
 //   }, [atendimento, formulario]);
 
-
-
-
 //   // Handlers otimizados
 //   const handleInputChange = useCallback((field: keyof FichaClinicaData, value: any) => {
 //     let formattedValue = value;
 
 //     setFormData(prev => ({ ...prev, [field]: formattedValue }));
-    
+
 //     if (formErrors[field]) {
 //       setFormErrors(prev => ({ ...prev, [field]: '' }));
 //     }
 //   }, [formErrors]);
-
-
-
 
 //   const handleRestricoesChange = useCallback((field: keyof RestricoesMedicas, value: any) => {
 //     setFormData(prev => ({
@@ -146,10 +138,6 @@
 //       }
 //     }));
 //   }, []);
-
-
-
-
 
 //   // Validação do formulário
 //   const validateForm = useCallback((): boolean => {
@@ -192,7 +180,7 @@
 //     if (!validateForm()) {
 //       return;
 //     }
-    
+
 //     setIsLoading(true);
 //     try {
 //       onSave?.(formData);
@@ -201,12 +189,6 @@
 //     }
 //   }, [formData, onSave, validateForm]);
 
-
-
-
-
-
-
 //   return (
 //         <>
 //           <Card className="p-6 shadow-none border border-gray-200 bg-white">
@@ -214,7 +196,7 @@
 //             {formData.conclusao === 'Apto com restrições' && (
 //               <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-4">
 //                 <h3 className="text-sm font-semibold text-amber-800 mb-3">Restrições Médicas</h3>
-                
+
 //                 {/* Checkboxes de restrições */}
 //                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 //                   {/* Evitar carregar peso excessivo */}
@@ -262,7 +244,7 @@
 //                           <Checkbox
 //                             color='warning'
 //                             isSelected={formData.restricoes?.tipoElevacaoBracos === 'direito'}
-//                             onValueChange={(checked) => 
+//                             onValueChange={(checked) =>
 //                               handleRestricoesChange('tipoElevacaoBracos', checked ? 'direito' : undefined)
 //                             }
 //                             classNames={{
@@ -274,7 +256,7 @@
 //                           <Checkbox
 //                             color='warning'
 //                             isSelected={formData.restricoes?.tipoElevacaoBracos === 'esquerdo'}
-//                             onValueChange={(checked) => 
+//                             onValueChange={(checked) =>
 //                               handleRestricoesChange('tipoElevacaoBracos', checked ? 'esquerdo' : undefined)
 //                             }
 //                             classNames={{
@@ -286,7 +268,7 @@
 //                           <Checkbox
 //                             color='warning'
 //                             isSelected={formData.restricoes?.tipoElevacaoBracos === 'ambos'}
-//                             onValueChange={(checked) => 
+//                             onValueChange={(checked) =>
 //                               handleRestricoesChange('tipoElevacaoBracos', checked ? 'ambos' : undefined)
 //                             }
 //                             classNames={{
@@ -411,7 +393,7 @@
 //                 </div>
 //               </div>
 //             )}
-            
+
 //           </div>
 
 //         </Card>

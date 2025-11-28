@@ -1,14 +1,13 @@
-import React, { useEffect } from 'react';
+import React from "react";
 import { Card } from "@heroui/react";
 import { Clock } from "lucide-react";
-
 import { Socket } from "socket.io-client";
-import { PreparationRequest, Ticket } from '@/lib/ticket/ticket';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import AtendimentoSection from './AtendimentoSection';
-import AtendimentoCardCompacto from './AtendimentoCardCompacto';
-import AtendimentoCardCompact from './AtendimentoCardCompacto';
 
+import AtendimentoSection from "./AtendimentoSection";
+import AtendimentoCardCompacto from "./AtendimentoCardCompacto";
+
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
 
 // Interface para tipagem robusta
 interface SenhasListProps {
@@ -23,7 +22,6 @@ interface SenhasListProps {
 
   // senhasEmAtendimento: Ticket[]
 
-
   /** Lista ordenada de todas as senhas */
   senhasOrdenadas: Scheduling[];
   /** Lista de senhas preferenciais */
@@ -33,45 +31,52 @@ interface SenhasListProps {
   /** Lista de senhas normais */
   senhasNormais: Scheduling[];
 
-  senhasEmAtendimento: Scheduling[]
+  senhasEmAtendimento: Scheduling[];
 
   /** Set ticket clicado */
-  setTicketSelecionado: (ticket: Ticket | null) => void
+  setTicketSelecionado: (ticket: Ticket | null) => void;
 
-  setFuncionarioSelecionado:(funcionario: Scheduling | null) => void
+  setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   /** Instância do socket */
   socket: Socket;
   /** Sala atualmente selecionada */
   salaSelecionada: string;
 
-  codigosDeAtendimento: Set<string>
+  codigosDeAtendimento: Set<string>;
   /** Unidade atualmente selecionada */
   unidadeSelecionada: string;
 
   // agendamentos: Scheduling[]
 
-   onHandleModal: (state: Boolean) => void
+  onHandleModal: (state: Boolean) => void;
 
-   onPreparationRequests: PreparationRequest[];
+  onPreparationRequests: PreparationRequest[];
 
-   preparacoesFinalizadas: PreparationRequest[];
+  preparacoesFinalizadas: PreparationRequest[];
 
-   exameSelecionado: string;
+  exameSelecionado: string;
 }
 
 // Componente para o estado vazio
 const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
   <Card
+    aria-describedby="empty-senhas-description"
     className="bg-white rounded-lg border border-gray-200 shadow-md p-8 text-center 
       transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
     role="alertdialog"
-    aria-describedby="empty-senhas-description"
   >
     <div className="text-gray-600">
-      <Clock className="h-12 w-12 mx-auto mb-4 text-gray-400" aria-hidden="true" />
-      <p className="text-lg font-semibold text-gray-900 mb-2">Nenhuma senha encontrada</p>
+      <Clock
+        aria-hidden="true"
+        className="h-12 w-12 mx-auto mb-4 text-gray-400"
+      />
+      <p className="text-lg font-semibold text-gray-900 mb-2">
+        Nenhuma senha encontrada
+      </p>
       <p className="text-sm">
-        {buscaSenha ? "Tente uma busca diferente" : "Ajuste os filtros para ver mais resultados"}
+        {buscaSenha
+          ? "Tente uma busca diferente"
+          : "Ajuste os filtros para ver mais resultados"}
       </p>
     </div>
   </Card>
@@ -99,62 +104,62 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
 
   return (
     <section
-      className="space-y-6 p-4 bg-gray-50 rounded-lg flex gap-4"
       aria-label="Lista de senhas organizadas por categoria"
+      className="space-y-6 p-4 bg-gray-50 rounded-lg flex gap-4"
     >
-      <div className='w-screen'>
-        { senhasPreferenciais.length > 0 && (
+      <div className="w-screen">
+        {senhasPreferenciais.length > 0 && (
           <AtendimentoSection
             key="senhas-preferenciais"
-            title={`Preferencial: ${senhasPreferenciais.length}`}
-            senhas={senhasPreferenciais}
+            codigosDeAtendimento={codigosDeAtendimento}
             emptyMessage="Nenhuma"
+            exameSelecionado={exameSelecionado}
+            salaSelecionada={salaSelecionada}
+            senhas={senhasPreferenciais}
+            setFuncionarioSelecionado={setFuncionarioSelecionado}
             setTicketSelecionado={setTicketSelecionado}
             socket={socket}
-            salaSelecionada={salaSelecionada}
-            codigosDeAtendimento={codigosDeAtendimento}
+            title={`Preferencial: ${senhasPreferenciais.length}`}
             unidadeSelecionada={unidadeSelecionada}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
             onHandleModal={onHandleModal}
-            exameSelecionado={exameSelecionado}
           />
         )}
-        { senhasComPrefixo.length > 0 && (
+        {senhasComPrefixo.length > 0 && (
           <AtendimentoSection
             key="senhas-prioridade"
-            title={`Prioridade: ${senhasComPrefixo.length}`}
-            senhas={senhasComPrefixo}
+            codigosDeAtendimento={codigosDeAtendimento}
             emptyMessage="Nenhuma"
+            exameSelecionado={exameSelecionado}
+            salaSelecionada={salaSelecionada}
+            senhas={senhasComPrefixo}
+            setFuncionarioSelecionado={setFuncionarioSelecionado}
             setTicketSelecionado={setTicketSelecionado}
             socket={socket}
-            salaSelecionada={salaSelecionada}
-            codigosDeAtendimento={codigosDeAtendimento}
+            title={`Prioridade: ${senhasComPrefixo.length}`}
             unidadeSelecionada={unidadeSelecionada}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
             onHandleModal={onHandleModal}
-            exameSelecionado={exameSelecionado}
           />
         )}
         <AtendimentoSection
           key="senhas-normais"
-          title={`Atendimento: ${senhasNormais.length}`}
-          senhas={senhasNormais}
+          codigosDeAtendimento={codigosDeAtendimento}
           emptyMessage="Nenhuma"
+          exameSelecionado={exameSelecionado}
+          salaSelecionada={salaSelecionada}
+          senhas={senhasNormais}
+          setFuncionarioSelecionado={setFuncionarioSelecionado}
           setTicketSelecionado={setTicketSelecionado}
           socket={socket}
-          salaSelecionada={salaSelecionada}
-          codigosDeAtendimento={codigosDeAtendimento}
+          title={`Atendimento: ${senhasNormais.length}`}
           unidadeSelecionada={unidadeSelecionada}
-          setFuncionarioSelecionado={setFuncionarioSelecionado}
           onHandleModal={onHandleModal}
-          exameSelecionado={exameSelecionado}
         />
       </div>
-      <div className='w-md mb-2'>
-        { senhasEmAtendimento.map(atend => (
-            <AtendimentoCardCompacto
-              key={`compacto-${atend._id}`}
-              atendimento={atend}
+      <div className="w-md mb-2">
+        {senhasEmAtendimento.map((atend) => (
+          <AtendimentoCardCompacto
+            key={`compacto-${atend._id}`}
+            atendimento={atend}
             // title={`Em exame (${senhasEmAtendimento.length})`}
             // senhas={senhasEmAtendimento}
             // emptyMessage="Nenhuma"

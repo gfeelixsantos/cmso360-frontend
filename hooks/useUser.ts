@@ -1,36 +1,38 @@
-"use client"
+"use client";
 
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 
 export interface IUserInfo {
-  nome: string
-  perfil: string
-  codigo: string
-  conselho?: string,
-  ufconselho?: string,
+  nome: string;
+  perfil: string;
+  codigo: string;
+  conselho?: string;
+  ufconselho?: string;
 }
 
 export function useUser() {
-  const [user, setUser] = useState<IUserInfo | null>(null)
+  const [user, setUser] = useState<IUserInfo | null>(null);
 
   useEffect(() => {
     async function fetchUser() {
       try {
-        const response = await fetch("/api/auth")
+        const response = await fetch("/api/auth");
+
         if (response.status === 200) {
-          const { user } = await response.json()
-          setUser(user)
+          const { user } = await response.json();
+
+          setUser(user);
         } else {
-          setUser(null)
+          setUser(null);
         }
       } catch (err) {
-        console.error("Erro ao buscar usuário:", err)
-        setUser(null)
+        console.error("Erro ao buscar usuário:", err);
+        setUser(null);
       }
     }
 
-    fetchUser()
-  }, [])
+    fetchUser();
+  }, []);
 
-  return user
+  return user;
 }

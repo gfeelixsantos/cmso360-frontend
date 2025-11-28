@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React from "react";
 import { Card } from "@heroui/react";
 import { Socket } from "socket.io-client";
-import { PreparationRequest, Ticket } from '@/lib/ticket/ticket';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import AtendimentoCard from './AtendimentoCard';
-import { AtendimentoStatus } from '@/lib/scheduling/enum/scheduling.enum';
 
+import AtendimentoCard from "./AtendimentoCard";
+
+import { Ticket } from "@/lib/ticket/ticket";
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 // Interface para tipagem robusta
 interface SenhasSectionProps {
@@ -14,11 +14,8 @@ interface SenhasSectionProps {
   // /** Lista de tickets (senhas) a serem exibidos */
   // senhas: Ticket[];
 
-
   /** Lista de tickets (senhas) a serem exibidos */
   senhas: Scheduling[];
-
-
 
   /** Mensagem exibida quando a lista está vazia */
   emptyMessage: string;
@@ -37,27 +34,32 @@ interface SenhasSectionProps {
   unidadeSelecionada: string;
 
   // agendamentos: Scheduling[]
-  onHandleModal: (state: Boolean) => void
-  setTicketSelecionado: (ticket: Ticket | null) => void
+  onHandleModal: (state: Boolean) => void;
+  setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
 
   exameSelecionado: string;
 }
 
 // Componente para o estado vazio
-const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({ title, emptyMessage }) => (
-  <section aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, '-')}`}>
+const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
+  title,
+  emptyMessage,
+}) => (
+  <section
+    aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+  >
     <h3
-      id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
       className="text-lg font-semibold text-center mt-2 text-gray-900 mb-2"
+      id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
     >
       {title}
     </h3>
     <Card
+      aria-describedby="empty-section-description"
       className="bg-white rounded-lg border border-gray-200 shadow-md p-4 text-center 
         transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       role="alert"
-      aria-describedby="empty-section-description"
     >
       <p className="text-sm text-gray-600">{emptyMessage}</p>
     </Card>
@@ -79,19 +81,18 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
-
   if (senhas.length === 0) {
-    return <EmptySection title={title} emptyMessage={emptyMessage} />;
+    return <EmptySection emptyMessage={emptyMessage} title={title} />;
   }
 
   return (
     <section
-      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
+      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
       className="space-y-4"
     >
       <h3
-        id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
         className="text-lg mt-2 text-center font-semibold text-gray-900"
+        id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
       >
         {title}
       </h3>
@@ -100,13 +101,13 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
           <AtendimentoCard
             key={atendimento._id?.toString()}
             atendimento={atendimento}
-            socket={socket}
-            salaSelecionada={salaSelecionada}
-            unidadeSelecionada={unidadeSelecionada}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
-            onHandleModal={onHandleModal}
-            setTicketSelecionado={setTicketSelecionado}
             exameSelecionado={exameSelecionado}
+            salaSelecionada={salaSelecionada}
+            setFuncionarioSelecionado={setFuncionarioSelecionado}
+            setTicketSelecionado={setTicketSelecionado}
+            socket={socket}
+            unidadeSelecionada={unidadeSelecionada}
+            onHandleModal={onHandleModal}
           />
         ))}
       </div>

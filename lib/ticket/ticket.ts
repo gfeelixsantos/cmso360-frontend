@@ -1,17 +1,19 @@
-
-import { PreparationRequestTypes, WebsocketType } from "@/lib/websocket/enums/websocket.enum"
+import {
+  PreparationRequestTypes,
+  WebsocketType,
+} from "@/lib/websocket/enums/websocket.enum";
 
 export enum TicketGroups {
   RECEPCAO = "RECEPCAO",
-  EXAME = "EXAME"
+  EXAME = "EXAME",
 }
 
 export enum TicketStatus {
-  AGUARDANDO = 'AGUARDANDO',
-  EM_CHAMADA = 'EM CHAMADA',
-  EM_ATENDIMENTO = 'EM ATENDIMENTO',
-  FINALIZADO = 'FINALIZADO',
-  EM_PREPARACAO = 'EM PREPARAÇÃO',
+  AGUARDANDO = "AGUARDANDO",
+  EM_CHAMADA = "EM CHAMADA",
+  EM_ATENDIMENTO = "EM ATENDIMENTO",
+  FINALIZADO = "FINALIZADO",
+  EM_PREPARACAO = "EM PREPARAÇÃO",
   PREPARO_OK = "PREPARO OK",
   ENCAMINHADO_RX = "ENCAMINHADO RAIO-X",
 }
@@ -27,7 +29,7 @@ export enum TicketActionType {
   FINALIZAR = "FINALIZAR",
   EXAME = "EXAME",
 }
- 
+
 export enum TicketTypes {
   ATENDIMENTO = "ATENDIMENTO",
   PREFERENCIAL = "PREFERENCIAL",
@@ -36,33 +38,32 @@ export enum TicketTypes {
   WHIRLPOOL = "WHIRLPOOL",
 }
 
-
 export interface Ticket {
-  id: number,
-  emissao:Date
-  numero: Number
-  prefixo:string
-  preferencial: boolean
-  preferencialTipo: string | null
-  status: TicketStatus
+  id: number;
+  emissao: Date;
+  numero: Number;
+  prefixo: string;
+  preferencial: boolean;
+  preferencialTipo: string | null;
+  status: TicketStatus;
   type: WebsocketType.TICKET;
-  unidade:string
-  sala:string
-  atendente:string
-  profissional:string,
-  grupo: TicketGroups | string
+  unidade: string;
+  sala: string;
+  atendente: string;
+  profissional: string;
+  grupo: TicketGroups | string;
 }
 
 export type TicketEmitedDto = {
-  emissao: Date,            
-  numero: 0,
-  prefixo: string,
-  preferencial: boolean,
-  status: TicketStatus,
-  type: WebsocketType.TICKET,
-  unidade: string,
-  grupo: TicketGroups
-}
+  emissao: Date;
+  numero: 0;
+  prefixo: string;
+  preferencial: boolean;
+  status: TicketStatus;
+  type: WebsocketType.TICKET;
+  unidade: string;
+  grupo: TicketGroups;
+};
 
 // Adicionar interface para ações do ticket
 export type TicketAction = {
@@ -72,25 +73,24 @@ export type TicketAction = {
   sala: string;
   unidade: string;
   newStatus?: TicketStatus;
-}
+};
 
 export type PreparationRequest = {
-  empresa: string,
-  nome: string,
-  dataNascimento: string,
-  cpf: string,
-  tipoExame: string,
-  informacoes: string,
-  unidade: string,
-  atendente: string,
-  sala: string,
-  ticketId?: number,
-  tickets?: Ticket
-}
+  empresa: string;
+  nome: string;
+  dataNascimento: string;
+  cpf: string;
+  tipoExame: string;
+  informacoes: string;
+  unidade: string;
+  atendente: string;
+  sala: string;
+  ticketId?: number;
+  tickets?: Ticket;
+};
 
 export type PreparationRequestModel = {
-  type: PreparationRequestTypes,
-  request: PreparationRequest,
-  message?: string
-}
-
+  type: PreparationRequestTypes;
+  request: PreparationRequest;
+  message?: string;
+};

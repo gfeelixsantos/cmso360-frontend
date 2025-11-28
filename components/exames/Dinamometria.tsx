@@ -1,9 +1,18 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Select, SelectItem, Textarea, RadioGroup, Radio, Spinner } from "@heroui/react";
-import { useUser } from '@/hooks/useUser';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Hand, Activity, FileText, Target } from 'lucide-react';
-import HeaderExame from './HeaderExame';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  Button,
+  Input,
+  Textarea,
+  RadioGroup,
+  Radio,
+} from "@heroui/react";
+import { FileText } from "lucide-react";
+
+import HeaderExame from "./HeaderExame";
+
+import { useUser } from "@/hooks/useUser";
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface DinamometriaProps {
   atendimento: any;
@@ -16,11 +25,11 @@ interface DinamometriaProps {
 interface DinamometriaData {
   // Dados do exame
   profissional: string;
-  
+
   // Dados do Paciente
   ladoDominante: string;
   sexo: string;
-  
+
   // Dinamometria Palmar - Força de Preensão Manual
   palmarDireita1: string;
   palmarDireita2: string;
@@ -31,65 +40,76 @@ interface DinamometriaData {
   palmarEsquerda3: string;
   palmarEsquerdaMedia: string;
   classificacaoPalmar: string;
-  
+
   // Dinamometria Escapular - Força de Membros Superiores
   escapular1: string;
   escapular2: string;
   escapular3: string;
   escapularMedia: string;
   classificacaoEscapular: string;
-  
+
   // Dinamometria Dorsal - Força de Tronco
   dorsal1: string;
   dorsal2: string;
   dorsal3: string;
   dorsalMedia: string;
   classificacaoDorsal: string;
-  
+
   // Resultado e Observações
   resultado: string;
   observacoesFinais: string;
 }
 
-const Dinamometria: React.FC<DinamometriaProps> = ({ 
-  atendimento, 
+const Dinamometria: React.FC<DinamometriaProps> = ({
+  atendimento,
   exame,
   formulario,
-  onSave, 
-  onClose 
+  onSave,
+  onClose,
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
-  const [formErrors, setFormErrors] = useState<{ladoDominante?: string; sexo?: string}>({});
-  
+  const [formErrors, setFormErrors] = useState<{
+    ladoDominante?: string;
+    sexo?: string;
+  }>({});
+
   const [formData, setFormData] = useState<DinamometriaData>({
     // Dados do exame
-    profissional: '',
-    
+    profissional: "",
+
     // Dados do Paciente
-    ladoDominante: '',
-    sexo: '',
-    
+    ladoDominante: "",
+    sexo: "",
+
     // Dinamometria Palmar
-    palmarDireita1: '', palmarDireita2: '', palmarDireita3: '',
-    palmarDireitaMedia: '',
-    palmarEsquerda1: '', palmarEsquerda2: '', palmarEsquerda3: '',
-    palmarEsquerdaMedia: '',
-    classificacaoPalmar: '',
-    
+    palmarDireita1: "",
+    palmarDireita2: "",
+    palmarDireita3: "",
+    palmarDireitaMedia: "",
+    palmarEsquerda1: "",
+    palmarEsquerda2: "",
+    palmarEsquerda3: "",
+    palmarEsquerdaMedia: "",
+    classificacaoPalmar: "",
+
     // Dinamometria Escapular
-    escapular1: '', escapular2: '', escapular3: '',
-    escapularMedia: '',
-    classificacaoEscapular: '',
-    
+    escapular1: "",
+    escapular2: "",
+    escapular3: "",
+    escapularMedia: "",
+    classificacaoEscapular: "",
+
     // Dinamometria Dorsal
-    dorsal1: '', dorsal2: '', dorsal3: '',
-    dorsalMedia: '',
-    classificacaoDorsal: '',
-    
+    dorsal1: "",
+    dorsal2: "",
+    dorsal3: "",
+    dorsalMedia: "",
+    classificacaoDorsal: "",
+
     // Resultado e Observações
-    resultado: 'Normal',
-    observacoesFinais: ''
+    resultado: "Normal",
+    observacoesFinais: "",
   });
 
   // Preenchimento automático dos dados do atendimento
@@ -99,16 +119,16 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     }
 
     if (formulario) {
-      setFormData(prev => ({ ...prev, ...formulario }));
+      setFormData((prev) => ({ ...prev, ...formulario }));
     }
   }, [atendimento, formulario]);
 
   // Preencher profissional responsável automaticamente
   useEffect(() => {
     if (user?.nome && !formData.profissional) {
-      setFormData(prev => ({ 
-        ...prev, 
-        profissional: user.nome 
+      setFormData((prev) => ({
+        ...prev,
+        profissional: user.nome,
       }));
     }
   }, [user, formData.profissional]);
@@ -116,13 +136,14 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   // Função auxiliar para calcular média
   const calcularMedia = useCallback((valores: string[]): string => {
     const numeros = valores
-      .map(v => parseFloat(v.replace(',', '.')))
-      .filter(v => !isNaN(v));
-    
-    if (numeros.length === 0) return '';
-    
+      .map((v) => parseFloat(v.replace(",", ".")))
+      .filter((v) => !isNaN(v));
+
+    if (numeros.length === 0) return "";
+
     const media = numeros.reduce((a, b) => a + b) / numeros.length;
-    return media.toFixed(1).replace('.', ',');
+
+    return media.toFixed(1).replace(".", ",");
   }, []);
 
   // Cálculo automático das médias
@@ -131,43 +152,51 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     const mediaPalmarDireita = calcularMedia([
       formData.palmarDireita1,
       formData.palmarDireita2,
-      formData.palmarDireita3
+      formData.palmarDireita3,
     ]);
 
     // Cálculo da média palmar esquerda
     const mediaPalmarEsquerda = calcularMedia([
       formData.palmarEsquerda1,
       formData.palmarEsquerda2,
-      formData.palmarEsquerda3
+      formData.palmarEsquerda3,
     ]);
 
     // Cálculo da média escapular
     const mediaEscapular = calcularMedia([
       formData.escapular1,
       formData.escapular2,
-      formData.escapular3
+      formData.escapular3,
     ]);
 
     // Cálculo da média dorsal
     const mediaDorsal = calcularMedia([
       formData.dorsal1,
       formData.dorsal2,
-      formData.dorsal3
+      formData.dorsal3,
     ]);
 
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       ...(mediaPalmarDireita && { palmarDireitaMedia: mediaPalmarDireita }),
       ...(mediaPalmarEsquerda && { palmarEsquerdaMedia: mediaPalmarEsquerda }),
       ...(mediaEscapular && { escapularMedia: mediaEscapular }),
-      ...(mediaDorsal && { dorsalMedia: mediaDorsal })
+      ...(mediaDorsal && { dorsalMedia: mediaDorsal }),
     }));
   }, [
-    formData.palmarDireita1, formData.palmarDireita2, formData.palmarDireita3,
-    formData.palmarEsquerda1, formData.palmarEsquerda2, formData.palmarEsquerda3,
-    formData.escapular1, formData.escapular2, formData.escapular3,
-    formData.dorsal1, formData.dorsal2, formData.dorsal3,
-    calcularMedia
+    formData.palmarDireita1,
+    formData.palmarDireita2,
+    formData.palmarDireita3,
+    formData.palmarEsquerda1,
+    formData.palmarEsquerda2,
+    formData.palmarEsquerda3,
+    formData.escapular1,
+    formData.escapular2,
+    formData.escapular3,
+    formData.dorsal1,
+    formData.dorsal2,
+    formData.dorsal3,
+    calcularMedia,
   ]);
 
   // Cálculo automático do resultado
@@ -179,63 +208,82 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.escapularMedia,
     formData.dorsalMedia,
     formData.ladoDominante,
-    formData.sexo
+    formData.sexo,
   ]);
 
   const validarFormulario = useCallback(() => {
-    const errors: {ladoDominante?: string; sexo?: string} = {};
-    
+    const errors: { ladoDominante?: string; sexo?: string } = {};
+
     if (!formData.ladoDominante) {
-      errors.ladoDominante = 'Lado dominante é obrigatório';
+      errors.ladoDominante = "Lado dominante é obrigatório";
     }
-    
+
     if (!formData.sexo) {
-      errors.sexo = 'Sexo é obrigatório';
+      errors.sexo = "Sexo é obrigatório";
     }
-    
+
     setFormErrors(errors);
+
     return Object.keys(errors).length === 0;
   }, [formData.ladoDominante, formData.sexo]);
 
   // Função para avaliar dinamometria palmar
-  const avaliarDinamometriaPalmar = useCallback((mediaDominante: number, mediaNaoDominante: number, sexo: string) => {
-    if (sexo === 'Masculino') {
-      const dominanteAdequado = mediaDominante >= 45;
-      const naoDominanteAdequado = mediaNaoDominante >= 40;
-      return dominanteAdequado && naoDominanteAdequado;
-    } else {
-      const dominanteAdequado = mediaDominante >= 25;
-      const naoDominanteAdequado = mediaNaoDominante >= 20;
-      return dominanteAdequado && naoDominanteAdequado;
-    }
-  }, []);
+  const avaliarDinamometriaPalmar = useCallback(
+    (mediaDominante: number, mediaNaoDominante: number, sexo: string) => {
+      if (sexo === "Masculino") {
+        const dominanteAdequado = mediaDominante >= 45;
+        const naoDominanteAdequado = mediaNaoDominante >= 40;
+
+        return dominanteAdequado && naoDominanteAdequado;
+      } else {
+        const dominanteAdequado = mediaDominante >= 25;
+        const naoDominanteAdequado = mediaNaoDominante >= 20;
+
+        return dominanteAdequado && naoDominanteAdequado;
+      }
+    },
+    [],
+  );
 
   // Função para avaliar dinamometria escapular
-  const avaliarDinamometriaEscapular = useCallback((media: number, sexo: string) => {
-    const minimo = sexo === 'Masculino' ? 20 : 10;
-    return media >= minimo;
-  }, []);
+  const avaliarDinamometriaEscapular = useCallback(
+    (media: number, sexo: string) => {
+      const minimo = sexo === "Masculino" ? 20 : 10;
+
+      return media >= minimo;
+    },
+    [],
+  );
 
   // Função para avaliar dinamometria dorsal
-  const avaliarDinamometriaDorsal = useCallback((media: number, sexo: string) => {
-    const minimo = sexo === 'Masculino' ? 100 : 50;
-    return media >= minimo;
-  }, []);
+  const avaliarDinamometriaDorsal = useCallback(
+    (media: number, sexo: string) => {
+      const minimo = sexo === "Masculino" ? 100 : 50;
+
+      return media >= minimo;
+    },
+    [],
+  );
 
   const calcularResultado = useCallback(() => {
     // Obter todas as médias como números
-    const mediaPalmarDir = parseFloat(formData.palmarDireitaMedia.replace(',', '.')) || 0;
-    const mediaPalmarEsq = parseFloat(formData.palmarEsquerdaMedia.replace(',', '.')) || 0;
-    const mediaEscapular = parseFloat(formData.escapularMedia.replace(',', '.')) || 0;
-    const mediaDorsal = parseFloat(formData.dorsalMedia.replace(',', '.')) || 0;
+    const mediaPalmarDir =
+      parseFloat(formData.palmarDireitaMedia.replace(",", ".")) || 0;
+    const mediaPalmarEsq =
+      parseFloat(formData.palmarEsquerdaMedia.replace(",", ".")) || 0;
+    const mediaEscapular =
+      parseFloat(formData.escapularMedia.replace(",", ".")) || 0;
+    const mediaDorsal = parseFloat(formData.dorsalMedia.replace(",", ".")) || 0;
 
     // Verificar se temos dados suficientes para avaliação
     if (!formData.ladoDominante || !formData.sexo) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        resultado: 'Normal',
-        observacoesFinais: 'Aguardando preenchimento dos dados obrigatórios para avaliação.'
+        resultado: "Normal",
+        observacoesFinais:
+          "Aguardando preenchimento dos dados obrigatórios para avaliação.",
       }));
+
       return;
     }
 
@@ -244,36 +292,47 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     let escapularNormal = false;
     let dorsalNormal = false;
 
-    if (formData.ladoDominante === 'Direito') {
-      palmarNormal = avaliarDinamometriaPalmar(mediaPalmarDir, mediaPalmarEsq, formData.sexo);
+    if (formData.ladoDominante === "Direito") {
+      palmarNormal = avaliarDinamometriaPalmar(
+        mediaPalmarDir,
+        mediaPalmarEsq,
+        formData.sexo,
+      );
     } else {
-      palmarNormal = avaliarDinamometriaPalmar(mediaPalmarEsq, mediaPalmarDir, formData.sexo);
+      palmarNormal = avaliarDinamometriaPalmar(
+        mediaPalmarEsq,
+        mediaPalmarDir,
+        formData.sexo,
+      );
     }
 
-    escapularNormal = avaliarDinamometriaEscapular(mediaEscapular, formData.sexo);
+    escapularNormal = avaliarDinamometriaEscapular(
+      mediaEscapular,
+      formData.sexo,
+    );
     dorsalNormal = avaliarDinamometriaDorsal(mediaDorsal, formData.sexo);
 
     // Determinar resultado final
     const todasNormais = palmarNormal && escapularNormal && dorsalNormal;
-    const resultado = todasNormais ? 'Normal' : 'Alterado';
+    const resultado = todasNormais ? "Normal" : "Alterado";
 
     // Gerar observações detalhadas
-    let observacoes = '';
-    
+    let observacoes = "";
+
     if (todasNormais) {
-      observacoes = 'Dentro dos padrões da normalidade';
+      observacoes = "Dentro dos padrões da normalidade";
     } else {
-      observacoes = 'Fora dos padrões da normalidade.';
+      observacoes = "Fora dos padrões da normalidade.";
     }
 
     // Atualizar classificações individuais
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       resultado,
       observacoesFinais: observacoes,
-      classificacaoPalmar: palmarNormal ? 'Normal' : 'Abaixo do esperado',
-      classificacaoEscapular: escapularNormal ? 'Normal' : 'Abaixo do esperado',
-      classificacaoDorsal: dorsalNormal ? 'Normal' : 'Abaixo do esperado'
+      classificacaoPalmar: palmarNormal ? "Normal" : "Abaixo do esperado",
+      classificacaoEscapular: escapularNormal ? "Normal" : "Abaixo do esperado",
+      classificacaoDorsal: dorsalNormal ? "Normal" : "Abaixo do esperado",
     }));
   }, [
     formData.palmarDireitaMedia,
@@ -284,17 +343,20 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.sexo,
     avaliarDinamometriaPalmar,
     avaliarDinamometriaEscapular,
-    avaliarDinamometriaDorsal
+    avaliarDinamometriaDorsal,
   ]);
 
-  const handleInputChange = useCallback((field: keyof DinamometriaData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    
-    // Limpar erro do campo quando preenchido
-    if ((field === 'ladoDominante' || field === 'sexo') && value) {
-      setFormErrors(prev => ({ ...prev, [field]: undefined }));
-    }
-  }, []);
+  const handleInputChange = useCallback(
+    (field: keyof DinamometriaData, value: any) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+
+      // Limpar erro do campo quando preenchido
+      if ((field === "ladoDominante" || field === "sexo") && value) {
+        setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+      }
+    },
+    [],
+  );
 
   const handleSave = useCallback(() => {
     if (!validarFormulario()) {
@@ -303,11 +365,11 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     onSave?.(formData);
   }, [formData, onSave, validarFormulario]);
 
-  const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
-    number, 
-    title,
-    icon 
-  }) => (
+  const SectionTitle: React.FC<{
+    number: string;
+    title: string;
+    icon?: React.ReactNode;
+  }> = ({ number, title, icon }) => (
     <div className="flex items-start gap-3 mb-4">
       <div className="flex-1">
         <div className="flex items-center gap-2">
@@ -320,89 +382,177 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
   const renderTabelaDinamometria = (
     titulo: string,
-    ladoDireito: { campo1: string; campo2: string; campo3: string; media: string },
-    ladoEsquerdo: { campo1: string; campo2: string; campo3: string; media: string },
-    unidade: string = 'kgf'
+    ladoDireito: {
+      campo1: string;
+      campo2: string;
+      campo3: string;
+      media: string;
+    },
+    ladoEsquerdo: {
+      campo1: string;
+      campo2: string;
+      campo3: string;
+      media: string;
+    },
+    unidade: string = "kgf",
   ) => (
     <div className="p-4 ">
-      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">{titulo}</h3>
+      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">
+        {titulo}
+      </h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Lado</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">1ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">2ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">3ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Média ({unidade})</th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                Lado
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                1ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                2ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                3ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                Média ({unidade})
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr>
-              <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700 text-center">Direito</td>
+              <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700 text-center">
+                Direito
+              </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo1 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo1 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoDireito.campo1 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoDireito.campo1 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo2 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo2 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoDireito.campo2 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoDireito.campo2 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.campo3 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoDireito.campo3 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoDireito.campo3 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoDireito.campo3 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoDireito.media as keyof DinamometriaData] as string}
                   isReadOnly
                   className="border-gray-300 text-center bg-gray-100 font-semibold"
+                  value={
+                    formData[
+                      ladoDireito.media as keyof DinamometriaData
+                    ] as string
+                  }
                 />
               </td>
             </tr>
             <tr>
-              <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700 text-center">Esquerdo</td>
+              <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700 text-center">
+                Esquerdo
+              </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoEsquerdo.campo1 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoEsquerdo.campo1 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoEsquerdo.campo1 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoEsquerdo.campo1 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoEsquerdo.campo2 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoEsquerdo.campo2 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoEsquerdo.campo2 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoEsquerdo.campo2 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoEsquerdo.campo3 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(ladoEsquerdo.campo3 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[
+                      ladoEsquerdo.campo3 as keyof DinamometriaData
+                    ] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      ladoEsquerdo.campo3 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[ladoEsquerdo.media as keyof DinamometriaData] as string}
                   isReadOnly
                   className="border-gray-300 text-center bg-gray-100 font-semibold"
+                  value={
+                    formData[
+                      ladoEsquerdo.media as keyof DinamometriaData
+                    ] as string
+                  }
                 />
               </td>
             </tr>
@@ -415,51 +565,84 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   const renderTabelaDinamometriaEscapular = (
     titulo: string,
     campos: { campo1: string; campo2: string; campo3: string; media: string },
-    unidade: string = 'kgf'
+    unidade: string = "kgf",
   ) => (
     <div className=" p-4">
-      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">{titulo}</h3>
+      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">
+        {titulo}
+      </h3>
       <div className="overflow-x-auto">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">1ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">2ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">3ª Medida ({unidade})</th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Média ({unidade})</th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                1ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                2ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                3ª Medida ({unidade})
+              </th>
+              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                Média ({unidade})
+              </th>
             </tr>
           </thead>
           <tbody>
             <tr>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[campos.campo1 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(campos.campo1 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[campos.campo1 as keyof DinamometriaData] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      campos.campo1 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[campos.campo2 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(campos.campo2 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[campos.campo2 as keyof DinamometriaData] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      campos.campo2 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[campos.campo3 as keyof DinamometriaData] as string}
-                  onChange={(e) => handleInputChange(campos.campo3 as keyof DinamometriaData, e.target.value)}
-                  placeholder="0,0"
                   className="border-gray-300 text-center bg-white"
+                  placeholder="0,0"
+                  value={
+                    formData[campos.campo3 as keyof DinamometriaData] as string
+                  }
+                  onChange={(e) =>
+                    handleInputChange(
+                      campos.campo3 as keyof DinamometriaData,
+                      e.target.value,
+                    )
+                  }
                 />
               </td>
               <td className="border border-gray-300 px-4 py-2">
                 <Input
-                  value={formData[campos.media as keyof DinamometriaData] as string}
                   isReadOnly
                   className="border-gray-300 text-center bg-gray-100 font-semibold"
+                  value={
+                    formData[campos.media as keyof DinamometriaData] as string
+                  }
                 />
               </td>
             </tr>
@@ -471,17 +654,11 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
-      <HeaderExame 
-        agendamento={agendamento}
-        exame={exame}
-      />
+      <HeaderExame agendamento={agendamento} exame={exame} />
 
       {/* 2. Dinamometria Palmar */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="2" 
-          title="Dinamometria Palmar" 
-        />
+        <SectionTitle number="2" title="Dinamometria Palmar" />
         {/* Dados Obrigatórios - Lado Dominante e Sexo */}
         <div className="p-4 ">
           <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide flex items-center">
@@ -493,22 +670,24 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Lado Dominante <span className="text-red-500">*</span>
                 {formErrors.ladoDominante && (
-                  <span className="ml-2 text-red-500 text-xs">{formErrors.ladoDominante}</span>
+                  <span className="ml-2 text-red-500 text-xs">
+                    {formErrors.ladoDominante}
+                  </span>
                 )}
               </label>
               <RadioGroup
-                color='success'
-                value={formData.ladoDominante}
-                onValueChange={(value) => handleInputChange('ladoDominante', value)}
-                orientation="horizontal"
                 className="gap-4"
+                color="success"
+                orientation="horizontal"
+                value={formData.ladoDominante}
+                onValueChange={(value) =>
+                  handleInputChange("ladoDominante", value)
+                }
               >
-                <Radio value="Direito" className="mr-2">
+                <Radio className="mr-2" value="Direito">
                   Direito
                 </Radio>
-                <Radio value="Esquerdo">
-                  Esquerdo
-                </Radio>
+                <Radio value="Esquerdo">Esquerdo</Radio>
               </RadioGroup>
             </div>
 
@@ -516,51 +695,59 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-3">
                 Sexo <span className="text-red-500">*</span>
                 {formErrors.sexo && (
-                  <span className="ml-2 text-red-500 text-xs">{formErrors.sexo}</span>
+                  <span className="ml-2 text-red-500 text-xs">
+                    {formErrors.sexo}
+                  </span>
                 )}
               </label>
               <RadioGroup
-                color='success'
-                value={formData.sexo}
-                onValueChange={(value) => handleInputChange('sexo', value)}
-                orientation="horizontal"
                 className="gap-4"
+                color="success"
+                orientation="horizontal"
+                value={formData.sexo}
+                onValueChange={(value) => handleInputChange("sexo", value)}
               >
-                <Radio value="Masculino" className="mr-2">
+                <Radio className="mr-2" value="Masculino">
                   Masculino
                 </Radio>
-                <Radio value="Feminino">
-                  Feminino
-                </Radio>
+                <Radio value="Feminino">Feminino</Radio>
               </RadioGroup>
             </div>
           </div>
         </div>
-        
+
         <div className="space-y-6">
           {renderTabelaDinamometria(
             "Força de Preensão Manual (kgf)",
             {
-              campo1: 'palmarDireita1',
-              campo2: 'palmarDireita2',
-              campo3: 'palmarDireita3',
-              media: 'palmarDireitaMedia'
+              campo1: "palmarDireita1",
+              campo2: "palmarDireita2",
+              campo3: "palmarDireita3",
+              media: "palmarDireitaMedia",
             },
             {
-              campo1: 'palmarEsquerda1',
-              campo2: 'palmarEsquerda2',
-              campo3: 'palmarEsquerda3',
-              media: 'palmarEsquerdaMedia'
+              campo1: "palmarEsquerda1",
+              campo2: "palmarEsquerda2",
+              campo3: "palmarEsquerda3",
+              media: "palmarEsquerdaMedia",
             },
-            'kgf'
+            "kgf",
           )}
-          
+
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Palmar:</h4>
+            <h4 className="font-semibold text-green-800 mb-2 text-sm">
+              Critérios de Avaliação - Dinamometria Palmar:
+            </h4>
             <ul className="text-xs text-green-700 space-y-1">
-              <li>• <strong>Homens:</strong> Lado dominante ≥ 45 kgf | Lado não dominante ≥ 40 kgf</li>
-              <li>• <strong>Mulheres:</strong> Lado dominante ≥ 25 kgf | Lado não dominante ≥ 20 kgf</li>
+              <li>
+                • <strong>Homens:</strong> Lado dominante ≥ 45 kgf | Lado não
+                dominante ≥ 40 kgf
+              </li>
+              <li>
+                • <strong>Mulheres:</strong> Lado dominante ≥ 25 kgf | Lado não
+                dominante ≥ 20 kgf
+              </li>
             </ul>
           </div>
         </div>
@@ -568,29 +755,32 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
       {/* 3. Dinamometria Escapular */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="3" 
-          title="Dinamometria Escapular" 
-        />
-        
+        <SectionTitle number="3" title="Dinamometria Escapular" />
+
         <div className="space-y-6">
           {renderTabelaDinamometriaEscapular(
             "Força de Membros Superiores (kgf)",
             {
-              campo1: 'escapular1',
-              campo2: 'escapular2',
-              campo3: 'escapular3',
-              media: 'escapularMedia'
+              campo1: "escapular1",
+              campo2: "escapular2",
+              campo3: "escapular3",
+              media: "escapularMedia",
             },
-            'kgf'
+            "kgf",
           )}
-          
+
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <h4 className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Escapular:</h4>
+            <h4 className="font-semibold text-green-800 mb-2 text-sm">
+              Critérios de Avaliação - Dinamometria Escapular:
+            </h4>
             <ul className="text-xs text-green-700 space-y-1">
-              <li>• <strong>Homens:</strong> Ambos os lados ≥ 20 kgf</li>
-              <li>• <strong>Mulheres:</strong> Ambos os lados ≥ 10 kgf</li>
+              <li>
+                • <strong>Homens:</strong> Ambos os lados ≥ 20 kgf
+              </li>
+              <li>
+                • <strong>Mulheres:</strong> Ambos os lados ≥ 10 kgf
+              </li>
             </ul>
           </div>
         </div>
@@ -598,55 +788,68 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
       {/* 4. Dinamometria Dorsal */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="4" 
-          title="Dinamometria Dorsal" 
-        />
-        
+        <SectionTitle number="4" title="Dinamometria Dorsal" />
+
         <div className="space-y-6">
           <div className="p-4">
-            <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">Força de Tronco (kgf)</h3>
+            <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">
+              Força de Tronco (kgf)
+            </h3>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-100">
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">1ª Medida (kgf)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">2ª Medida (kgf)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">3ª Medida (kgf)</th>
-                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">Média (kgf)</th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                      1ª Medida (kgf)
+                    </th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                      2ª Medida (kgf)
+                    </th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                      3ª Medida (kgf)
+                    </th>
+                    <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
+                      Média (kgf)
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
+                        className="border-gray-300 text-center bg-white"
+                        placeholder="0,0"
                         value={formData.dorsal1}
-                        onChange={(e) => handleInputChange('dorsal1', e.target.value)}
-                        placeholder="0,0"
-                        className="border-gray-300 text-center bg-white"
+                        onChange={(e) =>
+                          handleInputChange("dorsal1", e.target.value)
+                        }
                       />
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
+                        className="border-gray-300 text-center bg-white"
+                        placeholder="0,0"
                         value={formData.dorsal2}
-                        onChange={(e) => handleInputChange('dorsal2', e.target.value)}
-                        placeholder="0,0"
-                        className="border-gray-300 text-center bg-white"
+                        onChange={(e) =>
+                          handleInputChange("dorsal2", e.target.value)
+                        }
                       />
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
+                        className="border-gray-300 text-center bg-white"
+                        placeholder="0,0"
                         value={formData.dorsal3}
-                        onChange={(e) => handleInputChange('dorsal3', e.target.value)}
-                        placeholder="0,0"
-                        className="border-gray-300 text-center bg-white"
+                        onChange={(e) =>
+                          handleInputChange("dorsal3", e.target.value)
+                        }
                       />
                     </td>
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
-                        value={formData.dorsalMedia}
                         isReadOnly
                         className="border-gray-300 text-center bg-gray-100 font-semibold"
+                        value={formData.dorsalMedia}
                       />
                     </td>
                   </tr>
@@ -654,13 +857,19 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
               </table>
             </div>
           </div>
-          
+
           {/* Critérios de Avaliação */}
           <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-            <p className="font-semibold text-green-800 mb-2 text-sm">Critérios de Avaliação - Dinamometria Dorsal:</p>
+            <p className="font-semibold text-green-800 mb-2 text-sm">
+              Critérios de Avaliação - Dinamometria Dorsal:
+            </p>
             <ul className="text-xs text-green-700 space-y-1">
-              <li>• <strong>Homens:</strong> Média ≥ 100 kgf</li>
-              <li>• <strong>Mulheres:</strong> Média ≥ 50 kgf</li>
+              <li>
+                • <strong>Homens:</strong> Média ≥ 100 kgf
+              </li>
+              <li>
+                • <strong>Mulheres:</strong> Média ≥ 50 kgf
+              </li>
             </ul>
           </div>
         </div>
@@ -668,35 +877,34 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
       {/* 5. Resultado e Observações */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle 
-          number="5" 
-          title="Resultado e Observações" 
-        />
-          <div className="p-4 ">
-            <Textarea
-              value={formData.observacoesFinais}
-              onChange={(e) => handleInputChange('observacoesFinais', e.target.value)}
-              rows={4}
-              placeholder="Observações finais sobre a avaliação de força muscular..."
-              className="bg-white border-gray-300"
-            />
-          </div>
+        <SectionTitle number="5" title="Resultado e Observações" />
+        <div className="p-4 ">
+          <Textarea
+            className="bg-white border-gray-300"
+            placeholder="Observações finais sobre a avaliação de força muscular..."
+            rows={4}
+            value={formData.observacoesFinais}
+            onChange={(e) =>
+              handleInputChange("observacoesFinais", e.target.value)
+            }
+          />
+        </div>
       </Card>
 
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
         <Button
+          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
           variant="flat"
           onPress={onClose}
-          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
         >
           Cancelar
         </Button>
         <Button
-          color="primary"
-          onPress={handleSave}
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          color="primary"
           startContent={<FileText className="h-4 w-4" />}
+          onPress={handleSave}
         >
           Salvar / Concluir Exame
         </Button>

@@ -1,10 +1,19 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import { Eye, EyeOff, ArrowLeft, CreditCard, User, Lock, Shield, CheckCircle, ArrowRight } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import {
+  Eye,
+  EyeOff,
+  ArrowLeft,
+  CreditCard,
+  User,
+  Lock,
+  ArrowRight,
+} from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { fetchBodyJson, formatCPF } from "@/lib/utils";
 import { ApiResponse } from "@/shared/responses/ApiResponse";
@@ -42,7 +51,7 @@ const InputField: React.FC<InputProps> = ({
 }) => {
   return (
     <div className="space-y-2">
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-gray-700" htmlFor={id}>
         {label} {required && <span className="text-red-500">*</span>}
       </label>
       <div className="relative">
@@ -52,19 +61,19 @@ const InputField: React.FC<InputProps> = ({
           </div>
         )}
         <input
+          aria-describedby={describedBy}
+          className={`block w-full rounded-xl border border-gray-300 bg-white py-3 placeholder-gray-400 text-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35] disabled:opacity-60 disabled:bg-gray-100 ${
+            startIcon ? "pl-10" : "pl-4"
+          } ${endIcon ? "pr-10" : "pr-4"}`}
+          disabled={disabled}
           id={id}
+          maxLength={maxLength}
           name={id}
+          placeholder={placeholder}
+          required={required}
           type={type}
           value={value}
           onChange={onChange}
-          placeholder={placeholder}
-          maxLength={maxLength}
-          aria-describedby={describedBy}
-          disabled={disabled}
-          required={required}
-          className={`block w-full rounded-xl border border-gray-300 bg-white py-3 placeholder-gray-400 text-gray-900 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35] disabled:opacity-60 disabled:bg-gray-100 ${
-            startIcon ? 'pl-10' : 'pl-4'
-          } ${endIcon ? 'pr-10' : 'pr-4'}`}
         />
         {endIcon && (
           <div className="absolute inset-y-0 right-0 flex items-center pr-3">
@@ -76,18 +85,31 @@ const InputField: React.FC<InputProps> = ({
   );
 };
 
-
-
 // Componente de força da senha
 const PasswordStrength = ({ strength }: { strength: number }) => {
-  const strengthLabels = ["Muito Fraca", "Fraca", "Moderada", "Forte", "Muito Forte"];
-  const strengthColors = ["#EF4444", "#F59E0B", "#10B981", "#10B981", "#10B981"];
-  
+  const strengthLabels = [
+    "Muito Fraca",
+    "Fraca",
+    "Moderada",
+    "Forte",
+    "Muito Forte",
+  ];
+  const strengthColors = [
+    "#EF4444",
+    "#F59E0B",
+    "#10B981",
+    "#10B981",
+    "#10B981",
+  ];
+
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
         <span className="text-sm text-gray-600">Força da senha</span>
-        <span className="text-sm font-medium" style={{ color: strengthColors[strength] }}>
+        <span
+          className="text-sm font-medium"
+          style={{ color: strengthColors[strength] }}
+        >
           {strengthLabels[strength]}
         </span>
       </div>
@@ -98,11 +120,11 @@ const PasswordStrength = ({ strength }: { strength: number }) => {
             className="h-2 flex-1 rounded-full bg-gray-200 overflow-hidden"
           >
             <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: strength > index ? '100%' : '0%' }}
-              transition={{ duration: 0.5 }}
+              animate={{ width: strength > index ? "100%" : "0%" }}
               className="h-full rounded-full"
+              initial={{ width: 0 }}
               style={{ backgroundColor: strengthColors[strength] }}
+              transition={{ duration: 0.5 }}
             />
           </div>
         ))}
@@ -129,16 +151,19 @@ export default function RegistroPage(): JSX.Element {
 
   const handleCodigoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const onlyNumbers = e.target.value.replace(/\D/g, "");
+
     setCodigo(onlyNumbers);
     setError(null);
   };
 
   function passwordStrengthScore(pw: string) {
     let score = 0;
+
     if (pw.length >= 8) score++;
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
+
     return score;
   }
 
@@ -152,11 +177,13 @@ export default function RegistroPage(): JSX.Element {
       const res = await fetchBodyJson<ApiResponse<IUserInfo>>(
         API_REGISTER_URL,
         "POST",
-        payload
+        payload,
       );
 
       if (res.status === 201) {
-        alert("Registro realizado com sucesso! Você será redirecionado para o login.");
+        alert(
+          "Registro realizado com sucesso! Você será redirecionado para o login.",
+        );
         router.push("/");
       } else {
         setError(res.message || "Erro ao realizar registro");
@@ -173,23 +200,28 @@ export default function RegistroPage(): JSX.Element {
     setError(null);
 
     const cpfDigits = cpf.replace(/\D/g, "");
+
     if (cpfDigits.length !== 11) {
       setError("CPF inválido. Deve conter 11 dígitos.");
+
       return;
     }
 
     if (codigo.length < 1) {
       setError("Código de registro deve ter no mínimo 1 dígito.");
+
       return;
     }
 
     if (password.length < 3) {
       setError("A senha deve ter no mínimo 3 caracteres.");
+
       return;
     }
 
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
+
       return;
     }
 
@@ -203,22 +235,26 @@ export default function RegistroPage(): JSX.Element {
         <div className="md:w-2/5 bg-white p-8 flex flex-col justify-center border-r border-gray-200">
           <CMSO360Animation />
         </div>
-        
+
         {/* Lado direito - Formulário de registro */}
         <div className="md:w-3/5 p-8 flex flex-col justify-center">
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: 20 }}
             transition={{ duration: 0.6 }}
           >
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-2xl font-bold text-gray-800">Criar Conta</h2>
-                <p className="text-gray-600 mt-1">Registro para colaboradores autorizados</p>
+                <h2 className="text-2xl font-bold text-gray-800">
+                  Criar Conta
+                </h2>
+                <p className="text-gray-600 mt-1">
+                  Registro para colaboradores autorizados
+                </p>
               </div>
-              <Link 
-                href="/" 
+              <Link
                 className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors inline-flex items-center gap-2 text-sm"
+                href="/"
               >
                 <ArrowLeft className="w-4 h-4" />
                 Voltar ao Login
@@ -226,129 +262,151 @@ export default function RegistroPage(): JSX.Element {
             </div>
 
             {error && (
-              <motion.div 
-                initial={{ opacity: 0, height: 0 }}
+              <motion.div
                 animate={{ opacity: 1, height: "auto" }}
-                role="alert" 
                 className="mb-6 p-3 text-sm text-red-700 bg-red-100 rounded-lg border border-red-200 flex items-center"
+                initial={{ opacity: 0, height: 0 }}
+                role="alert"
               >
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                <svg
+                  className="w-4 h-4 mr-2"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    clipRule="evenodd"
+                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                    fillRule="evenodd"
+                  />
                 </svg>
                 {error}
               </motion.div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form className="space-y-6" onSubmit={handleSubmit}>
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
               >
                 <InputField
-                  id="cpf"
-                  label="CPF"
-                  placeholder="000.000.000-00"
-                  value={cpf}
-                  onChange={handleCpfChange}
                   required
-                  maxLength={14}
-                  startIcon={<CreditCard className="w-4 h-4" />}
                   describedBy="cpf-desc"
                   disabled={isLoading}
+                  id="cpf"
+                  label="CPF"
+                  maxLength={14}
+                  placeholder="000.000.000-00"
+                  startIcon={<CreditCard className="w-4 h-4" />}
+                  value={cpf}
+                  onChange={handleCpfChange}
                 />
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.2 }}
               >
                 <InputField
-                  id="codigo"
-                  label="Código de Registro"
-                  placeholder="Apenas números"
-                  value={codigo}
-                  onChange={handleCodigoChange}
                   required
-                  maxLength={12}
-                  startIcon={<User className="w-4 h-4" />}
                   describedBy="codigo-desc"
                   disabled={isLoading}
+                  id="codigo"
+                  label="Código de Registro"
+                  maxLength={12}
+                  placeholder="Apenas números"
+                  startIcon={<User className="w-4 h-4" />}
+                  value={codigo}
+                  onChange={handleCodigoChange}
                 />
-                <p id="codigo-desc" className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-1" id="codigo-desc">
                   Informe o código disponibilizado pela sua empresa
                 </p>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.3 }}
               >
                 <InputField
-                  id="password"
-                  label="Senha"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Crie uma senha segura"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   required
-                  maxLength={64}
-                  startIcon={<Lock className="w-4 h-4" />}
+                  disabled={isLoading}
                   endIcon={
                     <button
+                      aria-label={
+                        showPassword ? "Ocultar senha" : "Mostrar senha"
+                      }
+                      className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#104e35] rounded p-1"
                       type="button"
                       onClick={() => setShowPassword((s) => !s)}
-                      aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
-                      className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#104e35] rounded p-1"
                     >
-                      {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showPassword ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   }
-                  disabled={isLoading}
+                  id="password"
+                  label="Senha"
+                  maxLength={64}
+                  placeholder="Crie uma senha segura"
+                  startIcon={<Lock className="w-4 h-4" />}
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
                 <PasswordStrength strength={strength} />
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.4 }}
               >
                 <InputField
-                  id="confirmPassword"
-                  label="Confirmar Senha"
-                  type={showConfirm ? "text" : "password"}
-                  placeholder="Confirme sua senha"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
-                  maxLength={64}
-                  startIcon={<Lock className="w-4 h-4" />}
+                  disabled={isLoading}
                   endIcon={
                     <button
+                      aria-label={
+                        showConfirm
+                          ? "Ocultar confirmação"
+                          : "Mostrar confirmação"
+                      }
+                      className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#104e35] rounded p-1"
                       type="button"
                       onClick={() => setShowConfirm((s) => !s)}
-                      aria-label={showConfirm ? "Ocultar confirmação" : "Mostrar confirmação"}
-                      className="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#104e35] rounded p-1"
                     >
-                      {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      {showConfirm ? (
+                        <EyeOff className="w-4 h-4" />
+                      ) : (
+                        <Eye className="w-4 h-4" />
+                      )}
                     </button>
                   }
-                  disabled={isLoading}
+                  id="confirmPassword"
+                  label="Confirmar Senha"
+                  maxLength={64}
+                  placeholder="Confirme sua senha"
+                  startIcon={<Lock className="w-4 h-4" />}
+                  type={showConfirm ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                 />
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
               >
                 <button
-                  type="submit"
-                  disabled={isLoading}
                   className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
+                  disabled={isLoading}
+                  type="submit"
                 >
                   {isLoading ? (
                     <>
@@ -365,15 +423,15 @@ export default function RegistroPage(): JSX.Element {
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                transition={{ duration: 0.4, delay: 0.6 }}
                 className="text-center text-sm text-gray-600"
+                initial={{ opacity: 0 }}
+                transition={{ duration: 0.4, delay: 0.6 }}
               >
                 Já possui uma conta?{" "}
-                <Link 
-                  href="/" 
+                <Link
                   className="text-[#104e35] font-semibold hover:text-[#0d3d29] hover:underline transition-colors"
+                  href="/"
                 >
                   Faça login aqui
                 </Link>
@@ -381,19 +439,28 @@ export default function RegistroPage(): JSX.Element {
             </form>
 
             <motion.div
-              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
               className="mt-6 pt-6 border-t border-gray-200"
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.4, delay: 0.7 }}
             >
               <div className="flex justify-center gap-4 text-xs text-gray-500">
-                <Link href="#" className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors">
+                <Link
+                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
+                  href="#"
+                >
                   Política de Segurança
                 </Link>
-                <Link href="#" className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors">
+                <Link
+                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
+                  href="#"
+                >
                   Termos de Uso
                 </Link>
-                <Link href="#" className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors">
+                <Link
+                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
+                  href="#"
+                >
                   Suporte
                 </Link>
               </div>

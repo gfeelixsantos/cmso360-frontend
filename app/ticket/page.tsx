@@ -12,29 +12,36 @@ import {
   ArrowPathIcon,
   QueueListIcon,
   BuildingOfficeIcon,
-  WrenchScrewdriverIcon,
   ClockIcon,
   CalendarIcon,
-  BuildingLibraryIcon,
-  CheckBadgeIcon,
-  ExclamationTriangleIcon,
   XMarkIcon,
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
-import { Ticket, TicketEmitedDto, TicketGroups, TicketStatus, TicketTypes } from "@/lib/ticket/ticket";
+
+import {
+  Ticket,
+  TicketEmitedDto,
+  TicketGroups,
+  TicketStatus,
+  TicketTypes,
+} from "@/lib/ticket/ticket";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
-import { NEST_TICKETS_URL, SERVICES_KEY, UNIDADES_ATENDIMENTO } from "@/config/constants";
+import {
+  NEST_TICKETS_URL,
+  SERVICES_KEY,
+  UNIDADES_ATENDIMENTO,
+} from "@/config/constants";
 
 // Paleta de cores baseada no logo
 const COLOR_PALETTE = {
-  primary: "#44735e",      // Verde principal
-  secondary: "#b8d864",    // Verde claro/amarelado
-  accent: "#5a8c7a",       // Verde médio
-  light: "#e8f4e3",        // Verde muito claro
-  dark: "#2a4a3a",         // Verde escuro
-  background: "#f5f9f7",   // Fundo claro
-  text: "#1a2a1f",         // Texto escuro
-  gray: "#6b7f76",         // Cinza esverdeado
+  primary: "#44735e", // Verde principal
+  secondary: "#b8d864", // Verde claro/amarelado
+  accent: "#5a8c7a", // Verde médio
+  light: "#e8f4e3", // Verde muito claro
+  dark: "#2a4a3a", // Verde escuro
+  background: "#f5f9f7", // Fundo claro
+  text: "#1a2a1f", // Texto escuro
+  gray: "#6b7f76", // Cinza esverdeado
 };
 
 // Interface para dados de autenticação salvos
@@ -50,7 +57,7 @@ const useFullscreen = () => {
 
   const enterFullscreen = useCallback(() => {
     const docElement = document.documentElement as any;
-    
+
     try {
       if (docElement.requestFullscreen) {
         docElement.requestFullscreen().catch(() => {
@@ -70,6 +77,7 @@ const useFullscreen = () => {
 
   const exitFullscreen = useCallback(() => {
     const doc = document as any;
+
     if (doc.exitFullscreen) {
       doc.exitFullscreen();
     } else if (doc.mozCancelFullScreen) {
@@ -86,16 +94,25 @@ const useFullscreen = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("mozfullscreenchange", handleFullscreenChange);
+    document.addEventListener("MSFullscreenChange", handleFullscreenChange);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        "mozfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        "MSFullscreenChange",
+        handleFullscreenChange,
+      );
     };
   }, []);
 
@@ -104,28 +121,31 @@ const useFullscreen = () => {
 
 // Hook para gerenciamento de autenticação no localStorage
 const useAuthStorage = () => {
-  const AUTH_STORAGE_KEY = 'ticket_auth_data';
+  const AUTH_STORAGE_KEY = "ticket_auth_data";
   const STORAGE_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 horas
 
   const saveAuthData = (serial: string, unidade: string) => {
     const authData: AuthData = {
       serial,
       unidade,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
+
     localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(authData));
   };
 
   const getAuthData = (): AuthData | null => {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+
       if (!stored) return null;
 
       const authData: AuthData = JSON.parse(stored);
       const isExpired = Date.now() - authData.timestamp > STORAGE_EXPIRY_MS;
-      
+
       if (isExpired) {
         localStorage.removeItem(AUTH_STORAGE_KEY);
+
         return null;
       }
 
@@ -150,33 +170,34 @@ const useBrazilTime = () => {
     const updateTime = () => {
       // Usando UTC-3 (Horário de Brasília)
       const now = new Date();
-      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-      const brasiliaTime = new Date(utc + (3600000 * -3));
+      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
+      const brasiliaTime = new Date(utc + 3600000 * -3);
+
       setCurrentTime(brasiliaTime);
     };
 
     updateTime();
     const timer = setInterval(updateTime, 1000);
-    
+
     return () => clearInterval(timer);
   }, []);
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('pt-BR', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit',
-      timeZone: 'America/Sao_Paulo'
+    return date.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      timeZone: "America/Sao_Paulo",
     });
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('pt-BR', { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      timeZone: 'America/Sao_Paulo'
+    return date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      timeZone: "America/Sao_Paulo",
     });
   };
 
@@ -188,30 +209,33 @@ const Header = ({ unidade }: { unidade?: string }) => {
   const { currentTime, formatTime, formatDate } = useBrazilTime();
 
   return (
-    <header 
+    <header
       className="w-full text-white p-2 md:p-4 lg:p-6 rounded-t-2xl shadow-lg"
-      style={{ 
-        background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.dark} 100%)` 
+      style={{
+        background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.dark} 100%)`,
       }}
     >
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center">
           <div className="text-center md:text-left">
             <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">CMSO</h1>
-            <p style={{ color: COLOR_PALETTE.secondary }} className="text-sm md:text-base">
+            <p
+              className="text-sm md:text-base"
+              style={{ color: COLOR_PALETTE.secondary }}
+            >
               Sistema de Atendimento
             </p>
           </div>
         </div>
-        
+
         <div className="text-center md:text-right flex-1">
           {unidade && (
             <div className="flex items-center justify-center md:justify-end mb-2">
-              <MapPinIcon 
-                className="h-4 w-4 md:h-5 md:w-5 mr-2" 
+              <MapPinIcon
+                className="h-4 w-4 md:h-5 md:w-5 mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span 
+              <span
                 className="font-semibold text-sm md:text-base lg:text-lg"
                 style={{ color: COLOR_PALETTE.light }}
               >
@@ -219,22 +243,26 @@ const Header = ({ unidade }: { unidade?: string }) => {
               </span>
             </div>
           )}
-          
+
           <div className="flex flex-col xs:flex-row items-center justify-center md:justify-end gap-2 md:gap-3 lg:gap-4">
             <div className="flex items-center">
-              <CalendarIcon 
-                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" 
+              <CalendarIcon
+                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span className="text-xs md:text-sm lg:text-base">{formatDate(currentTime)}</span>
+              <span className="text-xs md:text-sm lg:text-base">
+                {formatDate(currentTime)}
+              </span>
             </div>
-            
+
             <div className="flex items-center">
-              <ClockIcon 
-                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" 
+              <ClockIcon
+                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span className="font-mono text-sm md:text-lg lg:text-xl">{formatTime(currentTime)}</span>
+              <span className="font-mono text-sm md:text-lg lg:text-xl">
+                {formatTime(currentTime)}
+              </span>
             </div>
           </div>
         </div>
@@ -244,7 +272,11 @@ const Header = ({ unidade }: { unidade?: string }) => {
 };
 
 // Componente para a tela de autenticação e conexão
-const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) => {
+const InitialScreen = ({
+  onConnect,
+}: {
+  onConnect: (unidade: string) => void;
+}) => {
   const [serial, setSerial] = useState("");
   const [unidade, setUnidade] = useState("");
   const [error, setError] = useState("");
@@ -254,6 +286,7 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
   // Carregar credenciais salvas ao montar o componente
   useEffect(() => {
     const savedAuth = getAuthData();
+
     if (savedAuth) {
       setSerial(savedAuth.serial);
       setUnidade(savedAuth.unidade);
@@ -262,14 +295,16 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
 
   const handleConnect = async () => {
     setError("");
-    
+
     if (serial !== SERVICES_KEY) {
       setError("Código de acesso inválido.");
+
       return;
     }
-    
+
     if (!unidade) {
       setError("Selecione a unidade.");
+
       return;
     }
 
@@ -277,7 +312,7 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
     try {
       // Salvar credenciais no localStorage
       saveAuthData(serial, unidade);
-      
+
       setTimeout(() => {
         onConnect(unidade);
       }, 1000);
@@ -288,103 +323,112 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleConnect();
     }
   };
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
+    <motion.div
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
       className="w-full max-w-xs sm:max-w-sm md:max-w-lg rounded-2xl shadow-xl overflow-hidden border mx-2"
-      style={{ 
+      initial={{ opacity: 0, y: 20 }}
+      style={{
         backgroundColor: COLOR_PALETTE.background,
-        borderColor: COLOR_PALETTE.primary 
+        borderColor: COLOR_PALETTE.primary,
       }}
+      transition={{ duration: 0.5 }}
     >
-      <div 
+      <div
         className="p-4 md:p-6 text-center"
-        style={{ 
-          background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)` 
+        style={{
+          background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
         }}
       >
-        <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white">Acesso ao Totem</h2>
-        <p style={{ color: COLOR_PALETTE.light }} className="mt-1 text-sm md:text-base">
+        <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white">
+          Acesso ao Totem
+        </h2>
+        <p
+          className="mt-1 text-sm md:text-base"
+          style={{ color: COLOR_PALETTE.light }}
+        >
           Informe as credenciais para continuar
         </p>
       </div>
-      
+
       <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
         <div className="relative">
-          <KeyIcon 
+          <KeyIcon
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
             style={{ color: COLOR_PALETTE.primary }}
           />
           <input
-            type="password"
-            placeholder="Informe o código serial"
-            value={serial}
-            onChange={(e) => setSerial(e.target.value)}
-            onKeyPress={handleKeyPress}
             className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 rounded-xl border text-base md:text-lg placeholder-gray-500 focus:ring-2 focus:border-transparent transition-all"
-            style={{ 
-              backgroundColor: 'white',
+            placeholder="Informe o código serial"
+            style={{
+              backgroundColor: "white",
               borderColor: COLOR_PALETTE.gray,
               color: COLOR_PALETTE.text,
             }}
+            type="password"
+            value={serial}
+            onChange={(e) => setSerial(e.target.value)}
+            onKeyPress={handleKeyPress}
           />
         </div>
 
         <div className="relative">
-          <MapPinIcon 
+          <MapPinIcon
             className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
             style={{ color: COLOR_PALETTE.primary }}
           />
           <select
-            value={unidade}
-            onChange={(e) => setUnidade(e.target.value)}
-            onKeyPress={handleKeyPress}
             className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 rounded-xl border text-base md:text-lg appearance-none focus:ring-2 focus:border-transparent transition-all"
-            style={{ 
-              backgroundColor: 'white',
+            style={{
+              backgroundColor: "white",
               borderColor: COLOR_PALETTE.gray,
               color: COLOR_PALETTE.text,
             }}
+            value={unidade}
+            onChange={(e) => setUnidade(e.target.value)}
+            onKeyPress={handleKeyPress}
           >
-            <option value="" disabled>Selecione a unidade</option>
+            <option disabled value="">
+              Selecione a unidade
+            </option>
             {UNIDADES_ATENDIMENTO.map((u) => (
-              <option key={u} value={u}>{u}</option>
+              <option key={u} value={u}>
+                {u}
+              </option>
             ))}
           </select>
         </div>
 
         {error && (
-          <motion.p 
-            initial={{ opacity: 0 }}
+          <motion.p
             animate={{ opacity: 1 }}
             className="text-center font-medium p-3 rounded-lg text-sm md:text-base"
-            style={{ 
-              backgroundColor: '#fed7d7',
-              color: '#c53030'
+            initial={{ opacity: 0 }}
+            style={{
+              backgroundColor: "#fed7d7",
+              color: "#c53030",
             }}
           >
             {error}
           </motion.p>
         )}
       </div>
-      
+
       <div className="px-4 md:px-6 lg:px-8 pb-4 md:pb-6 lg:pb-8">
         <Button
-          onClick={handleConnect}
-          disabled={isLoading}
           className="w-full py-3 md:py-4 text-base md:text-lg font-bold text-white rounded-xl transition-all duration-300 flex items-center justify-center shadow-lg"
-          style={{ 
-            background: isLoading 
-              ? COLOR_PALETTE.gray 
-              : `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`
+          disabled={isLoading}
+          style={{
+            background: isLoading
+              ? COLOR_PALETTE.gray
+              : `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
           }}
+          onClick={handleConnect}
         >
           {isLoading ? (
             <>
@@ -401,11 +445,16 @@ const InitialScreen = ({ onConnect }: { onConnect: (unidade: string) => void }) 
 };
 
 // Componente para exibir mensagens de feedback em tela cheia
-const FullScreenFeedback = ({ type, message, ticketNumber, onClose }: { 
-  type: 'success' | 'error', 
-  message: string,
-  ticketNumber?: string,
-  onClose: () => void 
+const FullScreenFeedback = ({
+  type,
+  message,
+  ticketNumber,
+  onClose,
+}: {
+  type: "success" | "error";
+  message: string;
+  ticketNumber?: string;
+  onClose: () => void;
 }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -420,76 +469,82 @@ const FullScreenFeedback = ({ type, message, ticketNumber, onClose }: {
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
       className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      style={{ 
-        backgroundColor: type === 'success' ? COLOR_PALETTE.light : '#fed7d7'
+      exit={{ opacity: 0 }}
+      initial={{ opacity: 0 }}
+      style={{
+        backgroundColor: type === "success" ? COLOR_PALETTE.light : "#fed7d7",
       }}
     >
-      <div 
+      <div
         className="relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl p-4 md:p-6 lg:p-8 rounded-3xl shadow-2xl text-center text-white"
-        style={{ 
-          background: type === 'success' ? successGradient : errorGradient
+        style={{
+          background: type === "success" ? successGradient : errorGradient,
         }}
       >
-        <button 
-          onClick={onClose}
+        <button
           className="absolute top-2 right-2 md:top-4 md:right-4 p-1 md:p-2 rounded-full hover:bg-white/20 transition-colors"
+          onClick={onClose}
         >
           <XMarkIcon className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8" />
         </button>
-        
-        <motion.h2 
-          initial={{ y: 20, opacity: 0 }}
+
+        <motion.h2
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
           className="text-xl md:text-2xl lg:text-4xl font-bold mb-3 md:mb-4 lg:mb-6"
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ delay: 0.4 }}
         >
-          {type === 'success' ? 'SENHA EMITIDA COM SUCESSO!' : 'ERRO NA EMISSÃO'}
+          {type === "success"
+            ? "SENHA EMITIDA COM SUCESSO!"
+            : "ERRO NA EMISSÃO"}
         </motion.h2>
-        
+
         {ticketNumber && (
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
             className="bg-white/20 p-3 md:p-4 lg:p-6 rounded-2xl mb-3 md:mb-4 lg:mb-6"
+            initial={{ scale: 0.8, opacity: 0 }}
+            transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
           >
-            <p className="text-base md:text-lg lg:text-2xl mb-1 md:mb-2">Sua senha é:</p>
-            <p className="text-2xl md:text-4xl lg:text-7xl font-bold tracking-wider">{ticketNumber}</p>
+            <p className="text-base md:text-lg lg:text-2xl mb-1 md:mb-2">
+              Sua senha é:
+            </p>
+            <p className="text-2xl md:text-4xl lg:text-7xl font-bold tracking-wider">
+              {ticketNumber}
+            </p>
           </motion.div>
         )}
-        
-        <motion.p 
-          initial={{ y: 20, opacity: 0 }}
+
+        <motion.p
           animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.8 }}
           className="text-base md:text-lg lg:text-xl mb-4 md:mb-6 lg:mb-8"
+          initial={{ y: 20, opacity: 0 }}
+          transition={{ delay: 0.8 }}
         >
           {message}
         </motion.p>
-        
+
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
+          initial={{ y: 20, opacity: 0 }}
           transition={{ delay: 1 }}
         >
           <Button
-            onClick={onClose}
             className="px-4 py-2 md:px-6 md:py-3 lg:px-8 lg:py-4 text-base md:text-lg font-bold rounded-xl bg-white/20 hover:bg-white/30 border border-white/30"
+            onClick={onClose}
           >
             Fechar
           </Button>
         </motion.div>
-        
+
         {/* Contador regressivo */}
-        <motion.div 
-          initial={{ width: 0 }}
-          animate={{ width: '100%' }}
-          transition={{ duration: 3, ease: "linear" }}
+        <motion.div
+          animate={{ width: "100%" }}
           className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-3xl"
+          initial={{ width: 0 }}
+          transition={{ duration: 3, ease: "linear" }}
         />
       </div>
     </motion.div>
@@ -497,27 +552,34 @@ const FullScreenFeedback = ({ type, message, ticketNumber, onClose }: {
 };
 
 // Botão para ativar/desativar fullscreen
-const FullscreenToggle = ({ isFullscreen, onToggle }: { 
-  isFullscreen: boolean; 
+const FullscreenToggle = ({
+  isFullscreen,
+  onToggle,
+}: {
+  isFullscreen: boolean;
   onToggle: () => void;
 }) => (
   <Button
-    onClick={onToggle}
     className="fixed top-4 right-4 z-40 p-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 backdrop-blur-sm"
     size="sm"
+    onClick={onToggle}
   >
     <ArrowsPointingOutIcon className="h-5 w-5 text-white" />
   </Button>
 );
 
 // Componente para a tela principal de opções de ticket
-const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: string }) => {
+const TicketOptionsScreen = ({
+  unidadeSelecionada,
+}: {
+  unidadeSelecionada: string;
+}) => {
   const [subOptions, setSubOptions] = useState<TicketTypes[] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [feedback, setFeedback] = useState<{ 
-    type: 'success' | 'error', 
-    message: string, 
-    ticketNumber?: string 
+  const [feedback, setFeedback] = useState<{
+    type: "success" | "error";
+    message: string;
+    ticketNumber?: string;
   } | null>(null);
   const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreen();
 
@@ -526,7 +588,9 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
     const timer = setTimeout(() => {
       if (!isFullscreen) {
         // Apenas mostra o botão, não força o fullscreen
-        console.log("Modo tela cheia disponível - clique no botão no canto superior direito");
+        console.log(
+          "Modo tela cheia disponível - clique no botão no canto superior direito",
+        );
       }
     }, 1000);
 
@@ -544,10 +608,10 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
   // Memoização da função de emissão de ticket para performance
   const emitirTicket = async (tipo: TicketTypes) => {
     if (isLoading) return;
-    
+
     setIsLoading(true);
     const ticketPrefix = tipo === "NORMAL" ? "" : tipo[0];
-    
+
     const ticket: TicketEmitedDto = {
       emissao: new Date(),
       numero: 0,
@@ -556,7 +620,7 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
       status: TicketStatus.AGUARDANDO,
       type: WebsocketType.TICKET,
       unidade: unidadeSelecionada,
-      grupo: TicketGroups.RECEPCAO
+      grupo: TicketGroups.RECEPCAO,
     };
 
     try {
@@ -567,10 +631,10 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Accept": "application/json",
+          Accept: "application/json",
         },
         body: JSON.stringify(ticket),
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -579,20 +643,21 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
         throw new Error("Erro ao emitir o ticket.");
       }
 
-      const ticketResponse: Ticket = await response.json()
+      const ticketResponse: Ticket = await response.json();
       const formattedTicket = `${ticketPrefix}${ticketResponse.numero}`;
 
       setFeedback({
-        type: 'success',
-        message: 'Aguarde ser chamado.',
-        ticketNumber: formattedTicket
+        type: "success",
+        message: "Aguarde ser chamado.",
+        ticketNumber: formattedTicket,
       });
     } catch (error) {
       console.error("Erro na emissão do ticket:", error);
-      
+
       setFeedback({
-        type: 'error',
-        message: "Não foi possível emitir a senha. Por favor, tente novamente ou procure um funcionário."
+        type: "error",
+        message:
+          "Não foi possível emitir a senha. Por favor, tente novamente ou procure um funcionário.",
       });
     } finally {
       setIsLoading(false);
@@ -610,7 +675,7 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
 
   const getIcon = (tipo: TicketTypes) => {
     const iconClass = "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12";
-    
+
     switch (tipo) {
       case TicketTypes.ATENDIMENTO:
         return <QueueListIcon className={iconClass} />;
@@ -641,7 +706,10 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
   const mainButtons = [
     { type: TicketTypes.ATENDIMENTO, label: "ATENDIMENTO" },
     { type: TicketTypes.PREFERENCIAL, label: "PREFERENCIAL" },
-    { type: TicketTypes.RETIRADA_EXAMES, label: "REPETIÇÃO/RETIRADA DE EXAMES" },
+    {
+      type: TicketTypes.RETIRADA_EXAMES,
+      label: "REPETIÇÃO/RETIRADA DE EXAMES",
+    },
   ];
 
   const subButtons = subOptions?.map((type) => ({
@@ -654,33 +722,36 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
   return (
     <div className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl mx-2 relative">
       {/* Botão de toggle para fullscreen */}
-      <FullscreenToggle 
-        isFullscreen={isFullscreen} 
+      <FullscreenToggle
+        isFullscreen={isFullscreen}
         onToggle={handleFullscreenToggle}
       />
-      
+
       <Header unidade={unidadeSelecionada} />
-      
-      <div 
+
+      <div
         className="p-3 md:p-6 lg:p-8 rounded-b-2xl shadow-lg border"
-        style={{ 
+        style={{
           backgroundColor: COLOR_PALETTE.background,
-          borderColor: COLOR_PALETTE.primary 
+          borderColor: COLOR_PALETTE.primary,
         }}
       >
-        <motion.div 
-          initial={{ opacity: 0 }}
+        <motion.div
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.2 }}
           className="text-center mb-4 md:mb-6 lg:mb-10"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          <h2 
+          <h2
             className="text-xl md:text-2xl lg:text-3xl font-bold mb-2"
             style={{ color: COLOR_PALETTE.text }}
           >
             Selecione o tipo de atendimento
           </h2>
-          <p style={{ color: COLOR_PALETTE.gray }} className="text-xs md:text-sm lg:text-base">
+          <p
+            className="text-xs md:text-sm lg:text-base"
+            style={{ color: COLOR_PALETTE.gray }}
+          >
             Escolha abaixo a opção que melhor atende sua necessidade
           </p>
         </motion.div>
@@ -690,23 +761,23 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
             {buttonsToRender?.map(({ type, label }) => (
               <motion.div
                 key={type}
-                initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
+                className="flex"
                 exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
-                className="flex"
               >
                 <Button
-                  onClick={() => handleTicketOption(type as TicketTypes)}
-                  disabled={isLoading}
                   className="flex flex-col items-center justify-center p-3 md:p-4 lg:p-6 h-32 sm:h-36 md:h-40 lg:h-48 w-full text-sm md:text-base lg:text-lg font-bold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  disabled={isLoading}
                   style={{ background: getButtonColor(type as TicketTypes) }}
+                  onClick={() => handleTicketOption(type as TicketTypes)}
                 >
                   <motion.div
-                    initial={{ scale: 0.8 }}
                     animate={{ scale: 1 }}
+                    initial={{ scale: 0.8 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
                     {getIcon(type as TicketTypes)}
@@ -721,19 +792,19 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
         </div>
 
         {subOptions && (
-          <motion.div 
-            initial={{ opacity: 0 }}
+          <motion.div
             animate={{ opacity: 1 }}
             className="flex justify-center"
+            initial={{ opacity: 0 }}
           >
-            <Button 
-              onClick={() => setSubOptions(null)} 
+            <Button
               className="px-4 py-2 md:px-6 md:py-3 rounded-xl border text-sm md:text-base"
-              style={{ 
+              style={{
                 backgroundColor: COLOR_PALETTE.primary,
-                color: 'white',
-                borderColor: COLOR_PALETTE.accent
+                color: "white",
+                borderColor: COLOR_PALETTE.accent,
               }}
+              onClick={() => setSubOptions(null)}
             >
               Voltar
             </Button>
@@ -742,11 +813,11 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
 
         <AnimatePresence>
           {feedback && (
-            <FullScreenFeedback 
-              type={feedback.type} 
+            <FullScreenFeedback
               message={feedback.message}
               ticketNumber={feedback.ticketNumber}
-              onClose={() => setFeedback(null)} 
+              type={feedback.type}
+              onClose={() => setFeedback(null)}
             />
           )}
         </AnimatePresence>
@@ -757,12 +828,15 @@ const TicketOptionsScreen = ({ unidadeSelecionada }: { unidadeSelecionada: strin
 
 // Página Principal (Home)
 export default function Home() {
-  const [unidadeSelecionada, setUnidadeSelecionada] = useState<string | null>(null);
+  const [unidadeSelecionada, setUnidadeSelecionada] = useState<string | null>(
+    null,
+  );
   const { getAuthData } = useAuthStorage();
 
   // Verificar se há credenciais salvas ao carregar a página
   useEffect(() => {
     const savedAuth = getAuthData();
+
     if (savedAuth && savedAuth.serial === SERVICES_KEY) {
       setUnidadeSelecionada(savedAuth.unidade);
     }
@@ -773,32 +847,32 @@ export default function Home() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8"
-      style={{ 
-        background: `linear-gradient(135deg, ${COLOR_PALETTE.background} 0%, #e8f4e3 100%)` 
+      style={{
+        background: `linear-gradient(135deg, ${COLOR_PALETTE.background} 0%, #e8f4e3 100%)`,
       }}
     >
       <AnimatePresence mode="wait">
         {unidadeSelecionada ? (
           <motion.div
             key="ticket-screen"
-            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
             className="w-full flex justify-center"
+            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
           >
             <TicketOptionsScreen unidadeSelecionada={unidadeSelecionada} />
           </motion.div>
         ) : (
           <motion.div
             key="initial-screen"
-            initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.9 }}
-            transition={{ duration: 0.3 }}
             className="w-full flex justify-center"
+            exit={{ opacity: 0, scale: 0.9 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.3 }}
           >
             <InitialScreen onConnect={handleConnect} />
           </motion.div>
@@ -806,12 +880,12 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Footer */}
-      <motion.footer 
-        initial={{ opacity: 0 }}
+      <motion.footer
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
         className="mt-4 md:mt-6 lg:mt-8 text-center text-xs md:text-sm"
+        initial={{ opacity: 0 }}
         style={{ color: COLOR_PALETTE.gray }}
+        transition={{ delay: 0.5 }}
       >
         <p>Centro Médico de Saúde Ocupacional</p>
         <p>© {new Date().getFullYear()} - Todos os direitos reservados</p>

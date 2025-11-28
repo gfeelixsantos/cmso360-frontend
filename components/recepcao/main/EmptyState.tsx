@@ -1,6 +1,6 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode } from "react";
 import { Button } from "@heroui/react";
-import { Inbox, WifiOff } from "lucide-react";
+import { WifiOff } from "lucide-react";
 
 // Interface para tipagem robusta
 interface EmptyStateProps {
@@ -19,33 +19,37 @@ interface EmptyStateProps {
 // Componente para o ícone
 const EmptyStateIcon: React.FC<{ icon: ReactNode }> = ({ icon }) => (
   <div
-    className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-100"
     aria-hidden="true"
+    className="flex items-center justify-center w-16 h-16 rounded-full bg-gray-100"
   >
     {icon}
   </div>
 );
 
 // Componente para o conteúdo de texto
-const EmptyStateContent: React.FC<{ title: string; description: string }> = ({ title, description }) => (
+const EmptyStateContent: React.FC<{ title: string; description: string }> = ({
+  title,
+  description,
+}) => (
   <div className="space-y-1">
     <h3 className="text-lg font-semibold text-gray-900" role="alert">
       {title}
     </h3>
-    <p className="text-sm text-gray-600">
-      {description}
-    </p>
+    <p className="text-sm text-gray-600">{description}</p>
   </div>
 );
 
 // Componente para o botão de ação
-const EmptyStateAction: React.FC<{ actionLabel: string; onAction: () => void }> = ({ actionLabel, onAction }) => (
+const EmptyStateAction: React.FC<{
+  actionLabel: string;
+  onAction: () => void;
+}> = ({ actionLabel, onAction }) => (
   <Button
-    onPress={onAction}
+    aria-label={actionLabel}
     className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md 
       hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
       focus:ring-offset-2 transition-colors shadow-sm"
-    aria-label={actionLabel}
+    onPress={onAction}
   >
     {actionLabel}
   </Button>
@@ -55,19 +59,19 @@ const EmptyStateAction: React.FC<{ actionLabel: string; onAction: () => void }> 
 const EmptyState: React.FC<EmptyStateProps> = ({
   title = "Nenhum registro encontrado",
   description = "Não há dados disponíveis para exibir no momento.",
-  icon = <WifiOff size={36} className="text-red-400" />,
+  icon = <WifiOff className="text-red-400" size={36} />,
   actionLabel,
   onAction,
 }) => {
   return (
     <section
-      className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-lg"
-      aria-label="Estado vazio"
-      role="alertdialog"
       aria-describedby="empty-state-description"
+      aria-label="Estado vazio"
+      className="flex flex-col items-center justify-center py-16 text-center space-y-4 rounded-lg"
+      role="alertdialog"
     >
       <EmptyStateIcon icon={icon} />
-      <EmptyStateContent title={title} description={description} />
+      <EmptyStateContent description={description} title={title} />
       {actionLabel && onAction && (
         <EmptyStateAction actionLabel={actionLabel} onAction={onAction} />
       )}
@@ -76,4 +80,3 @@ const EmptyState: React.FC<EmptyStateProps> = ({
 };
 
 export default EmptyState;
-

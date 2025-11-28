@@ -1,12 +1,16 @@
 // events.ts
-import { Socket } from 'socket.io-client';
-import { PainelCall } from '@/lib/painel/interfaces/paniel.interface';
-import { PreparationRequest, PreparationRequestModel, Ticket } from '@/lib/ticket/ticket';
-import { Scheduling, SchedulingChange } from '@/lib/scheduling/interface/scheduling';
+import { Socket } from "socket.io-client";
+
+import { PainelCall } from "@/lib/painel/interfaces/paniel.interface";
+import { PreparationRequestModel, Ticket } from "@/lib/ticket/ticket";
+import {
+  Scheduling,
+  SchedulingChange,
+} from "@/lib/scheduling/interface/scheduling";
 
 enum EventType {
   // Ticket
-  CONNECTION_REQUEST = 'CONNECTION_REQUEST',
+  CONNECTION_REQUEST = "CONNECTION_REQUEST",
   TICKET_EMITED = "TICKET_EMITED",
   TICKET_UPDATED = "TICKET_UPDATED",
   TICKET_ACTION_SUCCESS = "TICKET_ACTION_SUCCESS",
@@ -15,6 +19,7 @@ enum EventType {
 
   // Schedule
   UPDATE_SCHEDULE = "UPDATE_SCHEDULE",
+  UPDATE_RECORD = "UPDATE_RECORD",
 
   // Preparo
   PREPARATION_REQUEST = "PREPARATION_REQUEST",
@@ -23,7 +28,6 @@ enum EventType {
   PAINEL_CALL = "PAINEL_CALL",
   PAINEL_TICKETS = "PAINEL_TICKETS_TO_CALL",
 }
-
 
 // Mapeamento de eventos para seus payloads
 interface EventPayloadMap {
@@ -36,6 +40,7 @@ interface EventPayloadMap {
   [EventType.PAINEL_CALL]: PainelCall;
   [EventType.PAINEL_TICKETS]: PainelCall[];
   [EventType.UPDATE_SCHEDULE]: SchedulingChange;
+  [EventType.UPDATE_RECORD]: SchedulingChange;
   [EventType.PREPARATION_REQUEST]: PreparationRequestModel;
 }
 
@@ -47,9 +52,10 @@ interface CustomEventMap {
   [EventType.TICKET_ACTION_SUCCESS]: (payload: Ticket) => void;
   [EventType.TICKET_ERROR]: (payload: string) => void;
   [EventType.TICKET_INFO]: (payload: string) => void;
-  [EventType.PAINEL_CALL]:  (payload: PainelCall) => void;
-  [EventType.PAINEL_TICKETS]:  (payload: PainelCall[]) => void;
+  [EventType.PAINEL_CALL]: (payload: PainelCall) => void;
+  [EventType.PAINEL_TICKETS]: (payload: PainelCall[]) => void;
   [EventType.UPDATE_SCHEDULE]: (payload: SchedulingChange) => void;
+  [EventType.UPDATE_RECORD]: (payload: SchedulingChange) => void;
   [EventType.PREPARATION_REQUEST]: (payload: PreparationRequestModel) => void;
 }
 
@@ -57,7 +63,7 @@ interface CustomEventMap {
 function emitEvent<T extends EventType>(
   socket: Socket<CustomEventMap>,
   event: T,
-  payload: EventPayloadMap[T]
+  payload: EventPayloadMap[T],
 ) {
   socket.emit(event, ...([payload] as Parameters<CustomEventMap[T]>));
 }
@@ -66,7 +72,7 @@ function emitEvent<T extends EventType>(
 function onEvent<T extends EventType>(
   socket: Socket<CustomEventMap>,
   event: T,
-  callback: (payload: EventPayloadMap[T]) => void
+  callback: (payload: EventPayloadMap[T]) => void,
 ) {
   socket.on(event, callback as any); // Type assertion para compatibilidade
 }

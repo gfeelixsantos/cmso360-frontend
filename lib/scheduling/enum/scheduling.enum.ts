@@ -1,10 +1,10 @@
 export enum AsoStatus {
-  NAO_GERADO = 'NAO_GERADO',
-  GERADO = 'GERADO',
+  NAO_GERADO = "NAO_GERADO",
+  GERADO = "GERADO",
   KIT_CREDENCIADA = "KIT_CREDENCIADA",
-  APROVADO = 'APROVADO',
-  REPROVADO = 'REPROVADO',
-  ENVIADO = 'ENVIADO',
+  APROVADO = "APROVADO",
+  REPROVADO = "REPROVADO",
+  ENVIADO = "ENVIADO",
 }
 
 export enum AtendimentoStatus {
@@ -16,16 +16,16 @@ export enum AtendimentoStatus {
 }
 
 export enum ExamStatus {
-    PENDENTE = "PENDENTE",
-    AGUARDANDO_RESULTADO = "AGUARDANDO_RESULTADO",
-    FINALIZADO = "FINALIZADO"
+  PENDENTE = "PENDENTE",
+  AGUARDANDO_RESULTADO = "AGUARDANDO_RESULTADO",
+  FINALIZADO = "FINALIZADO",
 }
 
 export enum MongoOperationTypes {
   INSERT = "insert",
   REPLACE = "replace",
   UPDATE = "update",
-  DELETE = "delete"
+  DELETE = "delete",
 }
 
 export enum ParecerMedico {

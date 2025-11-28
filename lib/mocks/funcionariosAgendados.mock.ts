@@ -26,5 +26,4 @@ export const pacientesMock = [
     telefone: "(19) 99999-3333",
     exames: [{ tipo: "Acuidade Visual" }, { tipo: "Laboratório" }],
   },
-]
-
+];

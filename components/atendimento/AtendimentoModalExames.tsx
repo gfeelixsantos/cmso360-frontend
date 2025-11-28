@@ -1,14 +1,17 @@
 "use client";
-import { Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader, Spinner } from "@heroui/react";
+import {
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  Spinner,
+} from "@heroui/react";
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
-import FichaClinicaOcupacional from "../exames/FichaClinica";
-import { useUser } from "@/hooks/useUser";
-import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { EXAMES_LIST, NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
-import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
-import { useEntityManager } from "@/hooks/useEntityManager";
 import { Socket } from "socket.io-client";
+
+import FichaClinicaOcupacional from "../exames/FichaClinica";
 import AcuidadeVisual from "../exames/AcuidadeVisual";
 import Espirometria from "../exames/Espirometria";
 import Dinamometria from "../exames/Dinamometria";
@@ -17,6 +20,17 @@ import ExamePadrao from "../exames/ExamePadrao";
 import AudiometriaOcupacional from "../exames/AudiometriaOcupacional";
 import KitAtendimento from "../exames/KitAtendimento";
 import Ultrassom from "../exames/Ultrassom";
+import FichaClinicaWhirlpool from "../exames/FichaClinicaWhirlpool";
+
+import { useEntityManager } from "@/hooks/useEntityManager";
+import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
+import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
+import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { useUser } from "@/hooks/useUser";
+import {
+  ExamRegister,
+  Scheduling,
+} from "@/lib/scheduling/interface/scheduling";
 
 interface AtendimentoModalExamesProps {
   isOpen: boolean;
@@ -29,7 +43,7 @@ interface AtendimentoModalExamesProps {
 }
 
 // Tipos para o modal de notificação
-type NotificationType = 'confirm' | 'success' | 'error';
+type NotificationType = "confirm" | "success" | "error";
 
 interface NotificationModalState {
   isOpen: boolean;
@@ -53,51 +67,69 @@ const AtendimentoModalExames = ({
 }: AtendimentoModalExamesProps) => {
   const user = useUser();
   const { executarAcao } = useEntityManager<Ticket>([]);
-  const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>([]);
+  const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>(
+    [],
+  );
   const [entrevistaPsico, setEntrevistaPsico] = useState<boolean>(false);
   const [psicossocial, setPsicossocial] = useState<boolean>(false);
-  const [notificationModal, setNotificationModal] = useState<NotificationModalState>({
-    isOpen: false,
-    type: 'confirm',
-    title: '',
-    message: '',
-    showCancel: false,
-    isLoading: false,
-  });
+  const [notificationModal, setNotificationModal] =
+    useState<NotificationModalState>({
+      isOpen: false,
+      type: "confirm",
+      title: "",
+      message: "",
+      showCancel: false,
+      isLoading: false,
+    });
 
   // Memoriza o mapeamento de formulários
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = useMemo(
     () => ({
       "Acuidade Visual": AcuidadeVisual,
-      "Audiometria": AudiometriaOcupacional,
-      "Dinamometria": Dinamometria,
-      "EEG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
-      "ECG": !entrevistaPsico && psicossocial ? Psicossocial : ExamePadrao,
-      "Espirometria": Espirometria,
+      Audiometria: AudiometriaOcupacional,
+      Dinamometria: Dinamometria,
+      EEG: psicossocial
+        ? !entrevistaPsico
+          ? Psicossocial
+          : ExamePadrao
+        : ExamePadrao,
+
+      ECG: psicossocial
+        ? !entrevistaPsico
+          ? Psicossocial
+          : ExamePadrao
+        : ExamePadrao,
+
+      Espirometria: Espirometria,
       "Exame Clínico": FichaClinicaOcupacional,
-      "Psicossocial": Psicossocial,
-      "Triagem": FichaClinicaOcupacional,
-      "Ultrassom": Ultrassom
+      Psicossocial: Psicossocial,
+      Triagem: FichaClinicaOcupacional,
+      Ultrassom: Ultrassom,
     }),
-    [entrevistaPsico, psicossocial]
+    [entrevistaPsico, psicossocial],
   );
 
+  // Efeito para atualizar o exame a ser preenchido
   useEffect(() => {
     if (!isOpen || !funcionarioSelecionado) return;
 
     const exameEmAtendimento = funcionarioSelecionado.EXAMES.filter((e) =>
-      codigosAtendimento.has(e.codigoExame)
+      codigosAtendimento.has(e.codigoExame),
     );
 
     if (exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento);
 
     const hasPsico = funcionarioSelecionado.EXAMES.find(
-      (e) => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE
+      (e) => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE,
     );
-    
-    if (hasPsico && hasPsico.status === ExamStatus.PENDENTE) {
+
+    if (hasPsico) {
       setPsicossocial(true);
       setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"));
+    } else {
+      // Limpa os estados quando não tem Psicossocial pendente
+      setPsicossocial(false);
+      setEntrevistaPsico(false);
     }
   }, [codigosAtendimento, funcionarioSelecionado, isOpen]);
 
@@ -107,12 +139,18 @@ const AtendimentoModalExames = ({
   }, []);
 
   // Verifica se todos os exames foram concluídos
-  const verificarExamesPendentes = useCallback((funcionario: Scheduling): boolean => {
-    const examesPendentes = funcionario.EXAMES.filter(
-      (e) => e.status === ExamStatus.PENDENTE && !codigosAtendimento.has(e.codigoExame)
-    );
-    return examesPendentes.length === 0;
-  }, [codigosAtendimento]);
+  const verificarExamesPendentes = useCallback(
+    (funcionario: Scheduling): boolean => {
+      const examesPendentes = funcionario.EXAMES.filter(
+        (e) =>
+          e.status === ExamStatus.PENDENTE &&
+          !codigosAtendimento.has(e.codigoExame),
+      );
+
+      return examesPendentes.length === 0;
+    },
+    [codigosAtendimento],
+  );
 
   // Processa a atualização do exame
   const processarAtualizacaoExame = useCallback(
@@ -147,7 +185,7 @@ const AtendimentoModalExames = ({
           funcionarioSelecionado.TICKET.id,
           TicketActionType.RETORNAR,
           funcionarioSelecionado.UNIDADEATENDIMENTO,
-          socket
+          socket,
         );
 
         // Verifica se todos os exames foram concluídos
@@ -158,8 +196,8 @@ const AtendimentoModalExames = ({
           type: "success",
           title: "✓ Exame Concluído",
           message: todosExamesConcluidos
-            ? "Todos os exames foram finalizados. Você pode dispensar/liberar o funcionário."
-            : "Exame concluído com sucesso! Aguarde a finalização dos demais exames.",
+            ? "Concluído, pode dispensar/liberar o funcionário."
+            : "Funcionário deve aguardar demais exames.",
           showCancel: false,
           isLoading: false,
           onConfirm: () => {
@@ -189,7 +227,7 @@ const AtendimentoModalExames = ({
       verificarExamesPendentes,
       closeNotificationModal,
       onClose,
-    ]
+    ],
   );
 
   /**
@@ -208,10 +246,12 @@ const AtendimentoModalExames = ({
           isOpen: true,
           type: "error",
           title: "✗ Dados Inválidos",
-          message: "Os dados do exame estão incompletos ou inválidos. Verifique o preenchimento.",
+          message:
+            "Os dados do exame estão incompletos ou inválidos. Verifique o preenchimento.",
           showCancel: false,
           onConfirm: closeNotificationModal,
         });
+
         return;
       }
 
@@ -224,6 +264,7 @@ const AtendimentoModalExames = ({
           showCancel: false,
           onConfirm: closeNotificationModal,
         });
+
         return;
       }
 
@@ -232,7 +273,7 @@ const AtendimentoModalExames = ({
         isOpen: true,
         type: "confirm",
         title: "Confirmar Conclusão",
-        message: "Deseja confirmar a conclusão deste exame? Esta ação não poderá ser desfeita.",
+        message: "Deseja confirmar a conclusão deste exame?",
         showCancel: true,
         onConfirm: () => {
           closeNotificationModal();
@@ -241,20 +282,50 @@ const AtendimentoModalExames = ({
         onCancel: closeNotificationModal,
       });
     },
-    [funcionarioSelecionado, exameParaAtualizar, closeNotificationModal, processarAtualizacaoExame]
+    [
+      funcionarioSelecionado,
+      exameParaAtualizar,
+      closeNotificationModal,
+      processarAtualizacaoExame,
+    ],
   );
 
-  const empresaKit = funcionarioSelecionado?.CODIGOINTERNOEMPRESA?.toLocaleUpperCase().includes("KIT") || funcionarioSelecionado?.NOMECARGO?.toLocaleUpperCase().includes("KIT")
+  const empresaKit =
+    funcionarioSelecionado?.CODIGOINTERNOEMPRESA?.toLocaleUpperCase().includes(
+      "KIT",
+    ) || funcionarioSelecionado?.NOMECARGO?.toLocaleUpperCase().includes("KIT");
   let Formulario = EXAME_FORM_MAP[exame];
 
-  if(empresaKit){
-    Formulario = KitAtendimento
-  } 
+  if (empresaKit) {
+    Formulario = KitAtendimento;
+  }
 
-  
+  //
+  // Valida se exame clínico precisa de teste articular para Admissionais Whirlpool
+  //
+  const admissional =
+    funcionarioSelecionado?.TIPOEXAMENOME.toUpperCase().includes("ADM");
+
+  const rhBrasilWhirlpool =
+    funcionarioSelecionado?.CODIGOEMPRESA === "230890" &&
+    (funcionarioSelecionado.NOMEUNIDADE.includes("WHIRLPOOL") ||
+      funcionarioSelecionado.NOMEUNIDADE.includes("WHIRPOOL"));
+
+  const whirlpoolAdmissional =
+    funcionarioSelecionado?.CODIGOEMPRESA === "238590";
+
+  if (
+    exame === "Exame Clínico" &&
+    admissional &&
+    (rhBrasilWhirlpool || whirlpoolAdmissional)
+  ) {
+    Formulario = FichaClinicaWhirlpool;
+  }
+
   // Renderiza o modal de notificação
   const renderNotificationModal = () => {
-    const { type, title, message, showCancel, onConfirm, onCancel, isLoading } = notificationModal;
+    const { type, title, message, showCancel, onConfirm, onCancel, isLoading } =
+      notificationModal;
 
     const getModalColors = () => {
       switch (type) {
@@ -283,20 +354,22 @@ const AtendimentoModalExames = ({
 
     return (
       <Modal
-        isOpen={notificationModal.isOpen}
-        onClose={showCancel ? closeNotificationModal : undefined}
-        size="md"
         backdrop="blur"
-        disableAnimation={true}
         classNames={{
           base: "border-none shadow-2xl",
           backdrop: "bg-black/50",
         }}
-        isDismissable={showCancel && !isLoading}
+        disableAnimation={true}
         hideCloseButton={!showCancel || isLoading}
+        isDismissable={showCancel && !isLoading}
+        isOpen={notificationModal.isOpen}
+        size="md"
+        onClose={showCancel ? closeNotificationModal : undefined}
       >
         <ModalContent>
-          <ModalHeader className={`flex flex-col gap-1 ${colors.header} text-white rounded-t-lg`}>
+          <ModalHeader
+            className={`flex flex-col gap-1 ${colors.header} text-white rounded-t-lg`}
+          >
             <div className="flex items-center gap-2">
               <span className="text-2xl">{colors.icon}</span>
               <span className="text-lg font-semibold">{title}</span>
@@ -308,16 +381,16 @@ const AtendimentoModalExames = ({
           <ModalFooter className="px-6 pb-6">
             {isLoading ? (
               <div className="w-full flex justify-center">
-                <Spinner size="md" color="primary" />
+                <Spinner color="primary" size="md" />
               </div>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
                 {showCancel && (
                   <Button
+                    className="flex-1 sm:flex-initial font-medium"
                     color="default"
                     variant="flat"
                     onPress={onCancel}
-                    className="flex-1 sm:flex-initial font-medium"
                   >
                     Cancelar
                   </Button>
@@ -341,20 +414,20 @@ const AtendimentoModalExames = ({
     return (
       <>
         <Modal
-          isOpen={isOpen}
-          onClose={onClose}
-          disableAnimation={true}
           backdrop="blur"
-          size="5xl"
+          disableAnimation={true}
+          isOpen={isOpen}
           scrollBehavior="outside"
+          size="5xl"
+          onClose={onClose}
         >
           <ModalContent>
             <ExamePadrao
               atendimento={funcionarioSelecionado}
               exame={exame}
+              formulario={""}
               onClose={onClose}
               onSave={handleSaveExam}
-              formulario={""}
             />
           </ModalContent>
         </Modal>
@@ -366,20 +439,20 @@ const AtendimentoModalExames = ({
   return (
     <>
       <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        disableAnimation={true}
         backdrop="blur"
-        size="5xl"
+        disableAnimation={true}
+        isOpen={isOpen}
         scrollBehavior="outside"
+        size="5xl"
+        onClose={onClose}
       >
         <ModalContent>
           <Formulario
-            onSave={handleSaveExam}
-            onClose={onClose}
             atendimento={funcionarioSelecionado}
             exame={exame}
             formulario={exameParaAtualizar[0]?.formulario}
+            onClose={onClose}
+            onSave={handleSaveExam}
           />
         </ModalContent>
       </Modal>

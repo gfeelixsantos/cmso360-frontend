@@ -1,11 +1,7 @@
-
-
-import { TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 import { useState, useCallback } from "react";
 import { Socket } from "socket.io-client";
 
-
-
+import { TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 
 export interface BaseEntity {
   id?: number;
@@ -26,7 +22,7 @@ export interface EntityManager<T extends BaseEntity> {
   executarAcao: (
     ticketId: number,
     action: TicketActionType,
-    unidade:string,
+    unidade: string,
     socket: Socket,
     sala?: string,
     user?: string,
@@ -36,18 +32,22 @@ export interface EntityManager<T extends BaseEntity> {
 }
 
 export function useEntityManager<T extends BaseEntity>(
-  initialEntities: T[] = []
+  initialEntities: T[] = [],
 ): EntityManager<T> {
   const [entities, setEntities] = useState<T[]>(initialEntities);
 
   const addOrUpdate = useCallback((entity: T) => {
-    setEntities(prev => {
-      const index = prev.findIndex(e => e.id === entity.id);
+    setEntities((prev) => {
+      const index = prev.findIndex((e) => e.id === entity.id);
+
       if (index !== -1) {
         const updated = [...prev];
+
         updated[index] = { ...prev[index], ...entity };
+
         return updated;
       }
+
       return [...prev, entity];
     });
   }, []);
@@ -57,7 +57,7 @@ export function useEntityManager<T extends BaseEntity>(
   }, []);
 
   const remove = useCallback((id: number) => {
-    setEntities(prev => prev.filter(entity => entity.id !== id));
+    setEntities((prev) => prev.filter((entity) => entity.id !== id));
   }, []);
 
   const clear = useCallback(() => {
@@ -65,12 +65,12 @@ export function useEntityManager<T extends BaseEntity>(
   }, []);
 
   const getById = useCallback(
-    (id: number) => entities.find(entity => entity.id === id),
-    [entities]
+    (id: number) => entities.find((entity) => entity.id === id),
+    [entities],
   );
   const getAll = useCallback(() => {
     return entities;
-  }, [entities])
+  }, [entities]);
 
   /**
    * Envia ação para o servidor e aguarda confirmação.
@@ -79,7 +79,7 @@ export function useEntityManager<T extends BaseEntity>(
   const executarAcao = (
     ticketId: number,
     action: TicketActionType,
-    unidade:string,
+    unidade: string,
     socket: Socket,
     sala = "",
     user = "",
@@ -88,10 +88,19 @@ export function useEntityManager<T extends BaseEntity>(
   ) => {
     if (!socket?.connected) {
       alert("Não conectado ao servidor WebSocket");
+
       return;
     }
-    console.log("action recebida", action)
-    socket.emit("ticket_action", { ticketId,  action, unidade, sala, user, funcionario, exame});
+    console.log("action recebida", action);
+    socket.emit("ticket_action", {
+      ticketId,
+      action,
+      unidade,
+      sala,
+      user,
+      funcionario,
+      exame,
+    });
   };
 
   return {

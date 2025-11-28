@@ -1,13 +1,19 @@
 "use client";
 
-import {
-  Card,
-  CardHeader,
-  CardBody,
-  CardFooter,
-} from "@heroui/card";
+import { Card, CardHeader, CardBody, CardFooter } from "@heroui/card";
 import { Divider } from "@heroui/divider";
-import { Button, Snippet, Spinner, Alert, Chip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
+import {
+  Button,
+  Snippet,
+  Spinner,
+  Alert,
+  Chip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import {
   ClipboardList,
   User,
@@ -17,8 +23,9 @@ import {
   Clock,
 } from "lucide-react";
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { emitEvent, EventType } from "@/lib/websocket/events/events";
 import { Socket } from "socket.io-client";
+
+import { emitEvent, EventType } from "@/lib/websocket/events/events";
 import { PreparationRequestTypes } from "@/lib/websocket/enums/websocket.enum";
 import { IndexDb } from "@/lib/indexDb/indexdb";
 import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
@@ -32,7 +39,14 @@ interface PreparationCardProps {
   isLoading?: boolean;
 }
 
-export function PreparationCard({ request, ticket, onAttachments, onComplete, disabled, isLoading = false }: PreparationCardProps) {
+export function PreparationCard({
+  request,
+  ticket,
+  onAttachments,
+  onComplete,
+  disabled,
+  isLoading = false,
+}: PreparationCardProps) {
   const [nomeEmpresa, setNomeEmpresa] = useState<string>();
 
   const waitingMinutes = useMemo(() => {
@@ -45,59 +59,63 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
   const statusColor = useMemo((): "default" | "danger" | "warning" => {
     if (waitingMinutes > 60) return "danger";
     if (waitingMinutes > 30) return "warning";
+
     return "default";
   }, [waitingMinutes]);
 
   const cardClasses = useMemo(() => {
-    const base = "w-full rounded-xl transition-all duration-200 hover:shadow-lg border-2";
-    const statusBorder = 
-      statusColor === "danger" ? "border-red-400" :
-      statusColor === "warning" ? "border-yellow-400" :
-      "border-gray-200";
-    
+    const base =
+      "w-full rounded-xl transition-all duration-200 hover:shadow-lg border-2";
+    const statusBorder =
+      statusColor === "danger"
+        ? "border-red-400"
+        : statusColor === "warning"
+          ? "border-yellow-400"
+          : "border-gray-200";
+
     return `${base} ${statusBorder}`;
   }, [statusColor]);
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const fetchEmpresa = async () => {
       const empresa = await IndexDb.getCompanyById(request.empresa);
+
       if (isMounted && empresa) {
         setNomeEmpresa(empresa.RAZAOSOCIAL);
       }
     };
-    
+
     fetchEmpresa();
-    
+
     return () => {
       isMounted = false;
     };
   }, [request.empresa]);
 
   return (
-    <Card
-      shadow="md"
-      className={cardClasses}
-    >
+    <Card className={cardClasses} shadow="md">
       <CardHeader className="flex flex-col gap-2 font-bold">
         <Alert
-          title={request.nome}
           color={statusColor as any}
-          variant="solid"
           description={
-            <span className="flex gap-2 text-xs">
-              {request.tipoExame}
-            </span>
+            <span className="flex gap-2 text-xs">{request.tipoExame}</span>
           }
+          title={request.nome}
+          variant="solid"
         />
         <Snippet
           hideSymbol
-          variant="bordered"
-          size="sm"
-          color="default"
-          tooltipProps={{ color: "foreground", content: "Copiar", disableAnimation: true }}
           className="w-full"
+          color="default"
+          size="sm"
+          tooltipProps={{
+            color: "foreground",
+            content: "Copiar",
+            disableAnimation: true,
+          }}
+          variant="bordered"
         >
           <p className="text-xs">{nomeEmpresa ?? "Empresa não encontrada"}</p>
         </Snippet>
@@ -107,21 +125,17 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
         {/* Informações principais */}
         <div className="flex gap-3">
           <InfoItem
+            copyable
             label="Nascimento"
             value={request.dataNascimento}
-            copyable
           />
-          <InfoItem
-            label="CPF"
-            value={request.cpf}
-            copyable
-          />
+          <InfoItem copyable label="CPF" value={request.cpf} />
         </div>
         <div>
           <InfoItem
+            fullWidth
             label="Informações"
             value={request.informacoes || "-"}
-            fullWidth
           />
         </div>
 
@@ -132,7 +146,14 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
             <div className="p-1 space-y-3">
               <div className="flex justify-between items-center">
                 <h3 className="text-sm font-semibold flex items-center gap-2 text-default-700">
-                  Senha {ticket.preferencial ? <Chip color="danger" className="text-xs">PREFERENCIAL</Chip> : ""}
+                  Senha{" "}
+                  {ticket.preferencial ? (
+                    <Chip className="text-xs" color="danger">
+                      PREFERENCIAL
+                    </Chip>
+                  ) : (
+                    ""
+                  )}
                 </h3>
               </div>
 
@@ -175,19 +196,19 @@ export function PreparationCard({ request, ticket, onAttachments, onComplete, di
       <CardFooter className="flex sm:flex-row gap-3 p-5 pt-0">
         <div className="flex flex-wrap gap-2 w-full">
           <Button
-            color="success"
-            variant={isLoading ? "flat" : "light"}
-            fullWidth={true}
-            onPress={onComplete}
-            disabled={disabled || isLoading}
             className="flex-1 sm:flex-none text-xs"
+            color="success"
+            disabled={disabled || isLoading}
+            fullWidth={true}
             startContent={
               isLoading ? (
-                <Spinner size="sm" color="success" className="w-3 h-3" />
+                <Spinner className="w-3 h-3" color="success" size="sm" />
               ) : (
                 <Check className="w-3 h-3" />
               )
             }
+            variant={isLoading ? "flat" : "light"}
+            onPress={onComplete}
           >
             {isLoading ? "Finalizando..." : "Finalizar"}
           </Button>
@@ -205,14 +226,16 @@ interface InfoItemProps {
   copyable?: boolean;
 }
 
-const InfoItem = React.memo(function InfoItem({ 
-  icon, label, value, fullWidth = false, copyable = false 
+const InfoItem = React.memo(function InfoItem({
+  icon,
+  label,
+  value,
+  fullWidth = false,
+  copyable = false,
 }: InfoItemProps) {
   return (
     <div
-      className={`flex items-start gap-2 ${
-        fullWidth ? "sm:col-span-2" : ""
-      }`}
+      className={`flex items-start gap-2 ${fullWidth ? "sm:col-span-2" : ""}`}
     >
       <span className="text-default-500 mt-0.5 flex-shrink-0">{icon}</span>
       <div className="flex-1">
@@ -220,10 +243,14 @@ const InfoItem = React.memo(function InfoItem({
         {copyable ? (
           <Snippet
             hideSymbol
-            variant="bordered"
-            size="sm"
             color="default"
-            tooltipProps={{ color: "foreground", content: "Copiar", disableAnimation: true }}
+            size="sm"
+            tooltipProps={{
+              color: "foreground",
+              content: "Copiar",
+              disableAnimation: true,
+            }}
+            variant="bordered"
           >
             <p className="text-xs font-medium text-default-800 truncate">
               {value ?? "-"}
@@ -246,8 +273,10 @@ interface PreparationGridProps {
 }
 
 export function PreparationGrid({ requests, socket }: PreparationGridProps) {
-  const [requestToConfirm, setRequestToConfirm] = useState<PreparationRequest | null>(null);
-  const [loadingRequest, setLoadingRequest] = useState<PreparationRequest | null>(null);
+  const [requestToConfirm, setRequestToConfirm] =
+    useState<PreparationRequest | null>(null);
+  const [loadingRequest, setLoadingRequest] =
+    useState<PreparationRequest | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAttachments = useCallback((request: PreparationRequest) => {
@@ -263,16 +292,15 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
       setIsProcessing(true);
       setLoadingRequest(requestToConfirm);
       setRequestToConfirm(null);
-      
+
       try {
         // Simula um pequeno delay para mostrar o loading
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
+        await new Promise((resolve) => setTimeout(resolve, 500));
+
         emitEvent(socket, EventType.PREPARATION_REQUEST, {
           type: PreparationRequestTypes.FINISHED,
           request: requestToConfirm,
         });
-        
       } catch (error) {
         console.error("Erro ao finalizar solicitação:", error);
       } finally {
@@ -303,42 +331,58 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
             {requests.map((req) => (
               <PreparationCard
                 key={`${req.cpf}-${req.dataNascimento}`}
+                disabled={isProcessing}
+                isLoading={
+                  loadingRequest?.cpf === req.cpf &&
+                  loadingRequest?.dataNascimento === req.dataNascimento
+                }
                 request={req}
                 ticket={req.tickets}
                 onAttachments={() => handleAttachments(req)}
                 onComplete={() => handleComplete(req)}
-                disabled={isProcessing}
-                isLoading={loadingRequest?.cpf === req.cpf && loadingRequest?.dataNascimento === req.dataNascimento}
               />
             ))}
           </div>
         </div>
       ) : (
         <div className="flex text-center justify-center mt-16 gap-6">
-          <Spinner size="lg" variant="default" color="success" />
+          <Spinner color="success" size="lg" variant="default" />
           <h3 className="text-2xl">Sem solicitações...</h3>
         </div>
       )}
 
       {/* Modal de confirmação do HeroUI */}
-      <Modal 
-        isOpen={!!requestToConfirm} 
-        onOpenChange={handleCancel}
+      <Modal
         disableAnimation={true}
         isDismissable={false}
+        isOpen={!!requestToConfirm}
+        onOpenChange={handleCancel}
       >
         <ModalContent>
           <ModalHeader>Confirmar</ModalHeader>
           <ModalBody>
             {requestToConfirm && (
-              <p>Finalizar a documentação de <strong>{requestToConfirm.nome}</strong>?</p>
+              <p>
+                Finalizar a documentação de{" "}
+                <strong>{requestToConfirm.nome}</strong>?
+              </p>
             )}
           </ModalBody>
           <ModalFooter className="flex justify-end gap-2">
-            <Button variant="ghost" color="danger" size="sm" onClick={handleCancel}>
+            <Button
+              color="danger"
+              size="sm"
+              variant="ghost"
+              onClick={handleCancel}
+            >
               Cancelar
             </Button>
-            <Button variant="ghost" color="primary" size="sm" onClick={handleConfirm}>
+            <Button
+              color="primary"
+              size="sm"
+              variant="ghost"
+              onClick={handleConfirm}
+            >
               Confirmar
             </Button>
           </ModalFooter>

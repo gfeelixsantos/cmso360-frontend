@@ -8,6 +8,7 @@ import {
   Radio,
   RadioGroup,
   Spinner,
+  Image,
 } from "@heroui/react";
 import { FileText, TriangleAlert } from "lucide-react";
 
@@ -190,6 +191,51 @@ const CONCLUSAO_OPTIONS = [
   { value: "Aguardar Avaliação", label: "Aguardar Avaliação" },
 ] as const;
 
+const TESTE_ARTICULAR_PADRAO: TestesArticulares = {
+  // 1 - PUNHOS
+  testePhalen: "Negativo",
+  testeFinkelstein: "Negativo",
+
+  // 2 - COTOVELOS
+  cotovelosMovimentacao: "Normal",
+  cotovelosObservacoes: "",
+
+  // 3 - OMBROS
+  testeJobe: "Negativo",
+  testeGerber: "Negativo",
+  testeNeer: "Negativo",
+  testeYocum: "Negativo",
+  amplitudeMovimentosArticulares: "Normal",
+  amplitudeAlteradoEm: "",
+
+  // 4 - COLUNA LOMBAR
+  desviosCifose: false,
+  desviosLordose: false,
+  desviosEscoliose: false,
+  desviosNaoIdentificados: true,
+
+  alongamentoBoaAmplitude: true,
+  alongamentoFlexaoLimitada: false,
+  alongamentoFlexaoLimitadaGraus: "",
+
+  laseguePositivo: false,
+  lasegueNegativo: true,
+
+  andarPontasPesSim: true,
+  andarPontasPesComDificuldade: false,
+  andarPontasPesNaoConsegue: false,
+
+  andarCalcanharesSim: true,
+  andarCalcanharesComDificuldade: false,
+  andarCalcanharesNaoConsegue: false,
+
+  cicatrizesArticularesPresente: false,
+  cicatrizesArticularesEspecifique: "",
+
+  nodulosCistosPresente: false,
+  nodulosCistosEspecifique: "",
+};
+
 const VALOR_INICIAL: FichaClinicaData = {
   doencasFamiliares: ["Nenhuma"],
   doencasPessoais: [],
@@ -235,7 +281,7 @@ const VALOR_INICIAL: FichaClinicaData = {
   duracaoRestricaoDias: "",
   dataInicioRestricao: "",
   informacaoAguardarAvaliacao: "",
-  testesArticulares: {},
+  testesArticulares: { ...TESTE_ARTICULAR_PADRAO },
 };
 
 // Componente de input otimizado
@@ -998,6 +1044,804 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           </Card>
         </div>
       )}
+      {/* 6. TESTES CLÍNICOS ARTICULARES/COLUNA */}
+
+      <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
+        <SectionTitle title="Testes Clínicos Articulares/Coluna" />
+
+        {/* 1 - PUNHOS */}
+        <div className="mb-6 p-4 rounded-lg">
+          <h3 className="text-md font-semibold text-gray-700 mb-4">
+            1 - PUNHOS
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Teste de Phalen */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE DE PHALEN
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40  rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem do teste de Phalen */}
+                  <Image src="/images/articulares/phalen.jpg" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testePhalen === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testePhalen",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testePhalen === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testePhalen",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+
+            {/* Teste de Finkelstein */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE DE FINKELSTEIN
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40 rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem do teste de Finkelstein */}
+                  <Image src="/images/articulares/finkelstein.jpg" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testeFinkelstein === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeFinkelstein",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testeFinkelstein === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeFinkelstein",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 2 - COTOVELOS */}
+        <div className="mb-6 p-4 rounded-lg">
+          <h3 className="text-md font-semibold text-gray-700 mb-4">
+            2 - COTOVELOS
+          </h3>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              MOVIMENTAÇÃO ATIVA E CONTRA RESISTÊNCIA
+            </label>
+            <div className="flex gap-4 mb-3">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.cotovelosMovimentacao === "Normal"
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "cotovelosMovimentacao",
+                    checked ? "Normal" : "Alterado",
+                  )
+                }
+              >
+                Normal
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="danger"
+                isSelected={
+                  formData.testesArticulares?.cotovelosMovimentacao ===
+                  "Alterado"
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "cotovelosMovimentacao",
+                    checked ? "Alterado" : "Normal",
+                  )
+                }
+              >
+                Alterado
+              </Checkbox>
+            </div>
+
+            {formData.testesArticulares?.cotovelosMovimentacao ===
+              "Alterado" && (
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">
+                  Observações:
+                </label>
+                <Textarea
+                  className="w-full bg-white border-gray-300"
+                  placeholder="Descreva as alterações encontradas..."
+                  rows={2}
+                  value={formData.testesArticulares?.cotovelosObservacoes || ""}
+                  onChange={(e) =>
+                    handleTestesArticularesChange(
+                      "cotovelosObservacoes",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 3 - OMBROS */}
+        <div className="mb-6 p-4  rounded-lg">
+          <h3 className="text-md font-semibold text-gray-700 mb-4">
+            3 - OMBROS
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Teste de Jobe */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE JOBE
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40 rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem */}
+                  <Image src="/images/articulares/jobe.jpg" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testeJobe === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeJobe",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testeJobe === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeJobe",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+
+            {/* Teste de Gerber */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE GERBER
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40 rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem */}
+                  <Image src="/images/articulares/gerber.jpg" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testeGerber === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeGerber",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testeGerber === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeGerber",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+
+            {/* Teste de Neer */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE DE NEER
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40  rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem */}
+                  <Image src="/images/articulares/neer.jpg" width={130} />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testeNeer === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeNeer",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testeNeer === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeNeer",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+
+            {/* Teste de Yocum */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-3">
+                TESTE DE YOCUM
+              </label>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-40 h-40 rounded flex items-center justify-center text-xs text-gray-500">
+                  {/* Placeholder para imagem */}
+                  <Image src="/images/articulares/yocum.jpg" />
+                </div>
+              </div>
+              <div className="flex gap-4">
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="danger"
+                  isSelected={
+                    formData.testesArticulares?.testeYocum === "Positivo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeYocum",
+                      checked ? "Positivo" : "Negativo",
+                    )
+                  }
+                >
+                  Positivo
+                </Checkbox>
+                <Checkbox
+                  classNames={{ label: "text-sm text-gray-700" }}
+                  color="success"
+                  isSelected={
+                    formData.testesArticulares?.testeYocum === "Negativo"
+                  }
+                  onValueChange={(checked) =>
+                    handleTestesArticularesChange(
+                      "testeYocum",
+                      checked ? "Negativo" : "Positivo",
+                    )
+                  }
+                >
+                  Negativo
+                </Checkbox>
+              </div>
+            </div>
+          </div>
+
+          {/* Amplitude de Movimentos Articulares */}
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              AMPLITUDE DE MOVIMENTOS ARTICULARES
+            </label>
+            <div className="flex gap-4 mb-3">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.amplitudeMovimentosArticulares ===
+                  "Normal"
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "amplitudeMovimentosArticulares",
+                    checked ? "Normal" : "Alterado",
+                  )
+                }
+              >
+                Normal
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="danger"
+                isSelected={
+                  formData.testesArticulares?.amplitudeMovimentosArticulares ===
+                  "Alterado"
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "amplitudeMovimentosArticulares",
+                    checked ? "Alterado" : "Normal",
+                  )
+                }
+              >
+                Alterado
+              </Checkbox>
+            </div>
+
+            {formData.testesArticulares?.amplitudeMovimentosArticulares ===
+              "Alterado" && (
+              <div className="mt-3">
+                <label className="block text-xs text-gray-600 mb-1">
+                  Alterado em:
+                </label>
+                <Input
+                  className="w-full bg-white border-gray-300"
+                  placeholder="Especifique onde está alterado..."
+                  value={formData.testesArticulares?.amplitudeAlteradoEm || ""}
+                  onChange={(e) =>
+                    handleTestesArticularesChange(
+                      "amplitudeAlteradoEm",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 4 - COLUNA LOMBAR */}
+        <div className="mb-6 p-4rounded-lg">
+          <h3 className="text-md font-semibold text-gray-700 mb-4">
+            4 - COLUNA LOMBAR
+          </h3>
+
+          {/* Desvios */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              DESVIOS:
+            </label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={formData.testesArticulares?.desviosCifose || false}
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("desviosCifose", checked)
+                }
+              >
+                Cifose
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={formData.testesArticulares?.desviosLordose || false}
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("desviosLordose", checked)
+                }
+              >
+                Lordose
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.desviosEscoliose || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("desviosEscoliose", checked)
+                }
+              >
+                Escoliose
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.desviosNaoIdentificados || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "desviosNaoIdentificados",
+                    checked,
+                  )
+                }
+              >
+                Desvios não identificados
+              </Checkbox>
+            </div>
+          </div>
+
+          {/* Alongamento */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              ALONGAMENTO:
+            </label>
+            <div className="flex gap-4 mb-3">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.alongamentoBoaAmplitude || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "alongamentoBoaAmplitude",
+                    checked,
+                  )
+                }
+              >
+                Boa amplitude
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.alongamentoFlexaoLimitada || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "alongamentoFlexaoLimitada",
+                    checked,
+                  )
+                }
+              >
+                Flexão limitada até
+              </Checkbox>
+            </div>
+
+            {formData.testesArticulares?.alongamentoFlexaoLimitada && (
+              <div className="ml-6 mt-2">
+                <Input
+                  className="w-40 bg-white border-gray-300"
+                  endContent={
+                    <span className="text-xs text-gray-500">GRAUS</span>
+                  }
+                  placeholder="Graus"
+                  type="number"
+                  value={
+                    formData.testesArticulares
+                      ?.alongamentoFlexaoLimitadaGraus || ""
+                  }
+                  onChange={(e) =>
+                    handleTestesArticularesChange(
+                      "alongamentoFlexaoLimitadaGraus",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Lasegue */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              LASEGUE:
+            </label>
+            <div className="flex gap-4">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="danger"
+                isSelected={
+                  formData.testesArticulares?.laseguePositivo || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("laseguePositivo", checked)
+                }
+              >
+                Positivo
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.lasegueNegativo || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("lasegueNegativo", checked)
+                }
+              >
+                Negativo
+              </Checkbox>
+            </div>
+          </div>
+
+          {/* Andar nas pontas dos pés (S1) */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              ANDA NAS PONTAS DOS PÉS (S1)?
+            </label>
+            <div className="flex gap-4">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.andarPontasPesSim || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("andarPontasPesSim", checked)
+                }
+              >
+                Sim
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.andarPontasPesComDificuldade ||
+                  false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "andarPontasPesComDificuldade",
+                    checked,
+                  )
+                }
+              >
+                Com dificuldade
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="danger"
+                isSelected={
+                  formData.testesArticulares?.andarPontasPesNaoConsegue || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "andarPontasPesNaoConsegue",
+                    checked,
+                  )
+                }
+              >
+                Não consegue
+              </Checkbox>
+            </div>
+          </div>
+
+          {/* Andar em calcanhares (L5) */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              ANDA EM CALCANHARES (L5)?
+            </label>
+            <div className="flex gap-4">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  formData.testesArticulares?.andarCalcanharesSim || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange("andarCalcanharesSim", checked)
+                }
+              >
+                Sim
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.andarCalcanharesComDificuldade ||
+                  false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "andarCalcanharesComDificuldade",
+                    checked,
+                  )
+                }
+              >
+                Com dificuldade
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="danger"
+                isSelected={
+                  formData.testesArticulares?.andarCalcanharesNaoConsegue ||
+                  false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "andarCalcanharesNaoConsegue",
+                    checked,
+                  )
+                }
+              >
+                Não consegue
+              </Checkbox>
+            </div>
+          </div>
+
+          {/* Presença de cicatrizes articulares */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              PRESENÇA DE CICATRIZES ARTICULARES OU EM COLUNA?
+            </label>
+            <div className="flex gap-4 mb-3">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.cicatrizesArticularesPresente ||
+                  false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "cicatrizesArticularesPresente",
+                    checked,
+                  )
+                }
+              >
+                Sim, especifique:
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={
+                  !formData.testesArticulares?.cicatrizesArticularesPresente
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "cicatrizesArticularesPresente",
+                    !checked,
+                  )
+                }
+              >
+                Não
+              </Checkbox>
+            </div>
+
+            {formData.testesArticulares?.cicatrizesArticularesPresente && (
+              <div className="ml-6 mt-2">
+                <Input
+                  className="w-full bg-white border-gray-300"
+                  placeholder="Especifique a localização das cicatrizes..."
+                  value={
+                    formData.testesArticulares
+                      ?.cicatrizesArticularesEspecifique || ""
+                  }
+                  onChange={(e) =>
+                    handleTestesArticularesChange(
+                      "cicatrizesArticularesEspecifique",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Presença de nódulos/cistos */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              PRESENÇA DE NÓDULOS/CISTOS ARTICULARES?
+            </label>
+            <div className="flex gap-4 mb-3">
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="warning"
+                isSelected={
+                  formData.testesArticulares?.nodulosCistosPresente || false
+                }
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "nodulosCistosPresente",
+                    checked,
+                  )
+                }
+              >
+                Sim, especifique:
+              </Checkbox>
+              <Checkbox
+                classNames={{ label: "text-sm text-gray-700" }}
+                color="success"
+                isSelected={!formData.testesArticulares?.nodulosCistosPresente}
+                onValueChange={(checked) =>
+                  handleTestesArticularesChange(
+                    "nodulosCistosPresente",
+                    !checked,
+                  )
+                }
+              >
+                Não
+              </Checkbox>
+            </div>
+
+            {formData.testesArticulares?.nodulosCistosPresente && (
+              <div className="ml-6 mt-2">
+                <Input
+                  className="w-full bg-white border-gray-300"
+                  placeholder="Especifique a localização dos nódulos/cistos..."
+                  value={
+                    formData.testesArticulares?.nodulosCistosEspecifique || ""
+                  }
+                  onChange={(e) =>
+                    handleTestesArticularesChange(
+                      "nodulosCistosEspecifique",
+                      e.target.value,
+                    )
+                  }
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* 6. Dados Vitais */}
       <Card className="p-6 shadow-none border border-gray-200 bg-white">

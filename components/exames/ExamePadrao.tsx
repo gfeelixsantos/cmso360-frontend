@@ -1,9 +1,13 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Card, Button, Input, Spinner, Radio, RadioGroup, Textarea } from "@heroui/react";
-import { useUser } from '@/hooks/useUser';
-import { ExamRegister, Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Clock, FileText, AlertTriangle, MessageSquare } from 'lucide-react';
-import HeaderExame from './HeaderExame';
+import React, { useState, useEffect, useCallback } from "react";
+import { Card, Button, Radio, RadioGroup, Textarea } from "@heroui/react";
+import { FileText } from "lucide-react";
+
+import HeaderExame from "./HeaderExame";
+
+import {
+  ExamRegister,
+  Scheduling,
+} from "@/lib/scheduling/interface/scheduling";
 
 interface ExamePadraoProps {
   atendimento: any;
@@ -17,24 +21,24 @@ interface ExameFiltrado extends ExamRegister {
   realizado?: boolean;
 }
 
-const ExamePadrao: React.FC<ExamePadraoProps> = ({ 
-  atendimento, 
+const ExamePadrao: React.FC<ExamePadraoProps> = ({
+  atendimento,
   exame,
   formulario,
-  onSave, 
-  onClose 
+  onSave,
+  onClose,
 }) => {
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [examesFiltrados, setExamesFiltrados] = useState<ExameFiltrado[]>([]);
   const [loading, setLoading] = useState(false);
-  const [observacoes, setObservacoes] = useState('');
+  const [observacoes, setObservacoes] = useState("");
 
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
       filtrarExamesPorGrupo(atendimento, exame);
-      
+
       // Preenche o campo de observações com o valor existente, se houver
       if (atendimento.ANOTACOES) {
         setObservacoes(atendimento.ANOTACOES);
@@ -43,49 +47,58 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   }, [atendimento, exame, formulario]);
 
   // Função para filtrar exames pelo grupo recebido via prop
-  const filtrarExamesPorGrupo = useCallback((atendimentoData: any, grupoExame: string) => {
-    if (!atendimentoData?.EXAMES || !grupoExame) {
-      setExamesFiltrados([]);
-      return;
-    }
+  const filtrarExamesPorGrupo = useCallback(
+    (atendimentoData: any, grupoExame: string) => {
+      if (!atendimentoData?.EXAMES || !grupoExame) {
+        setExamesFiltrados([]);
 
-    const examesFiltrados = atendimentoData.EXAMES.filter((exameItem: any) => 
-      exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase()
-    ).map((exameItem: any) => ({
-      ...exameItem,
-      realizado: true // Inicializa como realizado
-    }));
+        return;
+      }
 
-    setExamesFiltrados(examesFiltrados);
-  }, []);
+      const examesFiltrados = atendimentoData.EXAMES.filter(
+        (exameItem: any) =>
+          exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
+      ).map((exameItem: any) => ({
+        ...exameItem,
+        realizado: true, // Inicializa como realizado
+      }));
+
+      setExamesFiltrados(examesFiltrados);
+    },
+    [],
+  );
 
   // Função para atualizar o status de realização do exame
-  const handleRealizacaoExameChange = useCallback((sequencialResultadoExame: string, realizado: boolean) => {
-    setExamesFiltrados(prev => 
-      prev.map(exame => 
-        exame.sequencialResultadoExame === sequencialResultadoExame 
-          ? { ...exame, realizado }
-          : exame
-      )
-    );
-  }, []);
+  const handleRealizacaoExameChange = useCallback(
+    (sequencialResultadoExame: string, realizado: boolean) => {
+      setExamesFiltrados((prev) =>
+        prev.map((exame) =>
+          exame.sequencialResultadoExame === sequencialResultadoExame
+            ? { ...exame, realizado }
+            : exame,
+        ),
+      );
+    },
+    [],
+  );
 
   const handleSave = useCallback(() => {
-    const anotacoesExistentes = agendamento?.ANOTACOES || '';
-    const anotacoesFinais = anotacoesExistentes 
+    const anotacoesExistentes = agendamento?.ANOTACOES || "";
+    const anotacoesFinais = anotacoesExistentes
       ? `${anotacoesExistentes}\n${observacoes}`
       : observacoes;
-    
-    onSave?.({ 
-      status: 'concluded',
-      anotacoes: anotacoesFinais
+
+    onSave?.({
+      status: "concluded",
+      anotacoes: anotacoesFinais,
     });
   }, [onSave, observacoes, agendamento?.ANOTACOES]);
 
-  const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = ({ 
-    title,
-    icon 
-  }) => (
+  const SectionTitle: React.FC<{
+    number: string;
+    title: string;
+    icon?: React.ReactNode;
+  }> = ({ title, icon }) => (
     <div className="flex items-start gap-3 mb-4">
       <div className="flex-1">
         <div className="flex items-center gap-2">
@@ -99,22 +112,16 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 min-h-screen">
       {/* Header */}
-      <HeaderExame 
-        agendamento={agendamento}
-        exame={exame}
-      />
+      <HeaderExame agendamento={agendamento} exame={exame} />
 
       {/* 2. Exames Filtrados por Grupo */}
       {examesFiltrados.length > 0 && (
         <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-          <SectionTitle 
-            number="2" 
-            title={`Exame(s)`} 
-          />
-          
+          <SectionTitle number="2" title={`Exame(s)`} />
+
           <div className="space-y-4">
             {examesFiltrados.map((exameItem, index) => (
-              <div 
+              <div
                 key={exameItem.sequencialResultadoExame || index}
                 className="rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors"
               >
@@ -130,28 +137,28 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
                       )}
                     </div> */}
                   </div>
-                  
+
                   <div className="flex-shrink-0">
                     <RadioGroup
-                      color='success'
+                      classNames={{
+                        base: "flex gap-4",
+                        label: "text-sm font-medium text-gray-700",
+                      }}
+                      color="success"
                       label="Exame realizado?"
                       orientation="horizontal"
                       value={exameItem.realizado ? "sim" : "nao"}
-                      onValueChange={(value) => 
+                      onValueChange={(value) =>
                         handleRealizacaoExameChange(
-                          exameItem.sequencialResultadoExame!, 
-                          value === "sim"
+                          exameItem.sequencialResultadoExame!,
+                          value === "sim",
                         )
                       }
-                      classNames={{
-                        base: "flex gap-4",
-                        label: "text-sm font-medium text-gray-700"
-                      }}
                     >
-                      <Radio value="sim" classNames={{ label: "text-sm" }}>
+                      <Radio classNames={{ label: "text-sm" }} value="sim">
                         Sim
                       </Radio>
-                      <Radio value="nao" classNames={{ label: "text-sm" }}>
+                      <Radio classNames={{ label: "text-sm" }} value="nao">
                         Não
                       </Radio>
                     </RadioGroup>
@@ -161,14 +168,14 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
             ))}
             <div className="space-y-3">
               <Textarea
-                label="Anotações do atendimento"
-                value={observacoes}
-                onValueChange={setObservacoes}
-                minRows={2}
                 classNames={{
                   base: "w-full",
-                  label: "text-sm font-medium text-gray-700"
+                  label: "text-sm font-medium text-gray-700",
                 }}
+                label="Anotações do atendimento"
+                minRows={2}
+                value={observacoes}
+                onValueChange={setObservacoes}
               />
             </div>
           </div>
@@ -178,17 +185,17 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
         <Button
+          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
           variant="flat"
           onPress={onClose}
-          className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
         >
           Cancelar
         </Button>
         <Button
-          color="primary"
-          onPress={handleSave}
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          color="primary"
           startContent={<FileText className="h-4 w-4" />}
+          onPress={handleSave}
         >
           Concluir Atendimento
         </Button>

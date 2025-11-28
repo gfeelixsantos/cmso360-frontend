@@ -7,7 +7,6 @@ import { useTheme } from "next-themes";
 import { useIsSSR } from "@react-aria/ssr";
 import clsx from "clsx";
 
-
 export interface ThemeSwitchProps {
   className?: string;
   classNames?: SwitchProps["classNames"];
@@ -68,8 +67,7 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({
             classNames?.wrapper,
           ),
         })}
-      >
-      </div>
+      />
     </Component>
   );
 };

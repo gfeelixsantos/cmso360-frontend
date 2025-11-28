@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 import { Button } from "@heroui/react";
 import { Plus, Search } from "lucide-react";
 
@@ -17,11 +17,14 @@ interface AtendimentoHeaderProps {
 }
 
 // Componente para o título
-const HeaderTitle: React.FC<{ titulo: string; buscaSenha: string }> = ({ titulo, buscaSenha }) => (
+const HeaderTitle: React.FC<{ titulo: string; buscaSenha: string }> = ({
+  titulo,
+  buscaSenha,
+}) => (
   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
     <h2 className="text-xl font-semibold text-gray-900">{titulo}</h2>
     {buscaSenha && (
-      <span className="text-sm text-gray-600" aria-live="polite">
+      <span aria-live="polite" className="text-sm text-gray-600">
         — Filtrado por: “{buscaSenha}”
       </span>
     )}
@@ -36,26 +39,26 @@ const SearchInput: React.FC<{
 }> = ({ buscaSenha, onSearchChange, placeholderBusca }) => (
   <div className="relative w-full max-w-xs">
     <label
-      htmlFor="busca-senha"
       className="flex items-center text-sm font-medium text-gray-700 mb-1"
+      htmlFor="busca-senha"
     >
-      <Search className="h-4 w-4 mr-2 text-gray-500" aria-hidden="true" />
+      <Search aria-hidden="true" className="h-4 w-4 mr-2 text-gray-500" />
       Buscar Senha
     </label>
     <input
-      id="busca-senha"
-      type="text"
-      value={buscaSenha}
-      onChange={(e) => onSearchChange(e.target.value)}
-      placeholder={placeholderBusca}
+      aria-describedby="busca-senha-label"
       className="w-full px-3 py-2 pl-10 bg-white border border-gray-300 rounded-md text-sm 
         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
         hover:border-blue-400 transition-colors"
-      aria-describedby="busca-senha-label"
+      id="busca-senha"
+      placeholder={placeholderBusca}
+      type="text"
+      value={buscaSenha}
+      onChange={(e) => onSearchChange(e.target.value)}
     />
     <Search
-      className="absolute left-3 top-9 h-4 w-4 text-gray-400"
       aria-hidden="true"
+      className="absolute left-3 top-9 h-4 w-4 text-gray-400"
     />
   </div>
 );
@@ -70,25 +73,25 @@ const AtendimentoHeader: React.FC<AtendimentoHeaderProps> = ({
 }) => {
   return (
     <header
-      className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 p-4 bg-white rounded-lg shadow-sm"
       aria-label="Cabeçalho de atendimentos"
+      className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 p-4 bg-white rounded-lg shadow-sm"
     >
-      <HeaderTitle titulo={titulo} buscaSenha={buscaSenha} />
+      <HeaderTitle buscaSenha={buscaSenha} titulo={titulo} />
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mt-4 sm:mt-0">
         <Button
-          onClick={onAdicionarAtendimento}
+          aria-label="Adicionar novo atendimento"
           className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-md 
             hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 
             focus:ring-offset-2 transition-colors shadow-sm disabled:bg-blue-300"
-          aria-label="Adicionar novo atendimento"
+          onClick={onAdicionarAtendimento}
         >
-          <Plus className="h-4 w-4" aria-hidden="true" />
+          <Plus aria-hidden="true" className="h-4 w-4" />
           Adicionar atendimento
         </Button>
         <SearchInput
           buscaSenha={buscaSenha}
-          onSearchChange={onSearchChange}
           placeholderBusca={placeholderBusca}
+          onSearchChange={onSearchChange}
         />
       </div>
     </header>

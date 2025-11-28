@@ -1,12 +1,12 @@
-import { AsoStatus } from "./scheduling/enum/scheduling.enum"
+import { AsoStatus } from "./scheduling/enum/scheduling.enum";
 
 export interface ExameDetalhado {
-  nome: string
-  status: "CONCLUÍDO" | "AGUARDANDO" | "EM_ANDAMENTO"
-  horaConclusao?: string
-  sala?: string
-  guiche?: string
-  profissional?: string
+  nome: string;
+  status: "CONCLUÍDO" | "AGUARDANDO" | "EM_ANDAMENTO";
+  horaConclusao?: string;
+  sala?: string;
+  guiche?: string;
+  profissional?: string;
 }
 
 interface Company {
@@ -37,7 +37,6 @@ interface Exame {
   preparacao: string;
   status: string;
 }
-
 
 // Modelo agendamento mongo
 interface Scheduling {

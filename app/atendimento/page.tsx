@@ -1,60 +1,96 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
-import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
-
-import { CustomEventMap, emitEvent, EventType, onEvent } from "@/lib/websocket/events/events";
-import { PreparationRequestTypes, WebsocketType } from "@/lib/websocket/enums/websocket.enum";
-
-import { useEntityManager } from "@/hooks/useEntityManager";
-import { getCurrentUser, logout, urlBase64ToUint8Array } from "@/lib/utils";
-import EmptyState from "@/components/recepcao/main/EmptyState";
-import MainContent from "@/components/recepcao/main/MainContent";
-import AtendimentoModal from "@/components/recepcao/main/atendimento/AtendimentoModal";
-import { SidebarRecepcao } from "@/components/recepcao/Sidebar";
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { HeaderApp } from "@/components/shared/HeaderApp";
-import { color, motion } from "framer-motion";
-
-import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
-import { PreparationRequest, PreparationRequestModel, Ticket, TicketActionType, TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
-import { IndexDb } from "@/lib/indexDb/indexdb";
-
-import { Scheduling, SchedulingChange } from "@/lib/scheduling/interface/scheduling";
-import { EXAMES_LIST, NEST_NOTIFICATION_URL, NEST_SCHEDULINGS_TODAY, NEST_SOC_COMPANIES, NEST_TICKET_QUERY, NEST_URL } from "@/config/constants";
-import { AtendimentoStatus, ExamStatus, MongoOperationTypes } from "@/lib/scheduling/enum/scheduling.enum";
-
-import { addToast, Button, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
+import React, { useState, useEffect, useCallback } from "react";
+import { motion } from "framer-motion";
+import {
+  addToast,
+  Button,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+} from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
-import SenhasEstatisticas, { StatsModal } from "@/components/recepcao/main/SenhasEstatisticas";
+
+import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
+import {
+  CustomEventMap,
+  emitEvent,
+  EventType,
+  onEvent,
+} from "@/lib/websocket/events/events";
+import {
+  PreparationRequestTypes,
+  WebsocketType,
+} from "@/lib/websocket/enums/websocket.enum";
+import { useEntityManager } from "@/hooks/useEntityManager";
+import { getCurrentUser, logout } from "@/lib/utils";
+import EmptyState from "@/components/recepcao/main/EmptyState";
+import { SidebarRecepcao } from "@/components/recepcao/Sidebar";
+import { HeaderApp } from "@/components/shared/HeaderApp";
+import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
+import {
+  PreparationRequest,
+  PreparationRequestModel,
+  Ticket,
+  TicketActionType,
+  TicketGroups,
+  TicketStatus,
+} from "@/lib/ticket/ticket";
+import { IndexDb } from "@/lib/indexDb/indexdb";
+import {
+  Scheduling,
+  SchedulingChange,
+} from "@/lib/scheduling/interface/scheduling";
+import {
+  EXAMES_LIST,
+  NEST_SOC_COMPANIES,
+  NEST_TICKET_QUERY,
+  NEST_URL,
+} from "@/config/constants";
+import {
+  AtendimentoStatus,
+  ExamStatus,
+  MongoOperationTypes,
+} from "@/lib/scheduling/enum/scheduling.enum";
+import SenhasEstatisticas, {
+  StatsModal,
+} from "@/components/recepcao/main/SenhasEstatisticas";
 import AtendimentoContent from "@/components/atendimento/AtendimentoContent";
 import AtendimentoModalExames from "@/components/atendimento/AtendimentoModalExames";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!; 
+const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
 // ============================================================
 // FUNÇÃO AUXILIAR: DEDUPLICAÇÃO DE AGENDAMENTOS
 // ============================================================
 const deduplicateSchedulings = (schedulings: Scheduling[]): Scheduling[] => {
   const uniqueMap = new Map<string, Scheduling>();
-  
-  schedulings.forEach(scheduling => {
+
+  schedulings.forEach((scheduling) => {
     // Usa _id como chave primária, se não existir usa SCHEDULINGCODE
     const key = scheduling._id || scheduling.SCHEDULINGCODE;
-    
+
     if (key && !uniqueMap.has(key)) {
       uniqueMap.set(key, scheduling);
     }
   });
-  
+
   const deduplicated = Array.from(uniqueMap.values());
-  
+
   // Log de duplicatas removidas (apenas em desenvolvimento)
-  if (schedulings.length !== deduplicated.length && process.env.NODE_ENV === 'development') {
-    console.warn(`⚠️ Removidas ${schedulings.length - deduplicated.length} duplicatas de agendamentos`);
+  if (
+    schedulings.length !== deduplicated.length &&
+    process.env.NODE_ENV === "development"
+  ) {
+    console.warn(
+      `⚠️ Removidas ${schedulings.length - deduplicated.length} duplicatas de agendamentos`,
+    );
   }
-  
+
   return deduplicated;
 };
 
@@ -66,21 +102,35 @@ const AtendimentoPage: React.FC = () => {
   const [statusSelecionado, setStatusSelecionado] = useState("");
   const [salaSelecionada, setSalaSelecionada] = useState("");
   const [exameSelecionado, setExameSelecionado] = useState("");
-  const [codigosDeAtendimento, setCodigosDeAtendimento] = useState<Set<string>>(new Set());
+  const [codigosDeAtendimento, setCodigosDeAtendimento] = useState<Set<string>>(
+    new Set(),
+  );
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Scheduling[]>([]);
   const [empreparacao, setEmPreparacao] = useState<PreparationRequest[]>([]);
-  const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<PreparationRequest[]>([]);
+  const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<
+    PreparationRequest[]
+  >([]);
   const [modalAtendimentoAberto, setModalAtendimentoAberto] = useState(false);
   const [modalAlert, setModalAlert] = useState<boolean>(false);
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(null);
-  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<Scheduling | null>(null);
+  const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(
+    null,
+  );
+  const [funcionarioSelecionado, setFuncionarioSelecionado] =
+    useState<Scheduling | null>(null);
   const [socCompanies, setSocCompanies] = useState<CadastroEmpresa[]>([]);
   const router = useRouter();
-  const { entities: tickets, setAll, addOrUpdate, getAll, clear, executarAcao } = useEntityManager<Ticket>([]);
+  const {
+    entities: tickets,
+    setAll,
+    addOrUpdate,
+    getAll,
+    clear,
+    executarAcao,
+  } = useEntityManager<Ticket>([]);
   const [estatisticas, setEstatisticas] = useState({
     recepcaoAguardando: 0,
     examesAguardando: 0,
@@ -88,11 +138,12 @@ const AtendimentoPage: React.FC = () => {
     preparacao: 0,
     raiox: 0,
     finalizados: 0,
-    total: 0
+    total: 0,
   });
 
   useEffect(() => {
     const currentUser = getCurrentUser();
+
     if (!currentUser) {
       router.push("/");
     } else {
@@ -104,32 +155,35 @@ const AtendimentoPage: React.FC = () => {
   // Configura informações do exame a ser atendido
   // ----------------------------------------------------------
   const handleExameSelecionado = (exame: string) => {
-    const setList = new Set(EXAMES_LIST[exame].map(e => e.codigos).flat());
+    const setList = new Set(EXAMES_LIST[exame].map((e) => e.codigos).flat());
+
     setCodigosDeAtendimento(setList);
     setExameSelecionado(exame);
-  }
+  };
 
   // ---------------------------------------------------------
   // Carrega tickets e solicitações de preparo ao conectar
   // ----------------------------------------------------------
   type initialTicketsRequest = {
-    tickets: Ticket[],
-    preparationRequests: PreparationRequest[]
-  }
+    tickets: Ticket[];
+    preparationRequests: PreparationRequest[];
+  };
   const loadInitialTickets = async () => {
     try {
       const encodedUnidade = encodeURIComponent(unidadeSelecionada);
       const url = `${NEST_TICKET_QUERY}${encodedUnidade}`;
       const response = await fetch(url);
-      
+
       if (!response.ok) {
-        return console.info(`Não há tickets para a unidade ${unidadeSelecionada}`);
+        return console.info(
+          `Não há tickets para a unidade ${unidadeSelecionada}`,
+        );
       }
-      const data:initialTicketsRequest = await response.json();
-      
+      const data: initialTicketsRequest = await response.json();
+
       if (Array.isArray(data.tickets)) setAll(data.tickets);
-      if (Array.isArray(data.preparationRequests)) setEmPreparacao(data.preparationRequests);
-      
+      if (Array.isArray(data.preparationRequests))
+        setEmPreparacao(data.preparationRequests);
     } catch (error) {
       console.error("Erro ao carregar tickets:", error);
     }
@@ -144,24 +198,25 @@ const AtendimentoPage: React.FC = () => {
 
       if (!response.ok) {
         console.error("Não foi possível carregar as empresas SOC");
+
         return await IndexDb.getCompanies();
       }
 
       const data: CadastroEmpresa[] = await response.json();
-      
+
       if (Array.isArray(data)) {
         await IndexDb.saveCompanies(data);
-        setSocCompanies(data)
+        setSocCompanies(data);
         console.log("Empresas SOC carregadas da API:", data.length);
       }
 
       return [];
     } catch (error) {
       console.error("Erro ao carregar empresas SOC:", error);
+
       return await IndexDb.getCompanies();
     }
-  }, [conectado])
-
+  }, [conectado]);
 
   // ---------------------------------------------------------
   // Recalcula agendamentos filtrados quando mudam dependências
@@ -169,34 +224,38 @@ const AtendimentoPage: React.FC = () => {
   useEffect(() => {
     if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
       setAgendamentos([]);
+
       return;
     }
     if (!agendamentosGeral || agendamentosGeral.length === 0) {
       setAgendamentos([]);
+
       return;
     }
 
-    const emAtendimento = agendamentosGeral.filter(a => 
-      a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO
+    const emAtendimento = agendamentosGeral.filter(
+      (a) => a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO,
     );
-    
-    const meusAtendimentos = emAtendimento.filter(atend =>
-      Array.isArray(atend.EXAMES) &&
-      atend.EXAMES.some(exame =>
-        codigosDeAtendimento.has(exame.codigoExame) &&
-        exame.status === ExamStatus.PENDENTE
-      )
+
+    const meusAtendimentos = emAtendimento.filter(
+      (atend) =>
+        Array.isArray(atend.EXAMES) &&
+        atend.EXAMES.some(
+          (exame) =>
+            codigosDeAtendimento.has(exame.codigoExame) &&
+            exame.status === ExamStatus.PENDENTE,
+        ),
     );
-    
+
     setAgendamentos(meusAtendimentos);
   }, [agendamentosGeral, codigosDeAtendimento, exameSelecionado]);
 
   // ---------------------------------------------------------
   // Faz a inscrição para recebimento de notificação web-push
   // ----------------------------------------------------------
-  const subscribeNotification = async() => { 
+  const subscribeNotification = async () => {
     // Seu código de notificação aqui
-  }
+  };
 
   // ---------------------------------------------------------
   // Conexão com socket, reconexão e eventos
@@ -205,28 +264,38 @@ const AtendimentoPage: React.FC = () => {
     if (conectado && socketState) {
       socketState.disconnect();
       setConectado(false);
-      addToast({ 
-        title: "Desconectado", 
-        description: "Você se desconectou do servidor.", 
-        severity: "warning", 
-        color: "foreground", 
-        variant: "flat" 
+      addToast({
+        title: "Desconectado",
+        description: "Você se desconectou do servidor.",
+        severity: "warning",
+        color: "foreground",
+        variant: "flat",
       });
     } else {
       if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) {
         setModalText(
-          <p>Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e <strong>EXAME</strong> antes de conectar.</p>
+          <p>
+            Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e{" "}
+            <strong>EXAME</strong> antes de conectar.
+          </p>,
         );
-        setModalAlert(true)
+        setModalAlert(true);
+
         return;
       }
-      setIsLoading(true)
+      setIsLoading(true);
       setConectado(true);
     }
   };
 
   useEffect(() => {
-    if (!conectado || !unidadeSelecionada || !salaSelecionada || !exameSelecionado) return;
+    if (
+      !conectado ||
+      !unidadeSelecionada ||
+      !salaSelecionada ||
+      !exameSelecionado
+    )
+      return;
 
     const conectionType = WebsocketType.USER_ATENDIMENTO;
 
@@ -251,80 +320,89 @@ const AtendimentoPage: React.FC = () => {
     // HANDLERS DE EVENTOS (CORRIGIDOS)
     // ---------------------------------------------------------
     const handleAtendimentos = (schedules?: Scheduling[]) => {
-      if(schedules){
-        setAgendamentosGeral(prev => {
+      if (schedules) {
+        setAgendamentosGeral((prev) => {
           const merged = [...prev];
-          schedules.forEach(schedule => {
-            const exists = merged.some(a => a._id === schedule._id);
+
+          schedules.forEach((schedule) => {
+            const exists = merged.some((a) => a._id === schedule._id);
+
             if (!exists) merged.push(schedule);
           });
+
           return deduplicateSchedulings(merged);
         });
       }
     };
 
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
-    
+
     const handleTicketUpdated = (ticket: Ticket) => {
       addOrUpdate(ticket);
-      setAgendamentos(prev => {
-        return prev.map(agendamento => {
+      setAgendamentos((prev) => {
+        return prev.map((agendamento) => {
           if (agendamento.TICKET?.id === ticket.id) {
             return { ...agendamento, TICKET: ticket };
-          } 
+          }
+
           return agendamento;
         });
       });
     };
-    
-    const handleTicketError = (message: string) => console.error(JSON.parse(message));
-    
+
+    const handleTicketError = (message: string) =>
+      console.error(JSON.parse(message));
+
     // HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
-    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
+    const handleUpdateSchedule = ({
+      operation,
+      schedule,
+    }: SchedulingChange) => {
       switch (operation) {
         case MongoOperationTypes.INSERT:
-          setAgendamentosGeral(prev => {
+          setAgendamentosGeral((prev) => {
             // Verifica se já existe antes de adicionar
-            const exists = prev.some(ag => 
-              ag._id === schedule._id || 
-              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE
+            const exists = prev.some(
+              (ag) =>
+                ag._id === schedule._id ||
+                ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
             );
-            
+
             if (exists) {
-              console.warn(`Agendamento ${schedule.SCHEDULINGCODE} já existe, ignorando INSERT`);
+              console.warn(
+                `Agendamento ${schedule.SCHEDULINGCODE} já existe, ignorando INSERT`,
+              );
+
               return prev;
             }
-            
+
             const updated = deduplicateSchedulings([...prev, schedule]);
-            return updated.sort((a, b) => 
-              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+
+            return updated.sort((a, b) =>
+              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
             );
           });
 
           emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
           break;
 
-
-
-          
         case MongoOperationTypes.UPDATE:
-          setAgendamentosGeral(prev => {
-            const updated = prev.map(ag => 
-              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag
+          setAgendamentosGeral((prev) => {
+            const updated = prev.map((ag) =>
+              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag,
             );
-            return deduplicateSchedulings(updated).sort((a, b) => 
-              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" })
+
+            return deduplicateSchedulings(updated).sort((a, b) =>
+              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
             );
           });
 
           emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
           break;
-          
-
 
         case MongoOperationTypes.DELETE:
-          setAgendamentosGeral(prev => 
-            prev.filter(ag => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE)
+          setAgendamentosGeral((prev) =>
+            prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
           );
 
           emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
@@ -336,18 +414,25 @@ const AtendimentoPage: React.FC = () => {
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
           addOrUpdate(request.request.tickets!);
-          setEmPreparacao(prev => [...prev, request.request]);
+          setEmPreparacao((prev) => [...prev, request.request]);
           break;
         case PreparationRequestTypes.FINISHED:
-          executarAcao(request.request.ticketId!, TicketActionType.PREPARO_OK, unidadeSelecionada, s);
-          setEmPreparacao(prev => prev.filter(req => req.ticketId !== request.request.ticketId));
-          setPreparacaoFinalizada(prev => [...prev, request.request]);
+          executarAcao(
+            request.request.ticketId!,
+            TicketActionType.PREPARO_OK,
+            unidadeSelecionada,
+            s,
+          );
+          setEmPreparacao((prev) =>
+            prev.filter((req) => req.ticketId !== request.request.ticketId),
+          );
+          setPreparacaoFinalizada((prev) => [...prev, request.request]);
           break;
       }
     };
 
     // Registra eventos
-    onEvent(s, EventType.CONNECTION_REQUEST, handleAtendimentos)
+    onEvent(s, EventType.CONNECTION_REQUEST, handleAtendimentos);
     onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
     onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
@@ -357,13 +442,10 @@ const AtendimentoPage: React.FC = () => {
     // ---------------------------------------------------------
     // CONEXÃO E CARREGAMENTO INICIAL
     // ---------------------------------------------------------
-    s.on("connect", async() => {
+    s.on("connect", async () => {
       try {
-        await Promise.all([
-          loadSocCompanies(),
-          loadInitialTickets()
-        ]);
-        
+        await Promise.all([loadSocCompanies(), loadInitialTickets()]);
+
         emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
         if (salaSelecionada.includes("PREPARO")) subscribeNotification();
       } catch (error) {
@@ -379,11 +461,11 @@ const AtendimentoPage: React.FC = () => {
       setAgendamentosGeral([]); // Limpa também o estado geral
       setModalAtendimentoAberto(false);
       if (reason !== "io client disconnect") {
-        addToast({ 
-          title: "Conexão perdida", 
-          severity: "danger", 
-          color: "foreground", 
-          variant: "flat" 
+        addToast({
+          title: "Conexão perdida",
+          severity: "danger",
+          color: "foreground",
+          variant: "flat",
         });
       }
     });
@@ -408,23 +490,42 @@ const AtendimentoPage: React.FC = () => {
 
   const calcularEstatisticas = () => {
     const senhasFiltradas = getAll();
+
     setEstatisticas({
       recepcaoAguardando:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.RECEPCAO).length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK).length,
-      examesAguardando:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.EXAME).length,
+        senhasFiltradas.filter(
+          (s) =>
+            s.status === TicketStatus.AGUARDANDO &&
+            s.grupo === TicketGroups.RECEPCAO,
+        ).length +
+        senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK)
+          .length,
+      examesAguardando: senhasFiltradas.filter(
+        (s) =>
+          s.status === TicketStatus.AGUARDANDO &&
+          s.grupo === TicketGroups.EXAME,
+      ).length,
       emAtendimento:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO).length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA).length,
-      preparacao: senhasFiltradas.filter((s) => s.status === TicketStatus.EM_PREPARACAO).length,
-      raiox: senhasFiltradas.filter((s) => s.status === TicketStatus.ENCAMINHADO_RX).length,
-      finalizados: senhasFiltradas.filter((s) => s.status === TicketStatus.FINALIZADO).length,
+        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO)
+          .length +
+        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA)
+          .length,
+      preparacao: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.EM_PREPARACAO,
+      ).length,
+      raiox: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
+      ).length,
+      finalizados: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.FINALIZADO,
+      ).length,
       total: senhasFiltradas.length,
-    })
-  }
+    });
+  };
 
-  useEffect(() => { calcularEstatisticas() }, [tickets]);
+  useEffect(() => {
+    calcularEstatisticas();
+  }, [tickets]);
 
   if (!user) {
     return <CmsoLoading />;
@@ -432,102 +533,107 @@ const AtendimentoPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <HeaderApp onLogout={() => { logout(); router.push("/"); }}>
-        {(conectado && socketState) && (
-          <SenhasEstatisticas 
-            estatisticasSenhas={estatisticas} 
-            onSetStatsModalOpen={setIsStatsModalOpen}
+      <HeaderApp
+        onLogout={() => {
+          logout();
+          router.push("/");
+        }}
+      >
+        {conectado && socketState && (
+          <SenhasEstatisticas
             agendamentos={agendamentos}
+            estatisticasSenhas={estatisticas}
             preparationRequests={empreparacao}
             tickets={tickets}
+            onSetStatsModalOpen={setIsStatsModalOpen}
           />
         )}
       </HeaderApp>
 
       <div className="flex flex-1 overflow-hidden">
-        <motion.aside 
-          initial={{ x: -80, opacity: 0 }} 
-          animate={{ x: 0, opacity: 1 }} 
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }} 
+        <motion.aside
+          animate={{ x: 0, opacity: 1 }}
           className="w-60 bg-red shadow-sm"
+          initial={{ x: -80, opacity: 0 }}
+          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
         >
           <SidebarRecepcao
-            unidadeSelecionada={unidadeSelecionada}
-            setUnidadeSelecionada={setUnidadeSelecionada}
-            statusSelecionado={statusSelecionado}
-            setStatusSelecionado={setStatusSelecionado}
+            agendadosFiltrados={agendamentosGeral}
+            conectado={conectado}
+            exameSelecionado={exameSelecionado}
+            handleConectar={handleConectar}
             salaSelecionada={salaSelecionada}
             setSalaSelecionada={setSalaSelecionada}
-            conectado={conectado}
-            handleConectar={handleConectar}
-            agendadosFiltrados={agendamentosGeral}
-            onLoading={isLoading}
-            onHandleModal={handleModal}
+            setStatusSelecionado={setStatusSelecionado}
             setTicketSelecionado={setTicketSelecionado}
-            exameSelecionado={exameSelecionado}
+            setUnidadeSelecionada={setUnidadeSelecionada}
+            statusSelecionado={statusSelecionado}
+            unidadeSelecionada={unidadeSelecionada}
             onHandleExameSelecionado={handleExameSelecionado}
+            onHandleModal={handleModal}
+            onLoading={isLoading}
           />
         </motion.aside>
 
-        <main 
-          className="flex-1 overflow-y-auto sm:p-6 lg:p-8 bg-gray-50" 
+        <main
           aria-label="Conteúdo principal do atendimento"
+          className="flex-1 overflow-y-auto sm:p-6 lg:p-8 bg-gray-50"
         >
-          {(conectado && socketState) && !isLoading ? (
+          {conectado && socketState && !isLoading ? (
             <AtendimentoContent
-              conectado={conectado}
-              tickets={tickets}
               agendamentos={agendamentos}
-              socket={socketState}
-              salaSelecionada={salaSelecionada}
               codigosDeAtendimento={codigosDeAtendimento}
-              unidadeSelecionada={unidadeSelecionada}
+              conectado={conectado}
+              exameSelecionado={exameSelecionado}
+              preparacoesFinalizadas={preparacaoFinalizada}
+              salaSelecionada={salaSelecionada}
+              setFuncionarioSelecionado={setFuncionarioSelecionado}
               setTicketSelecionado={setTicketSelecionado}
+              socket={socketState}
+              tickets={tickets}
+              unidadeSelecionada={unidadeSelecionada}
               onHandleModal={handleModal}
               onPreparationRequests={empreparacao}
-              preparacoesFinalizadas={preparacaoFinalizada}
-              setFuncionarioSelecionado={setFuncionarioSelecionado}
-              exameSelecionado={exameSelecionado}
             />
           ) : (
-            <EmptyState 
-              title="Desconectado" 
-              description="Conecte-se para visualizar os atendimentos" 
+            <EmptyState
+              description="Conecte-se para visualizar os atendimentos"
+              title="Desconectado"
             />
           )}
         </main>
       </div>
 
-      <AtendimentoModalExames 
-        isOpen={modalAtendimentoAberto} 
-        onClose={handleModal} 
-        funcionarioSelecionado={funcionarioSelecionado} 
-        exame={exameSelecionado} 
-        sala={salaSelecionada} 
-        codigosAtendimento={codigosDeAtendimento} 
-        socket={socketState!} 
+      <AtendimentoModalExames
+        codigosAtendimento={codigosDeAtendimento}
+        exame={exameSelecionado}
+        funcionarioSelecionado={funcionarioSelecionado}
+        isOpen={modalAtendimentoAberto}
+        sala={salaSelecionada}
+        socket={socketState!}
+        onClose={handleModal}
       />
 
-      <StatsModal 
-        isOpen={isStatsModalOpen} 
-        onClose={() => setIsStatsModalOpen(false)} 
-        estatisticasSenhas={estatisticas} 
-        tickets={tickets} 
-        agendamentos={agendamentos} 
-        preparationRequests={empreparacao} 
+      <StatsModal
+        agendamentos={agendamentos}
+        estatisticasSenhas={estatisticas}
+        isOpen={isStatsModalOpen}
+        preparationRequests={empreparacao}
+        tickets={tickets}
+        onClose={() => setIsStatsModalOpen(false)}
       />
 
-      <Modal isOpen={modalAlert} disableAnimation={true} isDismissable={false}>
+      <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
         <ModalContent>
           <ModalHeader>
             <ExclamationCircleIcon className="h-6 w-6" /> Atenção
           </ModalHeader>
-          <ModalBody>{ modalText }</ModalBody>
+          <ModalBody>{modalText}</ModalBody>
           <ModalFooter className="flex justify-end gap-2">
-            <Button 
-              variant="ghost" 
-              color="primary" 
-              size="sm" 
+            <Button
+              color="primary"
+              size="sm"
+              variant="ghost"
               onPress={() => setModalAlert(false)}
             >
               Confirmar

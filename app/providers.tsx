@@ -7,9 +7,8 @@ import { HeroUIProvider } from "@heroui/system";
 import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ToastProvider } from "@heroui/react";
-import { NEST_SCHEDULINGS_ALL } from "@/config/constants";
-import { AppData, AppDataProvider } from "./context/AppDataContext";
-import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+
+import { AppDataProvider } from "./context/AppDataContext";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -24,7 +23,6 @@ declare module "@react-types/shared" {
   }
 }
 
-
 export function Providers({ children, themeProps }: ProvidersProps) {
   const router = useRouter();
 
@@ -32,11 +30,8 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <AppDataProvider initialData={null}>
-          {children}
-        </AppDataProvider>
+        <AppDataProvider initialData={null}>{children}</AppDataProvider>
       </NextThemesProvider>
     </HeroUIProvider>
   );
 }
-

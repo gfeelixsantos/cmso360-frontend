@@ -1,10 +1,11 @@
-import React from 'react';
+import React from "react";
 import { Card } from "@heroui/react";
 import { Socket } from "socket.io-client";
-import SenhaCard from "./SenhaCard";
-import { PreparationRequest, Ticket } from '@/lib/ticket/ticket';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
 
+import SenhaCard from "./SenhaCard";
+
+import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 // Interface para tipagem robusta
 interface SenhasSectionProps {
@@ -25,27 +26,32 @@ interface SenhasSectionProps {
   /** Unidade atualmente selecionada */
   unidadeSelecionada: string;
 
-  agendamentos: Scheduling[]
-  onHandleModal: (state: Boolean) => void
-  setTicketSelecionado: (ticket: Ticket | null) => void
+  agendamentos: Scheduling[];
+  onHandleModal: (state: Boolean) => void;
+  setTicketSelecionado: (ticket: Ticket | null) => void;
   onPreparationRequests: PreparationRequest[];
-  preparacoesFinalizadas: PreparationRequest[]
+  preparacoesFinalizadas: PreparationRequest[];
 }
 
 // Componente para o estado vazio
-const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({ title, emptyMessage }) => (
-  <section aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, '-')}`}>
+const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
+  title,
+  emptyMessage,
+}) => (
+  <section
+    aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+  >
     <h3
-      id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
       className="text-lg font-semibold text-gray-900 mb-2"
+      id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
     >
       {title}
     </h3>
     <Card
+      aria-describedby="empty-section-description"
       className="bg-white rounded-lg border border-gray-200 shadow-md p-4 text-center 
         transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
       role="alert"
-      aria-describedby="empty-section-description"
     >
       <p className="text-sm text-gray-600">{emptyMessage}</p>
     </Card>
@@ -67,17 +73,17 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
   preparacoesFinalizadas,
 }) => {
   if (senhas.length === 0) {
-    return <EmptySection title={title} emptyMessage={emptyMessage} />;
+    return <EmptySection emptyMessage={emptyMessage} title={title} />;
   }
 
   return (
     <section
-      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
+      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
       className="space-y-4"
     >
       <h3
-        id={`section-${title.toLowerCase().replace(/\s/g, '-')}`}
         className="text-lg font-semibold text-gray-900"
+        id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
       >
         {title}
       </h3>
@@ -85,15 +91,15 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
         {senhas.map((senha) => (
           <SenhaCard
             key={senha.id?.toString()}
-            ticket={senha}
-            socket={socket}
-            salaSelecionada={salaSelecionada}
-            unidadeSelecionada={unidadeSelecionada}
             agendamentos={agendamentos}
-            onHandleModal={onHandleModal}
-            setTicketSelecionado={setTicketSelecionado}
-            onPreparationRequests={onPreparationRequests}
             preparacoesFinalizadas={preparacoesFinalizadas}
+            salaSelecionada={salaSelecionada}
+            setTicketSelecionado={setTicketSelecionado}
+            socket={socket}
+            ticket={senha}
+            unidadeSelecionada={unidadeSelecionada}
+            onHandleModal={onHandleModal}
+            onPreparationRequests={onPreparationRequests}
           />
         ))}
       </div>

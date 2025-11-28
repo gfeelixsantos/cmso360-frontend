@@ -1,6 +1,6 @@
 export interface AsoFuncionarioRequest {
-  CODIGO: string
-  CODIGOEMPRESA: string
+  CODIGO: string;
+  CODIGOEMPRESA: string;
 }
 
 export interface AsoFuncionario {
@@ -62,4 +62,4 @@ export type AsoFuncionarioDto = {
   NRCRM: string;
   UFCRM: string;
   CODIGOEXAME: string;
-}
+};

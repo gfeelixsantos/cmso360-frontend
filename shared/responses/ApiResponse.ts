@@ -4,7 +4,6 @@ export interface IApiResponse<T> {
   data?: T;
 }
 
-
 export class ApiResponse<T> implements IApiResponse<T> {
   status: number;
   message: string;

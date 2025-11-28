@@ -1,6 +1,6 @@
 // PainelDireita.tsx
 "use client";
-import React, { useCallback, useEffect, useMemo, useRef, useState, memo } from "react";
+import React, { useCallback, useEffect, useMemo, useState, memo } from "react";
 import {
   addToast,
   Button,
@@ -33,10 +33,12 @@ import {
   CheckCircle2,
   FileText,
 } from "lucide-react";
+
+import { MedicalRecord } from "../page";
+
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import {
   AtendimentoStatus,
-  ExamStatus,
   ParecerEspaçoConfinado,
   ParecerMedico,
   ParecerTrabalhoAltura,
@@ -47,7 +49,7 @@ import {
   USER_PROFILE,
 } from "@/config/constants";
 import { NEST_SCHEDULINGS_FINISH } from "@/config/constants";
-import { MedicalRecord } from "../page";
+import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
 
 /* ---------------------- Tipos ---------------------- */
 
@@ -95,564 +97,661 @@ interface RightPanelProps {
 
 /* ---------------------- Componentes Auxiliares Memoizados ---------------------- */
 
-const ExameCard = memo(({ 
-  exame, 
-  isActive, 
-  hasPdf, 
-  onView 
-}: { 
-  exame: any; 
-  isActive: boolean; 
-  hasPdf: boolean; 
-  onView: () => void;
-}) => {
-  const data = exame?.dataExame
-    ? new Date(exame.dataExame).toLocaleDateString("pt-BR")
-    : "N/A";
-  const hora = exame?.dataExame
-    ? new Date(exame.dataExame).toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
-    : "";
+const ExameCard = memo(
+  ({
+    exame,
+    isActive,
+    hasPdf,
+    onView,
+  }: {
+    exame: any;
+    isActive: boolean;
+    hasPdf: boolean;
+    onView: () => void;
+  }) => {
+    const data = exame?.dataExame
+      ? new Date(exame.dataExame).toLocaleDateString("pt-BR")
+      : "N/A";
+    const hora = exame?.dataExame
+      ? new Date(exame.dataExame).toLocaleTimeString("pt-BR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "";
 
-  return (
-    <tr
-      className={`transition-all border-b border-default-200 ${
-        isActive ? "bg-primary-50" : "hover:bg-default-50"
-      }`}
-    >
-      <td className="p-2 text-default-800">
-        <div className="flex flex-col">
-          <span className="font-medium truncate text-xs sm:text-sm">{exame.grupo}</span>
-          {isActive && (
-            <Chip size="sm" color="primary" variant="flat" className="mt-1 w-fit">
-              Visualizando
-            </Chip>
+    return (
+      <tr
+        className={`transition-all border-b border-default-200 ${
+          isActive ? "bg-primary-50" : "hover:bg-default-50"
+        }`}
+      >
+        <td className="p-2 text-default-800">
+          <div className="flex flex-col">
+            <span className="font-medium truncate text-xs sm:text-sm">
+              {exame.grupo}
+            </span>
+            {isActive && (
+              <Chip
+                className="mt-1 w-fit"
+                color="primary"
+                size="sm"
+                variant="flat"
+              >
+                Visualizando
+              </Chip>
+            )}
+          </div>
+        </td>
+        <td className="p-2 text-default-600 whitespace-nowrap text-xs">
+          {data} <br />
+          <span className="text-[0.65rem]">{hora}</span>
+        </td>
+        <td className="p-2 text-center">
+          {hasPdf && (
+            <Button
+              isIconOnly
+              color="primary"
+              size="sm"
+              title="Visualizar PDF"
+              variant={isActive ? "solid" : "ghost"}
+              onPress={onView}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
           )}
-        </div>
-      </td>
-      <td className="p-2 text-default-600 whitespace-nowrap text-xs">
-        {data} <br />
-        <span className="text-[0.65rem]">{hora}</span>
-      </td>
-      <td className="p-2 text-center">
-        {hasPdf && (
-          <Button
-            size="sm"
-            variant={isActive ? "solid" : "ghost"}
-            color="primary"
-            onPress={onView}
-            title="Visualizar PDF"
-            isIconOnly
-          >
-            <Eye className="w-4 h-4" />
-          </Button>
-        )}
-      </td>
-    </tr>
-  );
-});
+        </td>
+      </tr>
+    );
+  },
+);
 
 ExameCard.displayName = "ExameCard";
 
 /* ---------------------- Modal de Seleção de Exames ---------------------- */
 
-const ExamesRepeticaoModal = memo(({ 
-  isOpen, 
-  onClose, 
-  onSave,
-  examesDisponiveis 
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (exames: string[]) => void;
-  examesDisponiveis: string[];
-}) => {
-  const [selectedExames, setSelectedExames] = useState<string[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
+const ExamesRepeticaoModal = memo(
+  ({
+    isOpen,
+    onClose,
+    onSave,
+    examesDisponiveis,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (exames: string[]) => void;
+    examesDisponiveis: string[];
+  }) => {
+    const [selectedExames, setSelectedExames] = useState<string[]>([]);
+    const [searchTerm, setSearchTerm] = useState("");
 
-  const examesFiltrados = useMemo(() => {
-    if (!searchTerm) return examesDisponiveis || [];
-    return (examesDisponiveis || []).filter(e => 
-      e.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [examesDisponiveis, searchTerm]);
+    const examesFiltrados = useMemo(() => {
+      if (!searchTerm) return examesDisponiveis || [];
 
-  const handleSave = useCallback(() => {
-    if (selectedExames.length === 0) {
-      addToast({
-        title: "Seleção obrigatória",
-        description: "Selecione ao menos um exame para repetição.",
-        color: "warning",
-        variant: "solid"
-      });
-      return;
-    }
-    onSave(selectedExames);
-    onClose();
-  }, [selectedExames, onSave, onClose]);
+      return (examesDisponiveis || []).filter((e) =>
+        e.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    }, [examesDisponiveis, searchTerm]);
 
-  const handleClose = useCallback(() => {
-    setSelectedExames([]);
-    setSearchTerm("");
-    onClose();
-  }, [onClose]);
+    const handleSave = useCallback(() => {
+      if (selectedExames.length === 0) {
+        addToast({
+          title: "Seleção obrigatória",
+          description: "Selecione ao menos um exame para repetição.",
+          color: "warning",
+          variant: "solid",
+        });
 
-  return (
-    <HeroModal 
-      isOpen={isOpen} 
-      onClose={handleClose} 
-      size="2xl" 
-      backdrop="blur" 
-      scrollBehavior="inside"
-      classNames={{
-        base: "max-h-[90vh]",
-        body: "py-6"
-      }}
-    >
-      <ModalContent>
-        <ModalHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
-            <h3 className="text-base sm:text-lg md:text-xl font-bold">Selecionar Exames para Repetição</h3>
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <Alert color="warning" variant="flat" className="text-xs sm:text-sm">
-              Selecione ao menos um exame que deverá ser repetido pelo paciente.
-            </Alert>
+        return;
+      }
+      onSave(selectedExames);
+      onClose();
+    }, [selectedExames, onSave, onClose]);
 
-            <Input
-              placeholder="Buscar exames..."
-              value={searchTerm}
-              onValueChange={setSearchTerm}
-              size="sm"
-              isClearable
-              onClear={() => setSearchTerm("")}
-              className="w-full"
-            />
+    const handleClose = useCallback(() => {
+      setSelectedExames([]);
+      setSearchTerm("");
+      onClose();
+    }, [onClose]);
 
-            <Card className="border border-default-200">
-              <CardBody className="p-3 max-h-[400px] overflow-y-auto">
-                <CheckboxGroup
-                  value={selectedExames}
-                  onValueChange={setSelectedExames}
-                  classNames={{
-                    base: "w-full"
-                  }}
-                >
-                  {examesFiltrados.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-2">
-                      {examesFiltrados.map((exame) => (
-                        <Checkbox 
-                          key={exame} 
-                          value={exame}
-                          classNames={{
-                            label: "text-xs sm:text-sm"
-                          }}
-                        >
-                          {exame}
-                        </Checkbox>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-center text-default-400 text-sm py-4">
-                      Nenhum exame encontrado
-                    </p>
-                  )}
-                </CheckboxGroup>
-              </CardBody>
-            </Card>
+    return (
+      <HeroModal
+        backdrop="blur"
+        classNames={{
+          base: "max-h-[90vh]",
+          body: "py-6",
+        }}
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onClose={handleClose}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
+              <h3 className="text-base sm:text-lg md:text-xl font-bold">
+                Selecionar Exames para Repetição
+              </h3>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Alert
+                className="text-xs sm:text-sm"
+                color="warning"
+                variant="flat"
+              >
+                Selecione ao menos um exame que deverá ser repetido pelo
+                paciente.
+              </Alert>
 
-            {selectedExames.length > 0 && (
-              <Card className="bg-primary-50 border-primary-200">
-                <CardBody className="p-3">
-                  <p className="text-xs font-semibold text-primary mb-2">
-                    {selectedExames.length} exame(s) selecionado(s):
-                  </p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedExames.map((exame) => (
-                      <Chip 
-                        key={exame} 
-                        size="sm" 
-                        color="primary" 
-                        variant="flat"
-                        onClose={() => setSelectedExames(prev => prev.filter(e => e !== exame))}
-                      >
-                        {exame}
-                      </Chip>
-                    ))}
-                  </div>
+              <Input
+                isClearable
+                className="w-full"
+                placeholder="Buscar exames..."
+                size="sm"
+                value={searchTerm}
+                onClear={() => setSearchTerm("")}
+                onValueChange={setSearchTerm}
+              />
+
+              <Card className="border border-default-200">
+                <CardBody className="p-3 max-h-[400px] overflow-y-auto">
+                  <CheckboxGroup
+                    classNames={{
+                      base: "w-full",
+                    }}
+                    value={selectedExames}
+                    onValueChange={setSelectedExames}
+                  >
+                    {examesFiltrados.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-2">
+                        {examesFiltrados.map((exame) => (
+                          <Checkbox
+                            key={exame}
+                            classNames={{
+                              label: "text-xs sm:text-sm",
+                            }}
+                            value={exame}
+                          >
+                            {exame}
+                          </Checkbox>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-default-400 text-sm py-4">
+                        Nenhum exame encontrado
+                      </p>
+                    )}
+                  </CheckboxGroup>
                 </CardBody>
               </Card>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={handleClose} size="sm">
-            Cancelar
-          </Button>
-          <Button 
-            color="warning" 
-            onPress={handleSave}
-            isDisabled={selectedExames.length === 0}
-            size="sm"
-          >
-            Confirmar Seleção
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </HeroModal>
-  );
-});
+
+              {selectedExames.length > 0 && (
+                <Card className="bg-primary-50 border-primary-200">
+                  <CardBody className="p-3">
+                    <p className="text-xs font-semibold text-primary mb-2">
+                      {selectedExames.length} exame(s) selecionado(s):
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {selectedExames.map((exame) => (
+                        <Chip
+                          key={exame}
+                          color="primary"
+                          size="sm"
+                          variant="flat"
+                          onClose={() =>
+                            setSelectedExames((prev) =>
+                              prev.filter((e) => e !== exame),
+                            )
+                          }
+                        >
+                          {exame}
+                        </Chip>
+                      ))}
+                    </div>
+                  </CardBody>
+                </Card>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="light" onPress={handleClose}>
+              Cancelar
+            </Button>
+            <Button
+              color="warning"
+              isDisabled={selectedExames.length === 0}
+              size="sm"
+              onPress={handleSave}
+            >
+              Confirmar Seleção
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
+    );
+  },
+);
 
 ExamesRepeticaoModal.displayName = "ExamesRepeticaoModal";
 
 /* ---------------------- Modal de Confirmação ---------------------- */
 
-const ConfirmacaoParecerModal = memo(({ 
-  isOpen, 
-  onClose, 
-  onConfirm,
-  opinion,
-  isLoading 
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
-  opinion: MedicalOpinionData;
-  isLoading: boolean;
-}) => {
-  return (
-    <HeroModal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      size="md" 
-      backdrop="blur"
-      isDismissable={!isLoading}
-      hideCloseButton={isLoading}
-    >
-      <ModalContent>
-        <ModalHeader>
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
-            <h3 className="text-base sm:text-lg md:text-xl font-bold">Confirmar Parecer Médico</h3>
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            <Alert color="warning" variant="flat" className="text-xs sm:text-sm">
-              Você está prestes a finalizar este prontuário..
-            </Alert>
+const ConfirmacaoParecerModal = memo(
+  ({
+    isOpen,
+    onClose,
+    onConfirm,
+    opinion,
+    isLoading,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    opinion: MedicalOpinionData;
+    isLoading: boolean;
+  }) => {
+    return (
+      <HeroModal
+        backdrop="blur"
+        hideCloseButton={isLoading}
+        isDismissable={!isLoading}
+        isOpen={isOpen}
+        size="md"
+        onClose={onClose}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
+              <h3 className="text-base sm:text-lg md:text-xl font-bold">
+                Confirmar Parecer Médico
+              </h3>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Alert
+                className="text-xs sm:text-sm"
+                color="warning"
+                variant="flat"
+              >
+                Você está prestes a finalizar este prontuário..
+              </Alert>
 
-            <Card className="border border-default-200">
-              <CardBody className="p-4 space-y-3">
-                <div>
-                  <p className="text-xs text-default-500">Parecer Principal:</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {opinion.opinionType?.replace(/_/g, " ")}
-                  </p>
-                </div>
-
-                {opinion.altura && (
+              <Card className="border border-default-200">
+                <CardBody className="p-4 space-y-3">
                   <div>
-                    <p className="text-xs text-default-500">Trabalho em Altura:</p>
+                    <p className="text-xs text-default-500">
+                      Parecer Principal:
+                    </p>
                     <p className="text-sm font-semibold text-foreground">
-                      {opinion.altura}
+                      {opinion.opinionType?.replace(/_/g, " ")}
                     </p>
                   </div>
-                )}
 
-                {opinion.confinado && (
-                  <div>
-                    <p className="text-xs text-default-500">Espaço Confinado:</p>
-                    <p className="text-sm font-semibold text-foreground">
-                      {opinion.confinado}
-                    </p>
-                  </div>
-                )}
-
-                {opinion.examesParaRepetir && opinion.examesParaRepetir.length > 0 && (
-                  <div>
-                    <p className="text-xs text-default-500 mb-2">
-                      Exames para Repetição ({opinion.examesParaRepetir.length}):
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {opinion.examesParaRepetir.map((exame) => (
-                        <Chip key={exame} size="sm" color="warning" variant="flat">
-                          {exame}
-                        </Chip>
-                      ))}
+                  {opinion.altura && (
+                    <div>
+                      <p className="text-xs text-default-500">
+                        Trabalho em Altura:
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {opinion.altura}
+                      </p>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {(opinion.laudoPCD || opinion.laudoRestricao) && (
-                  <div>
-                    <p className="text-xs text-default-500 mb-2">Laudos Emitidos:</p>
-                    <div className="space-y-1">
-                      {opinion.laudoPCD && (
-                        <Chip color="primary" variant="flat" size="sm">
-                          Laudo PCD - CID: {opinion.laudoPCD.cid}
-                        </Chip>
-                      )}
-                      {opinion.laudoRestricao && (
-                        <Chip color="warning" variant="flat" size="sm">
-                          Restrição Temporária - CID: {opinion.laudoRestricao.cid}
-                        </Chip>
-                      )}
+                  {opinion.confinado && (
+                    <div>
+                      <p className="text-xs text-default-500">
+                        Espaço Confinado:
+                      </p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {opinion.confinado}
+                      </p>
                     </div>
-                  </div>
-                )}
-              </CardBody>
-            </Card>
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button 
-            variant="light" 
-            onPress={onClose}
-            isDisabled={isLoading}
-            size="sm"
-          >
-            Cancelar
-          </Button>
-          <Button 
-            color="success" 
-            onPress={onConfirm}
-            isLoading={isLoading}
-            startContent={!isLoading && <CheckCircle2 className="w-4 h-4" />}
-            size="sm"
-            className="text-white font-bold"
-          >
-            {isLoading ? "Salvando..." : "Confirmar e Finalizar"}
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </HeroModal>
-  );
-});
+                  )}
+
+                  {opinion.examesParaRepetir &&
+                    opinion.examesParaRepetir.length > 0 && (
+                      <div>
+                        <p className="text-xs text-default-500 mb-2">
+                          Exames para Repetição (
+                          {opinion.examesParaRepetir.length}):
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {opinion.examesParaRepetir.map((exame) => (
+                            <Chip
+                              key={exame}
+                              color="warning"
+                              size="sm"
+                              variant="flat"
+                            >
+                              {exame}
+                            </Chip>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                  {(opinion.laudoPCD || opinion.laudoRestricao) && (
+                    <div>
+                      <p className="text-xs text-default-500 mb-2">
+                        Laudos Emitidos:
+                      </p>
+                      <div className="space-y-1">
+                        {opinion.laudoPCD && (
+                          <Chip color="primary" size="sm" variant="flat">
+                            Laudo PCD - CID: {opinion.laudoPCD.cid}
+                          </Chip>
+                        )}
+                        {opinion.laudoRestricao && (
+                          <Chip color="warning" size="sm" variant="flat">
+                            Restrição Temporária - CID:{" "}
+                            {opinion.laudoRestricao.cid}
+                          </Chip>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              isDisabled={isLoading}
+              size="sm"
+              variant="light"
+              onPress={onClose}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="text-white font-bold"
+              color="success"
+              isLoading={isLoading}
+              size="sm"
+              startContent={!isLoading && <CheckCircle2 className="w-4 h-4" />}
+              onPress={onConfirm}
+            >
+              {isLoading ? "Salvando..." : "Confirmar e Finalizar"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
+    );
+  },
+);
 
 ConfirmacaoParecerModal.displayName = "ConfirmacaoParecerModal";
 
 /* ---------------------- Modal de Laudos ---------------------- */
 
-const LaudosModal = memo(({ 
-  isOpen, 
-  onClose, 
-  onSave 
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (tipo: LaudoTipo, data: any) => void;
-}) => {
-  const todayIso = useCallback(() => new Date().toISOString().split("T")[0], []);
-  const calcularDataFim = useCallback((inicio: string, dias: number) => {
-    const data = new Date(inicio);
-    data.setDate(data.getDate() + dias);
-    return data.toISOString().split("T")[0];
-  }, []);
+const LaudosModal = memo(
+  ({
+    isOpen,
+    onClose,
+    onSave,
+  }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onSave: (tipo: LaudoTipo, data: any) => void;
+  }) => {
+    const todayIso = useCallback(
+      () => new Date().toISOString().split("T")[0],
+      [],
+    );
+    const calcularDataFim = useCallback((inicio: string, dias: number) => {
+      const data = new Date(inicio);
 
-  const [tipoLaudo, setTipoLaudo] = useState<LaudoTipo>(LaudoTipo.RESTRICAO_TEMPORARIA);
-  const [laudoPCD, setLaudoPCD] = useState<LaudoPCDData>({
-    cid: "",
-    descricaoCid: "",
-    limitacoes: "",
-    adaptacoesNecessarias: "",
-    observacoes: "",
-  });
-  const [laudoRestricao, setLaudoRestricao] = useState<LaudoRestricaoData>({
-    cid: "",
-    descricaoCid: "",
-    restricoes: "",
-    periodoDias: 30,
-    dataInicio: todayIso(),
-    dataFim: calcularDataFim(todayIso(), 30),
-    recomendacoes: "",
-  });
+      data.setDate(data.getDate() + dias);
 
-  const handleSave = useCallback(() => {
-    if (tipoLaudo === LaudoTipo.PCD) {
-      onSave(tipoLaudo, laudoPCD);
-    } else {
-      onSave(tipoLaudo, laudoRestricao);
-    }
-    onClose();
-  }, [laudoPCD, laudoRestricao, onClose, onSave, tipoLaudo]);
+      return data.toISOString().split("T")[0];
+    }, []);
 
-  return (
-    <HeroModal 
-      isOpen={isOpen} 
-      onClose={onClose} 
-      size="2xl" 
-      backdrop="blur" 
-      scrollBehavior="inside"
-      classNames={{
-        base: "max-h-[90vh]"
-      }}
-    >
-      <ModalContent>
-        <ModalHeader>
-          <div className="flex items-center gap-2">
-            <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
-            <h3 className="text-base sm:text-lg md:text-xl font-bold">Emitir Laudo Médico</h3>
-          </div>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4 sm:space-y-6">
-            <RadioGroup
-              label="Tipo de Laudo"
-              value={tipoLaudo}
-              onValueChange={(value) => setTipoLaudo(value as LaudoTipo)}
-              orientation="horizontal"
-              classNames={{
-                label: "text-xs sm:text-sm"
-              }}
-            >
-              <Radio value={LaudoTipo.RESTRICAO_TEMPORARIA}>Restrição Temporária</Radio>
-              <Radio value={LaudoTipo.PCD}>Laudo PCD</Radio>
-            </RadioGroup>
+    const [tipoLaudo, setTipoLaudo] = useState<LaudoTipo>(
+      LaudoTipo.RESTRICAO_TEMPORARIA,
+    );
+    const [laudoPCD, setLaudoPCD] = useState<LaudoPCDData>({
+      cid: "",
+      descricaoCid: "",
+      limitacoes: "",
+      adaptacoesNecessarias: "",
+      observacoes: "",
+    });
+    const [laudoRestricao, setLaudoRestricao] = useState<LaudoRestricaoData>({
+      cid: "",
+      descricaoCid: "",
+      restricoes: "",
+      periodoDias: 30,
+      dataInicio: todayIso(),
+      dataFim: calcularDataFim(todayIso(), 30),
+      recomendacoes: "",
+    });
 
-            <Divider />
+    const handleSave = useCallback(() => {
+      if (tipoLaudo === LaudoTipo.PCD) {
+        onSave(tipoLaudo, laudoPCD);
+      } else {
+        onSave(tipoLaudo, laudoRestricao);
+      }
+      onClose();
+    }, [laudoPCD, laudoRestricao, onClose, onSave, tipoLaudo]);
 
-            {tipoLaudo === LaudoTipo.RESTRICAO_TEMPORARIA ? (
-              <div className="space-y-3 sm:space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+    return (
+      <HeroModal
+        backdrop="blur"
+        classNames={{
+          base: "max-h-[90vh]",
+        }}
+        isOpen={isOpen}
+        scrollBehavior="inside"
+        size="2xl"
+        onClose={onClose}
+      >
+        <ModalContent>
+          <ModalHeader>
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
+              <h3 className="text-base sm:text-lg md:text-xl font-bold">
+                Emitir Laudo Médico
+              </h3>
+            </div>
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4 sm:space-y-6">
+              <RadioGroup
+                classNames={{
+                  label: "text-xs sm:text-sm",
+                }}
+                label="Tipo de Laudo"
+                orientation="horizontal"
+                value={tipoLaudo}
+                onValueChange={(value) => setTipoLaudo(value as LaudoTipo)}
+              >
+                <Radio value={LaudoTipo.RESTRICAO_TEMPORARIA}>
+                  Restrição Temporária
+                </Radio>
+                <Radio value={LaudoTipo.PCD}>Laudo PCD</Radio>
+              </RadioGroup>
+
+              <Divider />
+
+              {tipoLaudo === LaudoTipo.RESTRICAO_TEMPORARIA ? (
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <Input
+                      label="CID"
+                      placeholder="Ex: M54.5"
+                      size="sm"
+                      value={laudoRestricao.cid}
+                      onValueChange={(value) =>
+                        setLaudoRestricao((prev) => ({ ...prev, cid: value }))
+                      }
+                    />
+                    <Input
+                      label="Período (dias)"
+                      size="sm"
+                      type="number"
+                      value={laudoRestricao.periodoDias.toString()}
+                      onValueChange={(value) => {
+                        const dias = parseInt(value) || 30;
+
+                        setLaudoRestricao((prev) => ({
+                          ...prev,
+                          periodoDias: dias,
+                          dataFim: calcularDataFim(prev.dataInicio, dias),
+                        }));
+                      }}
+                    />
+                  </div>
+
                   <Input
-                    label="CID"
-                    placeholder="Ex: M54.5"
-                    value={laudoRestricao.cid}
-                    onValueChange={(value) => setLaudoRestricao((prev) => ({ ...prev, cid: value }))}
+                    label="Descrição do CID"
+                    placeholder="Descrição da condição médica"
                     size="sm"
-                  />
-                  <Input
-                    label="Período (dias)"
-                    type="number"
-                    value={laudoRestricao.periodoDias.toString()}
-                    onValueChange={(value) => {
-                      const dias = parseInt(value) || 30;
-                      setLaudoRestricao((prev) => ({
-                        ...prev,
-                        periodoDias: dias,
-                        dataFim: calcularDataFim(prev.dataInicio, dias),
-                      }));
-                    }}
-                    size="sm"
-                  />
-                </div>
-
-                <Input
-                  label="Descrição do CID"
-                  placeholder="Descrição da condição médica"
-                  value={laudoRestricao.descricaoCid}
-                  onValueChange={(value) => setLaudoRestricao((prev) => ({ ...prev, descricaoCid: value }))}
-                  size="sm"
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                  <Input
-                    label="Data Início"
-                    type="date"
-                    value={laudoRestricao.dataInicio}
+                    value={laudoRestricao.descricaoCid}
                     onValueChange={(value) =>
                       setLaudoRestricao((prev) => ({
                         ...prev,
-                        dataInicio: value,
-                        dataFim: calcularDataFim(value, prev.periodoDias),
+                        descricaoCid: value,
                       }))
                     }
-                    size="sm"
                   />
-                  <Input
-                    label="Data Fim"
-                    type="date"
-                    value={laudoRestricao.dataFim}
-                    onValueChange={(value) => setLaudoRestricao((prev) => ({ ...prev, dataFim: value }))}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <Input
+                      label="Data Início"
+                      size="sm"
+                      type="date"
+                      value={laudoRestricao.dataInicio}
+                      onValueChange={(value) =>
+                        setLaudoRestricao((prev) => ({
+                          ...prev,
+                          dataInicio: value,
+                          dataFim: calcularDataFim(value, prev.periodoDias),
+                        }))
+                      }
+                    />
+                    <Input
+                      label="Data Fim"
+                      size="sm"
+                      type="date"
+                      value={laudoRestricao.dataFim}
+                      onValueChange={(value) =>
+                        setLaudoRestricao((prev) => ({
+                          ...prev,
+                          dataFim: value,
+                        }))
+                      }
+                    />
+                  </div>
+
+                  <Textarea
+                    label="Restrições Específicas"
+                    placeholder="Descreva as restrições temporárias para o trabalho..."
+                    rows={3}
                     size="sm"
+                    value={laudoRestricao.restricoes}
+                    onValueChange={(value) =>
+                      setLaudoRestricao((prev) => ({
+                        ...prev,
+                        restricoes: value,
+                      }))
+                    }
+                  />
+
+                  <Textarea
+                    label="Recomendações"
+                    placeholder="Recomendações e orientações para o período..."
+                    rows={2}
+                    size="sm"
+                    value={laudoRestricao.recomendacoes}
+                    onValueChange={(value) =>
+                      setLaudoRestricao((prev) => ({
+                        ...prev,
+                        recomendacoes: value,
+                      }))
+                    }
                   />
                 </div>
+              ) : (
+                <div className="space-y-3 sm:space-y-4">
+                  <Input
+                    className="sm:w-1/2"
+                    label="CID"
+                    placeholder="Ex: G80.9"
+                    size="sm"
+                    value={laudoPCD.cid}
+                    onValueChange={(value) =>
+                      setLaudoPCD((prev) => ({ ...prev, cid: value }))
+                    }
+                  />
 
-                <Textarea
-                  label="Restrições Específicas"
-                  placeholder="Descreva as restrições temporárias para o trabalho..."
-                  value={laudoRestricao.restricoes}
-                  onValueChange={(value) => setLaudoRestricao((prev) => ({ ...prev, restricoes: value }))}
-                  rows={3}
-                  size="sm"
-                />
+                  <Input
+                    label="Descrição do CID"
+                    placeholder="Descrição da condição de deficiência"
+                    size="sm"
+                    value={laudoPCD.descricaoCid}
+                    onValueChange={(value) =>
+                      setLaudoPCD((prev) => ({ ...prev, descricaoCid: value }))
+                    }
+                  />
 
-                <Textarea
-                  label="Recomendações"
-                  placeholder="Recomendações e orientações para o período..."
-                  value={laudoRestricao.recomendacoes}
-                  onValueChange={(value) => setLaudoRestricao((prev) => ({ ...prev, recomendacoes: value }))}
-                  rows={2}
-                  size="sm"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3 sm:space-y-4">
-                <Input
-                  label="CID"
-                  placeholder="Ex: G80.9"
-                  value={laudoPCD.cid}
-                  onValueChange={(value) => setLaudoPCD((prev) => ({ ...prev, cid: value }))}
-                  size="sm"
-                  className="sm:w-1/2"
-                />
+                  <Textarea
+                    label="Limitações Funcionais"
+                    placeholder="Descreva as limitações funcionais do paciente..."
+                    rows={3}
+                    size="sm"
+                    value={laudoPCD.limitacoes}
+                    onValueChange={(value) =>
+                      setLaudoPCD((prev) => ({ ...prev, limitacoes: value }))
+                    }
+                  />
 
-                <Input
-                  label="Descrição do CID"
-                  placeholder="Descrição da condição de deficiência"
-                  value={laudoPCD.descricaoCid}
-                  onValueChange={(value) => setLaudoPCD((prev) => ({ ...prev, descricaoCid: value }))}
-                  size="sm"
-                />
+                  <Textarea
+                    label="Adaptações Necessárias"
+                    placeholder="Descreva as adaptações necessárias no ambiente de trabalho..."
+                    rows={3}
+                    size="sm"
+                    value={laudoPCD.adaptacoesNecessarias}
+                    onValueChange={(value) =>
+                      setLaudoPCD((prev) => ({
+                        ...prev,
+                        adaptacoesNecessarias: value,
+                      }))
+                    }
+                  />
 
-                <Textarea
-                  label="Limitações Funcionais"
-                  placeholder="Descreva as limitações funcionais do paciente..."
-                  value={laudoPCD.limitacoes}
-                  onValueChange={(value) => setLaudoPCD((prev) => ({ ...prev, limitacoes: value }))}
-                  rows={3}
-                  size="sm"
-                />
-
-                <Textarea
-                  label="Adaptações Necessárias"
-                  placeholder="Descreva as adaptações necessárias no ambiente de trabalho..."
-                  value={laudoPCD.adaptacoesNecessarias}
-                  onValueChange={(value) => setLaudoPCD((prev) => ({ ...prev, adaptacoesNecessarias: value }))}
-                  rows={3}
-                  size="sm"
-                />
-
-                <Textarea
-                  label="Observações Adicionais"
-                  placeholder="Outras observações relevantes..."
-                  value={laudoPCD.observacoes}
-                  onValueChange={(value) => setLaudoPCD((prev) => ({ ...prev, observacoes: value }))}
-                  rows={2}
-                  size="sm"
-                />
-              </div>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onClose} size="sm">
-            Cancelar
-          </Button>
-          <Button color="primary" onPress={handleSave} size="sm">
-            Emitir Laudo
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </HeroModal>
-  );
-});
+                  <Textarea
+                    label="Observações Adicionais"
+                    placeholder="Outras observações relevantes..."
+                    rows={2}
+                    size="sm"
+                    value={laudoPCD.observacoes}
+                    onValueChange={(value) =>
+                      setLaudoPCD((prev) => ({ ...prev, observacoes: value }))
+                    }
+                  />
+                </div>
+              )}
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button size="sm" variant="light" onPress={onClose}>
+              Cancelar
+            </Button>
+            <Button color="primary" size="sm" onPress={handleSave}>
+              Emitir Laudo
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
+    );
+  },
+);
 
 LaudosModal.displayName = "LaudosModal";
 
@@ -683,14 +782,20 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const [isSavingOpinion, setIsSavingOpinion] = useState(false);
   const [laudoModalOpen, setLaudoModalOpen] = useState(false);
   const [examesAccordionOpen, setExamesAccordionOpen] = useState<string[]>([]);
-  const [examesRepeticaoModalOpen, setExamesRepeticaoModalOpen] = useState(false);
+  const [examesRepeticaoModalOpen, setExamesRepeticaoModalOpen] =
+    useState(false);
   const [confirmacaoModalOpen, setConfirmacaoModalOpen] = useState(false);
 
   /* ---------------------- Helpers ---------------------- */
-  const todayIso = useCallback(() => new Date().toISOString().split("T")[0], []);
+  const todayIso = useCallback(
+    () => new Date().toISOString().split("T")[0],
+    [],
+  );
   const calcularDataFim = useCallback((inicio: string, dias: number) => {
     const data = new Date(inicio);
+
     data.setDate(data.getDate() + dias);
+
     return data.toISOString().split("T")[0];
   }, []);
 
@@ -699,48 +804,74 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   // exames com sala — depende explicitamente de EXAMES (defensivo)
   const examesComSala = useMemo(() => {
     const exames = selectedRecord?.EXAMES ?? [];
+
     return exames.filter((e: any) => (e?.sala ?? "") !== "");
   }, [selectedRecord?.EXAMES]);
 
   // exames disponíveis para repetição — depende explicitamente de EXAMES
   const examesDisponiveisParaRepeticao = useMemo(() => {
     const grupos = new Set<string>();
+
     (selectedRecord?.EXAMES ?? []).forEach((exame: any) => {
       if (exame?.grupo) grupos.add(exame.grupo);
     });
+
     return Array.from(grupos).sort();
   }, [selectedRecord?.EXAMES]);
 
   // normaliza a propriedade RISCOSASO como array seguro
   const riscos = useMemo(() => {
     const raw = selectedRecord?.RISCOSASO;
+
     if (Array.isArray(raw)) return raw;
     // se for string JSON, tentar parse (caso venha serializado)
     if (typeof raw === "string") {
       try {
         const parsed = JSON.parse(raw);
+
         if (Array.isArray(parsed)) return parsed;
       } catch (e) {
         // ignore parse error — retorna array vazio
       }
     }
+
     return [];
   }, [selectedRecord?.RISCOSASO]);
 
   const hasHeightRisk = useMemo(
     () => riscos.some((r: any) => CODIGOS_RISCO_ALTURA.has(r?.codigo)),
-    [riscos]
+    [riscos],
   );
 
   const hasConfinedRisk = useMemo(
     () => riscos.some((r: any) => CODIGOS_ESPACO_CONFINADO.has(r?.codigo)),
-    [riscos]
+    [riscos],
   );
+
+  const agruparRiscos = (riscos: RiscosAso[]) => {
+    // ordenar alfabeticamente por risco
+    const riscosOrdenados = [...riscos].sort((a, b) =>
+      a.risco.localeCompare(b.risco),
+    );
+
+    // agrupar por grupo
+    return riscosOrdenados.reduce(
+      (acc, risco) => {
+        if (!acc[risco.grupo]) acc[risco.grupo] = [];
+        acc[risco.grupo].push(risco);
+
+        return acc;
+      },
+      {} as Record<string, RiscosAso[]>,
+    );
+  };
 
   const hasPdfForExame = useCallback(
     (exameGrupo: string) =>
-      !!(selectedRecord?.pdfUrls ?? []).some((p: any) => p.grupo === exameGrupo && p.type === "exame"),
-    [selectedRecord?.pdfUrls]
+      !!(selectedRecord?.pdfUrls ?? []).some(
+        (p: any) => p.grupo === exameGrupo && p.type === "exame",
+      ),
+    [selectedRecord?.pdfUrls],
   );
 
   /* ---------------------- Lifecycle ---------------------- */
@@ -749,6 +880,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   useEffect(() => {
     if (!selectedRecord) {
       setOpinion(initialOpinion);
+
       return;
     }
     setOpinion(initialOpinion);
@@ -760,44 +892,52 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       if (!selectedRecord) return;
 
       const pdfIndex = (selectedRecord.pdfUrls ?? []).findIndex(
-        (pdf: any) => pdf.grupo === exameGrupo && pdf.type === "exame"
+        (pdf: any) => pdf.grupo === exameGrupo && pdf.type === "exame",
       );
 
       if (pdfIndex !== -1) {
-        document.getElementById('pdf-viewer')?.scrollIntoView({ 
-          behavior: 'smooth', 
-          block: 'start', 
-          inline: 'nearest' 
+        document.getElementById("pdf-viewer")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
         });
         onPdfIndexChange(pdfIndex);
       }
     },
-    [onPdfIndexChange, selectedRecord?.pdfUrls]
+    [onPdfIndexChange, selectedRecord?.pdfUrls],
   );
 
   const isExamBeingDisplayed = useCallback(
     (exameGrupo: string) => {
       const currentPdf = (selectedRecord?.pdfUrls ?? [])[currentPdfIndex];
+
       if (!currentPdf?.grupo) return false;
+
       return currentPdf.grupo === exameGrupo;
     },
-    [currentPdfIndex, selectedRecord?.pdfUrls]
+    [currentPdfIndex, selectedRecord?.pdfUrls],
   );
 
-  const opinionRequiresDetails = useCallback((op: MedicalOpinionData | null) => {
-    if (!op) return false;
-    const mainRequires =
-      !!op.opinionType &&
-      [
-        ParecerMedico.APTO_COM_ORIENTACAO,
-        ParecerMedico.SOLICITAR_REPETICAO,
-        ParecerMedico.INAPTO,
-        ParecerMedico.INAPTO_TEMPORARIAMENTE,
-      ].includes(op.opinionType);
-    const alturaInapto = op.altura === (ParecerTrabalhoAltura as any).INAPTO_ALTURA;
-    const confinadoInapto = op.confinado === (ParecerEspaçoConfinado as any).INAPTO_CONFINADO;
-    return Boolean(mainRequires || alturaInapto || confinadoInapto);
-  }, []);
+  const opinionRequiresDetails = useCallback(
+    (op: MedicalOpinionData | null) => {
+      if (!op) return false;
+      const mainRequires =
+        !!op.opinionType &&
+        [
+          ParecerMedico.APTO_COM_ORIENTACAO,
+          ParecerMedico.SOLICITAR_REPETICAO,
+          ParecerMedico.INAPTO,
+          ParecerMedico.INAPTO_TEMPORARIAMENTE,
+        ].includes(op.opinionType);
+      const alturaInapto =
+        op.altura === (ParecerTrabalhoAltura as any).INAPTO_ALTURA;
+      const confinadoInapto =
+        op.confinado === (ParecerEspaçoConfinado as any).INAPTO_CONFINADO;
+
+      return Boolean(mainRequires || alturaInapto || confinadoInapto);
+    },
+    [],
+  );
 
   const opinionRequiresExames = useCallback((op: MedicalOpinionData | null) => {
     return op?.opinionType === ParecerMedico.SOLICITAR_REPETICAO;
@@ -811,26 +951,36 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         description: "Selecione um parecer médico antes de salvar.",
         color: "danger",
       });
+
       return;
     }
 
-    if (opinionRequiresDetails(opinion) && (!opinion.details || opinion.details.trim() === "")) {
+    if (
+      opinionRequiresDetails(opinion) &&
+      (!opinion.details || opinion.details.trim() === "")
+    ) {
       addToast({
         variant: "solid",
         title: "Justificativa necessária",
-        description: "Este parecer exige justificativa. Preencha o campo 'Detalhes' antes de salvar.",
+        description:
+          "Este parecer exige justificativa. Preencha o campo 'Detalhes' antes de salvar.",
         color: "danger",
       });
+
       return;
     }
 
-    if (opinionRequiresExames(opinion) && (!opinion.examesParaRepetir || opinion.examesParaRepetir.length === 0)) {
+    if (
+      opinionRequiresExames(opinion) &&
+      (!opinion.examesParaRepetir || opinion.examesParaRepetir.length === 0)
+    ) {
       addToast({
         variant: "solid",
         title: "Exames não selecionados",
         description: "Para solicitar repetição, selecione ao menos um exame.",
         color: "danger",
       });
+
       return;
     }
 
@@ -877,7 +1027,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       addToast({
         variant: "solid",
         title: "Erro ao finalizar prontuário",
-        description: "Verifique detalhes no console, se o erro persistir contate o suporte.",
+        description:
+          "Verifique detalhes no console, se o erro persistir contate o suporte.",
         color: "danger",
       });
     } finally {
@@ -886,9 +1037,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }, [opinion, onRecordUpdate, selectedRecord, user, setSelectedRecord]);
 
   const handleSaveExamesRepeticao = useCallback((exames: string[]) => {
-    setOpinion(prev => ({
+    setOpinion((prev) => ({
       ...prev,
-      examesParaRepetir: exames
+      examesParaRepetir: exames,
     }));
     addToast({
       title: "Exames selecionados",
@@ -904,17 +1055,18 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const riscoCor = useCallback((risco: any) => {
     // risco.grupo pode ser string ou number — mantemos defensivo
     const grupo = String(risco);
+
     switch (grupo) {
       case "1": // Físico
-          return "text-green-500";
+        return "text-green-500";
       case "2": // Químico
-          return "text-red-500";
+        return "text-red-500";
       case "4": // Ergonômicos
-          return "text-amber-500";
+        return "text-amber-500";
       case "5": // Acidentes
-          return "text-blue-700";
+        return "text-blue-700";
       case "6": // Inespecífico
-          return "text-purple-700";
+        return "text-purple-700";
       default:
         return "";
     }
@@ -938,8 +1090,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
   const showDetailsField = opinionRequiresDetails(opinion);
   const showExamesSelector = opinionRequiresExames(opinion);
-  const isMedicoOrMaster = user.perfil === USER_PROFILE.MEDICO || user.perfil === USER_PROFILE.MASTER;
-  const isAwaitingMedical = selectedRecord.ATENDIMENTOSTATUS === AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA;
+  const isMedicoOrMaster =
+    user.perfil === USER_PROFILE.MEDICO || user.perfil === USER_PROFILE.MASTER;
+  const isAwaitingMedical =
+    selectedRecord.ATENDIMENTOSTATUS ===
+    AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA;
 
   return (
     <aside className="w-full sm:w-82 lg:w-[26rem] bg-content1 flex-shrink-0 flex flex-col overflow-y-auto">
@@ -949,74 +1104,81 @@ const PainelDireita: React.FC<RightPanelProps> = ({
           <div className="p-3 sm:p-4">
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
+                <h3 className="text-base sm:text-lg font-bold text-foreground truncate text-right">
                   {selectedRecord.NOME}
                 </h3>
-                <Chip size="sm" variant="flat" className="mt-1">
+                <Chip className="mt-1" size="md" variant="flat">
                   {selectedRecord.TIPOEXAMENOME}
                 </Chip>
-                <div className="space-y-1 mt-2">
+                <div className="space-y-1 mt-2 text">
                   <div className="flex flex-col justify-between">
                     <Input
-                      className="text-xs text-default-600"
                       readOnly
-                      value={selectedRecord.NOMECARGO}
-                      size="sm"
+                      className="text-xs text-default-600"
                       label="Cargo"
+                      size="sm"
+                      value={selectedRecord.NOMECARGO}
                       variant="underlined"
                     />
                     <Input
-                      className="text-xs text-default-600"
                       readOnly
-                      value={`${selectedRecord.NOMESETOR} - ${selectedRecord.NOMEUNIDADE}`}
-                      size="sm"
+                      className="text-xs text-default-600"
                       label="Setor/Unidade"
+                      size="sm"
+                      value={`${selectedRecord.NOMESETOR} - ${selectedRecord.NOMEUNIDADE}`}
                       variant="underlined"
                     />
                     <Input
-                      className="text-xs text-default-600"
                       readOnly
-                      value={selectedRecord.NOMEEMPRESA}
-                      size="sm"
+                      className="text-xs text-default-600"
                       label="Empresa"
+                      size="sm"
+                      value={selectedRecord.NOMEEMPRESA}
                       variant="underlined"
                     />
                   </div>
 
                   {riscos.length > 0 && (
-                    <article 
-                      title="Riscos" 
-                      className="mt-6" 
-                    >
+                    <article className="mt-6" title="Riscos">
                       <div className="flex items-center gap-2 pb-2">
-                        <h4 className="font-bold text-sm sm:text-base">Riscos</h4>
+                        <h4 className="font-bold text-sm sm:text-base">
+                          Riscos
+                        </h4>
                       </div>
-                      <ul className="list-disc pl-4 decoration-none text-[0.65rem] sm:text-[0.7rem] ">
-                        {riscos.map((risco: any, index: number) => (
-                          <li key={index} className={`capitalize ${riscoCor(risco?.grupo ?? risco)}`}>
-                            {risco?.risco ?? risco}
-                          </li>
-                        ))}
-                      </ul>
+
+                      {Object.entries(agruparRiscos(riscos)).map(
+                        ([grupo, lista]) => (
+                          <ul className="list-disc pl-4 text-[0.65rem] sm:text-[0.7rem]">
+                            {lista.map((risco, index) => (
+                              <li
+                                key={index}
+                                className={`capitalize ${riscoCor(risco.grupo)}`}
+                              >
+                                {risco.risco}
+                              </li>
+                            ))}
+                          </ul>
+                        ),
+                      )}
                     </article>
                   )}
 
                   {selectedRecord.OBSERVACOES && (
-                    <Alert 
-                      title="Observações cliente" 
-                      className="text-[0.6rem] sm:text-[0.65rem]" 
-                      variant="flat" 
+                    <Alert
+                      className="text-[0.6rem] sm:text-[0.65rem]"
                       color="danger"
+                      title="Observações cliente"
+                      variant="flat"
                     >
                       {selectedRecord.OBSERVACOES}
                     </Alert>
                   )}
                   {selectedRecord.ANOTACOES && (
-                    <Alert 
-                      title="Anotações internas" 
-                      className="text-[0.6rem] sm:text-[0.65rem]" 
-                      variant="flat" 
+                    <Alert
+                      className="text-[0.6rem] sm:text-[0.65rem]"
                       color="primary"
+                      title="Anotações internas"
+                      variant="flat"
                     >
                       {selectedRecord.ANOTACOES}
                     </Alert>
@@ -1030,22 +1192,23 @@ const PainelDireita: React.FC<RightPanelProps> = ({
             {examesComSala.length > 0 && (
               <Accordion
                 isCompact
-                selectionMode="multiple"
+                className="mt-2"
                 selectedKeys={examesAccordionOpen}
+                selectionMode="multiple"
                 onSelectionChange={(keys) =>
                   setExamesAccordionOpen(Array.from(keys as Set<string>))
                 }
-                className="mt-2"
               >
                 <AccordionItem
                   key="exames"
                   aria-label="Exames Realizados"
                   title={
-                      <div className="flex items-center gap-2 pb-2 hover:cursor-pointer">
-                        <h4 className="font-bold text-sm sm:text-base">
-                          Exames realizados: {(selectedRecord.EXAMES ?? []).length}
-                        </h4>
-                      </div>
+                    <div className="flex items-center gap-2 pb-2 hover:cursor-pointer">
+                      <h4 className="font-bold text-sm sm:text-base">
+                        Exames realizados:{" "}
+                        {(selectedRecord.EXAMES ?? []).length}
+                      </h4>
+                    </div>
                   }
                 >
                   <div className="overflow-x-auto p-1">
@@ -1054,7 +1217,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         <tr className="text-default-700">
                           <th className="p-2 font-semibold w-[50%]">Exame</th>
                           <th className="p-2 font-semibold">Data/Hora</th>
-                          <th className="p-2 font-semibold text-center w-[60px]">Ver</th>
+                          <th className="p-2 font-semibold text-center w-[60px]">
+                            Ver
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1062,8 +1227,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           <ExameCard
                             key={exame.codigoExame}
                             exame={exame}
-                            isActive={isExamBeingDisplayed(exame.grupo)}
                             hasPdf={hasPdfForExame(exame.grupo)}
+                            isActive={isExamBeingDisplayed(exame.grupo)}
                             onView={() => selectPdfFromExame(exame.grupo)}
                           />
                         ))}
@@ -1081,26 +1246,33 @@ const PainelDireita: React.FC<RightPanelProps> = ({
           <div className="flex-1 m-3 sm:m-4">
             <div className="space-y-3 sm:space-y-4 p-3 sm:p-4">
               <div className="flex items-center gap-2 pb-2">
-                <h4 className="font-bold text-sm sm:text-base">Parecer Médico</h4>
+                <h4 className="font-bold text-sm sm:text-base">
+                  Parecer Médico
+                </h4>
               </div>
 
               <Select
-                size="sm"
+                classNames={{
+                  label: "text-xs sm:text-sm",
+                  value: "text-xs sm:text-sm",
+                }}
                 label="Tipo de Parecer"
                 placeholder="Selecione o parecer"
                 selectedKeys={opinion?.opinionType ? [opinion.opinionType] : []}
+                size="sm"
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as ParecerMedico;
+
                   setOpinion((prev) => ({
                     ...(prev || {}),
                     opinionType: value,
-                    details: value === ParecerMedico.APTO ? "" : prev?.details ?? "",
-                    examesParaRepetir: value === ParecerMedico.SOLICITAR_REPETICAO ? prev?.examesParaRepetir : [],
+                    details:
+                      value === ParecerMedico.APTO ? "" : (prev?.details ?? ""),
+                    examesParaRepetir:
+                      value === ParecerMedico.SOLICITAR_REPETICAO
+                        ? prev?.examesParaRepetir
+                        : [],
                   }));
-                }}
-                classNames={{
-                  label: "text-xs sm:text-sm",
-                  value: "text-xs sm:text-sm"
                 }}
               >
                 <SelectItem key={ParecerMedico.APTO}>
@@ -1124,46 +1296,58 @@ const PainelDireita: React.FC<RightPanelProps> = ({
               {showExamesSelector && (
                 <div className="space-y-2">
                   <Button
-                    color="warning"
-                    variant="flat"
-                    onPress={() => setExamesRepeticaoModalOpen(true)}
                     fullWidth
+                    color="warning"
                     size="sm"
                     startContent={<FileText className="w-4 h-4" />}
+                    variant="flat"
+                    onPress={() => setExamesRepeticaoModalOpen(true)}
                   >
                     Selecionar Exames para Repetir
-                    {opinion.examesParaRepetir && opinion.examesParaRepetir.length > 0 && (
-                      <Chip size="sm" color="warning" variant="solid" className="ml-2">
-                        {opinion.examesParaRepetir.length}
-                      </Chip>
-                    )}
+                    {opinion.examesParaRepetir &&
+                      opinion.examesParaRepetir.length > 0 && (
+                        <Chip
+                          className="ml-2"
+                          color="warning"
+                          size="sm"
+                          variant="solid"
+                        >
+                          {opinion.examesParaRepetir.length}
+                        </Chip>
+                      )}
                   </Button>
 
-                  {opinion.examesParaRepetir && opinion.examesParaRepetir.length > 0 && (
-                    <Card className="bg-warning-50 border-warning-200">
-                      <CardBody className="p-3">
-                        <p className="text-xs font-semibold text-warning-700 mb-2">
-                          Exames selecionados para repetição:
-                        </p>
-                        <div className="flex flex-wrap gap-1">
-                          {opinion.examesParaRepetir.map((exame) => (
-                            <Chip 
-                              key={exame} 
-                              size="sm" 
-                              color="warning" 
-                              variant="flat"
-                              onClose={() => setOpinion(prev => ({
-                                ...prev,
-                                examesParaRepetir: prev.examesParaRepetir?.filter(e => e !== exame) || []
-                              }))}
-                            >
-                              {exame}
-                            </Chip>
-                          ))}
-                        </div>
-                      </CardBody>
-                    </Card>
-                  )}
+                  {opinion.examesParaRepetir &&
+                    opinion.examesParaRepetir.length > 0 && (
+                      <Card className="bg-warning-50 border-warning-200">
+                        <CardBody className="p-3">
+                          <p className="text-xs font-semibold text-warning-700 mb-2">
+                            Exames selecionados para repetição:
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {opinion.examesParaRepetir.map((exame) => (
+                              <Chip
+                                key={exame}
+                                color="warning"
+                                size="sm"
+                                variant="flat"
+                                onClose={() =>
+                                  setOpinion((prev) => ({
+                                    ...prev,
+                                    examesParaRepetir:
+                                      prev.examesParaRepetir?.filter(
+                                        (e) => e !== exame,
+                                      ) || [],
+                                  }))
+                                }
+                              >
+                                {exame}
+                              </Chip>
+                            ))}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    )}
                 </div>
               )}
 
@@ -1177,21 +1361,24 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
                   {hasHeightRisk && (
                     <Select
-                      size="sm"
+                      classNames={{
+                        label: "text-xs",
+                        value: "text-xs",
+                      }}
                       label="Trabalho em Altura"
                       placeholder="Selecione o parecer"
                       selectedKeys={opinion?.altura ? [opinion.altura] : []}
+                      size="sm"
                       onSelectionChange={(keys) => {
-                        const val = Array.from(keys)[0] as ParecerTrabalhoAltura;
+                        const val = Array.from(
+                          keys,
+                        )[0] as ParecerTrabalhoAltura;
+
                         setOpinion((prev) => ({
                           ...(prev || {}),
                           altura: val,
                           details: prev?.details ?? "",
                         }));
-                      }}
-                      classNames={{
-                        label: "text-xs",
-                        value: "text-xs"
                       }}
                     >
                       <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA}>
@@ -1205,21 +1392,26 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
                   {hasConfinedRisk && (
                     <Select
-                      size="sm"
+                      classNames={{
+                        label: "text-xs",
+                        value: "text-xs",
+                      }}
                       label="Espaço Confinado"
                       placeholder="Selecione o parecer"
-                      selectedKeys={opinion?.confinado ? [opinion.confinado] : []}
+                      selectedKeys={
+                        opinion?.confinado ? [opinion.confinado] : []
+                      }
+                      size="sm"
                       onSelectionChange={(keys) => {
-                        const val = Array.from(keys)[0] as ParecerEspaçoConfinado;
+                        const val = Array.from(
+                          keys,
+                        )[0] as ParecerEspaçoConfinado;
+
                         setOpinion((prev) => ({
                           ...(prev || {}),
                           confinado: val,
                           details: prev?.details ?? "",
                         }));
-                      }}
-                      classNames={{
-                        label: "text-xs",
-                        value: "text-xs"
                       }}
                     >
                       <SelectItem key={ParecerEspaçoConfinado.APTO_CONFINADO}>
@@ -1247,13 +1439,14 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                       </div>
                       <div className="space-y-2">
                         {opinion.laudoPCD && (
-                          <Chip color="primary" variant="flat" size="sm">
+                          <Chip color="primary" size="sm" variant="flat">
                             Laudo PCD - CID: {opinion.laudoPCD.cid}
                           </Chip>
                         )}
                         {opinion.laudoRestricao && (
-                          <Chip color="warning" variant="flat" size="sm">
-                            Restrição Temporária - CID: {opinion.laudoRestricao.cid}
+                          <Chip color="warning" size="sm" variant="flat">
+                            Restrição Temporária - CID:{" "}
+                            {opinion.laudoRestricao.cid}
                           </Chip>
                         )}
                       </div>
@@ -1267,24 +1460,32 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                 <>
                   <Divider />
                   <Textarea
-                    label="Justificativa / Detalhes"
-                    placeholder="Descreva a justificativa do parecer..."
-                    value={opinion?.details ?? ""}
-                    onValueChange={(value) => 
-                      setOpinion((prev) => ({ ...(prev || {}), details: value }))
-                    }
-                    rows={4}
-                    size="sm"
                     classNames={{
                       label: "text-xs sm:text-sm",
-                      input: "text-xs sm:text-sm"
+                      input: "text-xs sm:text-sm",
                     }}
+                    label="Justificativa / Detalhes"
+                    placeholder="Descreva a justificativa do parecer..."
+                    rows={4}
+                    size="sm"
+                    value={opinion?.details ?? ""}
+                    onValueChange={(value) =>
+                      setOpinion((prev) => ({
+                        ...(prev || {}),
+                        details: value,
+                      }))
+                    }
                   />
 
-                  {opinion?.opinionType === ParecerMedico.INAPTO_TEMPORARIAMENTE && (
+                  {opinion?.opinionType ===
+                    ParecerMedico.INAPTO_TEMPORARIAMENTE && (
                     <Input
-                      type="date"
+                      classNames={{
+                        label: "text-xs sm:text-sm",
+                      }}
                       label="Inapto até"
+                      size="sm"
+                      type="date"
                       value={opinion?.laudoRestricao?.dataFim ?? todayIso()}
                       onValueChange={(value) => {
                         setOpinion((prev) => {
@@ -1299,13 +1500,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                                 dataFim: calcularDataFim(todayIso(), 30),
                                 recomendacoes: "",
                               };
+
                           newLaudo.dataFim = value;
+
                           return { ...(prev || {}), laudoRestricao: newLaudo };
                         });
-                      }}
-                      size="sm"
-                      classNames={{
-                        label: "text-xs sm:text-sm"
                       }}
                     />
                   )}
@@ -1314,22 +1513,22 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
               {/* Botões de Ação */}
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                <Button 
-                  color="success" 
-                  onPress={handleOpenConfirmacao}
-                  isDisabled={isSavingOpinion || !opinion?.opinionType} 
+                <Button
                   className="flex-1 text-xs sm:text-sm text-white font-bold"
+                  color="success"
+                  isDisabled={isSavingOpinion || !opinion?.opinionType}
                   size="md"
                   startContent={<CheckCircle2 className="w-4 h-4" />}
+                  onPress={handleOpenConfirmacao}
                 >
                   Salvar Parecer
                 </Button>
-                <Button 
-                  variant="bordered" 
-                  onPress={handleLimparParecer}
+                <Button
+                  className="text-xs sm:text-sm"
                   isDisabled={isSavingOpinion}
                   size="sm"
-                  className="text-xs sm:text-sm"
+                  variant="bordered"
+                  onPress={handleLimparParecer}
                 >
                   Limpar
                 </Button>
@@ -1341,42 +1540,47 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
       {/* Modais */}
       <ExamesRepeticaoModal
+        examesDisponiveis={examesDisponiveisParaRepeticao}
         isOpen={examesRepeticaoModalOpen}
         onClose={() => setExamesRepeticaoModalOpen(false)}
         onSave={handleSaveExamesRepeticao}
-        examesDisponiveis={examesDisponiveisParaRepeticao}
       />
 
       <ConfirmacaoParecerModal
+        isLoading={isSavingOpinion}
         isOpen={confirmacaoModalOpen}
+        opinion={opinion}
         onClose={() => setConfirmacaoModalOpen(false)}
         onConfirm={saveOpinion}
-        opinion={opinion}
-        isLoading={isSavingOpinion}
       />
 
-      <LaudosModal 
-        isOpen={laudoModalOpen} 
-        onClose={() => setLaudoModalOpen(false)} 
+      <LaudosModal
+        isOpen={laudoModalOpen}
+        onClose={() => setLaudoModalOpen(false)}
         onSave={(t, d) => {
           setOpinion((prev) => ({
             ...(prev || {}),
-            opinionType: prev?.opinionType || (
-              t === LaudoTipo.PCD 
-                ? ParecerMedico.APTO_COM_ORIENTACAO 
-                : ParecerMedico.INAPTO_TEMPORARIAMENTE
-            ),
-            laudoPCD: t === LaudoTipo.PCD ? d : prev?.laudoPCD ?? null,
-            laudoRestricao: t !== LaudoTipo.PCD ? d : prev?.laudoRestricao ?? null,
+            opinionType:
+              prev?.opinionType ||
+              (t === LaudoTipo.PCD
+                ? ParecerMedico.APTO_COM_ORIENTACAO
+                : ParecerMedico.INAPTO_TEMPORARIAMENTE),
+            laudoPCD: t === LaudoTipo.PCD ? d : (prev?.laudoPCD ?? null),
+            laudoRestricao:
+              t !== LaudoTipo.PCD ? d : (prev?.laudoRestricao ?? null),
           }));
           addToast({
-            title: t === LaudoTipo.PCD ? "Laudo PCD emitido" : "Laudo de Restrição emitido",
-            description: t === LaudoTipo.PCD 
-              ? "Laudo PCD adicionado ao parecer médico" 
-              : "Laudo de restrição temporária adicionado ao parecer",
+            title:
+              t === LaudoTipo.PCD
+                ? "Laudo PCD emitido"
+                : "Laudo de Restrição emitido",
+            description:
+              t === LaudoTipo.PCD
+                ? "Laudo PCD adicionado ao parecer médico"
+                : "Laudo de restrição temporária adicionado ao parecer",
             color: "success",
           });
-        }} 
+        }}
       />
     </aside>
   );

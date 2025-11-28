@@ -12,7 +12,7 @@ export interface PedidoExame {
   MATRICULAFUNCIONARIO: string;
   RGFUNCIONARIO: string;
   CODIGOCENTROCUSTO: string;
-  NOMECENTROCUSTO?: string; 
+  NOMECENTROCUSTO?: string;
   CODIGOUNIDADE: string;
   CNPJUNIDADE: string;
   CPFUNIDADE: string;
@@ -34,12 +34,12 @@ export interface PedidoExame {
   DATAEXAME: string;
   RISCOSFUNCIONARIO: string;
   MEDICOCOORDENADOR: string;
-  UFMEDICO?: string; 
-  CRM?: string; 
-  RESPONSAVELPEDIDOEXAME?: string; 
+  UFMEDICO?: string;
+  CRM?: string;
+  RESPONSAVELPEDIDOEXAME?: string;
   RISCOSASO: string;
   DATANASCIMENTO: string;
   NOMEDAMAEDOFUNCIONARIO: string;
-  CPFMEDICOEXAMINADOR?: string; 
+  CPFMEDICOEXAMINADOR?: string;
   CODIGORH: string;
 }

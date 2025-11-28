@@ -7,5 +7,5 @@ export interface CadastroEmpresa {
   CNPJ: string;
   ATIVO: string;
   CODIGOCLIENTEINTEGRACAO: string;
-  'CÓD. CLIENTE (INT.)': string;
+  "CÓD. CLIENTE (INT.)": string;
 }

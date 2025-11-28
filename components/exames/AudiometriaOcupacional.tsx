@@ -1,11 +1,22 @@
 // Código
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Card, Button, Input, Select, SelectItem, Textarea, Checkbox, Spinner } from "@heroui/react";
-import { useUser } from '@/hooks/useUser';
-import { Scheduling } from '@/lib/scheduling/interface/scheduling';
-import { User, Ear, Stethoscope, FileText, Volume2, AlertTriangle, Calculator } from 'lucide-react';
-import HeaderExame from './HeaderExame';
-import { UNIDADES_ATENDIMENTO } from '@/config/constants';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  Card,
+  Button,
+  Input,
+  Select,
+  SelectItem,
+  Textarea,
+  Checkbox,
+  Spinner,
+} from "@heroui/react";
+import { FileText, Calculator } from "lucide-react";
+
+import HeaderExame from "./HeaderExame";
+
+import { useUser } from "@/hooks/useUser";
+import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { UNIDADES_ATENDIMENTO } from "@/config/constants";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -13,7 +24,7 @@ interface AudiometriaProps {
   formulario: any;
   onSave?: (data: any) => void;
   onClose?: () => void;
-} 
+}
 
 interface AudiometriaData {
   tipoAudiometro: string;
@@ -40,33 +51,76 @@ interface AudiometriaData {
   meatoscopiaOD: string;
   meatoscopiaOE: string;
   observacoesMeatoscopia: string;
-  
+
   // Via Aérea
-  viaAereaOD250: string; viaAereaOD500: string; viaAereaOD1000: string; viaAereaOD2000: string;
-  viaAereaOD3000: string; viaAereaOD4000: string; viaAereaOD6000: string; viaAereaOD8000: string;
-  viaAereaOE250: string; viaAereaOE500: string; viaAereaOE1000: string; viaAereaOE2000: string;
-  viaAereaOE3000: string; viaAereaOE4000: string; viaAereaOE6000: string; viaAereaOE8000: string;
-  
+  viaAereaOD250: string;
+  viaAereaOD500: string;
+  viaAereaOD1000: string;
+  viaAereaOD2000: string;
+  viaAereaOD3000: string;
+  viaAereaOD4000: string;
+  viaAereaOD6000: string;
+  viaAereaOD8000: string;
+  viaAereaOE250: string;
+  viaAereaOE500: string;
+  viaAereaOE1000: string;
+  viaAereaOE2000: string;
+  viaAereaOE3000: string;
+  viaAereaOE4000: string;
+  viaAereaOE6000: string;
+  viaAereaOE8000: string;
+
   // Via Óssea
-  viaOsseaOD500: string; viaOsseaOD1000: string; viaOsseaOD2000: string; viaOsseaOD3000: string; viaOsseaOD4000: string;
-  viaOsseaOE500: string; viaOsseaOE1000: string; viaOsseaOE2000: string; viaOsseaOE3000: string; viaOsseaOE4000: string;
-  
+  viaOsseaOD500: string;
+  viaOsseaOD1000: string;
+  viaOsseaOD2000: string;
+  viaOsseaOD3000: string;
+  viaOsseaOD4000: string;
+  viaOsseaOE500: string;
+  viaOsseaOE1000: string;
+  viaOsseaOE2000: string;
+  viaOsseaOE3000: string;
+  viaOsseaOE4000: string;
+
   // Mascaramento Via Aérea - SEPARADO POR TIPO
-  mascaramentoVAOD250: boolean; mascaramentoVAOD500: boolean; mascaramentoVAOD1000: boolean; mascaramentoVAOD2000: boolean;
-  mascaramentoVAOD3000: boolean; mascaramentoVAOD4000: boolean; mascaramentoVAOD6000: boolean; mascaramentoVAOD8000: boolean;
-  mascaramentoVAOE250: boolean; mascaramentoVAOE500: boolean; mascaramentoVAOE1000: boolean; mascaramentoVAOE2000: boolean;
-  mascaramentoVAOE3000: boolean; mascaramentoVAOE4000: boolean; mascaramentoVAOE6000: boolean; mascaramentoVAOE8000: boolean;
-  
+  mascaramentoVAOD250: boolean;
+  mascaramentoVAOD500: boolean;
+  mascaramentoVAOD1000: boolean;
+  mascaramentoVAOD2000: boolean;
+  mascaramentoVAOD3000: boolean;
+  mascaramentoVAOD4000: boolean;
+  mascaramentoVAOD6000: boolean;
+  mascaramentoVAOD8000: boolean;
+  mascaramentoVAOE250: boolean;
+  mascaramentoVAOE500: boolean;
+  mascaramentoVAOE1000: boolean;
+  mascaramentoVAOE2000: boolean;
+  mascaramentoVAOE3000: boolean;
+  mascaramentoVAOE4000: boolean;
+  mascaramentoVAOE6000: boolean;
+  mascaramentoVAOE8000: boolean;
+
   // Mascaramento Via Óssea - SEPARADO POR TIPO
-  mascaramentoVOOD500: boolean; mascaramentoVOOD1000: boolean; mascaramentoVOOD2000: boolean; mascaramentoVOOD3000: boolean; mascaramentoVOOD4000: boolean;
-  mascaramentoVOOE500: boolean; mascaramentoVOOE1000: boolean; mascaramentoVOOE2000: boolean; mascaramentoVOOE3000: boolean; mascaramentoVOOE4000: boolean;
-  
+  mascaramentoVOOD500: boolean;
+  mascaramentoVOOD1000: boolean;
+  mascaramentoVOOD2000: boolean;
+  mascaramentoVOOD3000: boolean;
+  mascaramentoVOOD4000: boolean;
+  mascaramentoVOOE500: boolean;
+  mascaramentoVOOE1000: boolean;
+  mascaramentoVOOE2000: boolean;
+  mascaramentoVOOE3000: boolean;
+  mascaramentoVOOE4000: boolean;
+
   // IRF
   realizarIRF: boolean;
-  srtOD: string; srtOE: string;
-  irfOD: string; irfOE: string;
-  irfDBOD: string; irfDBOE: string;
-  
+  srtOD: string;
+  srtOE: string;
+  irfOD: string;
+  irfOE: string;
+  irfDBOD: string;
+  irfDBOE: string;
+
   // Resultados calculados
   resultadoSRTOD: string;
   resultadoSRTOE: string;
@@ -75,23 +129,23 @@ interface AudiometriaData {
   resultadoIRFMonoauralOD: string;
   resultadoIRFMonoauralOE: string;
   resultadoIRFDissimetrica: string;
-  
+
   entalhe4000HzOD: boolean;
   entalhe4000HzOE: boolean;
   tipoPerdaOD: string;
   tipoPerdaOE: string;
   audiometriaReferenciaDisponivel: boolean;
-  limiaresRAOD: { [key: number]: number }; 
+  limiaresRAOD: { [key: number]: number };
   limiaresRAOE: { [key: number]: number };
   classificacaoNR7OD: string;
   classificacaoNR7OE: string;
-  
+
   classificacaoOD: string;
   classificacaoOE: string;
   classificacaoGeral: string;
   configuracaoOD: string;
   configuracaoOE: string;
-  
+
   conclusao: string;
   observacoes: string;
   perdaAuditivaOD: string;
@@ -107,274 +161,390 @@ interface AudiometriaData {
 
 // Constantes otimizadas - ATUALIZADO COM CAMPOS SEPARADOS PARA MASCARAMENTO
 const FREQUENCIAS = [
-  { 
-    label: '250 Hz', 
-    fieldVAOD: 'viaAereaOD250', fieldVAOE: 'viaAereaOE250', 
-    fieldVOOD: null, fieldVOOE: null, 
-    fieldMascVAOD: 'mascaramentoVAOD250', fieldMascVAOE: 'mascaramentoVAOE250',
-    fieldMascVOOD: null, fieldMascVOOE: null
+  {
+    label: "250 Hz",
+    fieldVAOD: "viaAereaOD250",
+    fieldVAOE: "viaAereaOE250",
+    fieldVOOD: null,
+    fieldVOOE: null,
+    fieldMascVAOD: "mascaramentoVAOD250",
+    fieldMascVAOE: "mascaramentoVAOE250",
+    fieldMascVOOD: null,
+    fieldMascVOOE: null,
   },
-  { 
-    label: '500 Hz', 
-    fieldVAOD: 'viaAereaOD500', fieldVAOE: 'viaAereaOE500', 
-    fieldVOOD: 'viaOsseaOD500', fieldVOOE: 'viaOsseaOE500', 
-    fieldMascVAOD: 'mascaramentoVAOD500', fieldMascVAOE: 'mascaramentoVAOE500',
-    fieldMascVOOD: 'mascaramentoVOOD500', fieldMascVOOE: 'mascaramentoVOOE500'
+  {
+    label: "500 Hz",
+    fieldVAOD: "viaAereaOD500",
+    fieldVAOE: "viaAereaOE500",
+    fieldVOOD: "viaOsseaOD500",
+    fieldVOOE: "viaOsseaOE500",
+    fieldMascVAOD: "mascaramentoVAOD500",
+    fieldMascVAOE: "mascaramentoVAOE500",
+    fieldMascVOOD: "mascaramentoVOOD500",
+    fieldMascVOOE: "mascaramentoVOOE500",
   },
-  { 
-    label: '1000 Hz', 
-    fieldVAOD: 'viaAereaOD1000', fieldVAOE: 'viaAereaOE1000', 
-    fieldVOOD: 'viaOsseaOD1000', fieldVOOE: 'viaOsseaOE1000', 
-    fieldMascVAOD: 'mascaramentoVAOD1000', fieldMascVAOE: 'mascaramentoVAOE1000',
-    fieldMascVOOD: 'mascaramentoVOOD1000', fieldMascVOOE: 'mascaramentoVOOE1000'
+  {
+    label: "1000 Hz",
+    fieldVAOD: "viaAereaOD1000",
+    fieldVAOE: "viaAereaOE1000",
+    fieldVOOD: "viaOsseaOD1000",
+    fieldVOOE: "viaOsseaOE1000",
+    fieldMascVAOD: "mascaramentoVAOD1000",
+    fieldMascVAOE: "mascaramentoVAOE1000",
+    fieldMascVOOD: "mascaramentoVOOD1000",
+    fieldMascVOOE: "mascaramentoVOOE1000",
   },
-  { 
-    label: '2000 Hz', 
-    fieldVAOD: 'viaAereaOD2000', fieldVAOE: 'viaAereaOE2000', 
-    fieldVOOD: 'viaOsseaOD2000', fieldVOOE: 'viaOsseaOE2000', 
-    fieldMascVAOD: 'mascaramentoVAOD2000', fieldMascVAOE: 'mascaramentoVAOE2000',
-    fieldMascVOOD: 'mascaramentoVOOD2000', fieldMascVOOE: 'mascaramentoVOOE2000'
+  {
+    label: "2000 Hz",
+    fieldVAOD: "viaAereaOD2000",
+    fieldVAOE: "viaAereaOE2000",
+    fieldVOOD: "viaOsseaOD2000",
+    fieldVOOE: "viaOsseaOE2000",
+    fieldMascVAOD: "mascaramentoVAOD2000",
+    fieldMascVAOE: "mascaramentoVAOE2000",
+    fieldMascVOOD: "mascaramentoVOOD2000",
+    fieldMascVOOE: "mascaramentoVOOE2000",
   },
-  { 
-    label: '3000 Hz', 
-    fieldVAOD: 'viaAereaOD3000', fieldVAOE: 'viaAereaOE3000', 
-    fieldVOOD: 'viaOsseaOD3000', fieldVOOE: 'viaOsseaOE3000', 
-    fieldMascVAOD: 'mascaramentoVAOD3000', fieldMascVAOE: 'mascaramentoVAOE3000',
-    fieldMascVOOD: 'mascaramentoVOOD3000', fieldMascVOOE: 'mascaramentoVOOE3000'
+  {
+    label: "3000 Hz",
+    fieldVAOD: "viaAereaOD3000",
+    fieldVAOE: "viaAereaOE3000",
+    fieldVOOD: "viaOsseaOD3000",
+    fieldVOOE: "viaOsseaOE3000",
+    fieldMascVAOD: "mascaramentoVAOD3000",
+    fieldMascVAOE: "mascaramentoVAOE3000",
+    fieldMascVOOD: "mascaramentoVOOD3000",
+    fieldMascVOOE: "mascaramentoVOOE3000",
   },
-  { 
-    label: '4000 Hz', 
-    fieldVAOD: 'viaAereaOD4000', fieldVAOE: 'viaAereaOE4000', 
-    fieldVOOD: 'viaOsseaOD4000', fieldVOOE: 'viaOsseaOE4000', 
-    fieldMascVAOD: 'mascaramentoVAOD4000', fieldMascVAOE: 'mascaramentoVAOE4000',
-    fieldMascVOOD: 'mascaramentoVOOD4000', fieldMascVOOE: 'mascaramentoVOOE4000'
+  {
+    label: "4000 Hz",
+    fieldVAOD: "viaAereaOD4000",
+    fieldVAOE: "viaAereaOE4000",
+    fieldVOOD: "viaOsseaOD4000",
+    fieldVOOE: "viaOsseaOE4000",
+    fieldMascVAOD: "mascaramentoVAOD4000",
+    fieldMascVAOE: "mascaramentoVAOE4000",
+    fieldMascVOOD: "mascaramentoVOOD4000",
+    fieldMascVOOE: "mascaramentoVOOE4000",
   },
-  { 
-    label: '6000 Hz', 
-    fieldVAOD: 'viaAereaOD6000', fieldVAOE: 'viaAereaOE6000', 
-    fieldVOOD: null, fieldVOOE: null, 
-    fieldMascVAOD: 'mascaramentoVAOD6000', fieldMascVAOE: 'mascaramentoVAOE6000',
-    fieldMascVOOD: null, fieldMascVOOE: null
+  {
+    label: "6000 Hz",
+    fieldVAOD: "viaAereaOD6000",
+    fieldVAOE: "viaAereaOE6000",
+    fieldVOOD: null,
+    fieldVOOE: null,
+    fieldMascVAOD: "mascaramentoVAOD6000",
+    fieldMascVAOE: "mascaramentoVAOE6000",
+    fieldMascVOOD: null,
+    fieldMascVOOE: null,
   },
-  { 
-    label: '8000 Hz', 
-    fieldVAOD: 'viaAereaOD8000', fieldVAOE: 'viaAereaOE8000', 
-    fieldVOOD: null, fieldVOOE: null, 
-    fieldMascVAOD: 'mascaramentoVAOD8000', fieldMascVAOE: 'mascaramentoVAOE8000',
-    fieldMascVOOD: null, fieldMascVOOE: null
+  {
+    label: "8000 Hz",
+    fieldVAOD: "viaAereaOD8000",
+    fieldVAOE: "viaAereaOE8000",
+    fieldVOOD: null,
+    fieldVOOE: null,
+    fieldMascVAOD: "mascaramentoVAOD8000",
+    fieldMascVAOE: "mascaramentoVAOE8000",
+    fieldMascVOOD: null,
+    fieldMascVOOE: null,
   },
 ] as const;
 
-const OPCOES_SIM_NAO = ['Sim', 'Não'] as const;
+const OPCOES_SIM_NAO = ["Sim", "Não"] as const;
 
 const VALOR_INICIAL: AudiometriaData = {
-  tipoAudiometro: 'AVS 500',
-  dataCalibracao: '09/01/2025',
-  repousoAuditivo: 'Sim',
+  tipoAudiometro: "AVS 500",
+  dataCalibracao: "09/01/2025",
+  repousoAuditivo: "Sim",
   horasRepouso: 14,
-  queixaAuditiva: 'Não',
-  audiometriaAnterior: 'Não',
-  infeccaoCirurgiaOuvido: 'Não',
-  tratamentoOtotoxicos: 'Não',
-  dataTratamentoOtotoxicos: '',
-  surdezFamilia: 'Não',
-  parentescoSurdez: '',
-  trabalhoAnteriorRuido: 'Não',
-  trabalhoAtualRuido: 'Não',
-  usoProtetorAuricular: 'Sim',
-  contatoQuimicos: 'Não',
-  habitoSomAlto: 'Não',
-  exposicaoExplosoes: 'Não',
-  traumaCabecaOuvido: 'Não',
-  labirintiteTontura: 'Não',
-  usoMedicamentos: 'Não',
-  quaisMedicamentos: '',
-  meatoscopiaOD: 'SEM_OBSTRUCAO',
-  meatoscopiaOE: 'SEM_OBSTRUCAO',
-  observacoesMeatoscopia: '',
-  
+  queixaAuditiva: "Não",
+  audiometriaAnterior: "Não",
+  infeccaoCirurgiaOuvido: "Não",
+  tratamentoOtotoxicos: "Não",
+  dataTratamentoOtotoxicos: "",
+  surdezFamilia: "Não",
+  parentescoSurdez: "",
+  trabalhoAnteriorRuido: "Não",
+  trabalhoAtualRuido: "Não",
+  usoProtetorAuricular: "Sim",
+  contatoQuimicos: "Não",
+  habitoSomAlto: "Não",
+  exposicaoExplosoes: "Não",
+  traumaCabecaOuvido: "Não",
+  labirintiteTontura: "Não",
+  usoMedicamentos: "Não",
+  quaisMedicamentos: "",
+  meatoscopiaOD: "SEM_OBSTRUCAO",
+  meatoscopiaOE: "SEM_OBSTRUCAO",
+  observacoesMeatoscopia: "",
+
   // VALOR PADRÃO "--" PARA LIMIARES AUDITIVOS (NÃO ESCUTOU)
-  viaAereaOD250: '--', viaAereaOD500: '--', viaAereaOD1000: '--', viaAereaOD2000: '--',
-  viaAereaOD3000: '--', viaAereaOD4000: '--', viaAereaOD6000: '--', viaAereaOD8000: '--',
-  viaAereaOE250: '--', viaAereaOE500: '--', viaAereaOE1000: '--', viaAereaOE2000: '--',
-  viaAereaOE3000: '--', viaAereaOE4000: '--', viaAereaOE6000: '--', viaAereaOE8000: '--',
-  
-  viaOsseaOD500: '--', viaOsseaOD1000: '--', viaOsseaOD2000: '--', viaOsseaOD3000: '--', viaOsseaOD4000: '--',
-  viaOsseaOE500: '--', viaOsseaOE1000: '--', viaOsseaOE2000: '--', viaOsseaOE3000: '--', viaOsseaOE4000: '--',
-  
+  viaAereaOD250: "--",
+  viaAereaOD500: "--",
+  viaAereaOD1000: "--",
+  viaAereaOD2000: "--",
+  viaAereaOD3000: "--",
+  viaAereaOD4000: "--",
+  viaAereaOD6000: "--",
+  viaAereaOD8000: "--",
+  viaAereaOE250: "--",
+  viaAereaOE500: "--",
+  viaAereaOE1000: "--",
+  viaAereaOE2000: "--",
+  viaAereaOE3000: "--",
+  viaAereaOE4000: "--",
+  viaAereaOE6000: "--",
+  viaAereaOE8000: "--",
+
+  viaOsseaOD500: "--",
+  viaOsseaOD1000: "--",
+  viaOsseaOD2000: "--",
+  viaOsseaOD3000: "--",
+  viaOsseaOD4000: "--",
+  viaOsseaOE500: "--",
+  viaOsseaOE1000: "--",
+  viaOsseaOE2000: "--",
+  viaOsseaOE3000: "--",
+  viaOsseaOE4000: "--",
+
   // MASCARAMENTO VIA AÉREA - INICIALMENTE FALSE
-  mascaramentoVAOD250: false, mascaramentoVAOD500: false, mascaramentoVAOD1000: false, mascaramentoVAOD2000: false,
-  mascaramentoVAOD3000: false, mascaramentoVAOD4000: false, mascaramentoVAOD6000: false, mascaramentoVAOD8000: false,
-  mascaramentoVAOE250: false, mascaramentoVAOE500: false, mascaramentoVAOE1000: false, mascaramentoVAOE2000: false,
-  mascaramentoVAOE3000: false, mascaramentoVAOE4000: false, mascaramentoVAOE6000: false, mascaramentoVAOE8000: false,
-  
+  mascaramentoVAOD250: false,
+  mascaramentoVAOD500: false,
+  mascaramentoVAOD1000: false,
+  mascaramentoVAOD2000: false,
+  mascaramentoVAOD3000: false,
+  mascaramentoVAOD4000: false,
+  mascaramentoVAOD6000: false,
+  mascaramentoVAOD8000: false,
+  mascaramentoVAOE250: false,
+  mascaramentoVAOE500: false,
+  mascaramentoVAOE1000: false,
+  mascaramentoVAOE2000: false,
+  mascaramentoVAOE3000: false,
+  mascaramentoVAOE4000: false,
+  mascaramentoVAOE6000: false,
+  mascaramentoVAOE8000: false,
+
   // MASCARAMENTO VIA ÓSSEA - INICIALMENTE FALSE
-  mascaramentoVOOD500: false, mascaramentoVOOD1000: false, mascaramentoVOOD2000: false, mascaramentoVOOD3000: false, mascaramentoVOOD4000: false,
-  mascaramentoVOOE500: false, mascaramentoVOOE1000: false, mascaramentoVOOE2000: false, mascaramentoVOOE3000: false, mascaramentoVOOE4000: false,
-  
+  mascaramentoVOOD500: false,
+  mascaramentoVOOD1000: false,
+  mascaramentoVOOD2000: false,
+  mascaramentoVOOD3000: false,
+  mascaramentoVOOD4000: false,
+  mascaramentoVOOE500: false,
+  mascaramentoVOOE1000: false,
+  mascaramentoVOOE2000: false,
+  mascaramentoVOOE3000: false,
+  mascaramentoVOOE4000: false,
+
   realizarIRF: false,
-  srtOD: '', srtOE: '', irfOD: '', irfOE: '', irfDBOD: '', irfDBOE: '',
-  resultadoSRTOD: '', resultadoSRTOE: '', resultadoIRFOD: '', resultadoIRFOE: '',
-  resultadoIRFMonoauralOD: '', resultadoIRFMonoauralOE: '', resultadoIRFDissimetrica: '',
-  
-  entalhe4000HzOD: false, entalhe4000HzOE: false,
-  tipoPerdaOD: 'Neurossensorial', tipoPerdaOE: 'Neurossensorial',
+  srtOD: "",
+  srtOE: "",
+  irfOD: "",
+  irfOE: "",
+  irfDBOD: "",
+  irfDBOE: "",
+  resultadoSRTOD: "",
+  resultadoSRTOE: "",
+  resultadoIRFOD: "",
+  resultadoIRFOE: "",
+  resultadoIRFMonoauralOD: "",
+  resultadoIRFMonoauralOE: "",
+  resultadoIRFDissimetrica: "",
+
+  entalhe4000HzOD: false,
+  entalhe4000HzOE: false,
+  tipoPerdaOD: "Neurossensorial",
+  tipoPerdaOE: "Neurossensorial",
   audiometriaReferenciaDisponivel: false,
-  limiaresRAOD: {}, limiaresRAOE: {},
-  classificacaoNR7OD: 'Não Classificado (RA Ausente)', classificacaoNR7OE: 'Não Classificado (RA Ausente)',
-  classificacaoOD: 'Dentro dos padrões da normalidade', 
-  classificacaoOE: 'Dentro dos padrões da normalidade', 
-  configuracaoOD: 'Plana', configuracaoOE: 'Plana',
-  
-  perdaAuditivaOD: '0 dB', perdaAuditivaOE: '0 dB',
-  frequenciasAlteradasOD: '', frequenciasAlteradasOE: '',
-  mediaTonalOD: 0, mediaTonalOE: 0,
-  criterioPCD: 'Não se enquadra (Cota Federal)',
-  
-  classificacaoGeral: 'Limiares auditivos dentro dos padrões da normalidade.',
-  conclusao: 'Limiares auditivos dentro dos padrões da normalidade.',
-  observacoes: '',
-  resultadoOD: 'Dentro dos padrões da normalidade.',
-  resultadoOE: 'Dentro dos padrões da normalidade.',
+  limiaresRAOD: {},
+  limiaresRAOE: {},
+  classificacaoNR7OD: "Não Classificado (RA Ausente)",
+  classificacaoNR7OE: "Não Classificado (RA Ausente)",
+  classificacaoOD: "Dentro dos padrões da normalidade",
+  classificacaoOE: "Dentro dos padrões da normalidade",
+  configuracaoOD: "Plana",
+  configuracaoOE: "Plana",
+
+  perdaAuditivaOD: "0 dB",
+  perdaAuditivaOE: "0 dB",
+  frequenciasAlteradasOD: "",
+  frequenciasAlteradasOE: "",
+  mediaTonalOD: 0,
+  mediaTonalOE: 0,
+  criterioPCD: "Não se enquadra (Cota Federal)",
+
+  classificacaoGeral: "Limiares auditivos dentro dos padrões da normalidade.",
+  conclusao: "Limiares auditivos dentro dos padrões da normalidade.",
+  observacoes: "",
+  resultadoOD: "Dentro dos padrões da normalidade.",
+  resultadoOE: "Dentro dos padrões da normalidade.",
 };
 
 // Funções utilitárias para conversão de datas
 const formatarParaInputDate = (data: string): string => {
-  if (!data) return '';
-  
+  if (!data) return "";
+
   // Se já estiver no formato yyyy-MM-dd, retorna como está
   if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
     return data;
   }
-  
+
   // Converte de dd/MM/yyyy para yyyy-MM-dd
-  const partes = data.split('/');
+  const partes = data.split("/");
+
   if (partes.length === 3) {
     const [dia, mes, ano] = partes;
-    return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+
+    return `${ano}-${mes.padStart(2, "0")}-${dia.padStart(2, "0")}`;
   }
-  
+
   return data;
 };
 
 const formatarParaExibicao = (data: string): string => {
-  if (!data) return '';
-  
+  if (!data) return "";
+
   // Se estiver no formato yyyy-MM-dd, converte para dd/MM/yyyy
   if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-    const [ano, mes, dia] = data.split('-');
+    const [ano, mes, dia] = data.split("-");
+
     return `${dia}/${mes}/${ano}`;
   }
-  
+
   // Se já estiver no formato dd/MM/yyyy, retorna como está
   return data;
 };
 
 // Componente de input ultra-leve para decibéis
-const DecibelInput = React.memo(({ 
-  value, 
-  onChange,
-  placeholder = "--",
-  className = ""
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-}) => {
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    
-    // Permite "--" para indicar "não escutou"
-    if (inputValue === '--') {
-      onChange('--');
-      return;
-    }
-    
-    // Permite apenas números e limita a 3 dígitos
-    const numericValue = inputValue.replace(/[^\d]/g, '').slice(0, 3);
-    const finalValue = numericValue === '' ? '--' : Math.min(parseInt(numericValue), 120).toString();
-    onChange(finalValue);
-  }, [onChange]);
+const DecibelInput = React.memo(
+  ({
+    value,
+    onChange,
+    placeholder = "--",
+    className = "",
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+  }) => {
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = e.target.value;
 
-  const handleFocus = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    // Quando focado, se o valor for "--", limpa o campo para digitação
-    if (e.target.value === '--') {
-      onChange('');
-    }
-  }, [onChange]);
+        // Permite "--" para indicar "não escutou"
+        if (inputValue === "--") {
+          onChange("--");
 
-  const handleBlur = useCallback((e: React.FocusEvent<HTMLInputElement>) => {
-    // Quando perde o foco, se estiver vazio, coloca "--"
-    if (e.target.value === '') {
-      onChange('--');
-    }
-  }, [onChange]);
+          return;
+        }
 
-  return (
-    <input
-      type="text"
-      inputMode="numeric"
-      value={value}
-      onChange={handleChange}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
-      placeholder={placeholder}
-      className={`h-8 w-full text-center border border-gray-300 rounded-md px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
-    />
-  );
-});
+        // Permite apenas números e limita a 3 dígitos
+        const numericValue = inputValue.replace(/[^\d]/g, "").slice(0, 3);
+        const finalValue =
+          numericValue === ""
+            ? "--"
+            : Math.min(parseInt(numericValue), 120).toString();
+
+        onChange(finalValue);
+      },
+      [onChange],
+    );
+
+    const handleFocus = useCallback(
+      (e: React.FocusEvent<HTMLInputElement>) => {
+        // Quando focado, se o valor for "--", limpa o campo para digitação
+        if (e.target.value === "--") {
+          onChange("");
+        }
+      },
+      [onChange],
+    );
+
+    const handleBlur = useCallback(
+      (e: React.FocusEvent<HTMLInputElement>) => {
+        // Quando perde o foco, se estiver vazio, coloca "--"
+        if (e.target.value === "") {
+          onChange("--");
+        }
+      },
+      [onChange],
+    );
+
+    return (
+      <input
+        className={`h-8 w-full text-center border border-gray-300 rounded-md px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
+        inputMode="numeric"
+        placeholder={placeholder}
+        type="text"
+        value={value}
+        onBlur={handleBlur}
+        onChange={handleChange}
+        onFocus={handleFocus}
+      />
+    );
+  },
+);
 
 // Componente de input para data com formatação dd/MM/yyyy
-const DateInput = React.memo(({ 
-  value, 
-  onChange,
-  placeholder = "dd/mm/aaaa",
-  className = ""
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-  className?: string;
-}) => {
-  const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const inputValue = e.target.value;
-    
-    // Para input type="date", o valor já vem no formato yyyy-MM-dd
-    // Convertemos para dd/MM/yyyy para armazenamento
-    if (inputValue) {
-      const [ano, mes, dia] = inputValue.split('-');
-      const dataFormatada = `${dia}/${mes}/${ano}`;
-      onChange(dataFormatada);
-    } else {
-      onChange('');
-    }
-  }, [onChange]);
+const DateInput = React.memo(
+  ({
+    value,
+    onChange,
+    placeholder = "dd/mm/aaaa",
+    className = "",
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder?: string;
+    className?: string;
+  }) => {
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const inputValue = e.target.value;
 
-  // Valor para o input type="date" (formato yyyy-MM-dd)
-  const valorInputDate = formatarParaInputDate(value);
+        // Para input type="date", o valor já vem no formato yyyy-MM-dd
+        // Convertemos para dd/MM/yyyy para armazenamento
+        if (inputValue) {
+          const [ano, mes, dia] = inputValue.split("-");
+          const dataFormatada = `${dia}/${mes}/${ano}`;
 
-  return (
-    <Input 
-      type="date" 
-      value={valorInputDate}
-      onChange={handleChange}
-      className={`border-gray-300 bg-white ${className}`}
-      placeholder={placeholder}
-    />
-  );
-});
+          onChange(dataFormatada);
+        } else {
+          onChange("");
+        }
+      },
+      [onChange],
+    );
+
+    // Valor para o input type="date" (formato yyyy-MM-dd)
+    const valorInputDate = formatarParaInputDate(value);
+
+    return (
+      <Input
+        className={`border-gray-300 bg-white ${className}`}
+        placeholder={placeholder}
+        type="date"
+        value={valorInputDate}
+        onChange={handleChange}
+      />
+    );
+  },
+);
 
 // Componente de seção
-const SectionTitle: React.FC<{ number: string; title: string; icon?: React.ReactNode }> = 
-React.memo(({ number, title, icon }) => (
+const SectionTitle: React.FC<{
+  number: string;
+  title: string;
+  icon?: React.ReactNode;
+}> = React.memo(({ number, title, icon }) => (
   <div className="flex items-start gap-3 mb-4">
     <div className="flex-1">
       <div className="flex items-center gap-2">
         {icon}
-        <h2 className="text-xl font-bold text-gray-800">
-          {title}
-        </h2>
+        <h2 className="text-xl font-bold text-gray-800">{title}</h2>
       </div>
     </div>
   </div>
@@ -390,35 +560,47 @@ class AudiometriaCalculator {
   // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
   static calcularMediaTonal(freqs: string[]): number {
     const valores = freqs
-      .map(v => v === '--' ? NaN : parseFloat(String(v)))
-      .filter(v => !isNaN(v));
+      .map((v) => (v === "--" ? NaN : parseFloat(String(v))))
+      .filter((v) => !isNaN(v));
+
     if (valores.length === 0) return 0;
-    return Math.round(valores.reduce((acc, val) => acc + val, 0) / valores.length);
+
+    return Math.round(
+      valores.reduce((acc, val) => acc + val, 0) / valores.length,
+    );
   }
 
   // === CLASSIFICAÇÃO (Lloyd & Kaplan) ===
   static classificarPerdaLloydKaplan(media: number): string {
-    if (media <= 25) return 'Audição dentro dos padrões de normalidade';
-    if (media <= 40) return 'Perda Auditiva Leve';
-    if (media <= 70) return 'Perda Auditiva Moderada';
-    if (media <= 90) return 'Perda Auditiva Severa';
-    return 'Perda Auditiva Profunda';
+    if (media <= 25)
+      return "Limiares auditivos dentro dos padrões de normalidade";
+    if (media <= 40) return "Perda Auditiva Leve";
+    if (media <= 70) return "Perda Auditiva Moderada";
+    if (media <= 90) return "Perda Auditiva Severa";
+
+    return "Perda Auditiva Profunda";
   }
 
   // === IDENTIFICAR FREQUÊNCIAS ALTERADAS (> 25 dB) ===
-  static identificarFrequenciasAlteradas(vaLimiares: { [key: number]: string }): string {
+  static identificarFrequenciasAlteradas(vaLimiares: {
+    [key: number]: string;
+  }): string {
     const alteradas = Object.keys(vaLimiares)
       .map(Number)
-      .filter(freq => {
+      .filter((freq) => {
         const valorStr = String(vaLimiares[freq]);
-        if (valorStr === '--') return false;
+
+        if (valorStr === "--") return false;
         const valor = parseFloat(valorStr);
+
         return !isNaN(valor) && valor > 25;
       })
       .sort((a, b) => a - b)
-      .map(freq => `${freq} Hz`);
+      .map((freq) => `${freq} Hz`);
 
-    return alteradas.length > 0 ? alteradas.join(', ') : 'sem alterações significativas';
+    return alteradas.length > 0
+      ? alteradas.join(", ")
+      : "sem alterações significativas";
   }
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
@@ -431,6 +613,7 @@ class AudiometriaCalculator {
     } else if (piorOrelha >= 95 && melhorOrelha < 41) {
       return `Atende aos critérios legais de deficiência auditiva unilateral (pior orelha ≥ 95 dB NA e melhor orelha < 41 dB NA), conforme Lei 14.768/2023.`;
     }
+
     return `Não atende aos critérios legais de deficiência auditiva (média tonal na melhor orelha < 41 dB NA).`;
   }
 
@@ -443,145 +626,194 @@ class AudiometriaCalculator {
   static calcularConfiguracao(vaLimiares: { [key: number]: string }): string {
     const get = (f: number) => {
       const vStr = String(vaLimiares[f]);
-      if (vStr === '--') return null;
+
+      if (vStr === "--") return null;
       const v = parseFloat(vStr);
+
       return isNaN(v) ? null : v;
     };
 
-    const baixas = [500, 1000].map(get).filter(v => v !== null) as number[];
-    const mediasAltas = [3000, 4000, 6000].map(get).filter(v => v !== null) as number[];
+    const baixas = [500, 1000].map(get).filter((v) => v !== null) as number[];
+    const mediasAltas = [3000, 4000, 6000]
+      .map(get)
+      .filter((v) => v !== null) as number[];
 
     if (baixas.length === 0 || mediasAltas.length === 0) {
       // Fallback para comparação 500 vs 4000 (como na versão anterior) quando faltam frequências
       const v500 = get(500) ?? 0;
       const v4000 = get(4000) ?? 0;
-      if (Math.abs(v500 - v4000) <= 10) return 'Plana';
-      if (v4000 > v500 + 15) return 'Descendente';
-      if (v500 > v4000 + 15) return 'Ascendente';
-      return 'Irregular';
+
+      if (Math.abs(v500 - v4000) <= 10) return "Plana";
+      if (v4000 > v500 + 15) return "Descendente";
+      if (v500 > v4000 + 15) return "Ascendente";
+
+      return "Irregular";
     }
 
-    const mediaBaixas = Math.round(baixas.reduce((a, b) => a + b, 0) / baixas.length);
-    const mediaAltas = Math.round(mediasAltas.reduce((a, b) => a + b, 0) / mediasAltas.length);
+    const mediaBaixas = Math.round(
+      baixas.reduce((a, b) => a + b, 0) / baixas.length,
+    );
+    const mediaAltas = Math.round(
+      mediasAltas.reduce((a, b) => a + b, 0) / mediasAltas.length,
+    );
 
-    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return 'Plana';
-    if (mediaAltas > mediaBaixas + 15) return 'Descendente';
-    if (mediaBaixas > mediaAltas + 15) return 'Ascendente';
-    return 'Irregular';
+    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
+    if (mediaAltas > mediaBaixas + 15) return "Descendente";
+    if (mediaBaixas > mediaAltas + 15) return "Ascendente";
+
+    return "Irregular";
   }
 
   // CÁLCULO MÉDIA ÓSSEA
-  static calcularMediaOssea(freqs: (string | null | undefined)[]): number | null {
+  static calcularMediaOssea(
+    freqs: (string | null | undefined)[],
+  ): number | null {
     const valores = freqs
-      .map(v => {
-        if (v === null || v === undefined || v === '--') return NaN;
+      .map((v) => {
+        if (v === null || v === undefined || v === "--") return NaN;
+
         return parseFloat(String(v));
       })
-      .filter(v => !isNaN(v));
-    
+      .filter((v) => !isNaN(v));
+
     // Se não houver valores de via óssea preenchidos, retorna null
     if (valores.length === 0) return null;
-    
-    return Math.round(valores.reduce((acc, val) => acc + val, 0) / valores.length);
+
+    return Math.round(
+      valores.reduce((acc, val) => acc + val, 0) / valores.length,
+    );
   }
 
   // CÁLCULO DETERMINAR TIPO DE PERDA
   static determinarTipoPerda(mediaVA: number, mediaVO: number | null): string {
     // 1. Se audição é normal (<= 25), não há tipo de perda
-    if (mediaVA <= 25) return '-';
+    if (mediaVA <= 25) return "-";
 
     // 2. Se não tem Via Óssea registrada, assume Neurossensorial (padrão conservador/ocupacional)
     // ou você pode retornar "A esclarecer" se preferir forçar a VO.
-    if (mediaVO === null) return 'Neurossensorial';
+    if (mediaVO === null) return "Neurossensorial";
 
     // 3. Cálculo do GAP Aéreo-Ósseo
     const gap = mediaVA - mediaVO;
 
     // Lógica Clássica de Classificação:
-    
+
     // CONDUTIVA: VO Normal (<=25) e VA Alterada (>25) com GAP >= 15 (ou simplesmente existente)
     if (mediaVO <= 25) {
-      return 'Condutiva';
+      return "Condutiva";
     }
 
     // MISTA: VO Alterada (>25) e VA Alterada (>25) com GAP significativo (>= 15 dB)
     if (mediaVO > 25 && gap >= 15) {
-      return 'Mista';
+      return "Mista";
     }
 
     // NEUROSSENSORIAL: VO Alterada (>25) e VA Alterada (>25) com curvas acopladas (GAP < 15 dB)
-    return 'Neurossensorial';
+    return "Neurossensorial";
   }
 
   // === CÁLCULO GERAL E MONTAGEM DE LAUDO ===
-  static calcularTodosResultados(formData: AudiometriaData): Partial<AudiometriaData> {
+  static calcularTodosResultados(
+    formData: AudiometriaData,
+  ): Partial<AudiometriaData> {
     const vaLimiaresOD = {
-      250: formData.viaAereaOD250, 500: formData.viaAereaOD500, 1000: formData.viaAereaOD1000,
-      2000: formData.viaAereaOD2000, 3000: formData.viaAereaOD3000, 4000: formData.viaAereaOD4000,
-      6000: formData.viaAereaOD6000, 8000: formData.viaAereaOD8000
+      250: formData.viaAereaOD250,
+      500: formData.viaAereaOD500,
+      1000: formData.viaAereaOD1000,
+      2000: formData.viaAereaOD2000,
+      3000: formData.viaAereaOD3000,
+      4000: formData.viaAereaOD4000,
+      6000: formData.viaAereaOD6000,
+      8000: formData.viaAereaOD8000,
     };
 
     const vaLimiaresOE = {
-      250: formData.viaAereaOE250, 500: formData.viaAereaOE500, 1000: formData.viaAereaOE1000,
-      2000: formData.viaAereaOE2000, 3000: formData.viaAereaOE3000, 4000: formData.viaAereaOE4000,
-      6000: formData.viaAereaOE6000, 8000: formData.viaAereaOE8000
+      250: formData.viaAereaOE250,
+      500: formData.viaAereaOE500,
+      1000: formData.viaAereaOE1000,
+      2000: formData.viaAereaOE2000,
+      3000: formData.viaAereaOE3000,
+      4000: formData.viaAereaOE4000,
+      6000: formData.viaAereaOE6000,
+      8000: formData.viaAereaOE8000,
     };
 
     const mediaTonalOD = this.calcularMediaTonal([
-      formData.viaAereaOD500, formData.viaAereaOD1000, formData.viaAereaOD2000, formData.viaAereaOD3000
+      formData.viaAereaOD500,
+      formData.viaAereaOD1000,
+      formData.viaAereaOD2000,
+      formData.viaAereaOD3000,
     ]);
     const mediaTonalOE = this.calcularMediaTonal([
-      formData.viaAereaOE500, formData.viaAereaOE1000, formData.viaAereaOE2000, formData.viaAereaOE3000
+      formData.viaAereaOE500,
+      formData.viaAereaOE1000,
+      formData.viaAereaOE2000,
+      formData.viaAereaOE3000,
     ]);
 
     // Calcular Médias de Via Óssea (Geralmente 500, 1k, 2k, 3k ou 4k)
     const mediaOsseaOD = this.calcularMediaOssea([
-      formData.viaOsseaOD500, formData.viaOsseaOD1000, formData.viaOsseaOD2000, formData.viaOsseaOD3000
+      formData.viaOsseaOD500,
+      formData.viaOsseaOD1000,
+      formData.viaOsseaOD2000,
+      formData.viaOsseaOD3000,
     ]);
     const mediaOsseaOE = this.calcularMediaOssea([
-      formData.viaOsseaOE500, formData.viaOsseaOE1000, formData.viaOsseaOE2000, formData.viaOsseaOE3000
+      formData.viaOsseaOE500,
+      formData.viaOsseaOE1000,
+      formData.viaOsseaOE2000,
+      formData.viaOsseaOE3000,
     ]);
 
     const classificacaoOD = this.classificarPerdaLloydKaplan(mediaTonalOD);
     const classificacaoOE = this.classificarPerdaLloydKaplan(mediaTonalOE);
 
-    const frequenciasAlteradasOD = this.identificarFrequenciasAlteradas(vaLimiaresOD);
-    const frequenciasAlteradasOE = this.identificarFrequenciasAlteradas(vaLimiaresOE);
+    const frequenciasAlteradasOD =
+      this.identificarFrequenciasAlteradas(vaLimiaresOD);
+    const frequenciasAlteradasOE =
+      this.identificarFrequenciasAlteradas(vaLimiaresOE);
 
     const configuracaoOD = this.calcularConfiguracao(vaLimiaresOD);
     const configuracaoOE = this.calcularConfiguracao(vaLimiaresOE);
 
     // Tipo/grau: '-' quando dentro da normalidade (profissionais pediram esse comportamento)
-    const isNormalOD = classificacaoOD.includes('normalidade');
-    const isNormalOE = classificacaoOE.includes('normalidade');
+    const isNormalOD = classificacaoOD.includes("normalidade");
+    const isNormalOE = classificacaoOE.includes("normalidade");
 
     const tipoPerdaOD = this.determinarTipoPerda(mediaTonalOD, mediaOsseaOD);
     const tipoPerdaOE = this.determinarTipoPerda(mediaTonalOE, mediaOsseaOE);
 
-    const grauPerdaOD = isNormalOD ? '-' : classificacaoOD;
-    const grauPerdaOE = isNormalOE ? '-' : classificacaoOE;
+    const grauPerdaOD = isNormalOD ? "-" : classificacaoOD;
+    const grauPerdaOE = isNormalOE ? "-" : classificacaoOE;
 
     // Resultados textuais:
     const resultadoOD = isNormalOD
-      ? 'Audição dentro dos padrões de normalidade.'
+      ? "Limiares auditivos dentro dos padrões de normalidade."
       : `${grauPerdaOD} ${tipoPerdaOD} ${configuracaoOD} nas frequências ${frequenciasAlteradasOD}.`;
 
     const resultadoOE = isNormalOE
-      ? 'Audição dentro dos padrões de normalidade.'
+      ? "Limiares auditivos dentro dos padrões de normalidade."
       : `${grauPerdaOE} ${tipoPerdaOE} ${configuracaoOE} nas frequências ${frequenciasAlteradasOE}.`;
 
-    const conclusaoGeral = (isNormalOD && isNormalOE)
-      ? 'Audição dentro dos padrões de normalidade bilateralmente.'
-      : 'Alterações auditivas detectadas conforme descrição acima.';
+    const conclusaoGeral =
+      isNormalOD && isNormalOE
+        ? "Limiares auditivos dentro dos padrões de normalidade bilateralmente."
+        : "Alterações auditivas detectadas conforme descrição acima.";
 
     // Classificação NR-7 para registro (RA = Resultado Audiométrico / quando não há comparativo anterior)
-    const classificacaoNR7OD = formData.audiometriaAnterior === 'Não'
-      ? (isNormalOD ? 'RA - Normal' : 'RA - Alterada')
-      : 'Alteração Não Ocupacional';
+    const classificacaoNR7OD =
+      formData.audiometriaAnterior === "Não"
+        ? isNormalOD
+          ? "RA - Normal"
+          : "RA - Alterada"
+        : "Alteração Não Ocupacional";
 
-    const classificacaoNR7OE = formData.audiometriaAnterior === 'Não'
-      ? (isNormalOE ? 'RA - Normal' : 'RA - Alterada')
-      : 'Alteração Não Ocupacional';
+    const classificacaoNR7OE =
+      formData.audiometriaAnterior === "Não"
+        ? isNormalOE
+          ? "RA - Normal"
+          : "RA - Alterada"
+        : "Alteração Não Ocupacional";
 
     return {
       // === Dados numéricos ===
@@ -591,8 +823,8 @@ class AudiometriaCalculator {
       perdaAuditivaOE: `${mediaTonalOE} dB`,
 
       // === Classificação / Tipo ===
-      classificacaoOD: isNormalOD ? 'Normal' : classificacaoOD,
-      classificacaoOE: isNormalOE ? 'Normal' : classificacaoOE,
+      classificacaoOD: isNormalOD ? "Normal" : classificacaoOD,
+      classificacaoOE: isNormalOE ? "Normal" : classificacaoOE,
       tipoPerdaOD,
       tipoPerdaOE,
 
@@ -609,23 +841,28 @@ class AudiometriaCalculator {
 
       // === Critérios legais e NR-7 ===
       criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
-      classificacaoNR7OD: formData.audiometriaAnterior === 'Não'
-        ? (isNormalOD ? 'RA - Normal' : 'RA - Alterada')
-        : 'Alteração Não Ocupacional',
-      classificacaoNR7OE: formData.audiometriaAnterior === 'Não'
-        ? (isNormalOE ? 'RA - Normal' : 'RA - Alterada')
-        : 'Alteração Não Ocupacional',
+      classificacaoNR7OD:
+        formData.audiometriaAnterior === "Não"
+          ? isNormalOD
+            ? "RA - Normal"
+            : "RA - Alterada"
+          : "Alteração Não Ocupacional",
+      classificacaoNR7OE:
+        formData.audiometriaAnterior === "Não"
+          ? isNormalOE
+            ? "RA - Normal"
+            : "RA - Alterada"
+          : "Alteração Não Ocupacional",
     };
   }
 }
- 
 
-const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({ 
-  atendimento, 
+const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
+  atendimento,
   exame,
   formulario,
-  onSave, 
-  onClose 
+  onSave,
+  onClose,
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
@@ -639,13 +876,13 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     if (atendimento) {
       setAgendamento(atendimento);
 
-      if(atendimento.UNIDADEATENDIMENTO === UNIDADES_ATENDIMENTO[1]){
-        formData.dataCalibracao = "06/11/2025"
-        formData.tipoAudiometro = "AS 60"
+      if (atendimento.UNIDADEATENDIMENTO === UNIDADES_ATENDIMENTO[1]) {
+        formData.dataCalibracao = "06/11/2025";
+        formData.tipoAudiometro = "AS 60";
       }
     }
     if (formulario) {
-      setFormData(prev => ({ ...prev, ...formulario }));
+      setFormData((prev) => ({ ...prev, ...formulario }));
       // Se já existem dados do formulário, considerar que os resultados foram calculados
       if (formulario.resultadoOD && formulario.resultadoOE) {
         setResultadosCalculados(true);
@@ -654,42 +891,55 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   }, [atendimento, formulario]);
 
   // Handler ultra-simples para inputs
-  const handleInputChange = useCallback((field: keyof AudiometriaData, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    // Marcar que os resultados precisam ser recalculados
-    if (field.startsWith('viaAerea') || field.startsWith('viaOssea')) {
-      setResultadosCalculados(false);
-    }
-  }, []);
+  const handleInputChange = useCallback(
+    (field: keyof AudiometriaData, value: any) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      // Marcar que os resultados precisam ser recalculados
+      if (field.startsWith("viaAerea") || field.startsWith("viaOssea")) {
+        setResultadosCalculados(false);
+      }
+    },
+    [],
+  );
 
   // Handler para campos de decibéis
-  const handleDecibelInputChange = useCallback((field: keyof AudiometriaData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-    setResultadosCalculados(false);
-  }, []);
+  const handleDecibelInputChange = useCallback(
+    (field: keyof AudiometriaData, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+      setResultadosCalculados(false);
+    },
+    [],
+  );
 
   // Handler para campos booleanos (checkbox) - AGORA PARA MASCARAMENTO
-  const handleBooleanChange = useCallback((field: keyof AudiometriaData, value: boolean) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  const handleBooleanChange = useCallback(
+    (field: keyof AudiometriaData, value: boolean) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
-  const handleCheckboxChange = useCallback((field: keyof AudiometriaData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  const handleCheckboxChange = useCallback(
+    (field: keyof AudiometriaData, value: string) => {
+      setFormData((prev) => ({ ...prev, [field]: value }));
+    },
+    [],
+  );
 
   // Função para calcular resultados
   const calcularResultados = useCallback(async () => {
     setIsCalculating(true);
-    
+
     // Simular um pequeno delay para feedback visual
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
+    await new Promise((resolve) => setTimeout(resolve, 300));
+
     try {
       const updates = AudiometriaCalculator.calcularTodosResultados(formData);
-      setFormData(prev => ({ ...prev, ...updates }));
+
+      setFormData((prev) => ({ ...prev, ...updates }));
       setResultadosCalculados(true);
     } catch (error) {
-      console.error('Erro ao calcular resultados:', error);
+      console.error("Erro ao calcular resultados:", error);
     } finally {
       setIsCalculating(false);
     }
@@ -698,10 +948,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   const handleSave = useCallback(async () => {
     // ATUALIZAÇÃO 2: Verificar se os resultados foram calculados antes de permitir salvar
     if (!resultadosCalculados) {
-      alert('É necessário calcular os resultados antes de finalizar o exame.');
+      alert("É necessário calcular os resultados antes de finalizar o exame.");
+
       return;
     }
-    
+
     setIsLoading(true);
     try {
       onSave?.(formData);
@@ -711,107 +962,136 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   }, [formData, onSave, resultadosCalculados]);
 
   // Componente de checkbox Sim/Não reutilizável
-  const SimNaoCheckbox = useCallback(({ field, label }: { field: keyof AudiometriaData; label: string }) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-      <div className="flex gap-4">
-        {OPCOES_SIM_NAO.map((option) => (
-          <Checkbox
-            color="success"
-            key={option}
-            isSelected={formData[field] === option}
-            onValueChange={(checked) => checked && handleCheckboxChange(field, option)}
-            classNames={{ label: "text-sm text-gray-700" }}
-          >
-            {option}
-          </Checkbox>
-        ))}
-      </div> 
-    </div>
-  ), [formData, handleCheckboxChange]);
+  const SimNaoCheckbox = useCallback(
+    ({ field, label }: { field: keyof AudiometriaData; label: string }) => (
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          {label}
+        </label>
+        <div className="flex gap-4">
+          {OPCOES_SIM_NAO.map((option) => (
+            <Checkbox
+              key={option}
+              classNames={{ label: "text-sm text-gray-700" }}
+              color="success"
+              isSelected={formData[field] === option}
+              onValueChange={(checked) =>
+                checked && handleCheckboxChange(field, option)
+              }
+            >
+              {option}
+            </Checkbox>
+          ))}
+        </div>
+      </div>
+    ),
+    [formData, handleCheckboxChange],
+  );
 
   // Componente de checkbox para mascaramento
-  const MascaramentoCheckbox = useCallback(({ 
-    field, 
-    className = "" 
-  }: { 
-    field: keyof AudiometriaData; 
-    className?: string;
-  }) => (
-    <div className={`flex justify-center ${className}`}>
-      <Checkbox
-        isSelected={formData[field] as boolean}
-        onValueChange={(checked) => handleBooleanChange(field, checked)}
-        classNames={{ 
-          base: "m-0",
-          wrapper: "w-5 h-5"
-        }}
-      />
-    </div>
-  ), [formData, handleBooleanChange]);
+  const MascaramentoCheckbox = useCallback(
+    ({
+      field,
+      className = "",
+    }: {
+      field: keyof AudiometriaData;
+      className?: string;
+    }) => (
+      <div className={`flex justify-center ${className}`}>
+        <Checkbox
+          classNames={{
+            base: "m-0",
+            wrapper: "w-5 h-5",
+          }}
+          isSelected={formData[field] as boolean}
+          onValueChange={(checked) => handleBooleanChange(field, checked)}
+        />
+      </div>
+    ),
+    [formData, handleBooleanChange],
+  );
 
   return (
     <div className="space-y-8 p-4 md:p-8 min-h-screen">
-      <HeaderExame 
-        agendamento={agendamento}
-        exame={exame}
-      />
-      
+      <HeaderExame agendamento={agendamento} exame={exame} />
+
       {/* 1. Anamnese Auditiva */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle number="1" title="Anamnese Auditiva" />
-        
+
         <div className="space-y-6">
           <div className="p-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-              <SimNaoCheckbox field="queixaAuditiva" label="Queixa ou sintoma auditivo atual?" />
-              
+              <SimNaoCheckbox
+                field="queixaAuditiva"
+                label="Queixa ou sintoma auditivo atual?"
+              />
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Audiometria Anterior?*</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Audiometria Anterior?*
+                </label>
                 <div className="flex gap-4">
                   {OPCOES_SIM_NAO.map((option) => (
                     <Checkbox
-                        color='success'
-                        key={option}
-                        isSelected={formData.audiometriaAnterior === option}
-                        onValueChange={(checked) => checked && handleCheckboxChange('audiometriaAnterior', option)}
-                        classNames={{ label: "text-sm text-gray-700" }}
+                      key={option}
+                      classNames={{ label: "text-sm text-gray-700" }}
+                      color="success"
+                      isSelected={formData.audiometriaAnterior === option}
+                      onValueChange={(checked) =>
+                        checked &&
+                        handleCheckboxChange("audiometriaAnterior", option)
+                      }
                     >
                       {option}
                     </Checkbox>
                   ))}
                 </div>
-                {formData.audiometriaAnterior === 'Sim' && (
-                  <p className="text-xs text-amber-600 mt-1">*Exame Sequencial.</p>
+                {formData.audiometriaAnterior === "Sim" && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    *Exame Sequencial.
+                  </p>
                 )}
-                {formData.audiometriaAnterior === 'Não' && (
-                  <p className="text-xs text-green-600 mt-1">*Primeiro exame. Este será a Audiometria de Referência (RA).</p>
+                {formData.audiometriaAnterior === "Não" && (
+                  <p className="text-xs text-green-600 mt-1">
+                    *Primeiro exame. Este será a Audiometria de Referência (RA).
+                  </p>
                 )}
               </div>
 
-              <SimNaoCheckbox field="infeccaoCirurgiaOuvido" label="Infecção ou Cirurgia no Ouvido?" />
+              <SimNaoCheckbox
+                field="infeccaoCirurgiaOuvido"
+                label="Infecção ou Cirurgia no Ouvido?"
+              />
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Tratamento antibióticos e/ou ototóxicos?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tratamento antibióticos e/ou ototóxicos?
+                  </label>
                   <div className="flex gap-4 mb-2">
                     {OPCOES_SIM_NAO.map((option) => (
                       <Checkbox
-                        color='success'
                         key={option}
+                        classNames={{ label: "text-gray-700" }}
+                        color="success"
                         isSelected={formData.tratamentoOtotoxicos === option}
-                        onValueChange={(checked) => checked && handleCheckboxChange('tratamentoOtotoxicos', option)}
-                        classNames={{ label: "text-gray-700" }}
+                        onValueChange={(checked) =>
+                          checked &&
+                          handleCheckboxChange("tratamentoOtotoxicos", option)
+                        }
                       >
                         {option}
                       </Checkbox>
                     ))}
                   </div>
-                  {formData.tratamentoOtotoxicos === 'Sim' && (
-                    <DateInput 
-                      value={formData.dataTratamentoOtotoxicos} 
-                      onChange={(value) => handleInputChange('dataTratamentoOtotoxicos', value)} 
-                      className="border-gray-300 mt-2" 
+                  {formData.tratamentoOtotoxicos === "Sim" && (
+                    <DateInput
+                      className="border-gray-300 mt-2"
+                      value={formData.dataTratamentoOtotoxicos}
+                      onChange={(value) =>
+                        handleInputChange("dataTratamentoOtotoxicos", value)
+                      }
                     />
                   )}
                 </div>
@@ -819,61 +1099,99 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Casos de surdez na família?</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Casos de surdez na família?
+                  </label>
                   <div className="flex gap-4 mb-2">
                     {OPCOES_SIM_NAO.map((option) => (
                       <Checkbox
-                        color='success'
                         key={option}
-                        isSelected={formData.surdezFamilia === option}
-                        onValueChange={(checked) => checked && handleCheckboxChange('surdezFamilia', option)}
                         classNames={{ label: "text-gray-700" }}
+                        color="success"
+                        isSelected={formData.surdezFamilia === option}
+                        onValueChange={(checked) =>
+                          checked &&
+                          handleCheckboxChange("surdezFamilia", option)
+                        }
                       >
                         {option}
                       </Checkbox>
                     ))}
                   </div>
-                  {formData.surdezFamilia === 'Sim' && (
-                    <Input 
-                      value={formData.parentescoSurdez} 
-                      onChange={(e) => handleInputChange('parentescoSurdez', e.target.value)} 
-                      placeholder="Grau de parentesco" 
-                      className="border-gray-300 mt-2 bg-white" 
+                  {formData.surdezFamilia === "Sim" && (
+                    <Input
+                      className="border-gray-300 mt-2 bg-white"
+                      placeholder="Grau de parentesco"
+                      value={formData.parentescoSurdez}
+                      onChange={(e) =>
+                        handleInputChange("parentescoSurdez", e.target.value)
+                      }
                     />
                   )}
                 </div>
               </div>
 
-              <SimNaoCheckbox field="trabalhoAnteriorRuido" label="Já trabalhou em ambiente ruidoso?" />
-              <SimNaoCheckbox field="trabalhoAtualRuido" label="Trabalha atualmente em ambiente ruidoso?" />
-              <SimNaoCheckbox field="usoProtetorAuricular" label="Usa Protetor Auricular?" />
-              <SimNaoCheckbox field="contatoQuimicos" label="Contato com produtos químicos ou solventes?" />
-              <SimNaoCheckbox field="habitoSomAlto" label="Costuma ouvir música (caixas, fones, etc)?" />
-              <SimNaoCheckbox field="exposicaoExplosoes" label="Já teve contato com explosões?" />
-              <SimNaoCheckbox field="traumaCabecaOuvido" label="Trauma na Cabeça ou Ouvido?" />
-              <SimNaoCheckbox field="labirintiteTontura" label="Labirintite ou Tontura?" />
+              <SimNaoCheckbox
+                field="trabalhoAnteriorRuido"
+                label="Já trabalhou em ambiente ruidoso?"
+              />
+              <SimNaoCheckbox
+                field="trabalhoAtualRuido"
+                label="Trabalha atualmente em ambiente ruidoso?"
+              />
+              <SimNaoCheckbox
+                field="usoProtetorAuricular"
+                label="Usa Protetor Auricular?"
+              />
+              <SimNaoCheckbox
+                field="contatoQuimicos"
+                label="Contato com produtos químicos ou solventes?"
+              />
+              <SimNaoCheckbox
+                field="habitoSomAlto"
+                label="Costuma ouvir música (caixas, fones, etc)?"
+              />
+              <SimNaoCheckbox
+                field="exposicaoExplosoes"
+                label="Já teve contato com explosões?"
+              />
+              <SimNaoCheckbox
+                field="traumaCabecaOuvido"
+                label="Trauma na Cabeça ou Ouvido?"
+              />
+              <SimNaoCheckbox
+                field="labirintiteTontura"
+                label="Labirintite ou Tontura?"
+              />
 
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Uso de Medicamentos Atuais?</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Uso de Medicamentos Atuais?
+                </label>
                 <div className="flex gap-4 mb-2">
                   {OPCOES_SIM_NAO.map((option) => (
                     <Checkbox
-                        color='success'
-                        key={option}
-                        isSelected={formData.usoMedicamentos === option}
-                        onValueChange={(checked) => checked && handleCheckboxChange('usoMedicamentos', option)}
-                        classNames={{ label: "text-gray-700" }}
+                      key={option}
+                      classNames={{ label: "text-gray-700" }}
+                      color="success"
+                      isSelected={formData.usoMedicamentos === option}
+                      onValueChange={(checked) =>
+                        checked &&
+                        handleCheckboxChange("usoMedicamentos", option)
+                      }
                     >
                       {option}
                     </Checkbox>
                   ))}
                 </div>
-                {formData.usoMedicamentos === 'Sim' && (
-                  <Input 
-                    value={formData.quaisMedicamentos} 
-                    onChange={(e) => handleInputChange('quaisMedicamentos', e.target.value)} 
-                    placeholder="Quais medicamentos?" 
-                    className="border-gray-300 mt-2 bg-white" 
+                {formData.usoMedicamentos === "Sim" && (
+                  <Input
+                    className="border-gray-300 mt-2 bg-white"
+                    placeholder="Quais medicamentos?"
+                    value={formData.quaisMedicamentos}
+                    onChange={(e) =>
+                      handleInputChange("quaisMedicamentos", e.target.value)
+                    }
                   />
                 )}
               </div>
@@ -887,55 +1205,84 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
         <SectionTitle number="2" title="Dados do Exame e Protocolo" />
         <div className="space-y-6">
           <div className="p-4">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Dados Técnicos</h3>
+            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
+              Dados Técnicos
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Data da Calibração*</label>
-                <DateInput 
-                  value={formData.dataCalibracao} 
-                  onChange={(value) => handleInputChange('dataCalibracao', value)} 
-                  className="border-gray-300" 
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Data da Calibração*
+                </label>
+                <DateInput
+                  className="border-gray-300"
+                  value={formData.dataCalibracao}
+                  onChange={(value) =>
+                    handleInputChange("dataCalibracao", value)
+                  }
                 />
-                <p className="text-xs text-gray-500 mt-1">Formato: dd/mm/aaaa</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Formato: dd/mm/aaaa
+                </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de Audiômetro</label>
-                <Select 
-                variant='bordered'
-                  selectedKeys={[formData.tipoAudiometro]} 
-                  onChange={(e) => handleInputChange('tipoAudiometro', e.target.value)}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Tipo de Audiômetro
+                </label>
+                <Select
                   classNames={{ trigger: "bg-white border-gray-300" }}
+                  selectedKeys={[formData.tipoAudiometro]}
+                  variant="bordered"
+                  onChange={(e) =>
+                    handleInputChange("tipoAudiometro", e.target.value)
+                  }
                 >
                   <SelectItem key="AVS 500">AVS 500</SelectItem>
                   <SelectItem key="AS 60">AS 60</SelectItem>
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">Repouso Auditivo ≥14h?*</label>
+                <label className="block text-sm font-medium text-gray-700">
+                  Repouso Auditivo ≥14h?*
+                </label>
                 <div className="flex gap-6">
-                  <Checkbox 
-                  color='success'
-                    isSelected={formData.repousoAuditivo === 'Sim'} 
-                    onValueChange={(checked) => handleInputChange('repousoAuditivo', checked ? 'Sim' : 'Não')} 
+                  <Checkbox
                     classNames={{ label: "text-gray-700" }}
+                    color="success"
+                    isSelected={formData.repousoAuditivo === "Sim"}
+                    onValueChange={(checked) =>
+                      handleInputChange(
+                        "repousoAuditivo",
+                        checked ? "Sim" : "Não",
+                      )
+                    }
                   >
                     Sim
                   </Checkbox>
-                  <Checkbox 
-                    isSelected={formData.repousoAuditivo === 'Não'} 
-                    onValueChange={(checked) => handleInputChange('repousoAuditivo', checked ? 'Não' : 'Sim')} 
+                  <Checkbox
                     classNames={{ label: "text-gray-700" }}
+                    isSelected={formData.repousoAuditivo === "Não"}
+                    onValueChange={(checked) =>
+                      handleInputChange(
+                        "repousoAuditivo",
+                        checked ? "Não" : "Sim",
+                      )
+                    }
                   >
                     Não
                   </Checkbox>
-                  {formData.repousoAuditivo === 'Sim' && (
-                    <Input 
-                      type="number" 
-                      value={formData.horasRepouso.toString()} 
-                      onChange={(e) => handleInputChange('horasRepouso', parseInt(e.target.value) || 0)} 
-                      placeholder="Horas de repouso" 
-                      className="border-gray-300 mt-2 bg-white" 
-                      min="14" 
+                  {formData.repousoAuditivo === "Sim" && (
+                    <Input
+                      className="border-gray-300 mt-2 bg-white"
+                      min="14"
+                      placeholder="Horas de repouso"
+                      type="number"
+                      value={formData.horasRepouso.toString()}
+                      onChange={(e) =>
+                        handleInputChange(
+                          "horasRepouso",
+                          parseInt(e.target.value) || 0,
+                        )
+                      }
                     />
                   )}
                 </div>
@@ -945,41 +1292,63 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
           {/* Meatoscopia */}
           <div className="p-4">
-            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">Meatoscopia</h3>
+            <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
+              Meatoscopia
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">OD</label>
-                <Select 
-                variant='bordered'
-                  selectedKeys={[formData.meatoscopiaOD]} 
-                  onChange={(e) => handleInputChange('meatoscopiaOD', e.target.value)}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  OD
+                </label>
+                <Select
                   classNames={{ trigger: "bg-white border-gray-300" }}
+                  selectedKeys={[formData.meatoscopiaOD]}
+                  variant="bordered"
+                  onChange={(e) =>
+                    handleInputChange("meatoscopiaOD", e.target.value)
+                  }
                 >
                   <SelectItem key="SEM_OBSTRUCAO">Sem obstrução</SelectItem>
-                  <SelectItem key="COM_OBSTRUCAO_PARCIAL">Obstrução parcial</SelectItem>
-                  <SelectItem key="COM_OBSTRUCAO_TOTAL">Obstrução total</SelectItem>
+                  <SelectItem key="COM_OBSTRUCAO_PARCIAL">
+                    Obstrução parcial
+                  </SelectItem>
+                  <SelectItem key="COM_OBSTRUCAO_TOTAL">
+                    Obstrução total
+                  </SelectItem>
                 </Select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">OE</label>
-                <Select 
-                variant='bordered'
-                  selectedKeys={[formData.meatoscopiaOE]} 
-                  onChange={(e) => handleInputChange('meatoscopiaOE', e.target.value)}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  OE
+                </label>
+                <Select
                   classNames={{ trigger: "bg-white border-gray-300" }}
+                  selectedKeys={[formData.meatoscopiaOE]}
+                  variant="bordered"
+                  onChange={(e) =>
+                    handleInputChange("meatoscopiaOE", e.target.value)
+                  }
                 >
                   <SelectItem key="SEM_OBSTRUCAO">Sem obstrução</SelectItem>
-                  <SelectItem key="COM_OBSTRUCAO_PARCIAL">Obstrução parcial</SelectItem>
-                  <SelectItem key="COM_OBSTRUCAO_TOTAL">Obstrução total</SelectItem>
+                  <SelectItem key="COM_OBSTRUCAO_PARCIAL">
+                    Obstrução parcial
+                  </SelectItem>
+                  <SelectItem key="COM_OBSTRUCAO_TOTAL">
+                    Obstrução total
+                  </SelectItem>
                 </Select>
               </div>
               <div className="md:col-span-1">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Observações da Meatoscopia</label>
-                <Input 
-                  value={formData.observacoesMeatoscopia} 
-                  onChange={(e) => handleInputChange('observacoesMeatoscopia', e.target.value)} 
-                  className="border-gray-300 bg-white" 
-                  placeholder="-" 
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Observações da Meatoscopia
+                </label>
+                <Input
+                  className="border-gray-300 bg-white"
+                  placeholder="-"
+                  value={formData.observacoesMeatoscopia}
+                  onChange={(e) =>
+                    handleInputChange("observacoesMeatoscopia", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -989,25 +1358,37 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
       {/* 3. Limiares Auditivos - MÁXIMA PERFORMANCE */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
-        <SectionTitle number="3" title="Audiometria Tonal (Limiares Auditivos)" />
-        
+        <SectionTitle
+          number="3"
+          title="Audiometria Tonal (Limiares Auditivos)"
+        />
+
         <div className="mb-4 flex justify-between items-center">
           <div className="text-sm text-gray-600">
             <p className="mb-1">
-              {resultadosCalculados ? '✅ Resultados calculados' : '⚠️ Clique em "Calcular Resultados" após preencher os limiares'}
+              {resultadosCalculados
+                ? "✅ Resultados calculados"
+                : '⚠️ Clique em "Calcular Resultados" após preencher os limiares'}
             </p>
             <p className="text-xs text-amber-600">
-              💡 Valor padrão "--" indica "não escutou". Preencha os limiares auditivos antes de calcular.
+              💡 Valor padrão "--" indica "não escutou". Preencha os limiares
+              auditivos antes de calcular.
             </p>
           </div>
           <Button
-            color="primary"
-            onPress={calcularResultados}
-            isDisabled={isCalculating}
-            startContent={isCalculating ? <Spinner size="sm" /> : <Calculator className="h-4 w-4" />}
             className="bg-green-600 text-white"
+            color="primary"
+            isDisabled={isCalculating}
+            startContent={
+              isCalculating ? (
+                <Spinner size="sm" />
+              ) : (
+                <Calculator className="h-4 w-4" />
+              )
+            }
+            onPress={calcularResultados}
           >
-            {isCalculating ? 'Calculando...' : 'Calcular Resultados'}
+            {isCalculating ? "Calculando..." : "Calcular Resultados"}
           </Button>
         </div>
 
@@ -1015,13 +1396,31 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
           <table className="w-full border-collapse border border-gray-300 text-sm">
             <thead>
               <tr className="bg-gray-100">
-                <th rowSpan={2} className="border border-gray-300 p-2 font-semibold">Orelha</th>
-                <th rowSpan={2} className="border border-gray-300 p-2 font-semibold">Tipo</th>
-                <th colSpan={FREQUENCIAS.length} className="border border-gray-300 p-2 font-semibold text-center">Frequências (Hz)</th>
+                <th
+                  className="border border-gray-300 p-2 font-semibold"
+                  rowSpan={2}
+                >
+                  Orelha
+                </th>
+                <th
+                  className="border border-gray-300 p-2 font-semibold"
+                  rowSpan={2}
+                >
+                  Tipo
+                </th>
+                <th
+                  className="border border-gray-300 p-2 font-semibold text-center"
+                  colSpan={FREQUENCIAS.length}
+                >
+                  Frequências (Hz)
+                </th>
               </tr>
               <tr className="bg-gray-50">
                 {FREQUENCIAS.map((freq) => (
-                  <th key={freq.label} className="border border-gray-300 p-1 font-medium text-xs text-center">
+                  <th
+                    key={freq.label}
+                    className="border border-gray-300 p-1 font-medium text-xs text-center"
+                  >
                     {freq.label}
                   </th>
                 ))}
@@ -1030,113 +1429,215 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             <tbody>
               {/* OD - Via Aérea */}
               <tr className="bg-white">
-                <td rowSpan={4} className="border border-gray-300 p-1 text-center font-medium text-red-700 bg-red-50 text-xs">OD</td>
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">VA</td>
+                <td
+                  className="border border-gray-300 p-1 text-center font-medium text-red-700 bg-red-50 text-xs"
+                  rowSpan={4}
+                >
+                  OD
+                </td>
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">
+                  VA
+                </td>
                 {FREQUENCIAS.map((freq) => (
-                  <td key={`va-od-${freq.label}`} className="border border-gray-300 p-1">
+                  <td
+                    key={`va-od-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
                     <DecibelInput
-                      value={formData[freq.fieldVAOD as keyof AudiometriaData] as string}
-                      onChange={(value) => handleDecibelInputChange(freq.fieldVAOD as keyof AudiometriaData, value)}
                       placeholder="--"
+                      value={
+                        formData[
+                          freq.fieldVAOD as keyof AudiometriaData
+                        ] as string
+                      }
+                      onChange={(value) =>
+                        handleDecibelInputChange(
+                          freq.fieldVAOD as keyof AudiometriaData,
+                          value,
+                        )
+                      }
                     />
                   </td>
                 ))}
               </tr>
-              
+
               {/* OD - Mascaramento Via Aérea */}
               <tr className="bg-gray-50">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">Masc VA</td>
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">
+                  Masc VA
+                </td>
                 {FREQUENCIAS.map((freq) => (
-                  <td key={`masc-va-od-${freq.label}`} className="border border-gray-300 p-1">
-                    <MascaramentoCheckbox field={freq.fieldMascVAOD as keyof AudiometriaData} />
-                  </td>
-                ))}
-              </tr>
-              
-              {/* OD - Via Óssea */}
-              <tr className="bg-white">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">VO</td>
-                {FREQUENCIAS.map((freq) => (
-                  <td key={`vo-od-${freq.label}`} className="border border-gray-300 p-1">
-                    {freq.fieldVOOD ? (
-                      <DecibelInput
-                        value={formData[freq.fieldVOOD as keyof AudiometriaData] as string}
-                        onChange={(value) => handleDecibelInputChange(freq.fieldVOOD as keyof AudiometriaData, value)}
-                        placeholder="--"
-                      />
-                    ) : (
-                      <div className="text-center text-gray-400 py-2 text-xs">-</div>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              
-              {/* OD - Mascaramento Via Óssea */}
-              <tr className="bg-gray-50">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">Masc VO</td>
-                {FREQUENCIAS.map((freq) => (
-                  <td key={`masc-vo-od-${freq.label}`} className="border border-gray-300 p-1">
-                    {freq.fieldMascVOOD ? (
-                      <MascaramentoCheckbox field={freq.fieldMascVOOD as keyof AudiometriaData} />
-                    ) : (
-                      <div className="text-center text-gray-400 py-2 text-xs">-</div>
-                    )}
-                  </td>
-                ))}
-              </tr>
-              
-              {/* OE - Via Aérea */}
-              <tr className="bg-white">
-                <td rowSpan={4} className="border border-gray-300 p-1 text-center font-medium text-blue-700 bg-blue-50 text-xs">OE</td>
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">VA</td>
-                {FREQUENCIAS.map((freq) => (
-                  <td key={`va-oe-${freq.label}`} className="border border-gray-300 p-1">
-                    <DecibelInput
-                      value={formData[freq.fieldVAOE as keyof AudiometriaData] as string}
-                      onChange={(value) => handleDecibelInputChange(freq.fieldVAOE as keyof AudiometriaData, value)}
-                      placeholder="--"
+                  <td
+                    key={`masc-va-od-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    <MascaramentoCheckbox
+                      field={freq.fieldMascVAOD as keyof AudiometriaData}
                     />
                   </td>
                 ))}
               </tr>
-              
-              {/* OE - Mascaramento Via Aérea */}
-              <tr className="bg-gray-50">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">Masc VA</td>
+
+              {/* OD - Via Óssea */}
+              <tr className="bg-white">
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">
+                  VO
+                </td>
                 {FREQUENCIAS.map((freq) => (
-                  <td key={`masc-va-oe-${freq.label}`} className="border border-gray-300 p-1">
-                    <MascaramentoCheckbox field={freq.fieldMascVAOE as keyof AudiometriaData} />
+                  <td
+                    key={`vo-od-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    {freq.fieldVOOD ? (
+                      <DecibelInput
+                        placeholder="--"
+                        value={
+                          formData[
+                            freq.fieldVOOD as keyof AudiometriaData
+                          ] as string
+                        }
+                        onChange={(value) =>
+                          handleDecibelInputChange(
+                            freq.fieldVOOD as keyof AudiometriaData,
+                            value,
+                          )
+                        }
+                      />
+                    ) : (
+                      <div className="text-center text-gray-400 py-2 text-xs">
+                        -
+                      </div>
+                    )}
                   </td>
                 ))}
               </tr>
-              
-              {/* OE - Via Óssea */}
-              <tr className="bg-white">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">VO</td>
+
+              {/* OD - Mascaramento Via Óssea */}
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-red-50">
+                  Masc VO
+                </td>
                 {FREQUENCIAS.map((freq) => (
-                  <td key={`vo-oe-${freq.label}`} className="border border-gray-300 p-1">
-                    {freq.fieldVOOE ? (
-                      <DecibelInput
-                        value={formData[freq.fieldVOOE as keyof AudiometriaData] as string}
-                        onChange={(value) => handleDecibelInputChange(freq.fieldVOOE as keyof AudiometriaData, value)}
-                        placeholder="--"
+                  <td
+                    key={`masc-vo-od-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    {freq.fieldMascVOOD ? (
+                      <MascaramentoCheckbox
+                        field={freq.fieldMascVOOD as keyof AudiometriaData}
                       />
                     ) : (
-                      <div className="text-center text-gray-400 py-2 text-xs">-</div>
+                      <div className="text-center text-gray-400 py-2 text-xs">
+                        -
+                      </div>
                     )}
-                  </td> 
+                  </td>
                 ))}
               </tr>
-              
+
+              {/* OE - Via Aérea */}
+              <tr className="bg-white">
+                <td
+                  className="border border-gray-300 p-1 text-center font-medium text-blue-700 bg-blue-50 text-xs"
+                  rowSpan={4}
+                >
+                  OE
+                </td>
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">
+                  VA
+                </td>
+                {FREQUENCIAS.map((freq) => (
+                  <td
+                    key={`va-oe-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    <DecibelInput
+                      placeholder="--"
+                      value={
+                        formData[
+                          freq.fieldVAOE as keyof AudiometriaData
+                        ] as string
+                      }
+                      onChange={(value) =>
+                        handleDecibelInputChange(
+                          freq.fieldVAOE as keyof AudiometriaData,
+                          value,
+                        )
+                      }
+                    />
+                  </td>
+                ))}
+              </tr>
+
+              {/* OE - Mascaramento Via Aérea */}
+              <tr className="bg-gray-50">
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">
+                  Masc VA
+                </td>
+                {FREQUENCIAS.map((freq) => (
+                  <td
+                    key={`masc-va-oe-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    <MascaramentoCheckbox
+                      field={freq.fieldMascVAOE as keyof AudiometriaData}
+                    />
+                  </td>
+                ))}
+              </tr>
+
+              {/* OE - Via Óssea */}
+              <tr className="bg-white">
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">
+                  VO
+                </td>
+                {FREQUENCIAS.map((freq) => (
+                  <td
+                    key={`vo-oe-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
+                    {freq.fieldVOOE ? (
+                      <DecibelInput
+                        placeholder="--"
+                        value={
+                          formData[
+                            freq.fieldVOOE as keyof AudiometriaData
+                          ] as string
+                        }
+                        onChange={(value) =>
+                          handleDecibelInputChange(
+                            freq.fieldVOOE as keyof AudiometriaData,
+                            value,
+                          )
+                        }
+                      />
+                    ) : (
+                      <div className="text-center text-gray-400 py-2 text-xs">
+                        -
+                      </div>
+                    )}
+                  </td>
+                ))}
+              </tr>
+
               {/* OE - Mascaramento Via Óssea */}
               <tr className="bg-gray-50">
-                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">Masc VO</td>
+                <td className="border border-gray-300 p-1 text-center font-medium text-xs bg-blue-50">
+                  Masc VO
+                </td>
                 {FREQUENCIAS.map((freq) => (
-                  <td key={`masc-vo-oe-${freq.label}`} className="border border-gray-300 p-1">
+                  <td
+                    key={`masc-vo-oe-${freq.label}`}
+                    className="border border-gray-300 p-1"
+                  >
                     {freq.fieldMascVOOE ? (
-                      <MascaramentoCheckbox field={freq.fieldMascVOOE as keyof AudiometriaData} />
+                      <MascaramentoCheckbox
+                        field={freq.fieldMascVOOE as keyof AudiometriaData}
+                      />
                     ) : (
-                      <div className="text-center text-gray-400 py-2 text-xs">-</div>
+                      <div className="text-center text-gray-400 py-2 text-xs">
+                        -
+                      </div>
                     )}
                   </td>
                 ))}
@@ -1150,123 +1651,193 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       {resultadosCalculados && (
         <Card className="p-6 shadow-sm border border-gray-200 bg-white">
           <SectionTitle number="4" title="Conclusão e Laudo Final" />
-          
+
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Resultado OD */}
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                    <h3 className="font-bold text-red-800 mb-4 text-center">OD - Ouvido Direito</h3>
-                    <div className="space-y-3">
-                        <div>
-                            <label className="block text-sm font-semibold text-red-700 mb-1">Classificação (Grau Lloyd & Kaplan)</label>
-                            <div className={`text-center font-bold text-sm p-2 rounded ${ 
-                                formData.classificacaoOD.includes('normalidade') || formData.classificacaoOD === '-' ? 'bg-green-100 text-green-800' : 
-                                formData.classificacaoOD.includes('Leve') ? 'bg-amber-100 text-amber-800' : 
-                                formData.classificacaoOD.includes('Moderada') ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800' 
-                            }`}>
-                                {formData.classificacaoOD === '-' ? 'Dentro dos padrões da normalidade' : formData.classificacaoOD}
-                            </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center">
-                                <div className="font-semibold text-red-700">Média Tonal (4f)</div>
-                                <div className="font-bold text-gray-800">{formData.mediaTonalOD} dB</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-red-700">Tipo de Perda</div>
-                                <div className="font-bold text-gray-800">{formData.tipoPerdaOD}</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-red-700">Configuração</div>
-                                <div className="font-bold text-gray-800">{formData.configuracaoOD}</div>
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-2">
-                            Frequências Alteradas: <span className="font-semibold">{formData.frequenciasAlteradasOD || 'Nenhuma'}</span>
-                        </p>
+              <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+                <h3 className="font-bold text-red-800 mb-4 text-center">
+                  OD - Ouvido Direito
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-red-700 mb-1">
+                      Classificação (Grau Lloyd & Kaplan)
+                    </label>
+                    <div
+                      className={`text-center font-bold text-sm p-2 rounded ${
+                        formData.classificacaoOD.includes("normalidade") ||
+                        formData.classificacaoOD === "-"
+                          ? "bg-green-100 text-green-800"
+                          : formData.classificacaoOD.includes("Leve")
+                            ? "bg-amber-100 text-amber-800"
+                            : formData.classificacaoOD.includes("Moderada")
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {formData.classificacaoOD === "-"
+                        ? "Dentro dos padrões da normalidade"
+                        : formData.classificacaoOD}
                     </div>
-                </div>
+                  </div>
 
-                {/* Resultado OE */}
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                    <h3 className="font-bold text-blue-800 mb-4 text-center">OE - Ouvido Esquerdo</h3>
-                    <div className="space-y-3">
-                        <div>
-                            <label className="block text-sm font-semibold text-blue-700 mb-1">Classificação (Grau Lloyd & Kaplan)</label>
-                            <div className={`text-center font-bold text-sm p-2 rounded ${ 
-                                formData.classificacaoOE.includes('normalidade') || formData.classificacaoOE === '-' ? 'bg-green-100 text-green-800' : 
-                                formData.classificacaoOE.includes('Leve') ? 'bg-amber-100 text-amber-800' : 
-                                formData.classificacaoOE.includes('Moderada') ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800' 
-                            }`}>
-                                {formData.classificacaoOE === '-' ? 'Dentro dos padrões da normalidade' : formData.classificacaoOE}
-                            </div>
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                            <div className="text-center">
-                                <div className="font-semibold text-blue-700">Média Tonal (4f)</div>
-                                <div className="font-bold text-gray-800">{formData.mediaTonalOE} dB</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-blue-700">Tipo de Perda</div>
-                                <div className="font-bold text-gray-800">{formData.tipoPerdaOE}</div>
-                            </div>
-                            <div className="text-center">
-                                <div className="font-semibold text-blue-700">Configuração</div>
-                                <div className="font-bold text-gray-800">{formData.configuracaoOE}</div>
-                            </div>
-                        </div>
-                        <p className="text-xs text-gray-600 mt-2">
-                            Frequências Alteradas: <span className="font-semibold">{formData.frequenciasAlteradasOE || 'Nenhuma'}</span>
-                        </p>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-semibold text-red-700">
+                        Média Tonal (4f)
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.mediaTonalOD} dB
+                      </div>
                     </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-red-700">
+                        Tipo de Perda
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.tipoPerdaOD}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-red-700">
+                        Configuração
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.configuracaoOD}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Frequências Alteradas:{" "}
+                    <span className="font-semibold">
+                      {formData.frequenciasAlteradasOD || "Nenhuma"}
+                    </span>
+                  </p>
                 </div>
+              </div>
+
+              {/* Resultado OE */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="font-bold text-blue-800 mb-4 text-center">
+                  OE - Ouvido Esquerdo
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm font-semibold text-blue-700 mb-1">
+                      Classificação (Grau Lloyd & Kaplan)
+                    </label>
+                    <div
+                      className={`text-center font-bold text-sm p-2 rounded ${
+                        formData.classificacaoOE.includes("normalidade") ||
+                        formData.classificacaoOE === "-"
+                          ? "bg-green-100 text-green-800"
+                          : formData.classificacaoOE.includes("Leve")
+                            ? "bg-amber-100 text-amber-800"
+                            : formData.classificacaoOE.includes("Moderada")
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {formData.classificacaoOE === "-"
+                        ? "Dentro dos padrões da normalidade"
+                        : formData.classificacaoOE}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-semibold text-blue-700">
+                        Média Tonal (4f)
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.mediaTonalOE} dB
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-blue-700">
+                        Tipo de Perda
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.tipoPerdaOE}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-blue-700">
+                        Configuração
+                      </div>
+                      <div className="font-bold text-gray-800">
+                        {formData.configuracaoOE}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-600 mt-2">
+                    Frequências Alteradas:{" "}
+                    <span className="font-semibold">
+                      {formData.frequenciasAlteradasOE || "Nenhuma"}
+                    </span>
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Conclusão Geral */}
             <div className="p-4">
               <div className="mb-6 p-3 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Sugestão de enquadramento PCD</label>
-                <Textarea 
-                  value={formData.criterioPCD}
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Sugestão de enquadramento PCD
+                </label>
+                <Textarea
                   isReadOnly
+                  className={`text-sm font-semibold ${formData.criterioPCD.includes("POSSIBILIDADE") ? "text-green-700 border-green-300" : "text-gray-700 border-gray-300"}`}
                   rows={2}
-                  className={`text-sm font-semibold ${formData.criterioPCD.includes('POSSIBILIDADE') ? 'text-green-700 border-green-300' : 'text-gray-700 border-gray-300'}`}
+                  value={formData.criterioPCD}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm text-center font-medium text-red-700 mb-2">Ouvido Direito</label>
-                  <Textarea 
-                    value={formData.resultadoOD}
-                    onChange={(e) => handleInputChange('resultadoOD', e.target.value)}
-                    rows={4}
-                    className="bg-white border-red-300 text-sm"
+                  <label className="block text-sm text-center font-medium text-red-700 mb-2">
+                    Ouvido Direito
+                  </label>
+                  <Textarea
                     required
+                    className="bg-white border-red-300 text-sm"
+                    rows={4}
+                    value={formData.resultadoOD}
+                    onChange={(e) =>
+                      handleInputChange("resultadoOD", e.target.value)
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-center font-medium text-blue-700 mb-2">Ouvido Esquerdo</label>
-                  <Textarea 
-                    value={formData.resultadoOE}
-                    onChange={(e) => handleInputChange('resultadoOE', e.target.value)}
-                    rows={4}
-                    className="bg-white border-blue-300 text-sm"
+                  <label className="block text-sm text-center font-medium text-blue-700 mb-2">
+                    Ouvido Esquerdo
+                  </label>
+                  <Textarea
                     required
+                    className="bg-white border-blue-300 text-sm"
+                    rows={4}
+                    value={formData.resultadoOE}
+                    onChange={(e) =>
+                      handleInputChange("resultadoOE", e.target.value)
+                    }
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Observações do avaliador</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Observações do avaliador
+                </label>
                 <Textarea
-                  value={formData.observacoes}
-                  onChange={(e) => handleInputChange('observacoes', e.target.value)}
-                  rows={3}
                   className="bg-white border-gray-300"
                   placeholder="Ex: orientado quanto ao uso contínuo do protetor auricular..."
+                  rows={3}
+                  value={formData.observacoes}
+                  onChange={(e) =>
+                    handleInputChange("observacoes", e.target.value)
+                  }
                 />
               </div>
             </div>
@@ -1277,22 +1848,22 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200 bg-white p-4 rounded-lg">
         <Button
-          variant="flat"
-          onPress={onClose}
           className="px-8 border border-gray-300 text-gray-700 hover:bg-gray-50"
           isDisabled={isLoading}
+          variant="flat"
+          onPress={onClose}
         >
           Cancelar
         </Button>
         <Button
+          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           color="primary"
           onPress={handleSave}
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           // ATUALIZAÇÃO 2: Desabilitar o botão se os resultados não foram calculados
           isDisabled={!formData.resultadoOD || !formData.resultadoOE || isLoading || !resultadosCalculados}
         >
-          {isLoading ? 'Salvando...' : 'Concluir exame'}
+          {isLoading ? "Salvando..." : "Concluir exame"}
         </Button>
       </div>
     </div>
