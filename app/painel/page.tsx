@@ -161,9 +161,10 @@ const mesAtual = (date: Date): string => {
   return meses[date.getMonth()];
 };
 
+// Componentes responsivos
 const CounterCard = ({ label, value }: { label: string; value: number }) => (
   <div
-    className="rounded-2xl px-4 py-3 shadow-sm border min-w-[120px] backdrop-blur-sm"
+    className="rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm border min-w-[80px] sm:min-w-[100px] lg:min-w-[120px] backdrop-blur-sm"
     style={{
       backgroundColor: COLOR_PALETTE.white,
       borderColor: COLOR_PALETTE.border,
@@ -171,13 +172,13 @@ const CounterCard = ({ label, value }: { label: string; value: number }) => (
     }}
   >
     <div
-      className="text-3xl font-black leading-none tracking-tight text-center"
+      className="text-xl sm:text-2xl lg:text-3xl font-black leading-none tracking-tight text-center"
       style={{ color: COLOR_PALETTE.primary }}
     >
       {value}
     </div>
     <div
-      className="mt-1 text-xs uppercase tracking-widest font-semibold text-center"
+      className="mt-1 text-xs sm:text-xs lg:text-sm uppercase tracking-wider font-semibold text-center truncate px-1"
       style={{ color: COLOR_PALETTE.textLight }}
     >
       {label}
@@ -193,7 +194,7 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
 
   return (
     <motion.div
-      className="rounded-xl p-4 flex-1 min-w-0 shadow-sm border backdrop-blur-sm"
+      className="rounded-xl p-3 sm:p-4 flex-1 min-w-0 shadow-sm border backdrop-blur-sm"
       style={{
         backgroundColor: colors.primary + "20",
         borderColor: colors.primary,
@@ -203,13 +204,13 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       whileHover={{ y: -2, scale: 1.02 }}
     >
       <div
-        className="text-2xl font-bold truncate"
+        className="text-lg sm:text-xl lg:text-2xl font-bold truncate"
         style={{ color: colors.primary }}
       >
         {c.name ? c.name : `SENHA ${c.ticket}`}
       </div>
       <div
-        className="mt-2 inline-flex items-center gap-2 font-bold text-xl rounded-full px-3 py-1"
+        className="mt-2 inline-flex items-center gap-2 font-bold text-base sm:text-lg lg:text-xl rounded-full px-3 py-1"
         style={{
           backgroundColor: colors.primary,
           color: colors.text,
@@ -217,7 +218,7 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       >
         <span className="truncate">{c.sala}</span>
         <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
-        {c.exame}
+        <span className="truncate">{c.exame}</span>
       </div>
     </motion.div>
   );
@@ -227,12 +228,12 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
 const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
   <motion.div
     animate={{ opacity: 1 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
     initial={{ opacity: 0 }}
   >
     <motion.div
       animate={{ scale: 1, opacity: 1 }}
-      className="bg-white rounded-2xl p-8 max-w-md mx-4 shadow-2xl"
+      className="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-md mx-auto shadow-2xl"
       initial={{ scale: 0.8, opacity: 0 }}
       style={{
         borderColor: COLOR_PALETTE.border,
@@ -240,7 +241,7 @@ const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
     >
       <div className="text-center">
         <div
-          className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
+          className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
           style={{
             backgroundColor: COLOR_PALETTE.primary,
             backgroundImage:
@@ -251,14 +252,14 @@ const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
         </div>
 
         <h2
-          className="text-2xl font-bold mb-4"
+          className="text-xl sm:text-2xl font-bold mb-4"
           style={{ color: COLOR_PALETTE.primary }}
         >
           Ativação de Áudio
         </h2>
 
         <p
-          className="text-gray-600 mb-6"
+          className="text-sm sm:text-base text-gray-600 mb-6"
           style={{ color: COLOR_PALETTE.textLight }}
         >
           Para uma melhor experiência, ative o áudio do painel. Clique no botão
@@ -266,7 +267,7 @@ const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
         </p>
 
         <button
-          className="w-full rounded-xl px-6 py-4 font-bold text-white transition-all hover:shadow-lg transform hover:scale-[1.02]"
+          className="w-full rounded-xl px-4 sm:px-6 py-3 sm:py-4 font-bold text-white transition-all hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base"
           style={{
             background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
             boxShadow: "0 4px 14px rgba(68, 115, 94, 0.3)",
@@ -277,7 +278,7 @@ const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
         </button>
 
         <button
-          className="w-full mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          className="w-full mt-3 text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-colors"
           style={{ color: COLOR_PALETTE.textLight }}
           onClick={onActivate}
         >
@@ -330,7 +331,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
               index === itemAtual ? "bg-white scale-125" : "bg-white/50"
             }`}
           />
@@ -363,7 +364,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         </motion.div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-6 lg:p-12 bg-gradient-to-br from-green-600 to-green-950">
+      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 xl:p-12 bg-gradient-to-br from-green-600 to-green-950">
         <motion.div
           key={`content-${item.id}`}
           animate={{ x: 0, opacity: 1 }}
@@ -373,7 +374,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         >
           <motion.h1
             animate={{ y: 0, opacity: 1 }}
-            className="text-4xl lg:text-6xl font-black mb-4 leading-tight"
+            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-4 leading-tight"
             initial={{ y: 30, opacity: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
@@ -383,7 +384,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
           {item.subtitulo && (
             <motion.p
               animate={{ y: 0, opacity: 1 }}
-              className="text-xl lg:text-2xl font-light mb-8 text-blue-200"
+              className="text-base sm:text-lg lg:text-xl xl:text-2xl font-light mb-4 sm:mb-6 lg:mb-8 text-blue-200"
               initial={{ y: 20, opacity: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
@@ -393,29 +394,31 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
 
           <motion.div
             animate={{ y: 0, opacity: 1 }}
-            className="space-y-4"
+            className="space-y-3 sm:space-y-4"
             initial={{ y: 20, opacity: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
           >
             {Array.isArray(item.conteudo) ? (
-              <ul className="space-y-3">
+              <ul className="space-y-2 sm:space-y-3">
                 {item.conteudo.map((linha, index) => (
                   <motion.li
                     key={index}
                     animate={{ x: 0, opacity: 1 }}
-                    className="flex items-start gap-3 text-lg"
+                    className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg"
                     initial={{ x: -20, opacity: 0 }}
                     transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
                   >
-                    <div className="w-2 h-2 bg-orange-400 rounded-full mt-3 flex-shrink-0" />
-                    <span className="leading-relaxed text-xl">{linha}</span>
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full mt-2 sm:mt-3 flex-shrink-0" />
+                    <span className="leading-relaxed text-sm sm:text-base lg:text-lg xl:text-xl">
+                      {linha}
+                    </span>
                   </motion.li>
                 ))}
               </ul>
             ) : (
               <motion.p
                 animate={{ x: 0, opacity: 1 }}
-                className="text-xl leading-relaxed"
+                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed"
                 initial={{ x: -20, opacity: 0 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
               >
@@ -426,13 +429,13 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
 
           <motion.div
             animate={{ scale: 1, opacity: 1 }}
-            className="mt-8 pt-6 border-t border-white/20"
+            className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/20"
             initial={{ scale: 0, opacity: 0 }}
             transition={{ delay: 1.2, duration: 0.5 }}
           >
-            <div className="flex items-center justify-between text-sm text-white/70">
+            <div className="flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-white/70 gap-2">
               <span>{new Date().getFullYear()} • CMSO</span>
-              <span>{unidadeSelecionada}</span>
+              <span className="truncate">{unidadeSelecionada}</span>
             </div>
           </motion.div>
         </motion.div>
@@ -462,14 +465,14 @@ const ConfigModal = ({
   return (
     <motion.div
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 backdrop-blur-sm p-4"
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       onClick={onClose}
     >
       <motion.div
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 shadow-xl"
+        className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-xl"
         exit={{ scale: 0.9, opacity: 0 }}
         initial={{ scale: 0.9, opacity: 0 }}
         style={{
@@ -478,7 +481,7 @@ const ConfigModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2
-          className="text-2xl font-bold mb-4"
+          className="text-xl sm:text-2xl font-bold mb-4"
           style={{ color: COLOR_PALETTE.primary }}
         >
           Configurações do Painel
@@ -493,7 +496,7 @@ const ConfigModal = ({
               Unidade
             </label>
             <select
-              className="w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all"
+              className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-sm sm:text-base"
               style={{
                 borderColor: COLOR_PALETTE.border,
                 color: COLOR_PALETTE.text,
@@ -503,13 +506,17 @@ const ConfigModal = ({
               onChange={(e) => onUnidadeChange(e.target.value)}
             >
               {UNIDADES_ATENDIMENTO.map((unidade) => (
-                <option value={unidade}>{unidade}</option>
+                <option key={unidade} value={unidade}>
+                  {unidade}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="flex items-center justify-between">
-            <span style={{ color: COLOR_PALETTE.text }}>Áudio</span>
+            <span className="text-sm sm:text-base" style={{ color: COLOR_PALETTE.text }}>
+              Áudio
+            </span>
             <button
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                 audioHabilitado ? "bg-green-500" : "bg-gray-300"
@@ -525,7 +532,7 @@ const ConfigModal = ({
           </div>
 
           <div
-            className="flex items-center gap-2 text-sm"
+            className="flex items-center gap-2 text-xs sm:text-sm"
             style={{ color: COLOR_PALETTE.textLight }}
           >
             {audioHabilitado ? <Volume2 size={16} /> : <VolumeX size={16} />}
@@ -533,9 +540,9 @@ const ConfigModal = ({
           </div>
         </div>
 
-        <div className="flex gap-3 mt-6">
+        <div className="flex gap-2 sm:gap-3 mt-6">
           <button
-            className="flex-1 rounded-xl px-4 py-3 font-semibold transition-all border"
+            className="flex-1 rounded-xl px-3 sm:px-4 py-2 sm:py-3 font-semibold transition-all border text-sm sm:text-base"
             style={{
               borderColor: COLOR_PALETTE.border,
               color: COLOR_PALETTE.text,
@@ -546,7 +553,7 @@ const ConfigModal = ({
             Fechar
           </button>
           <button
-            className="flex-1 rounded-xl px-4 py-3 font-semibold text-white transition-all"
+            className="flex-1 rounded-xl px-3 sm:px-4 py-2 sm:py-3 font-semibold text-white transition-all text-sm sm:text-base"
             style={{
               backgroundColor: COLOR_PALETTE.primary,
             }}
@@ -1022,7 +1029,7 @@ export default function PainelPage() {
         }}
       >
         <div
-          className="w-full max-w-md rounded-2xl p-8 shadow-lg border"
+          className="w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-lg border"
           style={{
             backgroundColor: COLOR_PALETTE.white,
             borderColor: COLOR_PALETTE.border,
@@ -1032,21 +1039,21 @@ export default function PainelPage() {
           <div className="space-y-6">
             <div className="text-center">
               <div
-                className="w-20 h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm"
+                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm"
                 style={{
                   backgroundColor: COLOR_PALETTE.primary,
                   backgroundImage: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                 }}
               >
-                <Monitor className="text-white" size={32} />
+                <Monitor className="text-white" size={28} />
               </div>
               <h1
-                className="text-2xl font-bold"
+                className="text-xl sm:text-2xl font-bold"
                 style={{ color: COLOR_PALETTE.primary }}
               >
                 Painel de Chamadas
               </h1>
-              <p className="mt-2" style={{ color: COLOR_PALETTE.textLight }}>
+              <p className="mt-2 text-sm sm:text-base" style={{ color: COLOR_PALETTE.textLight }}>
                 Acesso restrito ao pessoal autorizado
               </p>
             </div>
@@ -1061,7 +1068,7 @@ export default function PainelPage() {
                 </label>
                 <input
                   autoFocus
-                  className="w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 text-lg transition-all"
+                  className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 text-base sm:text-lg transition-all"
                   id="serialInput"
                   placeholder="Digite a chave..."
                   style={{
@@ -1081,7 +1088,7 @@ export default function PainelPage() {
                   Unidade
                 </label>
                 <select
-                  className="w-full rounded-xl border px-4 py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 transition-all"
+                  className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 transition-all text-sm sm:text-base"
                   defaultValue=""
                   id="unidadeSelect"
                   style={{
@@ -1094,13 +1101,15 @@ export default function PainelPage() {
                     Selecione a unidade
                   </option>
                   {UNIDADES_ATENDIMENTO.map((unidade) => (
-                    <option value={unidade}>{unidade}</option>
+                    <option key={unidade} value={unidade}>
+                      {unidade}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <button
-                className="w-full rounded-xl px-6 py-4 font-bold text-white mt-4 transition-all hover:shadow-lg transform hover:scale-[1.02]"
+                className="w-full rounded-xl px-4 sm:px-6 py-3 sm:py-4 font-bold text-white mt-4 transition-all hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base"
                 style={{
                   background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                   boxShadow: "0 4px 14px rgba(68, 115, 94, 0.3)",
@@ -1152,7 +1161,7 @@ export default function PainelPage() {
       {/* Botão de Configurações Flutuante */}
       <motion.button
         animate={{ scale: 1, opacity: 1 }}
-        className="fixed bottom-6 right-6 z-40 rounded-full p-4 shadow-lg border transition-all"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 rounded-full p-3 sm:p-4 shadow-lg border transition-all"
         initial={{ scale: 0, opacity: 0 }}
         style={{
           backgroundColor: COLOR_PALETTE.white,
@@ -1164,7 +1173,7 @@ export default function PainelPage() {
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowConfig(true)}
       >
-        <Settings size={24} />
+        <Settings size={20} />
       </motion.button>
 
       {/* Modal de Configurações */}
@@ -1189,40 +1198,40 @@ export default function PainelPage() {
         {showPainel && !deveExibirIdle && (
           <motion.div
             animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col min-h-0"
             exit={{ opacity: 0, scale: 1.05 }}
             initial={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.8 }}
           >
             <header
-              className="w-full border-b py-2 px-4 lg:px-6 backdrop-blur-sm"
+              className="w-full border-b py-2 px-2 sm:px-4 lg:px-6 backdrop-blur-sm shrink-0"
               style={{
                 backgroundColor: COLOR_PALETTE.white,
                 borderColor: COLOR_PALETTE.border,
                 boxShadow: "0 1px 3px rgba(68, 115, 94, 0.05)",
               }}
             >
-              <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 items-center gap-4">
-                <div className="flex items-center gap-4 justify-center md:justify-start">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 items-center gap-2 sm:gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 justify-center sm:justify-start order-2 sm:order-1">
                   <div
-                    className="rounded-2xl p-3 shadow-sm border"
+                    className="rounded-2xl p-2 sm:p-3 shadow-sm border"
                     style={{
                       backgroundColor: COLOR_PALETTE.primary,
                       borderColor: COLOR_PALETTE.accent,
                       backgroundImage: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                     }}
                   >
-                    <Monitor className="text-white" size={28} />
+                    <Monitor className="text-white" size={24} />
                   </div>
                   <div>
                     <div
-                      className="text-sm uppercase tracking-wide font-semibold"
+                      className="text-xs sm:text-sm uppercase tracking-wide font-semibold"
                       style={{ color: COLOR_PALETTE.textLight }}
                     >
                       Unidade
                     </div>
                     <div
-                      className="text-xl font-bold"
+                      className="text-base sm:text-xl font-bold truncate max-w-[150px] sm:max-w-none"
                       style={{ color: COLOR_PALETTE.text }}
                     >
                       {unidadeSelecionada}
@@ -1230,36 +1239,36 @@ export default function PainelPage() {
                   </div>
                 </div>
 
-                <div className="text-center order-first md:order-none">
+                <div className="text-center order-1 sm:order-2">
                   <div
-                    className="text-lg font-semibold"
+                    className="text-sm sm:text-base lg:text-lg font-semibold"
                     style={{ color: COLOR_PALETTE.text }}
                   >
                     {dataCompleta}
                   </div>
                   <div
-                    className="text-3xl font-black tabular-nums flex items-center justify-center gap-3 mt-1"
+                    className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums flex items-center justify-center gap-2 sm:gap-3 mt-1"
                     style={{ color: COLOR_PALETTE.primary }}
                   >
-                    <Clock size={24} /> {hora}
+                    <Clock size={20} /> {hora}
                   </div>
                 </div>
 
-                <div className="flex justify-center md:justify-end gap-4">
+                <div className="flex justify-center sm:justify-end gap-2 sm:gap-4 order-3">
                   <CounterCard label="Chamando" value={ativas.length} />
                   <CounterCard label="Aguardando" value={espera.length} />
                 </div>
               </div>
             </header>
 
-            <main className="flex-1 flex flex-col px-2 sm:px-4 py-4 max-w-7xl mx-auto w-full">
-              <section className="flex-1 flex items-center justify-center mb-4 sm:mb-6">
+            <main className="flex-1 flex flex-col px-1 sm:px-2 lg:px-4 py-2 sm:py-4 max-w-7xl mx-auto w-full min-h-0">
+              <section className="flex-1 flex items-center justify-center mb-2 sm:mb-4 lg:mb-6 min-h-0">
                 <AnimatePresence mode="wait">
                   {chamadaAtual ? (
                     <motion.div
                       key={chamadaAtual.id}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="w-full max-w-6xl rounded-2xl p-6 lg:p-8 xl:p-12 shadow-lg border text-center backdrop-blur-sm mx-2"
+                      className="w-full max-w-6xl rounded-2xl p-4 sm:p-6 lg:p-8 xl:p-12 shadow-lg border text-center backdrop-blur-sm mx-1 sm:mx-2"
                       exit={{ opacity: 0, scale: 0.9 }}
                       initial={{ opacity: 0, scale: 0.9 }}
                       style={{
@@ -1272,15 +1281,15 @@ export default function PainelPage() {
                     >
                       <motion.div
                         animate={{ scale: 1, opacity: 1 }}
-                        className="mb-6 lg:mb-8"
+                        className="mb-4 sm:mb-6 lg:mb-8"
                         initial={{ scale: 0.95, opacity: 0 }}
                         transition={{ delay: 0.05 }}
                       >
                         <div
                           className={
                             chamadaAtual.name
-                              ? "text-5xl sm:text-6xl lg:text-7xl font-black mb-4 uppercase tracking-wider"
-                              : "text-7xl sm:text-8xl lg:text-9xl font-black mb-4 uppercase tracking-wider"
+                              ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black mb-2 sm:mb-4 uppercase tracking-wider break-words"
+                              : "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black mb-2 sm:mb-4 uppercase tracking-wider"
                           }
                           style={{ color: currentExamColors.primary }}
                         >
@@ -1288,10 +1297,10 @@ export default function PainelPage() {
                         </div>
                       </motion.div>
 
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-1 mb-2 lg:mb-4">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2 lg:mb-4">
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="flex items-center gap-3 text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 sm:py-3 rounded-full border"
+                          className="flex items-center gap-2 sm:gap-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black px-3 sm:px-4 md:px-6 py-1 sm:py-2 md:py-3 rounded-full border"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             backgroundColor: currentExamColors.primary,
@@ -1305,7 +1314,7 @@ export default function PainelPage() {
 
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="text-2xl sm:text-3xl lg:text-4xl xl:text-6xl font-black px-4 sm:px-6 py-2 rounded-full border-2"
+                          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black px-3 sm:px-4 md:px-6 py-1 sm:py-2 rounded-full border-2 text-center"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             borderColor: currentExamColors.primary,
@@ -1314,7 +1323,9 @@ export default function PainelPage() {
                           }}
                           transition={{ delay: 0.15 }}
                         >
-                          <span>{chamadaAtual.exame || "ATENDIMENTO"}</span>
+                          <span className="break-words">
+                            {chamadaAtual.exame || "ATENDIMENTO"}
+                          </span>
                         </motion.div>
                       </div>
                     </motion.div>
@@ -1322,16 +1333,16 @@ export default function PainelPage() {
                     <motion.div
                       key="aguardando"
                       animate={{ opacity: 1 }}
-                      className="text-center mx-4"
+                      className="text-center mx-2 sm:mx-4"
                       initial={{ opacity: 0 }}
                     >
                       <Loader2
-                        className="animate-spin mx-auto mb-4 sm:mb-6"
-                        size={48}
+                        className="animate-spin mx-auto mb-3 sm:mb-4 lg:mb-6"
+                        size={32}
                         style={{ color: COLOR_PALETTE.primary }}
                       />
                       <h2
-                        className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4"
+                        className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2 sm:mb-3 lg:mb-4"
                         style={{ color: COLOR_PALETTE.text }}
                       >
                         AGUARDANDO CHAMADAS
@@ -1341,20 +1352,20 @@ export default function PainelPage() {
                 </AnimatePresence>
               </section>
 
-              <section className="mt-auto px-2 w-full">
+              <section className="mt-auto px-1 sm:px-2 w-full shrink-0">
                 <div
-                  className="flex items-center gap-3 text-lg sm:text-xl font-bold mb-3 sm:mb-4"
+                  className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 lg:mb-4"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   <History size={18} style={{ color: COLOR_PALETTE.primary }} />
-                  <span>CHAMADAS ANTERIORES</span>
+                  <span className="truncate">CHAMADAS ANTERIORES</span>
                 </div>
 
                 <div className="w-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 lg:gap-4 w-full">
                     {anteriores.length === 0 ? (
                       <div
-                        className="col-span-2 text-base sm:text-lg italic py-6 sm:py-8 text-center w-full rounded-xl border"
+                        className="col-span-2 text-sm sm:text-base lg:text-lg italic py-4 sm:py-6 lg:py-8 text-center w-full rounded-xl border"
                         style={{
                           color: COLOR_PALETTE.textLight,
                           borderColor: COLOR_PALETTE.border,
