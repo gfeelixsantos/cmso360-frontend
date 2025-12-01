@@ -388,9 +388,7 @@ const AtendimentoPage: React.FC = () => {
           });
 
           
-          setTimeout(() => {
-            emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
-          }, 1500)
+
           break;
 
         case MongoOperationTypes.UPDATE:
@@ -404,9 +402,7 @@ const AtendimentoPage: React.FC = () => {
             );
           });
 
-          setTimeout(() => {
-            emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
-          }, 1500)
+
           break;
 
         case MongoOperationTypes.DELETE:
@@ -414,9 +410,7 @@ const AtendimentoPage: React.FC = () => {
             prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
           );
 
-          setTimeout(() => {
-            emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);
-          }, 1500)
+
           break;
       }
     };
