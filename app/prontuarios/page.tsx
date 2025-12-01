@@ -457,36 +457,52 @@ export default function UnifiedProntuarioPage() {
 
     setSocketState(s);
 
-    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
-      const newRecord = mapSchedulingToMedicalRecord(
-        schedule,
-        schedule.ATENDIMENTOSTATUS,
-      );
+// ... dentro do useEffect do WebSocket ...
 
-      setRecords((prev) => {
-        let updatedRecords = [...prev];
+    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
+      console.log("atualização recebida via websocket:", operation, schedule);
+      const newRecord = mapSchedulingToMedicalRecord(
+        schedule,
+        schedule.ATENDIMENTOSTATUS,
+      );
 
-        switch (operation) {
-          case MongoOperationTypes.INSERT:
-            updatedRecords = [...prev, newRecord];
-            break;
-          case MongoOperationTypes.UPDATE:
-            updatedRecords = prev.map((ag) =>
-              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? newRecord : ag,
-            );
-            break;
-          case MongoOperationTypes.DELETE:
-            updatedRecords = prev.filter(
-              (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE,
-            );
-            break;
-        }
+      setRecords((prev) => {
+        let updatedRecords = [...prev];
 
-        return updatedRecords.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-        );
-      });
-    };
+        // 1. Tenta encontrar o índice do registro que está sendo atualizado/removido
+        const existingIndex = updatedRecords.findIndex(
+          (ag) => ag.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
+        );
+
+        // 2. Lógica principal de atualização/remoção
+        if (operation === MongoOperationTypes.DELETE) {
+          // Remoção direta, se for DELETE
+          updatedRecords = updatedRecords.filter(
+            (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
+          );
+        } else if (newRecord.currentStatus !== attendanceStatus) {
+          // *** SE O STATUS MUDOU E NÃO CORRESPONDE AO ATUAL, REMOVE DA LISTA! ***
+          if (existingIndex > -1) {
+            updatedRecords.splice(existingIndex, 1);
+            // Você pode querer dar um Toast aqui para feedback
+          }
+        } else {
+          // *** O STATUS É O MESMO (OU UM INSERT), ATUALIZA/ADICIONA. ***
+          if (existingIndex > -1) {
+            // UPDATE (mantém a posição, se possível, ou substitui)
+            updatedRecords[existingIndex] = newRecord;
+          } else if (operation === MongoOperationTypes.INSERT) {
+            // INSERT
+            updatedRecords.push(newRecord);
+          }
+        }
+
+        // Reordenar após a modificação para manter a UX
+        return updatedRecords.sort((a, b) =>
+          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+        );
+      });
+    };
 
     onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
 
@@ -827,7 +843,7 @@ export default function UnifiedProntuarioPage() {
               {paginationData.total > 0 && (
                 <div className="w-full bg-default-200 rounded-full h-1.5 mt-2">
                   <div
-                    className="bg-primary-500 h-1.5 rounded-full transition-all duration-300"
+                    className="bg-green-700 h-1.5 rounded-full transition-all duration-300"
                     style={{
                       width: `${(records.length / paginationData.total) * 100}%`,
                     }}
@@ -844,9 +860,10 @@ export default function UnifiedProntuarioPage() {
           selectedRecord={selectedRecord}
           onPdfIndexChange={handlePdfIndexChange}
         />
-
+ 
         {/* RIGHT: Painel Lateral Componentizado */}
         <PainelDireita
+          key={selectedRecord?.CODIGOPRONTUARIO || "no-selection"}
           currentPdfIndex={currentPdfIndex}
           selectedRecord={selectedRecord}
           setSelectedRecord={setSelectedRecord}

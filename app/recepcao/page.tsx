@@ -356,7 +356,7 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
-      console.log(request);
+
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
           addOrUpdate(request.request.tickets!);

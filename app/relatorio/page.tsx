@@ -1,3 +1,4 @@
+// Página relatório
 // app/relatorios/page.tsx
 "use client";
 
@@ -34,7 +35,6 @@ import {
   useDisclosure,
   Spinner,
   Skeleton,
-  DatePicker,
   Autocomplete,
 } from "@heroui/react";
 import { SearchIcon, FilterIcon, EyeIcon, XIcon } from "lucide-react";
@@ -42,26 +42,48 @@ import { useRouter } from "next/navigation";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { NEST_SCHEDULINGS_ALL } from "@/config/constants";
+import { NEST_RELATORIO_FILTROS, NEST_RELATORIO_FUNCIONARIO, NEST_RELATORIO_PARAMETROS } from "@/config/constants";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import {
   formatCPF,
   getCurrentUser,
   logout,
-  ordemAlfabetica,
 } from "@/lib/utils";
-import { IUserInfo } from "@/hooks/useUser";
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import("./LazyModalContent"));
 
-// Interface Otimizada
-interface OptimizedScheduling extends Scheduling {
-  DATAAGENDAMENTO_DATE_OBJ: Date;
-  SEARCH_INDEX: string;
-  PROFISSIONAIS: string[];
-  SALAS: string[];
-  GRUPOS_EXAMES: string[];
+interface ReportParams {
+  profissionais: { code: string, name: string }[], 
+  empresas: { code: string, name: string }[], 
+  status: { code: string, name: string }[], 
+  tiposExame: { code: string, name: string }[], 
+  unidadesAtendimento: { code: string, name: string }[], 
+  grupo: { code: string, name: string }[], 
+  salas: { code: string, name: string }[], 
+}
+
+// Interface para os filtros que serão enviados ao backend
+interface FilterParams {
+  dataInicio?: string;
+  dataFim?: string;
+  empresa?: string;
+  grupoExame?: string;
+  tipoExame?: string;
+  status?: string;
+  search?: string;
+  profissional?: string;
+  sala?: string;
+  unidadeAtendimento?: string;
+}
+
+// Interface para o retorno paginado do backend
+interface PaginatedReportData {
+  data: Scheduling[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 // Hook para debounce do modal
@@ -103,67 +125,94 @@ const useModalDebounce = (delay: number = 100) => {
   return { isOpening, openWithDebounce, cancel };
 };
 
-// Componente skeleton para loading
+// Componente skeleton melhorado para loading
 const ModalSkeleton = () => (
-  <div className="space-y-4">
+  <div className="space-y-6">
     <ModalHeader>
-      <Skeleton className="h-6 w-48 rounded-lg" />
+      <div className="w-full space-y-3">
+        <Skeleton className="h-7 w-64 rounded-lg" />
+        <Skeleton className="h-4 w-48 rounded-lg" />
+      </div>
     </ModalHeader>
     <ModalBody>
-      <div className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-3/4 rounded-lg" />
-            <Skeleton className="h-3 w-full rounded-lg" />
-            <Skeleton className="h-3 w-2/3 rounded-lg" />
-          </div>
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-3/4 rounded-lg" />
-            <Skeleton className="h-3 w-full rounded-lg" />
-            <Skeleton className="h-3 w-2/3 rounded-lg" />
+      <div className="space-y-6">
+        {/* Informações Gerais Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-48 rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-5 w-32 rounded-lg" />
+                <div className="space-y-2">
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} className="space-y-1">
+                      <Skeleton className="h-3 w-24 rounded-lg" />
+                      <Skeleton className="h-4 w-full rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-        <Skeleton className="h-32 w-full rounded-lg" />
+
+        {/* Exames Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-40 rounded-lg" />
+          <div className="space-y-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+                <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-3/4 rounded-lg" />
+                  <Skeleton className="h-3 w-1/2 rounded-lg" />
+                </div>
+                <Skeleton className="h-8 w-20 rounded-lg" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </ModalBody>
     <ModalFooter>
-      <Skeleton className="h-10 w-20 rounded-lg" />
+      <Skeleton className="h-10 w-24 rounded-lg" />
     </ModalFooter>
   </div>
 );
 
-// Função auxiliar para normalizar datas - CORREÇÃO PRINCIPAL
-const normalizeDate = (date: Date): Date => {
-  const normalized = new Date(date);
-
-  normalized.setHours(0, 0, 0, 0);
-
-  return normalized;
+// Função para converter Date para string no formato YYYY-MM-DD (para o backend)
+const formatDateToYYYYMMDD = (date: Date | null): string => {
+  if (!date) return '';
+  
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
 };
 
 // Componente principal
 export default function RelatoriosPage() {
   const router = useRouter();
-  const [appAtendimentos, setAppAtendimentos] = useState<Scheduling[]>([]);
-  const [optimizedAtendimentos, setOptimizedAtendimentos] = useState<
-    OptimizedScheduling[]
-  >([]);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showResults, setShowResults] = useState(false);
-  const [user, setUser] = useState<IUserInfo | null>(null);
 
-  // Filtros atualizados incluindo UNIDADEATENDIMENTO
+  // Referência para a tabela (para scroll)
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // Filtros atualizados
   const [filters, setFilters] = useState({
-    dataInicio: null as any,
-    dataFim: null as any,
+    dataInicio: "",
+    dataFim: "",
     empresa: "",
     grupoExame: "",
+    tipoExame: "",
     status: "",
     search: "",
     profissional: "",
     sala: "",
-    unidadeAtendimento: "", // NOVO FILTRO
+    unidadeAtendimento: "", 
   });
 
   const [appliedFilters, setAppliedFilters] = useState<typeof filters>(filters);
@@ -171,364 +220,239 @@ export default function RelatoriosPage() {
   // Estados para selects
   const [empresas, setEmpresas] = useState<string[]>([]);
   const [gruposExames, setGruposExames] = useState<string[]>([]);
+  const [tiposExame, setTiposExame] = useState<string[]>([]);
   const [profissionais, setProfissionais] = useState<string[]>([]);
   const [salas, setSalas] = useState<string[]>([]);
-  const [unidadesAtendimento, setUnidadesAtendimento] = useState<string[]>([]); // NOVO ESTADO
+  const [unidadesAtendimento, setUnidadesAtendimento] = useState<string[]>([]);
 
   // Paginação
   const [page, setPage] = useState(1);
   const rowsPerPage = 50;
+  const [totalRecords, setTotalRecords] = useState(0);
+  const [totalPages, setTotalPages] = useState(0);
 
   // Modal de detalhes
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedAtendimento, setSelectedAtendimento] =
-    useState<Scheduling | null>(null);
+  const [selectedAtendimento, setSelectedAtendimento] = useState<Scheduling | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+  const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
 
   // Debounce para abertura do modal
-  const { isOpening: isModalOpening, openWithDebounce: openModalWithDebounce } =
-    useModalDebounce(150);
+  const { isOpening: isModalOpening, openWithDebounce: openModalWithDebounce } = useModalDebounce(150);
 
   // Estado para os atendimentos FILTRADOS
-  const [filteredAtendimentos, setFilteredAtendimentos] = useState<
-    OptimizedScheduling[]
-  >([]);
+  const [filteredAtendimentos, setFilteredAtendimentos] = useState<Scheduling[]>([]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
 
     if (!currentUser) {
       router.push("/");
-    } else {
-      setUser(currentUser);
     }
   }, [router]);
 
-  // Carregar dados iniciais
-  const getData = useCallback(async () => {
+  // Função para scroll para o topo da tabela
+  const scrollToTableTop = useCallback(() => {
+    setTimeout(() => {
+      if (tableRef.current) {
+        const tableTop = tableRef.current.offsetTop - 100; // 100px acima da tabela
+        window.scrollTo({
+          top: tableTop,
+          behavior: 'smooth'
+        });
+      }
+    }, 100);
+  }, []);
+
+  // Carregar parametros disponíveis
+  const getParamsReport = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+      const response = await fetch(NEST_RELATORIO_PARAMETROS, { cache: "no-store" });
 
       if (!response.ok) {
         console.error("Erro ao buscar dados iniciais:", response.statusText);
-
         return null;
       }
 
-      const json: Scheduling[] = await response.json();
-      const jsonOrdened = json.sort((a, b) =>
-        a.NOME.localeCompare(b.NOME, "pt-BR"),
-      );
+      const params: ReportParams = await response.json();
 
-      setAppAtendimentos(jsonOrdened);
+      setProfissionais(params.profissionais.map(p => p.name));
+      setEmpresas(params.empresas.map(p => p.name));
+      setGruposExames(params.grupo.map(p => p.name));
+      setTiposExame(params.tiposExame.map(p => p.name));
+      setSalas(params.salas.map(p => p.name));
+      setUnidadesAtendimento(params.unidadesAtendimento.map(p => p.name));
+            
     } catch (err) {
       console.error("Erro ao carregar dados iniciais:", err);
-
-      return null;
     } finally {
       setLoading(false);
     }
   }, []);
 
+
+  // Função para converter Date para string no formato YYYY-MM-DD (para o backend)
+const formatDateToYYYYMMDD = (date: Date | null): string => {
+  if (!date) return '';
+  
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day}`;
+};
+
+// Função para formatar data do input (yyyy-MM-dd) para exibição ou para o backend
+const formatDateForBackend = (dateString: string): string => {
+  if (!dateString) return '';
+  
+  // O input type="date" já retorna no formato yyyy-MM-dd
+  // Podemos usar diretamente para o backend
+  return dateString;
+};
+
+// Função para validar se a data é válida
+const isValidDate = (dateString: string): boolean => {
+  if (!dateString) return false;
+  
+  const date = new Date(dateString);
+  return !isNaN(date.getTime());
+};
+
   // Carregar dados quando o componente montar
   useEffect(() => {
-    getData();
-  }, [getData]);
+    getParamsReport();
+  }, [getParamsReport]);
 
-  // Otimizar dados e extrair opções para filtros
-  useEffect(() => {
-    if (appAtendimentos.length === 0) return;
+  // Função para preparar os filtros para envio ao backend
+  const prepareFiltersForBackend = useCallback((currentFilters: typeof filters): FilterParams => {
+    const backendFilters: FilterParams = {};
 
-    const optimizeData = () => {
-      const optimized = appAtendimentos.map((a: Scheduling) => {
-        // Extrair profissionais, salas e grupos únicos dos exames
-        const profissionaisUnicos = [
-          ...new Set(a.EXAMES.map((e) => e.profissional).filter(Boolean)),
-        ];
-        const salasUnicas = [
-          ...new Set(a.EXAMES.map((e) => e.sala).filter(Boolean)),
-        ];
-        const gruposUnicos = [
-          ...new Set(a.EXAMES.map((e) => e.grupo).filter(Boolean)),
-        ];
-
-        // Criar índice de busca incluindo UNIDADEATENDIMENTO
-        const searchIndex = [
-          a.NOME?.toLowerCase() || "",
-          a.CPFFUNCIONARIO || "",
-          a.MATRICULAFUNCIONARIO?.toLowerCase() || "",
-          a.NOMECARGO?.toLowerCase() || "",
-          a.NOMEEMPRESA?.toLowerCase() || "",
-          a.UNIDADEATENDIMENTO?.toLowerCase() || "", // INCLUÍDO NO ÍNDICE DE BUSCA
-          ...profissionaisUnicos.map((p) => p?.toLowerCase()),
-          ...salasUnicas.map((s) => s?.toLowerCase()),
-          ...gruposUnicos.map((g) => g.toLowerCase()),
-        ].join("|");
-
-        return {
-          ...a,
-          DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
-          SEARCH_INDEX: searchIndex,
-          PROFISSIONAIS: profissionaisUnicos,
-          SALAS: salasUnicas,
-          GRUPOS_EXAMES: gruposUnicos,
-        } as OptimizedScheduling;
-      });
-
-      setOptimizedAtendimentos(optimized);
-
-      // Extrair opções únicas para filtros incluindo UNIDADEATENDIMENTO
-      const empresasUnicas = [
-        ...new Set(appAtendimentos.map((a) => a.NOMEEMPRESA).filter(Boolean)),
-      ];
-      const gruposUnicos = [
-        ...new Set(
-          appAtendimentos
-            .flatMap((a) => a.EXAMES.map((e) => e.grupo))
-            .filter(Boolean),
-        ),
-      ];
-      const profissionaisUnicos = [
-        ...new Set(
-          appAtendimentos
-            .flatMap((a) => a.EXAMES.map((e) => e.profissional))
-            .filter(Boolean),
-        ),
-      ];
-      const salasUnicas = [
-        ...new Set(
-          appAtendimentos
-            .flatMap((a) => a.EXAMES.map((e) => e.sala))
-            .filter(Boolean),
-        ),
-      ];
-      const unidadesUnicas = [
-        ...new Set(
-          appAtendimentos.map((a) => a.UNIDADEATENDIMENTO).filter(Boolean),
-        ),
-      ]; // NOVO
-
-      const empresasOrdenadas = ordemAlfabetica(empresasUnicas);
-      const profissionaisOrdenados = ordemAlfabetica(
-        profissionaisUnicos as string[],
-      );
-      const salasOrdenadas =
-        salasUnicas ?? ordemAlfabetica(salasUnicas as string[]);
-      const unidadesOrdenadas = ordemAlfabetica(unidadesUnicas as string[]); // NOVO
-
-      setEmpresas(empresasOrdenadas as string[]);
-      setGruposExames(gruposUnicos as string[]);
-      setProfissionais(profissionaisOrdenados as string[]);
-      setSalas(salasOrdenadas as string[]);
-      setUnidadesAtendimento(unidadesOrdenadas as string[]); // NOVO
-    };
-
-    if ("requestIdleCallback" in window) {
-      requestIdleCallback(() => {
-        optimizeData();
-      });
-    } else {
-      setTimeout(() => {
-        optimizeData();
-      }, 0);
+    // Converter datas para formato YYYY-MM-DD (já estão nesse formato do input)
+    if (currentFilters.dataInicio && isValidDate(currentFilters.dataInicio)) {
+      backendFilters.dataInicio = formatDateForBackend(currentFilters.dataInicio);
     }
-  }, [appAtendimentos]);
 
-  // CORREÇÃO PRINCIPAL: Função de filtragem otimizada com tratamento correto de datas
-  const applyFiltersFunction = useCallback(
-    (
-      atendimentosList: OptimizedScheduling[],
-      currentFilters: typeof filters,
-    ) => {
-      if (atendimentosList.length === 0) return [];
+    if (currentFilters.dataFim && isValidDate(currentFilters.dataFim)) {
+      backendFilters.dataFim = formatDateForBackend(currentFilters.dataFim);
+    }
 
-      let filtered = atendimentosList;
+    // Adicionar outros filtros apenas se não estiverem vazios
+    if (currentFilters.empresa) backendFilters.empresa = currentFilters.empresa;
+    if (currentFilters.grupoExame) backendFilters.grupoExame = currentFilters.grupoExame;
+    if (currentFilters.tipoExame) backendFilters.tipoExame = currentFilters.tipoExame;
+    if (currentFilters.status) backendFilters.status = currentFilters.status;
+    if (currentFilters.search) backendFilters.search = currentFilters.search;
+    if (currentFilters.profissional) backendFilters.profissional = currentFilters.profissional;
+    if (currentFilters.sala) backendFilters.sala = currentFilters.sala;
+    if (currentFilters.unidadeAtendimento) backendFilters.unidadeAtendimento = currentFilters.unidadeAtendimento;
 
-      // Filtro por data - CORREÇÃO APLICADA
-      if (currentFilters.dataInicio) {
-        const dataInicio = normalizeDate(
-          new Date(currentFilters.dataInicio.toString()),
-        );
+    return backendFilters;
+  }, []);
 
-        filtered = filtered.filter((a) => {
-          const dataAtendimento = normalizeDate(a.DATAAGENDAMENTO_DATE_OBJ);
+  // Buscar dados filtrados do backend com paginação
+  const fetchFilteredData = useCallback(async (filterParams: FilterParams, currentPage: number = 1) => {
+    try {
+      setIsFiltering(true);
+      
+      // Construir query string com os filtros E paginação
+      const queryParams = new URLSearchParams();
+      
+      // Adicionar filtros
+      Object.entries(filterParams).forEach(([key, value]) => {
+        if (value && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
 
-          return dataAtendimento >= dataInicio;
-        });
+      // Adicionar parâmetros de paginação
+      queryParams.append('page', currentPage.toString());
+      queryParams.append('limit', rowsPerPage.toString());
+
+      const url = `${NEST_RELATORIO_FILTROS}?${queryParams.toString()}`;
+      
+      const response = await fetch(url, { 
+        cache: "no-store",
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erro ao buscar dados filtrados: ${response.statusText}`);
       }
 
-      if (currentFilters.dataFim) {
-        const dataFim = normalizeDate(
-          new Date(currentFilters.dataFim.toString()),
-        );
+      const result: PaginatedReportData = await response.json();
+      
+      // Atualizar estados de paginação
+      setTotalRecords(result.total);
+      setTotalPages(result.totalPages);
+      setPage(result.page);
+      setFilteredAtendimentos(result.data);
+      
+    } catch (error) {
+      console.error("Erro ao buscar dados filtrados:", error);
+    } finally {
+      setIsFiltering(false);
+    }
+  }, [rowsPerPage]);
 
-        filtered = filtered.filter((a) => {
-          const dataAtendimento = normalizeDate(a.DATAAGENDAMENTO_DATE_OBJ);
-
-          return dataAtendimento <= dataFim;
-        });
-      }
-
-      // Filtro por empresa
-      if (currentFilters.empresa) {
-        filtered = filtered.filter(
-          (a) => a.NOMEEMPRESA === currentFilters.empresa,
-        );
-      }
-
-      // Filtro por grupo de exame
-      if (currentFilters.grupoExame) {
-        filtered = filtered.filter((a) =>
-          a.GRUPOS_EXAMES.includes(currentFilters.grupoExame),
-        );
-      }
-
-      // Filtro por status
-      if (currentFilters.status) {
-        filtered = filtered.filter(
-          (a) => a.ATENDIMENTOSTATUS === currentFilters.status,
-        );
-      }
-
-      // Filtro por profissional
-      if (currentFilters.profissional) {
-        filtered = filtered.filter((a) =>
-          a.PROFISSIONAIS.includes(currentFilters.profissional),
-        );
-      }
-
-      // Filtro por sala
-      if (currentFilters.sala) {
-        filtered = filtered.filter((a) =>
-          a.SALAS.includes(currentFilters.sala),
-        );
-      }
-
-      // NOVO: Filtro por unidade de atendimento
-      if (currentFilters.unidadeAtendimento) {
-        filtered = filtered.filter(
-          (a) => a.UNIDADEATENDIMENTO === currentFilters.unidadeAtendimento,
-        );
-      }
-
-      // Filtro de busca geral (incluindo nome do funcionário e unidade)
-      if (currentFilters.search) {
-        const searchLower = currentFilters.search.toLowerCase();
-
-        filtered = filtered.filter(
-          (a) =>
-            a.SEARCH_INDEX.includes(searchLower) ||
-            a.NOME?.toLowerCase().includes(searchLower) ||
-            a.UNIDADEATENDIMENTO?.toLowerCase().includes(searchLower), // BUSCA TAMBÉM POR UNIDADE
-        );
-      }
-
-      return filtered;
-    },
-    [],
-  );
-
-  // Aplicar filtros quando o usuário clicar no botão
+  // Aplicar filtros
   const handleApplyFilters = useCallback(async () => {
-    setIsFiltering(true);
     setShowResults(true);
     setAppliedFilters(filters);
     setPage(1);
 
-    try {
-      // Buscar os dados MAIS RECENTES do servidor
-      const response = await fetch(NEST_SCHEDULINGS_ALL, { cache: "no-store" });
+    const backendFilters = prepareFiltersForBackend(filters);
+    await fetchFilteredData(backendFilters, 1);
+    
+    // Scroll para a tabela após aplicar filtros
+    scrollToTableTop();
+  }, [filters, prepareFiltersForBackend, fetchFilteredData, scrollToTableTop]);
 
-      if (response.ok) {
-        const json: Scheduling[] = await response.json();
-        const jsonOrdened = json.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, "pt-BR"),
-        );
-
-        // Atualizar os dados principais
-        setAppAtendimentos(jsonOrdened);
-
-        // Aguardar atualização do estado e aplicar filtros
-        setTimeout(() => {
-          if (jsonOrdened.length > 0) {
-            // Otimizar os dados mais recentes
-            const optimized = jsonOrdened.map((a: Scheduling) => {
-              const profissionaisUnicos = [
-                ...new Set(a.EXAMES.map((e) => e.profissional).filter(Boolean)),
-              ];
-              const salasUnicas = [
-                ...new Set(a.EXAMES.map((e) => e.sala).filter(Boolean)),
-              ];
-              const gruposUnicos = [
-                ...new Set(a.EXAMES.map((e) => e.grupo).filter(Boolean)),
-              ];
-
-              const searchIndex = [
-                a.NOME?.toLowerCase() || "",
-                a.CPFFUNCIONARIO || "",
-                a.MATRICULAFUNCIONARIO?.toLowerCase() || "",
-                a.NOMECARGO?.toLowerCase() || "",
-                a.NOMEEMPRESA?.toLowerCase() || "",
-                a.UNIDADEATENDIMENTO?.toLowerCase() || "", // INCLUÍDO
-                ...profissionaisUnicos.map((p) => p?.toLowerCase()),
-                ...salasUnicas.map((s) => s?.toLowerCase()),
-                ...gruposUnicos.map((g) => g.toLowerCase()),
-              ].join("|");
-
-              return {
-                ...a,
-                DATAAGENDAMENTO_DATE_OBJ: new Date(a.DATAAGENDAMENTO_DATE),
-                SEARCH_INDEX: searchIndex,
-                PROFISSIONAIS: profissionaisUnicos,
-                SALAS: salasUnicas,
-                GRUPOS_EXAMES: gruposUnicos,
-              } as OptimizedScheduling;
-            });
-
-            // Aplicar filtros nos dados otimizados mais recentes
-            const result = applyFiltersFunction(optimized, filters);
-
-            setFilteredAtendimentos(result);
-          }
-          setIsFiltering(false);
-        }, 0);
-      } else {
-        console.error("Erro ao buscar dados atualizados");
-        setIsFiltering(false);
-      }
-    } catch (error) {
-      console.error("Erro ao atualizar dados:", error);
-      setIsFiltering(false);
-    }
-  }, [filters, applyFiltersFunction]);
+  // Mudar de página
+  const handlePageChange = useCallback(async (newPage: number) => {
+    setPage(newPage);
+    
+    const backendFilters = prepareFiltersForBackend(appliedFilters);
+    await fetchFilteredData(backendFilters, newPage);
+    
+    // Scroll para o topo da tabela após mudar de página
+    scrollToTableTop();
+  }, [appliedFilters, prepareFiltersForBackend, fetchFilteredData, scrollToTableTop]);
 
   // Limpar filtros e resultados
   const handleClearFilters = useCallback(() => {
     setFilters({
-      dataInicio: null,
-      dataFim: null,
+      dataInicio: "",
+      dataFim: "",
       empresa: "",
       grupoExame: "",
+      tipoExame: "",
       status: "",
       search: "",
       profissional: "",
       sala: "",
-      unidadeAtendimento: "", // INCLUÍDO
+      unidadeAtendimento: "", 
     });
     setAppliedFilters({
-      dataInicio: null,
-      dataFim: null,
+      dataInicio: "",
+      dataFim: "",
       empresa: "",
       grupoExame: "",
+      tipoExame: "",
       status: "",
       search: "",
       profissional: "",
       sala: "",
-      unidadeAtendimento: "", // INCLUÍDO
+      unidadeAtendimento: "",
     });
     setShowResults(false);
+    setFilteredAtendimentos([]);
     setPage(1);
+    setTotalRecords(0);
+    setTotalPages(0);
   }, []);
 
   // Handler para mudanças rápidas nos filtros
@@ -539,111 +463,60 @@ export default function RelatoriosPage() {
   // Calcular se há filtros ativos
   const hasActiveFilters = useMemo(() => {
     return Object.values(filters).some(
-      (value) =>
-        value !== null &&
-        value !== "" &&
-        !(value instanceof Date && isNaN(value.getTime())),
+      (value) => value !== null && value !== ""
     );
   }, [filters]);
 
   // Função para visualizar detalhes
   const viewDetails = useCallback(
     (atendimento: Scheduling) => {
+      setLoadingDetailsId(atendimento._id);
       setModalLoading(true);
+      onOpen();
 
-      openModalWithDebounce(() => {
-        // Buscar a versão mais recente do atendimento
-        const atendimentoAtualizado =
-          appAtendimentos.find(
-            (a) =>
-              (a._id && atendimento._id && a._id === atendimento._id) ||
-              (a.CODIGOPRONTUARIO &&
-                atendimento.CODIGOPRONTUARIO &&
-                a.CODIGOPRONTUARIO === atendimento.CODIGOPRONTUARIO),
-          ) || atendimento;
+      openModalWithDebounce(async () => {
+        try {
+          const response = await fetch(`${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`);
 
-        setSelectedAtendimento(atendimentoAtualizado);
-        setModalLoading(false);
-        onOpen();
+          if (!response.ok) {
+            const text = await response.text();
+            console.error(`Erro ao receber detalhes do funcionário ${text}`);
+          }
+
+          const json = await response.json();
+          setSelectedAtendimento(json);
+        } catch (error) {
+          console.error("Erro ao carregar detalhes:", error);
+        } finally {
+          setModalLoading(false);
+          setLoadingDetailsId(null);
+        }
       });
     },
-    [onOpen, openModalWithDebounce, appAtendimentos],
+    [onOpen, openModalWithDebounce],
   );
 
-  // Fechar modal - limpar estados
+  // Fechar modal
   const handleCloseModal = useCallback(() => {
     setSelectedAtendimento(null);
+    setLoadingDetailsId(null);
     onClose();
   }, [onClose]);
 
   // Atualizar atendimento após upload
   const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
-    // Atualizar na lista principal
-    setAppAtendimentos((prev) => {
-      const foundIndex = prev.findIndex(
-        (p) =>
-          (p._id && updated._id && p._id === updated._id) ||
-          (p.CODIGOPRONTUARIO &&
-            updated.CODIGOPRONTUARIO &&
-            p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO),
-      );
-
-      if (foundIndex === -1) return prev;
-
-      const copy = [...prev];
-
-      copy[foundIndex] = updated;
-
-      return copy;
-    });
-
-    // Atualizar também na lista filtrada se estiver visível
     setFilteredAtendimentos((prev) => {
       const foundIndex = prev.findIndex(
-        (p) =>
-          (p._id && updated._id && p._id === updated._id) ||
-          (p.CODIGOPRONTUARIO &&
-            updated.CODIGOPRONTUARIO &&
-            p.CODIGOPRONTUARIO === updated.CODIGOPRONTUARIO),
+        (p) => p._id === updated._id
       );
 
       if (foundIndex === -1) return prev;
 
       const copy = [...prev];
-
-      copy[foundIndex] = {
-        ...copy[foundIndex],
-        ...updated,
-        // Manter as propriedades otimizadas
-        DATAAGENDAMENTO_DATE_OBJ: copy[foundIndex].DATAAGENDAMENTO_DATE_OBJ,
-        SEARCH_INDEX: copy[foundIndex].SEARCH_INDEX,
-        PROFISSIONAIS: copy[foundIndex].PROFISSIONAIS,
-        SALAS: copy[foundIndex].SALAS,
-        GRUPOS_EXAMES: copy[foundIndex].GRUPOS_EXAMES,
-      };
-
+      copy[foundIndex] = updated;
       return copy;
     });
   }, []);
-
-  // Memoizar dados paginados
-  const paginatedItems = useMemo(() => {
-    if (!showResults) return [];
-    const startIndex = (page - 1) * rowsPerPage;
-
-    return filteredAtendimentos.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredAtendimentos, page, rowsPerPage, showResults]);
-
-  // Memoizar cálculos de paginação
-  const paginationInfo = useMemo(() => {
-    if (!showResults) return { totalPages: 0, hasPagination: false };
-    const totalPages = Math.ceil(filteredAtendimentos.length / rowsPerPage);
-
-    return {
-      totalPages,
-      hasPagination: totalPages > 1,
-    };
-  }, [filteredAtendimentos.length, rowsPerPage, showResults]);
 
   // Função para obter a cor do status
   const getStatusColor = useCallback((status: string) => {
@@ -681,10 +554,7 @@ export default function RelatoriosPage() {
   // Contador de filtros ativos
   const activeFiltersCount = useMemo(() => {
     return Object.values(filters).filter(
-      (value) =>
-        value !== null &&
-        value !== "" &&
-        !(value instanceof Date && isNaN(value.getTime())),
+      (value) => value !== null && value !== ""
     ).length;
   }, [filters]);
 
@@ -698,7 +568,7 @@ export default function RelatoriosPage() {
         }}
       />
 
-      {/* Filtros - Design Conceitual do Modal */}
+      {/* Filtros */}
       <Card className="m-6 p-4 border border-gray-200 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between p-4 border-b border-gray-100">
           <div className="flex items-center gap-3">
@@ -742,6 +612,7 @@ export default function RelatoriosPage() {
                 Buscar por Funcionário
               </label>
               <Input
+                aria-label="Buscar por nome do funcionário"
                 isClearable
                 placeholder="Digite o nome do funcionário..."
                 size="lg"
@@ -754,33 +625,33 @@ export default function RelatoriosPage() {
               />
             </div>
 
-            {/* Data Início */}
-            <div className="space-y-2">
+            {/* Data Início - CORRIGIDO */}
+            <div className="space-y-2 flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
                 Data Início
               </label>
-              <DatePicker
-                hideTimeZone
-                granularity="day"
-                label=" "
-                size="sm"
+              <Input
+                type="date"
+                aria-label="Data início"
+                placeholder="Selecione a data início"
                 value={filters.dataInicio}
-                onChange={(value) => handleFilterChange("dataInicio", value)}
+                onChange={(e) => handleFilterChange("dataInicio", e.target.value)}
+                onClear={() => handleFilterChange("dataInicio", "")}
               />
             </div>
 
-            {/* Data Fim */}
-            <div className="space-y-2">
+            {/* Data Fim - CORRIGIDO */}
+            <div className="space-y-2 flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
                 Data Fim
               </label>
-              <DatePicker
-                hideTimeZone
-                granularity="day"
-                label=" "
-                size="sm"
+              <Input
+                type="date"
+                aria-label="Data fim"
+                placeholder="Selecione a data fim"
                 value={filters.dataFim}
-                onChange={(value) => handleFilterChange("dataFim", value)}
+                onChange={(e) => handleFilterChange("dataFim", e.target.value)}
+                onClear={() => handleFilterChange("dataFim", "")}
               />
             </div>
 
@@ -789,27 +660,26 @@ export default function RelatoriosPage() {
               <label className="text-sm font-medium text-gray-700">
                 Empresa
               </label>
-              <Autocomplete
+              <Select
+                aria-label="Selecionar empresa"
                 className="w-full"
-                multiple={true}
-                selectedKey={filters.empresa || undefined}
+                selectedKeys={filters.empresa ? [filters.empresa] : []}
                 size="lg"
-                onSelectionChange={(key) =>
-                  handleFilterChange("empresa", key?.toString() || "")
+                onSelectionChange={(keys) =>
+                  handleFilterChange("empresa", Array.from(keys)[0] || "")
                 }
               >
                 {empresas.map((empresa) => (
-                  <SelectItem key={empresa} textValue={empresa}>
-                    {empresa}
-                  </SelectItem>
+                  <SelectItem key={empresa}>{empresa}</SelectItem>
                 ))}
-              </Autocomplete>
+              </Select>
             </div>
 
             {/* Grupo de Exame */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Exame</label>
+              <label className="text-sm font-medium text-gray-700">Grupo de Exame</label>
               <Select
+                aria-label="Selecionar grupo de exame"
                 className="w-full"
                 selectedKeys={filters.grupoExame ? [filters.grupoExame] : []}
                 size="lg"
@@ -823,12 +693,31 @@ export default function RelatoriosPage() {
               </Select>
             </div>
 
+            {/* Tipo de Exame */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Tipo de Exame</label>
+              <Select
+                aria-label="Selecionar tipo de exame"
+                className="w-full"
+                selectedKeys={filters.tipoExame ? [filters.tipoExame] : []}
+                size="lg"
+                onSelectionChange={(keys) =>
+                  handleFilterChange("tipoExame", Array.from(keys)[0] || "")
+                }
+              >
+                {tiposExame.map((tipo) => (
+                  <SelectItem key={tipo}>{tipo}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
             {/* Status */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Status
               </label>
               <Select
+                aria-label="Selecionar status"
                 className="w-full"
                 selectedKeys={filters.status ? [filters.status] : []}
                 size="lg"
@@ -853,6 +742,7 @@ export default function RelatoriosPage() {
                 Profissional
               </label>
               <Select
+                aria-label="Selecionar profissional"
                 className="w-full"
                 selectedKeys={
                   filters.profissional ? [filters.profissional] : []
@@ -872,6 +762,7 @@ export default function RelatoriosPage() {
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">Sala</label>
               <Select
+                aria-label="Selecionar sala"
                 className="w-full"
                 selectedKeys={filters.sala ? [filters.sala] : []}
                 size="lg"
@@ -885,12 +776,13 @@ export default function RelatoriosPage() {
               </Select>
             </div>
 
-            {/* NOVO: Unidade de Atendimento */}
+            {/* Unidade de Atendimento */}
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Unidade de Atendimento
               </label>
               <Select
+                aria-label="Selecionar unidade de atendimento"
                 className="w-full"
                 selectedKeys={
                   filters.unidadeAtendimento ? [filters.unidadeAtendimento] : []
@@ -912,145 +804,151 @@ export default function RelatoriosPage() {
         </CardBody>
       </Card>
 
-      {/* Tabela de Resultados - Layout Compacto */}
+      {/* Tabela de Resultados */}
       {showResults && (
-        <Card className="m-6 p-4 border border-gray-200 shadow-sm">
-          <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">
-                Resultados
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">
-                {filteredAtendimentos.length} atendimento(s) encontrado(s)
-              </p>
-            </div>
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-500">
-                Página {page} de {paginationInfo.totalPages}
-              </span>
-            </div>
-          </CardHeader>
-          <CardBody className="p-0">
-            {isFiltering ? (
-              <div className="flex justify-center py-12">
-                <Spinner
-                  color="success"
-                  label="Aplicando filtros..."
-                  size="lg"
-                />
+        <div ref={tableRef}>
+          <Card className="m-6 p-4 border border-gray-200 shadow-sm">
+            <CardHeader className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Resultados
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {totalRecords} atendimento(s) encontrado(s)
+                </p>
               </div>
-            ) : (
-              <>
-                <div className="overflow-auto">
-                  <Table
-                    removeWrapper
-                    aria-label="Tabela de atendimentos"
-                    classNames={{
-                      base: "min-w-full",
-                      th: "bg-gray-50 text-gray-700 font-semibold text-xs px-3 py-2 border-b",
-                      td: "px-3 py-2 border-b border-gray-100 text-sm",
-                      tr: "hover:bg-gray-50 transition-colors",
-                    }}
-                  >
-                    <TableHeader>
-                      <TableColumn className="w-50">FUNCIONÁRIO</TableColumn>
-                      <TableColumn className="w-50">EMPRESA</TableColumn>
-                      <TableColumn className="w-40">CARGO</TableColumn>
-                      <TableColumn className="w-30">EXAME</TableColumn>
-                      <TableColumn className="w-10">STATUS</TableColumn>
-                      <TableColumn className="w-20">UNIDADE</TableColumn>
-                      <TableColumn className="w-10">AÇÕES</TableColumn>
-                    </TableHeader>
-                    <TableBody>
-                      {paginatedItems.map((atendimento) => (
-                        <TableRow
-                          key={atendimento._id || atendimento.CODIGOPRONTUARIO}
-                        >
-                          <TableCell>
-                            <div>
-                              <p className="font-medium text-xs text-gray-900">
-                                {atendimento.NOME}
-                              </p>
-                              <p className="text-xs text-gray-500">
-                                CPF: {formatCPF(atendimento.CPFFUNCIONARIO)}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-gray-700">
-                              {atendimento.NOMEEMPRESA}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-xs text-gray-700">
-                              {atendimento.NOMECARGO}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex flex-col">
-                              <span className="text-sm text-gray-700">
-                                {atendimento.TIPOEXAMENOME}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {atendimento.DATAAGENDAMENTO} -{" "}
-                                {atendimento.HORARIO}
-                              </span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Chip
-                              classNames={{
-                                content: "text-xs font-medium",
-                              }}
-                              color={getStatusColor(
-                                atendimento.ATENDIMENTOSTATUS,
-                              )}
-                              size="sm"
-                              variant="flat"
-                            >
-                              {atendimento.ATENDIMENTOSTATUS.replace(/_/g, " ")
-                                .toLowerCase()
-                                .replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </Chip>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-sm text-gray-700">
-                              {atendimento.UNIDADEATENDIMENTO}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <Button
-                              isIconOnly
-                              className="text-blue-600 hover:text-blue-700"
-                              size="sm"
-                              variant="light"
-                              onPress={() => viewDetails(atendimento)}
-                            >
-                              <EyeIcon size={16} />
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-500">
+                  Página {page} de {totalPages}
+                </span>
+              </div>
+            </CardHeader>
+            <CardBody className="p-0">
+              {isFiltering ? (
+                <div className="flex justify-center py-12">
+                  <Spinner
+                    color="success"
+                    label="Buscando atendimentos..."
+                    size="lg"
+                  />
                 </div>
-
-                {paginationInfo.hasPagination && (
-                  <div className="flex justify-center p-4 border-t border-gray-100">
-                    <Pagination
-                      showControls
-                      className="hover:cursor-pointer"
-                      page={page}
-                      size="lg"
-                      total={paginationInfo.totalPages}
-                      onChange={setPage}
-                    />
+              ) : (
+                <>
+                  <div className="overflow-auto">
+                    <Table
+                      removeWrapper
+                      aria-label="Tabela de atendimentos"
+                      classNames={{
+                        base: "min-w-full",
+                        th: "bg-gray-50 text-gray-700 font-semibold text-xs px-3 py-2 border-b",
+                        td: "px-3 py-2 border-b border-gray-100 text-sm",
+                        tr: "hover:bg-gray-50 transition-colors",
+                      }}
+                    >
+                      <TableHeader>
+                        <TableColumn className="w-50">FUNCIONÁRIO</TableColumn>
+                        <TableColumn className="w-50">EMPRESA</TableColumn>
+                        <TableColumn className="w-40">CARGO</TableColumn>
+                        <TableColumn className="w-30">EXAME</TableColumn>
+                        <TableColumn className="w-10">STATUS</TableColumn>
+                        <TableColumn className="w-20">UNIDADE</TableColumn>
+                        <TableColumn className="w-10">AÇÕES</TableColumn>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredAtendimentos.map((atendimento) => (
+                          <TableRow
+                            key={atendimento._id || atendimento.CODIGOPRONTUARIO}
+                          >
+                            <TableCell>
+                              <div>
+                                <p className="font-medium text-xs text-gray-900">
+                                  {atendimento.NOME}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  CPF: {formatCPF(atendimento.CPFFUNCIONARIO)}
+                                </p>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-xs text-gray-700">
+                                {atendimento.NOMEEMPRESA}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-xs text-gray-700">
+                                {atendimento.NOMECARGO}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col">
+                                <span className="text-sm text-gray-700">
+                                  {atendimento.TIPOEXAMENOME}
+                                </span>
+                                <span className="text-xs text-gray-500">
+                                  {atendimento.DATAAGENDAMENTO} -{" "}
+                                  {atendimento.HORARIO}
+                                </span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Chip
+                                aria-label={`Status: ${atendimento.ATENDIMENTOSTATUS}`}
+                                classNames={{
+                                  content: "text-xs font-medium",
+                                }}
+                                color={getStatusColor(
+                                  atendimento.ATENDIMENTOSTATUS,
+                                )}
+                                size="sm"
+                                variant="flat"
+                              >
+                                {atendimento.ATENDIMENTOSTATUS.replace(/_/g, " ")
+                                  .toLowerCase()
+                                  .replace(/\b\w/g, (l) => l.toUpperCase())}
+                              </Chip>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm text-gray-700">
+                                {atendimento.UNIDADEATENDIMENTO}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                aria-label={`Visualizar detalhes do atendimento de ${atendimento.NOME}`}
+                                isIconOnly
+                                className="text-blue-600 hover:text-blue-700"
+                                size="sm"
+                                variant="light"
+                                isLoading={loadingDetailsId === atendimento._id}
+                                onPress={() => viewDetails(atendimento)}
+                              >
+                                {loadingDetailsId !== atendimento._id && <EyeIcon size={16} />}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
                   </div>
-                )}
-              </>
-            )}
-          </CardBody>
-        </Card>
+
+                  {totalPages > 1 && (
+                    <div className="flex justify-center p-4 border-t border-gray-100">
+                      <Pagination
+                        showControls
+                        aria-label="Navegação de páginas"
+                        className="hover:cursor-pointer"
+                        page={page}
+                        size="lg"
+                        total={totalPages}
+                        onChange={handlePageChange}
+                      />
+                    </div>
+                  )}
+                </>
+              )}
+            </CardBody>
+          </Card>
+        </div>
       )}
 
       {/* Estado inicial - instruções */}
@@ -1077,7 +975,7 @@ export default function RelatoriosPage() {
           <CardBody className="text-center py-16">
             <Spinner
               color="success"
-              label="Carregando atendimentos..."
+              label="Carregando parâmetros..."
               size="lg"
             />
           </CardBody>
@@ -1086,6 +984,7 @@ export default function RelatoriosPage() {
 
       {/* Modal de Detalhes */}
       <Modal
+        aria-label="Modal de detalhes do atendimento"
         classNames={{
           base: "max-h-[90vh]",
           wrapper: "z-[1000]",

@@ -57,8 +57,8 @@ export function PreparationCard({
 
   // Define status com base no tempo de espera
   const statusColor = useMemo((): "default" | "danger" | "warning" => {
-    if (waitingMinutes > 60) return "danger";
-    if (waitingMinutes > 30) return "warning";
+    if (waitingMinutes > 90) return "danger";
+    if (waitingMinutes > 60) return "warning";
 
     return "default";
   }, [waitingMinutes]);

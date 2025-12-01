@@ -310,8 +310,10 @@ const AtendimentoPage: React.FC = () => {
       auth: user,
       transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
+      reconnectionAttempts: Infinity, // reconecta sempre
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      timeout: 15000,
     });
 
     setSocketState(s);
@@ -358,6 +360,8 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
+
+      console.log(`Recebido ${operation} para agendamento ${schedule.NOME}`);
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => {
@@ -444,6 +448,7 @@ const AtendimentoPage: React.FC = () => {
     // ---------------------------------------------------------
     s.on("connect", async () => {
       try {
+        console.log("Conectado ao WebSocket:", s.id);
         await Promise.all([loadSocCompanies(), loadInitialTickets()]);
 
         emitEvent(s, EventType.TICKET_INFO, unidadeSelecionada);

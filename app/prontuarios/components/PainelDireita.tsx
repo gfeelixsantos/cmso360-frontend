@@ -32,6 +32,8 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
+  Radiation,
+  TriangleAlert,
 } from "lucide-react";
 
 import { MedicalRecord } from "../page";
@@ -238,7 +240,7 @@ const ExamesRepeticaoModal = memo(
             <div className="space-y-4">
               <Alert
                 className="text-xs sm:text-sm"
-                color="warning"
+                color="primary"
                 variant="flat"
               >
                 Selecione ao menos um exame que deverá ser repetido pelo
@@ -372,14 +374,6 @@ const ConfirmacaoParecerModal = memo(
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4">
-              <Alert
-                className="text-xs sm:text-sm"
-                color="warning"
-                variant="flat"
-              >
-                Você está prestes a finalizar este prontuário..
-              </Alert>
-
               <Card className="border border-default-200">
                 <CardBody className="p-4 space-y-3">
                   <div>
@@ -803,9 +797,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
   // exames com sala — depende explicitamente de EXAMES (defensivo)
   const examesComSala = useMemo(() => {
-    const exames = selectedRecord?.EXAMES ?? [];
-
-    return exames.filter((e: any) => (e?.sala ?? "") !== "");
+    return selectedRecord?.EXAMES ?? [];
   }, [selectedRecord?.EXAMES]);
 
   // exames disponíveis para repetição — depende explicitamente de EXAMES
@@ -1004,7 +996,10 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         }),
       });
 
-      if (!response.ok) throw new Error("Erro ao salvar parecer");
+      if (!response.ok) {
+        const err = await response.text()
+        throw new Error(`Erro ao salvar parecer ${err}`);
+      }
 
       // NÃO mutamos selectedRecord diretamente. Se for necessário atualizar, faça de forma imutável
       const updatedRecord = {
@@ -1020,7 +1015,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       addToast({
         title: "Prontuário liberado",
         description: "Parecer médico salvo com sucesso.",
-        color: "success",
+        color: "foreground",
       });
     } catch (err) {
       console.error(err);
@@ -1104,7 +1099,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
           <div className="p-3 sm:p-4">
             <div className="flex items-start gap-3">
               <div className="flex-1 min-w-0">
-                <h3 className="text-base sm:text-lg font-bold text-foreground truncate text-right">
+                <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                   {selectedRecord.NOME}
                 </h3>
                 <Chip className="mt-1" size="md" variant="flat">
@@ -1148,7 +1143,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
                       {Object.entries(agruparRiscos(riscos)).map(
                         ([grupo, lista]) => (
-                          <ul className="list-disc pl-4 text-[0.65rem] sm:text-[0.7rem]">
+                          <ul className="list-none pl-4 text-[0.65rem] sm:text-[0.7rem]">
                             {lista.map((risco, index) => (
                               <li
                                 key={index}
@@ -1233,6 +1228,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           />
                         ))}
                       </tbody>
+                      <footer>
+                        <tr className="text-right">
+                          <td>{selectedRecord.TICKET?.emissao.toLocaleString("pt-BR")}</td>
+                        </tr>
+                      </footer>
                     </table>
                   </div>
                 </AccordionItem>
@@ -1303,7 +1303,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     variant="flat"
                     onPress={() => setExamesRepeticaoModalOpen(true)}
                   >
-                    Selecionar Exames para Repetir
+                    Selecionar exames para repetir
                     {opinion.examesParaRepetir &&
                       opinion.examesParaRepetir.length > 0 && (
                         <Chip
@@ -1578,7 +1578,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
               t === LaudoTipo.PCD
                 ? "Laudo PCD adicionado ao parecer médico"
                 : "Laudo de restrição temporária adicionado ao parecer",
-            color: "success",
+            color: "foreground",
           });
         }}
       />

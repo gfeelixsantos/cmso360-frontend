@@ -194,7 +194,7 @@ const AtendimentoModalExames = ({
         setNotificationModal({
           isOpen: true,
           type: "success",
-          title: "✓ Exame Concluído",
+          title: "Exame Concluído",
           message: todosExamesConcluidos
             ? "Concluído, pode dispensar/liberar o funcionário."
             : "Funcionário deve aguardar demais exames.",
@@ -209,7 +209,7 @@ const AtendimentoModalExames = ({
         setNotificationModal({
           isOpen: true,
           type: "error",
-          title: "✗ Erro",
+          title: "Erro",
           message: `Não foi possível atualizar o exame. ${error instanceof Error ? error.message : "Tente novamente."}`,
           showCancel: false,
           isLoading: false,
