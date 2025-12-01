@@ -55,7 +55,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       const timer = setTimeout(() => {
         setEstaCarregando(false);
         setDadosIniciaisCarregados(true);
-      }, 5000);
+      }, 200);
 
       return () => clearTimeout(timer);
     }
