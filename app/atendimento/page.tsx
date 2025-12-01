@@ -339,81 +339,83 @@ const AtendimentoPage: React.FC = () => {
 
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
 
-    const handleTicketUpdated = (ticket: Ticket) => {
-      addOrUpdate(ticket);
-      setAgendamentos((prev) => {
-        return prev.map((agendamento) => {
-          if (agendamento.TICKET?.id === ticket.id) {
-            return { ...agendamento, TICKET: ticket };
-          }
+// AtendimentoPage.tsx
 
-          return agendamento;
-        });
-      });
-    };
+const handleTicketUpdated = (ticket: Ticket) => {
+  console.log(`🎫 Ticket ${ticket.id} atualizado: Status = ${ticket.status}`);
+
+  // ✅ 1. Atualiza no gerenciador de tickets
+  addOrUpdate(ticket);
+
+  // ✅ 2. Atualiza em agendamentosGeral
+  setAgendamentosGeral((prev) =>
+    prev.map((agendamento) =>
+      agendamento.TICKET?.id === ticket.id
+        ? { ...agendamento, TICKET: ticket }
+        : agendamento,
+    ),
+  );
+
+  // ✅ 3. Atualiza em agendamentos (filtrado)
+  setAgendamentos((prev) =>
+    prev.map((agendamento) =>
+      agendamento.TICKET?.id === ticket.id
+        ? { ...agendamento, TICKET: ticket }
+        : agendamento,
+    ),
+  );
+};
 
     const handleTicketError = (message: string) =>
       console.error(JSON.parse(message));
 
     // HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
-    const handleUpdateSchedule = ({
-      operation,
-      schedule,
-    }: SchedulingChange) => {
+// AtendimentoPage.tsx
 
-      console.log(`Recebido ${operation} para agendamento ${schedule.NOME}`);
-      switch (operation) {
-        case MongoOperationTypes.INSERT:
-          setAgendamentosGeral((prev) => {
-            // Verifica se já existe antes de adicionar
-            const exists = prev.some(
-              (ag) =>
-                ag._id === schedule._id ||
-                ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
-            );
+const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
+  console.log(`📥 Recebido ${operation} para ${schedule.NOME} (Ticket: ${schedule.TICKET?.status})`);
 
-            if (exists) {
-              console.warn(
-                `Agendamento ${schedule.SCHEDULINGCODE} já existe, ignorando INSERT`,
-              );
+  switch (operation) {
+    // ✅ INSERT e UPDATE agora são tratados igualmente
+    case MongoOperationTypes.INSERT:
+    case MongoOperationTypes.UPDATE:
+      setAgendamentosGeral((prev) => {
+        // Procura índice existente
+        const index = prev.findIndex(
+          (ag) =>
+            ag._id === schedule._id ||
+            ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
+        );
 
-              return prev;
-            }
+        let updated: Scheduling[];
 
-            const updated = deduplicateSchedulings([...prev, schedule]);
+        if (index !== -1) {
+          // ✅ ATUALIZA existente
+          updated = [...prev];
+          updated[index] = schedule;
+          console.log(`🔄 Agendamento ATUALIZADO: ${schedule.NOME}`);
+        } else {
+          // ✅ ADICIONA novo
+          updated = [...prev, schedule];
+          console.log(`➕ Agendamento INSERIDO: ${schedule.NOME}`);
+        }
 
-            return updated.sort((a, b) =>
-              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-            );
-          });
+        // Remove duplicatas e ordena
+        const deduplicated = deduplicateSchedulings(updated);
+        return deduplicated.sort((a, b) =>
+          a.NOME.localeCompare(b.NOME, 'pt-BR', { sensitivity: 'base' }),
+        );
+      });
+      break;
 
-          
-
-          break;
-
-        case MongoOperationTypes.UPDATE:
-          setAgendamentosGeral((prev) => {
-            const updated = prev.map((ag) =>
-              ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag,
-            );
-
-            return deduplicateSchedulings(updated).sort((a, b) =>
-              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-            );
-          });
-
-
-          break;
-
-        case MongoOperationTypes.DELETE:
-          setAgendamentosGeral((prev) =>
-            prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
-          );
-
-
-          break;
-      }
-    };
+    case MongoOperationTypes.DELETE:
+      setAgendamentosGeral((prev) =>
+        prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
+      );
+      console.log(`🗑️ Agendamento REMOVIDO: ${schedule.NOME}`);
+      break;
+  }
+};
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
       switch (request.type) {
