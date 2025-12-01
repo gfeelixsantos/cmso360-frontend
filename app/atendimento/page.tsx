@@ -372,11 +372,17 @@ const handleTicketUpdated = (ticket: Ticket) => {
     // HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
 // AtendimentoPage.tsx
 
+// AtendimentoPage.tsx
+
 const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
-  console.log(`📥 Recebido ${operation} para ${schedule.NOME} (Ticket: ${schedule.TICKET?.status})`);
+  console.log(
+    `📥 [${operation}] ${schedule.NOME} | ` +
+    `Ticket: ${schedule.TICKET?.status} | ` +
+    `Data: ${schedule.DATAAGENDAMENTO} | ` +
+    `_id: ${schedule._id}`
+  );
 
   switch (operation) {
-    // ✅ INSERT e UPDATE agora são tratados igualmente
     case MongoOperationTypes.INSERT:
     case MongoOperationTypes.UPDATE:
       setAgendamentosGeral((prev) => {
@@ -390,18 +396,27 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
         let updated: Scheduling[];
 
         if (index !== -1) {
-          // ✅ ATUALIZA existente
+          // ✅ ATUALIZA existente (merge profundo para preservar dados)
           updated = [...prev];
-          updated[index] = schedule;
-          console.log(`🔄 Agendamento ATUALIZADO: ${schedule.NOME}`);
+          updated[index] = {
+            ...updated[index], // Preserva campos antigos
+            ...schedule,        // Sobrescreve com novos dados
+            EXAMES: schedule.EXAMES || updated[index].EXAMES, // ✅ Garante EXAMES
+            TICKET: schedule.TICKET || updated[index].TICKET, // ✅ Garante TICKET
+          };
+          console.log(`🔄 [UPDATE] ${schedule.NOME} atualizado no índice ${index}`);
         } else {
           // ✅ ADICIONA novo
           updated = [...prev, schedule];
-          console.log(`➕ Agendamento INSERIDO: ${schedule.NOME}`);
+          console.log(`➕ [INSERT] ${schedule.NOME} adicionado (total: ${updated.length})`);
         }
 
         // Remove duplicatas e ordena
         const deduplicated = deduplicateSchedulings(updated);
+        console.log(
+          `✅ agendamentosGeral atualizado: ${prev.length} → ${deduplicated.length}`
+        );
+        
         return deduplicated.sort((a, b) =>
           a.NOME.localeCompare(b.NOME, 'pt-BR', { sensitivity: 'base' }),
         );
@@ -409,10 +424,15 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       break;
 
     case MongoOperationTypes.DELETE:
-      setAgendamentosGeral((prev) =>
-        prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
-      );
-      console.log(`🗑️ Agendamento REMOVIDO: ${schedule.NOME}`);
+      setAgendamentosGeral((prev) => {
+        const filtered = prev.filter(
+          (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE
+        );
+        console.log(
+          `🗑️ [DELETE] ${schedule.NOME} removido (${prev.length} → ${filtered.length})`
+        );
+        return filtered;
+      });
       break;
   }
 };
