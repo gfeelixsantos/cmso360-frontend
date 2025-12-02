@@ -17,7 +17,7 @@ import HeaderExame from "./HeaderExame";
 
 import { useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { NEST_SOC_AUDIOMETRIA_ANTERIOR, UNIDADES_ATENDIMENTO } from "@/config/constants";
+import { NEST_SOC_AUDIOMETRIA_ANTERIOR, NEST_URL, UNIDADES_ATENDIMENTO } from "@/config/constants";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -958,19 +958,17 @@ const verAudiometriaAnterior = useCallback(async () => {
 
     if (response.ok) {
       const data = await response.json();
-      
+
       // Verificar se a resposta contém uma URL válida
       if (data && data.url && typeof data.url === 'string') {
         // Abrir a URL do PDF em uma nova aba
-        window.open(data.url, '_blank', 'noopener,noreferrer');
+        window.open(`${NEST_URL}${data.url}`, '_blank', 'noopener,noreferrer');
         
-        // Opcional: Adicionar feedback visual
-        console.log('PDF da audiometria anterior aberto em nova aba:', data.url);
       } else {
         console.warn('Resposta da API não contém URL válida:', data);
         alert('Audiometria anterior encontrada, mas não foi possível abrir o PDF.');
       }
-    } else if (response.status === 404) {
+    } else if (response.status === 400) {
       alert('Não foi encontrada audiometria anterior para este paciente.');
     } else {
       const errorText = await response.text();
@@ -979,13 +977,6 @@ const verAudiometriaAnterior = useCallback(async () => {
     }
   } catch (error) {
     console.error('Erro ao buscar audiometria anterior:', error);
-    
-    // Mensagem de erro mais específica
-    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
-      alert('Erro de conexão. Verifique sua internet e tente novamente.');
-    } else {
-      alert('Erro ao buscar audiometria anterior. Verifique a conexão com o servidor.');
-    }
   }
 }, [atendimento]);
 
