@@ -179,7 +179,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }
 
   // Loading elegante com HeroUI durante o carregamento
-  if (estaCarregando || !agendamentos || !tickets) {
+  if (estaCarregando || !agendamentos || !tickets ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-default-50/50">
         <div className="text-center space-y-6">

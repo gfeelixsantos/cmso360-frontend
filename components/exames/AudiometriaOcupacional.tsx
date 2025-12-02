@@ -1,4 +1,5 @@
-// Código
+// AudiometriaOcupacional.tsx
+// Código atualizado com validação de campos e botão para ver audiometria anterior
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -10,13 +11,13 @@ import {
   Checkbox,
   Spinner,
 } from "@heroui/react";
-import { FileText, Calculator } from "lucide-react";
+import { FileText, Calculator, Eye } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
 
 import { useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { UNIDADES_ATENDIMENTO } from "@/config/constants";
+import { NEST_SOC_AUDIOMETRIA_ANTERIOR, UNIDADES_ATENDIMENTO } from "@/config/constants";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -253,6 +254,7 @@ const FREQUENCIAS = [
 
 const OPCOES_SIM_NAO = ["Sim", "Não"] as const;
 
+// ATUALIZAÇÃO 1: Inicializar toda tabela de audiometria em branco
 const VALOR_INICIAL: AudiometriaData = {
   tipoAudiometro: "AVS 500",
   dataCalibracao: "09/01/2025",
@@ -265,7 +267,7 @@ const VALOR_INICIAL: AudiometriaData = {
   dataTratamentoOtotoxicos: "",
   surdezFamilia: "Não",
   parentescoSurdez: "",
-  trabalhoAnteriorRuido: "Não",
+  trabalhoAnteriorRuido: "Sim",
   trabalhoAtualRuido: "Não",
   usoProtetorAuricular: "Sim",
   contatoQuimicos: "Não",
@@ -279,34 +281,34 @@ const VALOR_INICIAL: AudiometriaData = {
   meatoscopiaOE: "SEM_OBSTRUCAO",
   observacoesMeatoscopia: "",
 
-  // VALOR PADRÃO "--" PARA LIMIARES AUDITIVOS (NÃO ESCUTOU)
-  viaAereaOD250: "--",
-  viaAereaOD500: "--",
-  viaAereaOD1000: "--",
-  viaAereaOD2000: "--",
-  viaAereaOD3000: "--",
-  viaAereaOD4000: "--",
-  viaAereaOD6000: "--",
-  viaAereaOD8000: "--",
-  viaAereaOE250: "--",
-  viaAereaOE500: "--",
-  viaAereaOE1000: "--",
-  viaAereaOE2000: "--",
-  viaAereaOE3000: "--",
-  viaAereaOE4000: "--",
-  viaAereaOE6000: "--",
-  viaAereaOE8000: "--",
+  // ATUALIZAÇÃO 1: TODOS OS CAMPOS DA TABELA EM BRANCO (VAZIO)
+  viaAereaOD250: "",
+  viaAereaOD500: "",
+  viaAereaOD1000: "",
+  viaAereaOD2000: "",
+  viaAereaOD3000: "",
+  viaAereaOD4000: "",
+  viaAereaOD6000: "",
+  viaAereaOD8000: "",
+  viaAereaOE250: "",
+  viaAereaOE500: "",
+  viaAereaOE1000: "",
+  viaAereaOE2000: "",
+  viaAereaOE3000: "",
+  viaAereaOE4000: "",
+  viaAereaOE6000: "",
+  viaAereaOE8000: "",
 
-  viaOsseaOD500: "--",
-  viaOsseaOD1000: "--",
-  viaOsseaOD2000: "--",
-  viaOsseaOD3000: "--",
-  viaOsseaOD4000: "--",
-  viaOsseaOE500: "--",
-  viaOsseaOE1000: "--",
-  viaOsseaOE2000: "--",
-  viaOsseaOE3000: "--",
-  viaOsseaOE4000: "--",
+  viaOsseaOD500: "",
+  viaOsseaOD1000: "",
+  viaOsseaOD2000: "",
+  viaOsseaOD3000: "",
+  viaOsseaOD4000: "",
+  viaOsseaOE500: "",
+  viaOsseaOE1000: "",
+  viaOsseaOE2000: "",
+  viaOsseaOE3000: "",
+  viaOsseaOE4000: "",
 
   // MASCARAMENTO VIA AÉREA - INICIALMENTE FALSE
   mascaramentoVAOD250: false,
@@ -362,8 +364,8 @@ const VALOR_INICIAL: AudiometriaData = {
   limiaresRAOE: {},
   classificacaoNR7OD: "Não Classificado (RA Ausente)",
   classificacaoNR7OE: "Não Classificado (RA Ausente)",
-  classificacaoOD: "Dentro dos padrões da normalidade",
-  classificacaoOE: "Dentro dos padrões da normalidade",
+  classificacaoOD: "",
+  classificacaoOE: "",
   configuracaoOD: "Plana",
   configuracaoOE: "Plana",
 
@@ -375,11 +377,11 @@ const VALOR_INICIAL: AudiometriaData = {
   mediaTonalOE: 0,
   criterioPCD: "Não se enquadra (Cota Federal)",
 
-  classificacaoGeral: "Limiares auditivos dentro dos padrões da normalidade.",
-  conclusao: "Limiares auditivos dentro dos padrões da normalidade.",
+  classificacaoGeral: "",
+  conclusao: "",
   observacoes: "",
-  resultadoOD: "Dentro dos padrões da normalidade.",
-  resultadoOE: "Dentro dos padrões da normalidade.",
+  resultadoOD: "",
+  resultadoOE: "",
 };
 
 // Funções utilitárias para conversão de datas
@@ -403,26 +405,12 @@ const formatarParaInputDate = (data: string): string => {
   return data;
 };
 
-const formatarParaExibicao = (data: string): string => {
-  if (!data) return "";
-
-  // Se estiver no formato yyyy-MM-dd, converte para dd/MM/yyyy
-  if (/^\d{4}-\d{2}-\d{2}$/.test(data)) {
-    const [ano, mes, dia] = data.split("-");
-
-    return `${dia}/${mes}/${ano}`;
-  }
-
-  // Se já estiver no formato dd/MM/yyyy, retorna como está
-  return data;
-};
-
 // Componente de input ultra-leve para decibéis
 const DecibelInput = React.memo(
   ({
     value,
     onChange,
-    placeholder = "--",
+    placeholder = "",
     className = "",
   }: {
     value: string;
@@ -434,40 +422,20 @@ const DecibelInput = React.memo(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
 
-        // Permite "--" para indicar "não escutou"
-        if (inputValue === "--") {
-          onChange("--");
-
-          return;
-        }
-
         // Permite apenas números e limita a 3 dígitos
-        const numericValue = inputValue.replace(/[^\d]/g, "").slice(0, 3);
-        const finalValue =
-          numericValue === ""
-            ? "--"
-            : Math.min(parseInt(numericValue), 120).toString();
+       const filteredValue = inputValue.replace(/[^\d\-]/g, "").slice(0, 3);
 
-        onChange(finalValue);
-      },
-      [onChange],
-    );
-
-    const handleFocus = useCallback(
-      (e: React.FocusEvent<HTMLInputElement>) => {
-        // Quando focado, se o valor for "--", limpa o campo para digitação
-        if (e.target.value === "--") {
-          onChange("");
-        }
+        onChange(filteredValue);
       },
       [onChange],
     );
 
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
-        // Quando perde o foco, se estiver vazio, coloca "--"
+        // Quando perde o foco, se estiver vazio, mantém vazio
+        // Se quiser voltar a colocar "--" quando vazio, troque para onChange("--")
         if (e.target.value === "") {
-          onChange("--");
+          onChange("");
         }
       },
       [onChange],
@@ -482,7 +450,6 @@ const DecibelInput = React.memo(
         value={value}
         onBlur={handleBlur}
         onChange={handleChange}
-        onFocus={handleFocus}
       />
     );
   },
@@ -555,53 +522,80 @@ const SectionTitle: React.FC<{
 // - Textos padronizados para laudo ocupacional (NR-7).
 // - Quando "Audição dentro dos padrões de normalidade", o tipo/grau aparecem como '-'.
 // - Configuração da curva refinada: compara médias de baixas vs altas frequências.
-
 class AudiometriaCalculator {
+  static parseValor(v: string | null | undefined): number | null {
+    if (
+      v === null ||
+      v === undefined ||
+      v === "" ||
+      v === "-" ||
+      v === "--" ||
+      v === "---"
+    ) {
+      return null;
+    }
+
+    const n = parseFloat(String(v).replace(",", "."));
+    return isNaN(n) ? null : n;
+  }
+
+
   // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
   static calcularMediaTonal(freqs: string[]): number {
-    const valores = freqs
-      .map((v) => (v === "--" ? NaN : parseFloat(String(v))))
-      .filter((v) => !isNaN(v));
+  const valores = freqs
+    .map((v) => this.parseValor(v))
+    .filter((v): v is number => v !== null);
 
-    if (valores.length === 0) return 0;
+  if (valores.length === 0) return 0;
 
-    return Math.round(
-      valores.reduce((acc, val) => acc + val, 0) / valores.length,
-    );
-  }
+  return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
+}
+
 
   // === CLASSIFICAÇÃO (Lloyd & Kaplan) ===
-  static classificarPerdaLloydKaplan(media: number): string {
-    if (media <= 25)
-      return "Limiares auditivos dentro dos padrões de normalidade";
-    if (media <= 40) return "Perda Auditiva Leve";
-    if (media <= 70) return "Perda Auditiva Moderada";
-    if (media <= 90) return "Perda Auditiva Severa";
+  static classificarPerdaLloydKaplan(limiares: { [key: number]: string }): string {
 
-    return "Perda Auditiva Profunda";
+  const freqCriticas = [1000, 2000, 3000];
+
+  // Se qualquer frequência crítica estiver ausente => PROFUNDA
+  for (const f of freqCriticas) {
+    const v = this.parseValor(limiares[f]);
+    if (v === null) return "Perda Auditiva Profunda";
   }
 
+  // Caso contrário usa o cálculo tonal normal
+  const media = this.calcularMediaTonal([
+    limiares[500],
+    limiares[1000],
+    limiares[2000],
+    limiares[4000],
+  ]);
+
+  if (media >= 91) return "Perda Auditiva Profunda";
+  if (media >= 71) return "Perda Auditiva Severa";
+  if (media >= 56) return "Perda Auditiva Moderada Severa";
+  if (media >= 41) return "Perda Auditiva Moderada";
+  if (media >= 26) return "Perda Auditiva Leve";
+  return "Normal";
+}
+
+
   // === IDENTIFICAR FREQUÊNCIAS ALTERADAS (> 25 dB) ===
-  static identificarFrequenciasAlteradas(vaLimiares: {
-    [key: number]: string;
-  }): string {
+  static identificarFrequenciasAlteradas(
+    vaLimiares: { [key: number]: string }
+  ): string {
     const alteradas = Object.keys(vaLimiares)
       .map(Number)
       .filter((freq) => {
-        const valorStr = String(vaLimiares[freq]);
-
-        if (valorStr === "--") return false;
-        const valor = parseFloat(valorStr);
-
-        return !isNaN(valor) && valor > 25;
+        const valor = this.parseValor(vaLimiares[freq]);
+        return valor !== null && valor > 25;
       })
       .sort((a, b) => a - b)
       .map((freq) => `${freq} Hz`);
 
-    return alteradas.length > 0
-      ? alteradas.join(", ")
-      : "sem alterações significativas";
+    return alteradas.length > 0 ? alteradas.join(", ") : "sem alterações significativas";
   }
+
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
   static verificarCriterioPCD(mediaOD: number, mediaOE: number): string {
@@ -624,65 +618,43 @@ class AudiometriaCalculator {
   // - Ascendente: baixas ~ pior (raro, mas possível)
   // - Irregular: variação sem padrão definido
   static calcularConfiguracao(vaLimiares: { [key: number]: string }): string {
-    const get = (f: number) => {
-      const vStr = String(vaLimiares[f]);
+  const get = (f: number): number | null => this.parseValor(vaLimiares[f]);
 
-      if (vStr === "--") return null;
-      const v = parseFloat(vStr);
+  const baixas = [500, 1000].map(get).filter((v): v is number => v !== null);
+  const altas = [3000, 4000, 6000].map(get).filter((v): v is number => v !== null);
 
-      return isNaN(v) ? null : v;
-    };
+  if (baixas.length === 0 || altas.length === 0) {
+    const v500 = get(500) ?? 0;
+    const v4000 = get(4000) ?? 0;
 
-    const baixas = [500, 1000].map(get).filter((v) => v !== null) as number[];
-    const mediasAltas = [3000, 4000, 6000]
-      .map(get)
-      .filter((v) => v !== null) as number[];
-
-    if (baixas.length === 0 || mediasAltas.length === 0) {
-      // Fallback para comparação 500 vs 4000 (como na versão anterior) quando faltam frequências
-      const v500 = get(500) ?? 0;
-      const v4000 = get(4000) ?? 0;
-
-      if (Math.abs(v500 - v4000) <= 10) return "Plana";
-      if (v4000 > v500 + 15) return "Descendente";
-      if (v500 > v4000 + 15) return "Ascendente";
-
-      return "Irregular";
-    }
-
-    const mediaBaixas = Math.round(
-      baixas.reduce((a, b) => a + b, 0) / baixas.length,
-    );
-    const mediaAltas = Math.round(
-      mediasAltas.reduce((a, b) => a + b, 0) / mediasAltas.length,
-    );
-
-    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
-    if (mediaAltas > mediaBaixas + 15) return "Descendente";
-    if (mediaBaixas > mediaAltas + 15) return "Ascendente";
-
+    if (Math.abs(v500 - v4000) <= 10) return "Plana";
+    if (v4000 > v500 + 15) return "Descendente";
+    if (v500 > v4000 + 15) return "Ascendente";
     return "Irregular";
   }
 
+  const mediaBaixas = Math.round(baixas.reduce((a, b) => a + b, 0) / baixas.length);
+  const mediaAltas = Math.round(altas.reduce((a, b) => a + b, 0) / altas.length);
+
+  if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
+  if (mediaAltas > mediaBaixas + 15) return "Descendente";
+  if (mediaBaixas > mediaAltas + 15) return "Ascendente";
+
+  return "Irregular";
+}
+
+
   // CÁLCULO MÉDIA ÓSSEA
-  static calcularMediaOssea(
-    freqs: (string | null | undefined)[],
-  ): number | null {
-    const valores = freqs
-      .map((v) => {
-        if (v === null || v === undefined || v === "--") return NaN;
+  static calcularMediaOssea(freqs: (string | null | undefined)[]): number | null {
+  const valores = freqs
+    .map((v) => this.parseValor(v))
+    .filter((v): v is number => v !== null);
 
-        return parseFloat(String(v));
-      })
-      .filter((v) => !isNaN(v));
+  if (valores.length === 0) return null;
 
-    // Se não houver valores de via óssea preenchidos, retorna null
-    if (valores.length === 0) return null;
+  return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
+}
 
-    return Math.round(
-      valores.reduce((acc, val) => acc + val, 0) / valores.length,
-    );
-  }
 
   // CÁLCULO DETERMINAR TIPO DE PERDA
   static determinarTipoPerda(mediaVA: number, mediaVO: number | null): string {
@@ -765,8 +737,8 @@ class AudiometriaCalculator {
       formData.viaOsseaOE3000,
     ]);
 
-    const classificacaoOD = this.classificarPerdaLloydKaplan(mediaTonalOD);
-    const classificacaoOE = this.classificarPerdaLloydKaplan(mediaTonalOE);
+    const classificacaoOD = this.classificarPerdaLloydKaplan(vaLimiaresOD);
+    const classificacaoOE = this.classificarPerdaLloydKaplan(vaLimiaresOE);
 
     const frequenciasAlteradasOD =
       this.identificarFrequenciasAlteradas(vaLimiaresOD);
@@ -838,24 +810,56 @@ class AudiometriaCalculator {
       resultadoOD,
       resultadoOE,
       conclusao: conclusaoGeral,
+      classificacaoGeral: conclusaoGeral,
 
       // === Critérios legais e NR-7 ===
       criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
-      classificacaoNR7OD:
-        formData.audiometriaAnterior === "Não"
-          ? isNormalOD
-            ? "RA - Normal"
-            : "RA - Alterada"
-          : "Alteração Não Ocupacional",
-      classificacaoNR7OE:
-        formData.audiometriaAnterior === "Não"
-          ? isNormalOE
-            ? "RA - Normal"
-            : "RA - Alterada"
-          : "Alteração Não Ocupacional",
+      classificacaoNR7OD,
+      classificacaoNR7OE,
     };
   }
 }
+
+// ATUALIZAÇÃO 1 e 2: Função para validar se todos os campos da tabela estão preenchidos
+const validarCamposTabela = (formData: AudiometriaData): boolean => {
+  const camposViaAerea = [
+    "viaAereaOD250",
+    "viaAereaOD500",
+    "viaAereaOD1000",
+    "viaAereaOD2000",
+    "viaAereaOD3000",
+    "viaAereaOD4000",
+    "viaAereaOD6000",
+    "viaAereaOD8000",
+    "viaAereaOE250",
+    "viaAereaOE500",
+    "viaAereaOE1000",
+    "viaAereaOE2000",
+    "viaAereaOE3000",
+    "viaAereaOE4000",
+    "viaAereaOE6000",
+    "viaAereaOE8000",
+  ];
+
+  // Verificar campos via aérea
+  for (const campo of camposViaAerea) {
+    if (formData[campo as keyof AudiometriaData] === "") {
+      return false;
+    }
+  }
+
+  // Verificar campos via óssea (podem ser opcionais dependendo do protocolo)
+  // Se quiser tornar obrigatório, descomente abaixo:
+  /*
+  for (const campo of camposViaOssea) {
+    if (formData[campo as keyof AudiometriaData] === "") {
+      return false;
+    }
+  }
+  */
+
+  return true;
+};
 
 const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   atendimento,
@@ -864,12 +868,13 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   onSave,
   onClose,
 }) => {
-  const user = useUser();
+
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formData, setFormData] = useState<AudiometriaData>(VALOR_INICIAL);
   const [resultadosCalculados, setResultadosCalculados] = useState(false);
+  const [carregandoAudiometriaAnterior, setCarregandoAudiometriaAnterior] = useState(false);
 
   // Efeito de inicialização simples
   useEffect(() => {
@@ -926,8 +931,74 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     [],
   );
 
-  // Função para calcular resultados
+
+const verAudiometriaAnterior = useCallback(async () => {
+  try {
+    // ATUALIZAÇÃO 3: Requisição para o backend buscar audiometria anterior
+    const empresa = atendimento?.CODIGOEMPRESA;
+    const cpf = atendimento?.CPFFUNCIONARIO;
+
+    // Verificar se temos os dados necessários
+    if (!empresa || !cpf) {
+      alert('Dados insuficientes para buscar audiometria anterior. Verifique se o paciente e empresa estão cadastrados.');
+      return;
+    }
+
+    // Construir URL com query parameters
+    const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
+    url.searchParams.append('empresa', empresa);
+    url.searchParams.append('cpf', cpf);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      
+      // Verificar se a resposta contém uma URL válida
+      if (data && data.url && typeof data.url === 'string') {
+        // Abrir a URL do PDF em uma nova aba
+        window.open(data.url, '_blank', 'noopener,noreferrer');
+        
+        // Opcional: Adicionar feedback visual
+        console.log('PDF da audiometria anterior aberto em nova aba:', data.url);
+      } else {
+        console.warn('Resposta da API não contém URL válida:', data);
+        alert('Audiometria anterior encontrada, mas não foi possível abrir o PDF.');
+      }
+    } else if (response.status === 404) {
+      alert('Não foi encontrada audiometria anterior para este paciente.');
+    } else {
+      const errorText = await response.text();
+      console.error('Erro na resposta:', response.status, errorText);
+      alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+    }
+  } catch (error) {
+    console.error('Erro ao buscar audiometria anterior:', error);
+    
+    // Mensagem de erro mais específica
+    if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+      alert('Erro de conexão. Verifique sua internet e tente novamente.');
+    } else {
+      alert('Erro ao buscar audiometria anterior. Verifique a conexão com o servidor.');
+    }
+  }
+}, [atendimento]);
+
+  // Função para calcular resultados com validação
   const calcularResultados = useCallback(async () => {
+    // ATUALIZAÇÃO 2: Validar se todos os campos estão preenchidos
+    const camposPreenchidos = validarCamposTabela(formData);
+    
+    if (!camposPreenchidos) {
+      alert('Por favor, preencha todos os campos da tabela de audiometria antes de calcular os resultados.');
+      return;
+    }
+
     setIsCalculating(true);
 
     // Simular um pequeno delay para feedback visual
@@ -940,6 +1011,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       setResultadosCalculados(true);
     } catch (error) {
       console.error("Erro ao calcular resultados:", error);
+      alert('Erro ao calcular resultados. Verifique os valores inseridos.');
     } finally {
       setIsCalculating(false);
     }
@@ -949,7 +1021,6 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     // ATUALIZAÇÃO 2: Verificar se os resultados foram calculados antes de permitir salvar
     if (!resultadosCalculados) {
       alert("É necessário calcular os resultados antes de finalizar o exame.");
-
       return;
     }
 
@@ -1048,9 +1119,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                   ))}
                 </div>
                 {formData.audiometriaAnterior === "Sim" && (
-                  <p className="text-xs text-amber-600 mt-1">
-                    *Exame Sequencial.
-                  </p>
+                  <>
+                    <p className="text-xs text-amber-600 mt-1">
+                      *Exame Sequencial.
+                    </p>
+                  </>
                 )}
                 {formData.audiometriaAnterior === "Não" && (
                   <p className="text-xs text-green-600 mt-1">
@@ -1115,7 +1188,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         }
                       >
                         {option}
-                      </Checkbox>
+                    </Checkbox>
                     ))}
                   </div>
                   {formData.surdezFamilia === "Sim" && (
@@ -1368,28 +1441,46 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             <p className="mb-1">
               {resultadosCalculados
                 ? "✅ Resultados calculados"
-                : '⚠️ Clique em "Calcular Resultados" após preencher os limiares'}
+                : '⚠️ Preencha todos os campos da tabela antes de calcular'}
             </p>
             <p className="text-xs text-amber-600">
-              💡 Valor padrão "--" indica "não escutou". Preencha os limiares
-              auditivos antes de calcular.
+              💡 Todos os campos são obrigatórios para cálculo dos resultados.
             </p>
           </div>
-          <Button
-            className="bg-green-600 text-white"
-            color="primary"
-            isDisabled={isCalculating}
-            startContent={
-              isCalculating ? (
-                <Spinner size="sm" />
-              ) : (
-                <Calculator className="h-4 w-4" />
-              )
-            }
-            onPress={calcularResultados}
-          >
-            {isCalculating ? "Calculando..." : "Calcular Resultados"}
-          </Button>
+          <div className="flex gap-2">
+            {/* ATUALIZAÇÃO 3: Botão para ver audiometria anterior ao lado do calcular */}
+            {formData.audiometriaAnterior === "Sim" && (
+              <Button
+                className="bg-blue-600 text-white"
+                isDisabled={carregandoAudiometriaAnterior}
+                startContent={
+                  carregandoAudiometriaAnterior ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )
+                }
+                onPress={verAudiometriaAnterior}
+              >
+                {carregandoAudiometriaAnterior ? 'Buscando...' : 'Ver Anterior'}
+              </Button>
+            )}
+            <Button
+              className="bg-green-600 text-white"
+              color="primary"
+              isDisabled={isCalculating}
+              startContent={
+                isCalculating ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <Calculator className="h-4 w-4" />
+                )
+              }
+              onPress={calcularResultados}
+            >
+              {isCalculating ? "Calculando..." : "Calcular Resultados"}
+            </Button>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
@@ -1444,7 +1535,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     className="border border-gray-300 p-1"
                   >
                     <DecibelInput
-                      placeholder="--"
+                      placeholder=""
                       value={
                         formData[
                           freq.fieldVAOD as keyof AudiometriaData
@@ -1490,7 +1581,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                   >
                     {freq.fieldVOOD ? (
                       <DecibelInput
-                        placeholder="--"
+                        placeholder=""
                         value={
                           formData[
                             freq.fieldVOOD as keyof AudiometriaData
@@ -1552,7 +1643,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     className="border border-gray-300 p-1"
                   >
                     <DecibelInput
-                      placeholder="--"
+                      placeholder=""
                       value={
                         formData[
                           freq.fieldVAOE as keyof AudiometriaData
@@ -1598,7 +1689,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                   >
                     {freq.fieldVOOE ? (
                       <DecibelInput
-                        placeholder="--"
+                        placeholder=""
                         value={
                           formData[
                             freq.fieldVOOE as keyof AudiometriaData

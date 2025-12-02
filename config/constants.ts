@@ -37,6 +37,8 @@ export const NEST_RELATORIO_PARAMETROS = NEST_URL + "schedulings/report-params";
 export const NEST_RELATORIO_FILTROS = NEST_URL + "schedulings/report-filters";
 export const NEST_RELATORIO_FUNCIONARIO = NEST_URL + "schedulings/report/"; // schedulings/report/:ID ---> Busca funcionário
 
+export const NEST_SOC_AUDIOMETRIA_ANTERIOR = NEST_URL + "soc/audiometria-anterior"
+
 const SCHEDULINGS_EXAM_UPDATE =
   process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_EXAM_UPDATE ??
   "[.ENV] Scheduling exam update nulo";

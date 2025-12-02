@@ -322,6 +322,7 @@ const AtendimentoPage: React.FC = () => {
     // HANDLERS DE EVENTOS (CORRIGIDOS)
     // ---------------------------------------------------------
     const handleAtendimentos = (schedules?: Scheduling[]) => {
+      console.log("okss chamado", schedules?.some(s => s.NOME.includes("TESTE")))
       if (schedules) {
         setAgendamentosGeral((prev) => {
           const merged = [...prev];
@@ -339,7 +340,6 @@ const AtendimentoPage: React.FC = () => {
 
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
 
-// AtendimentoPage.tsx
 
 const handleTicketUpdated = (ticket: Ticket) => {
   console.log(`🎫 Ticket ${ticket.id} atualizado: Status = ${ticket.status}`);

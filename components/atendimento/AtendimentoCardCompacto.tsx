@@ -107,7 +107,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
     return horas > 0 ? `${horas}h ${minutosRestantes}m` : `${minutos}m`;
   };
 
-  const idade = calcularIdade(atendimento.DATANASCIMENTO);
+
 
   return (
     <Card

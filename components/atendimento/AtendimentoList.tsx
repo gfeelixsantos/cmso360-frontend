@@ -160,16 +160,6 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
           <AtendimentoCardCompacto
             key={`compacto-${atend._id}`}
             atendimento={atend}
-            // title={`Em exame (${senhasEmAtendimento.length})`}
-            // senhas={senhasEmAtendimento}
-            // emptyMessage="Nenhuma"
-            // setTicketSelecionado={setTicketSelecionado}
-            // socket={socket}
-            // salaSelecionada={salaSelecionada}
-            // codigosDeAtendimento={codigosDeAtendimento}
-            // unidadeSelecionada={unidadeSelecionada}
-            // setFuncionarioSelecionado={setFuncionarioSelecionado}
-            // onHandleModal={onHandleModal}
           />
         ))}
       </div>
