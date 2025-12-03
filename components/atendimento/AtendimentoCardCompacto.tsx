@@ -107,8 +107,6 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
     return horas > 0 ? `${horas}h ${minutosRestantes}m` : `${minutos}m`;
   };
 
-
-
   return (
     <Card
       className={`${bg} ${border} rounded-lg p-3 mb-2 hover:shadow-md transition-shadow cursor-pointer`}

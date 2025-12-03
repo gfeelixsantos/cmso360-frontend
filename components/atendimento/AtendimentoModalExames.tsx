@@ -22,6 +22,8 @@ import KitAtendimento from "../exames/KitAtendimento";
 import Ultrassom from "../exames/Ultrassom";
 import FichaClinicaWhirlpool from "../exames/FichaClinicaWhirlpool";
 
+import { AtendimentoRules } from "./AtendimentoRules";
+
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
 import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
@@ -290,37 +292,19 @@ const AtendimentoModalExames = ({
     ],
   );
 
-  const empresaKit =
-    funcionarioSelecionado?.CODIGOINTERNOEMPRESA?.toLocaleUpperCase().includes(
-      "KIT",
-    ) || funcionarioSelecionado?.NOMECARGO?.toLocaleUpperCase().includes("KIT");
-  let Formulario = EXAME_FORM_MAP[exame];
+  const Formulario = useMemo(() => {
+    if (!funcionarioSelecionado) return null;
 
-  if (empresaKit) {
-    Formulario = KitAtendimento;
-  }
-
-  //
-  // Valida se exame clínico precisa de teste articular para Admissionais Whirlpool
-  //
-  const admissional =
-    funcionarioSelecionado?.TIPOEXAMENOME.toUpperCase().includes("ADM");
-
-  const rhBrasilWhirlpool =
-    funcionarioSelecionado?.CODIGOEMPRESA === "230890" &&
-    (funcionarioSelecionado.NOMEUNIDADE.includes("WHIRLPOOL") ||
-      funcionarioSelecionado.NOMEUNIDADE.includes("WHIRPOOL"));
-
-  const whirlpoolAdmissional =
-    funcionarioSelecionado?.CODIGOEMPRESA === "238590";
-
-  if (
-    exame === "Exame Clínico" &&
-    admissional &&
-    (rhBrasilWhirlpool || whirlpoolAdmissional)
-  ) {
-    Formulario = FichaClinicaWhirlpool;
-  }
+    return AtendimentoRules.resolveFormulario({
+      exame,
+      funcionario: funcionarioSelecionado,
+      forms: {
+        EXAME_FORM_MAP,
+        KitAtendimento,
+        FichaClinicaWhirlpool,
+      },
+    });
+  }, [exame, funcionarioSelecionado, EXAME_FORM_MAP]);
 
   // Renderiza o modal de notificação
   const renderNotificationModal = () => {

@@ -514,7 +514,10 @@ const ConfigModal = ({
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-sm sm:text-base" style={{ color: COLOR_PALETTE.text }}>
+            <span
+              className="text-sm sm:text-base"
+              style={{ color: COLOR_PALETTE.text }}
+            >
               Áudio
             </span>
             <button
@@ -1053,7 +1056,10 @@ export default function PainelPage() {
               >
                 Painel de Chamadas
               </h1>
-              <p className="mt-2 text-sm sm:text-base" style={{ color: COLOR_PALETTE.textLight }}>
+              <p
+                className="mt-2 text-sm sm:text-base"
+                style={{ color: COLOR_PALETTE.textLight }}
+              >
                 Acesso restrito ao pessoal autorizado
               </p>
             </div>

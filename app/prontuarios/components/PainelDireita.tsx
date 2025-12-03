@@ -32,8 +32,6 @@ import {
   AlertCircle,
   CheckCircle2,
   FileText,
-  Radiation,
-  TriangleAlert,
 } from "lucide-react";
 
 import { MedicalRecord } from "../page";
@@ -997,7 +995,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       });
 
       if (!response.ok) {
-        const err = await response.text()
+        const err = await response.text();
+
         throw new Error(`Erro ao salvar parecer ${err}`);
       }
 
@@ -1230,7 +1229,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                       </tbody>
                       <footer>
                         <tr className="text-right">
-                          <td>{selectedRecord.TICKET?.emissao.toLocaleString("pt-BR")}</td>
+                          <td>
+                            {selectedRecord.TICKET?.emissao.toLocaleString(
+                              "pt-BR",
+                            )}
+                          </td>
                         </tr>
                       </footer>
                     </table>
@@ -1351,79 +1354,84 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                 </div>
               )}
 
-              {/* Pareceres Complementares */}
-              {(hasHeightRisk || hasConfinedRisk) && (
-                <div className="space-y-3">
-                  <Divider />
-                  <p className="text-xs font-semibold text-default-600">
-                    Pareceres Complementares
-                  </p>
+              {/* Pareceres Complementares - Trabalho em altura e espaço confinado, exibidos se não for RT e DEM */}
+              {(hasHeightRisk || hasConfinedRisk) &&
+                selectedRecord.TIPOEXAME != "3" &&
+                selectedRecord.TIPOEXAME != "5" &&
+                selectedRecord.TIPOEXAME != "6" && (
+                  <div className="space-y-3">
+                    <Divider />
+                    <p className="text-xs font-semibold text-default-600">
+                      Pareceres Complementares
+                    </p>
 
-                  {hasHeightRisk && (
-                    <Select
-                      classNames={{
-                        label: "text-xs",
-                        value: "text-xs",
-                      }}
-                      label="Trabalho em Altura"
-                      placeholder="Selecione o parecer"
-                      selectedKeys={opinion?.altura ? [opinion.altura] : []}
-                      size="sm"
-                      onSelectionChange={(keys) => {
-                        const val = Array.from(
-                          keys,
-                        )[0] as ParecerTrabalhoAltura;
+                    {hasHeightRisk && (
+                      <Select
+                        classNames={{
+                          label: "text-xs",
+                          value: "text-xs",
+                        }}
+                        label="Trabalho em Altura"
+                        placeholder="Selecione o parecer"
+                        selectedKeys={opinion?.altura ? [opinion.altura] : []}
+                        size="sm"
+                        onSelectionChange={(keys) => {
+                          const val = Array.from(
+                            keys,
+                          )[0] as ParecerTrabalhoAltura;
 
-                        setOpinion((prev) => ({
-                          ...(prev || {}),
-                          altura: val,
-                          details: prev?.details ?? "",
-                        }));
-                      }}
-                    >
-                      <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA}>
-                        {ParecerTrabalhoAltura.APTO_ALTURA}
-                      </SelectItem>
-                      <SelectItem key={ParecerTrabalhoAltura.INAPTO_ALTURA}>
-                        {ParecerTrabalhoAltura.INAPTO_ALTURA}
-                      </SelectItem>
-                    </Select>
-                  )}
+                          setOpinion((prev) => ({
+                            ...(prev || {}),
+                            altura: val,
+                            details: prev?.details ?? "",
+                          }));
+                        }}
+                      >
+                        <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA}>
+                          {ParecerTrabalhoAltura.APTO_ALTURA}
+                        </SelectItem>
+                        <SelectItem key={ParecerTrabalhoAltura.INAPTO_ALTURA}>
+                          {ParecerTrabalhoAltura.INAPTO_ALTURA}
+                        </SelectItem>
+                      </Select>
+                    )}
 
-                  {hasConfinedRisk && (
-                    <Select
-                      classNames={{
-                        label: "text-xs",
-                        value: "text-xs",
-                      }}
-                      label="Espaço Confinado"
-                      placeholder="Selecione o parecer"
-                      selectedKeys={
-                        opinion?.confinado ? [opinion.confinado] : []
-                      }
-                      size="sm"
-                      onSelectionChange={(keys) => {
-                        const val = Array.from(
-                          keys,
-                        )[0] as ParecerEspaçoConfinado;
+                    {hasConfinedRisk && (
+                      <Select
+                        classNames={{
+                          label: "text-xs",
+                          value: "text-xs",
+                        }}
+                        label="Espaço Confinado"
+                        placeholder="Selecione o parecer"
+                        selectedKeys={
+                          opinion?.confinado ? [opinion.confinado] : []
+                        }
+                        size="sm"
+                        onSelectionChange={(keys) => {
+                          const val = Array.from(
+                            keys,
+                          )[0] as ParecerEspaçoConfinado;
 
-                        setOpinion((prev) => ({
-                          ...(prev || {}),
-                          confinado: val,
-                          details: prev?.details ?? "",
-                        }));
-                      }}
-                    >
-                      <SelectItem key={ParecerEspaçoConfinado.APTO_CONFINADO}>
-                        {ParecerEspaçoConfinado.APTO_CONFINADO}
-                      </SelectItem>
-                      <SelectItem key={ParecerEspaçoConfinado.INAPTO_CONFINADO}>
-                        {ParecerEspaçoConfinado.INAPTO_CONFINADO}
-                      </SelectItem>
-                    </Select>
-                  )}
-                </div>
-              )}
+                          setOpinion((prev) => ({
+                            ...(prev || {}),
+                            confinado: val,
+                            details: prev?.details ?? "",
+                          }));
+                        }}
+                      >
+                        <SelectItem key={ParecerEspaçoConfinado.APTO_CONFINADO}>
+                          {ParecerEspaçoConfinado.APTO_CONFINADO}
+                        </SelectItem>
+                        <SelectItem
+                          key={ParecerEspaçoConfinado.INAPTO_CONFINADO}
+                        >
+                          {ParecerEspaçoConfinado.INAPTO_CONFINADO}
+                        </SelectItem>
+                      </Select>
+                    )}
+                  </div>
+                )}
 
               {/* Indicadores de Laudos */}
               {(opinion?.laudoPCD || opinion?.laudoRestricao) && (

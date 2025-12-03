@@ -14,10 +14,15 @@ import {
 import { FileText, Calculator, Eye } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
+import { generateAudiogramSVG } from "./AudiometriaGraphics";
+import { AudiogramDisplay } from "./AudiometriaDisplay";
 
-import { useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { NEST_SOC_AUDIOMETRIA_ANTERIOR, NEST_URL, UNIDADES_ATENDIMENTO } from "@/config/constants";
+import {
+  NEST_SOC_AUDIOMETRIA_ANTERIOR,
+  NEST_URL,
+  UNIDADES_ATENDIMENTO,
+} from "@/config/constants";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -27,7 +32,7 @@ interface AudiometriaProps {
   onClose?: () => void;
 }
 
-interface AudiometriaData {
+export interface AudiometriaData {
   tipoAudiometro: string;
   dataCalibracao: string;
   repousoAuditivo: string;
@@ -423,7 +428,7 @@ const DecibelInput = React.memo(
         const inputValue = e.target.value;
 
         // Permite apenas números e limita a 3 dígitos
-       const filteredValue = inputValue.replace(/[^\d\-]/g, "").slice(0, 3);
+        const filteredValue = inputValue.replace(/[^\d\-]/g, "").slice(0, 3);
 
         onChange(filteredValue);
       },
@@ -536,66 +541,69 @@ class AudiometriaCalculator {
     }
 
     const n = parseFloat(String(v).replace(",", "."));
+
     return isNaN(n) ? null : n;
   }
 
-
   // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
   static calcularMediaTonal(freqs: string[]): number {
-  const valores = freqs
-    .map((v) => this.parseValor(v))
-    .filter((v): v is number => v !== null);
+    const valores = freqs
+      .map((v) => this.parseValor(v))
+      .filter((v): v is number => v !== null);
 
-  if (valores.length === 0) return 0;
+    if (valores.length === 0) return 0;
 
-  return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
-}
-
-
-  // === CLASSIFICAÇÃO (Lloyd & Kaplan) ===
-  static classificarPerdaLloydKaplan(limiares: { [key: number]: string }): string {
-
-  const freqCriticas = [1000, 2000, 3000];
-
-  // Se qualquer frequência crítica estiver ausente => PROFUNDA
-  for (const f of freqCriticas) {
-    const v = this.parseValor(limiares[f]);
-    if (v === null) return "Perda Auditiva Profunda";
+    return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
   }
 
-  // Caso contrário usa o cálculo tonal normal
-  const media = this.calcularMediaTonal([
-    limiares[500],
-    limiares[1000],
-    limiares[2000],
-    limiares[4000],
-  ]);
+  // === CLASSIFICAÇÃO (Lloyd & Kaplan) ===
+  static classificarPerdaLloydKaplan(limiares: {
+    [key: number]: string;
+  }): string {
+    const freqCriticas = [1000, 2000, 3000];
 
-  if (media >= 91) return "Perda Auditiva Profunda";
-  if (media >= 71) return "Perda Auditiva Severa";
-  if (media >= 56) return "Perda Auditiva Moderada Severa";
-  if (media >= 41) return "Perda Auditiva Moderada";
-  if (media >= 26) return "Perda Auditiva Leve";
-  return "Normal";
-}
+    // Se qualquer frequência crítica estiver ausente => PROFUNDA
+    for (const f of freqCriticas) {
+      const v = this.parseValor(limiares[f]);
 
+      if (v === null) return "Perda Auditiva Profunda";
+    }
+
+    // Caso contrário usa o cálculo tonal normal
+    const media = this.calcularMediaTonal([
+      limiares[500],
+      limiares[1000],
+      limiares[2000],
+      limiares[4000],
+    ]);
+
+    if (media >= 91) return "Perda Auditiva Profunda";
+    if (media >= 71) return "Perda Auditiva Severa";
+    if (media >= 56) return "Perda Auditiva Moderada Severa";
+    if (media >= 41) return "Perda Auditiva Moderada";
+    if (media >= 26) return "Perda Auditiva Leve";
+
+    return "Normal";
+  }
 
   // === IDENTIFICAR FREQUÊNCIAS ALTERADAS (> 25 dB) ===
-  static identificarFrequenciasAlteradas(
-    vaLimiares: { [key: number]: string }
-  ): string {
+  static identificarFrequenciasAlteradas(vaLimiares: {
+    [key: number]: string;
+  }): string {
     const alteradas = Object.keys(vaLimiares)
       .map(Number)
       .filter((freq) => {
         const valor = this.parseValor(vaLimiares[freq]);
+
         return valor !== null && valor > 25;
       })
       .sort((a, b) => a - b)
       .map((freq) => `${freq} Hz`);
 
-    return alteradas.length > 0 ? alteradas.join(", ") : "sem alterações significativas";
+    return alteradas.length > 0
+      ? alteradas.join(", ")
+      : "sem alterações significativas";
   }
-
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
   static verificarCriterioPCD(mediaOD: number, mediaOE: number): string {
@@ -618,43 +626,50 @@ class AudiometriaCalculator {
   // - Ascendente: baixas ~ pior (raro, mas possível)
   // - Irregular: variação sem padrão definido
   static calcularConfiguracao(vaLimiares: { [key: number]: string }): string {
-  const get = (f: number): number | null => this.parseValor(vaLimiares[f]);
+    const get = (f: number): number | null => this.parseValor(vaLimiares[f]);
 
-  const baixas = [500, 1000].map(get).filter((v): v is number => v !== null);
-  const altas = [3000, 4000, 6000].map(get).filter((v): v is number => v !== null);
+    const baixas = [500, 1000].map(get).filter((v): v is number => v !== null);
+    const altas = [3000, 4000, 6000]
+      .map(get)
+      .filter((v): v is number => v !== null);
 
-  if (baixas.length === 0 || altas.length === 0) {
-    const v500 = get(500) ?? 0;
-    const v4000 = get(4000) ?? 0;
+    if (baixas.length === 0 || altas.length === 0) {
+      const v500 = get(500) ?? 0;
+      const v4000 = get(4000) ?? 0;
 
-    if (Math.abs(v500 - v4000) <= 10) return "Plana";
-    if (v4000 > v500 + 15) return "Descendente";
-    if (v500 > v4000 + 15) return "Ascendente";
+      if (Math.abs(v500 - v4000) <= 10) return "Plana";
+      if (v4000 > v500 + 15) return "Descendente";
+      if (v500 > v4000 + 15) return "Ascendente";
+
+      return "Irregular";
+    }
+
+    const mediaBaixas = Math.round(
+      baixas.reduce((a, b) => a + b, 0) / baixas.length,
+    );
+    const mediaAltas = Math.round(
+      altas.reduce((a, b) => a + b, 0) / altas.length,
+    );
+
+    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
+    if (mediaAltas > mediaBaixas + 15) return "Descendente";
+    if (mediaBaixas > mediaAltas + 15) return "Ascendente";
+
     return "Irregular";
   }
 
-  const mediaBaixas = Math.round(baixas.reduce((a, b) => a + b, 0) / baixas.length);
-  const mediaAltas = Math.round(altas.reduce((a, b) => a + b, 0) / altas.length);
-
-  if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
-  if (mediaAltas > mediaBaixas + 15) return "Descendente";
-  if (mediaBaixas > mediaAltas + 15) return "Ascendente";
-
-  return "Irregular";
-}
-
-
   // CÁLCULO MÉDIA ÓSSEA
-  static calcularMediaOssea(freqs: (string | null | undefined)[]): number | null {
-  const valores = freqs
-    .map((v) => this.parseValor(v))
-    .filter((v): v is number => v !== null);
+  static calcularMediaOssea(
+    freqs: (string | null | undefined)[],
+  ): number | null {
+    const valores = freqs
+      .map((v) => this.parseValor(v))
+      .filter((v): v is number => v !== null);
 
-  if (valores.length === 0) return null;
+    if (valores.length === 0) return null;
 
-  return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
-}
-
+    return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
+  }
 
   // CÁLCULO DETERMINAR TIPO DE PERDA
   static determinarTipoPerda(mediaVA: number, mediaVO: number | null): string {
@@ -868,18 +883,23 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   onSave,
   onClose,
 }) => {
-
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
   const [formData, setFormData] = useState<AudiometriaData>(VALOR_INICIAL);
   const [resultadosCalculados, setResultadosCalculados] = useState(false);
-  const [carregandoAudiometriaAnterior, setCarregandoAudiometriaAnterior] = useState(false);
+  const [carregandoAudiometriaAnterior, setCarregandoAudiometriaAnterior] =
+    useState(false);
+  const [audiogramSVG, setAudiogramSVG] = useState<{
+    od: string;
+    oe: string;
+  } | null>(null);
 
   // Efeito de inicialização simples
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
+      setAudiogramSVG(null);
 
       if (atendimento.UNIDADEATENDIMENTO === UNIDADES_ATENDIMENTO[1]) {
         formData.dataCalibracao = "06/11/2025";
@@ -931,62 +951,74 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     [],
   );
 
+  const verAudiometriaAnterior = useCallback(async () => {
+    try {
+      // ATUALIZAÇÃO 3: Requisição para o backend buscar audiometria anterior
+      const empresa = atendimento?.CODIGOEMPRESA;
+      const cpf = atendimento?.CPFFUNCIONARIO;
 
-const verAudiometriaAnterior = useCallback(async () => {
-  try {
-    // ATUALIZAÇÃO 3: Requisição para o backend buscar audiometria anterior
-    const empresa = atendimento?.CODIGOEMPRESA;
-    const cpf = atendimento?.CPFFUNCIONARIO;
+      // Verificar se temos os dados necessários
+      if (!empresa || !cpf) {
+        alert(
+          "Dados insuficientes para buscar audiometria anterior. Verifique se o paciente e empresa estão cadastrados.",
+        );
 
-    // Verificar se temos os dados necessários
-    if (!empresa || !cpf) {
-      alert('Dados insuficientes para buscar audiometria anterior. Verifique se o paciente e empresa estão cadastrados.');
-      return;
-    }
-
-    // Construir URL com query parameters
-    const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
-    url.searchParams.append('empresa', empresa);
-    url.searchParams.append('cpf', cpf);
-
-    const response = await fetch(url.toString(), {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-
-      // Verificar se a resposta contém uma URL válida
-      if (data && data.url && typeof data.url === 'string') {
-        // Abrir a URL do PDF em uma nova aba
-        window.open(`${NEST_URL}${data.url}`, '_blank', 'noopener,noreferrer');
-        
-      } else {
-        console.warn('Resposta da API não contém URL válida:', data);
-        alert('Audiometria anterior encontrada, mas não foi possível abrir o PDF.');
+        return;
       }
-    } else if (response.status === 400) {
-      alert('Não foi encontrada audiometria anterior para este paciente.');
-    } else {
-      const errorText = await response.text();
-      console.error('Erro na resposta:', response.status, errorText);
-      alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+
+      // Construir URL com query parameters
+      const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
+
+      url.searchParams.append("empresa", empresa);
+      url.searchParams.append("cpf", cpf);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+
+        // Verificar se a resposta contém uma URL válida
+        if (data && data.url && typeof data.url === "string") {
+          // Abrir a URL do PDF em uma nova aba
+          window.open(
+            `${NEST_URL}${data.url}`,
+            "_blank",
+            "noopener,noreferrer",
+          );
+        } else {
+          console.warn("Resposta da API não contém URL válida:", data);
+          alert(
+            "Audiometria anterior encontrada, mas não foi possível abrir o PDF.",
+          );
+        }
+      } else if (response.status === 400) {
+        alert("Não foi encontrada audiometria anterior para este paciente.");
+      } else {
+        const errorText = await response.text();
+
+        console.error("Erro na resposta:", response.status, errorText);
+        alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar audiometria anterior:", error);
     }
-  } catch (error) {
-    console.error('Erro ao buscar audiometria anterior:', error);
-  }
-}, [atendimento]);
+  }, [atendimento]);
 
   // Função para calcular resultados com validação
   const calcularResultados = useCallback(async () => {
     // ATUALIZAÇÃO 2: Validar se todos os campos estão preenchidos
     const camposPreenchidos = validarCamposTabela(formData);
-    
+
     if (!camposPreenchidos) {
-      alert('Por favor, preencha todos os campos da tabela de audiometria antes de calcular os resultados.');
+      alert(
+        "Por favor, preencha todos os campos da tabela de audiometria antes de calcular os resultados.",
+      );
+
       return;
     }
 
@@ -999,10 +1031,16 @@ const verAudiometriaAnterior = useCallback(async () => {
       const updates = AudiometriaCalculator.calcularTodosResultados(formData);
 
       setFormData((prev) => ({ ...prev, ...updates }));
+
+      // Gerar gráficos SVG
+      const svgData = generateAudiogramSVG(formData);
+
+      setAudiogramSVG(svgData);
+
       setResultadosCalculados(true);
     } catch (error) {
       console.error("Erro ao calcular resultados:", error);
-      alert('Erro ao calcular resultados. Verifique os valores inseridos.');
+      alert("Erro ao calcular resultados. Verifique os valores inseridos.");
     } finally {
       setIsCalculating(false);
     }
@@ -1012,6 +1050,7 @@ const verAudiometriaAnterior = useCallback(async () => {
     // ATUALIZAÇÃO 2: Verificar se os resultados foram calculados antes de permitir salvar
     if (!resultadosCalculados) {
       alert("É necessário calcular os resultados antes de finalizar o exame.");
+
       return;
     }
 
@@ -1179,7 +1218,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         }
                       >
                         {option}
-                    </Checkbox>
+                      </Checkbox>
                     ))}
                   </div>
                   {formData.surdezFamilia === "Sim" && (
@@ -1432,7 +1471,7 @@ const verAudiometriaAnterior = useCallback(async () => {
             <p className="mb-1">
               {resultadosCalculados
                 ? "✅ Resultados calculados"
-                : '⚠️ Preencha todos os campos da tabela antes de calcular'}
+                : "⚠️ Preencha todos os campos da tabela antes de calcular"}
             </p>
             <p className="text-xs text-amber-600">
               💡 Todos os campos são obrigatórios para cálculo dos resultados.
@@ -1453,7 +1492,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                 }
                 onPress={verAudiometriaAnterior}
               >
-                {carregandoAudiometriaAnterior ? 'Buscando...' : 'Ver Anterior'}
+                {carregandoAudiometriaAnterior ? "Buscando..." : "Ver Anterior"}
               </Button>
             )}
             <Button
@@ -1733,6 +1772,9 @@ const verAudiometriaAnterior = useCallback(async () => {
       {resultadosCalculados && (
         <Card className="p-6 shadow-sm border border-gray-200 bg-white">
           <SectionTitle number="4" title="Conclusão e Laudo Final" />
+
+          {/* Exibir gráficos */}
+          <AudiogramDisplay svgData={audiogramSVG} />
 
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
