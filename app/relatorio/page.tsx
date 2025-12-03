@@ -35,32 +35,31 @@ import {
   useDisclosure,
   Spinner,
   Skeleton,
-  Autocomplete,
 } from "@heroui/react";
 import { SearchIcon, FilterIcon, EyeIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { NEST_RELATORIO_FILTROS, NEST_RELATORIO_FUNCIONARIO, NEST_RELATORIO_PARAMETROS } from "@/config/constants";
-import { HeaderApp } from "@/components/shared/HeaderApp";
 import {
-  formatCPF,
-  getCurrentUser,
-  logout,
-} from "@/lib/utils";
+  NEST_RELATORIO_FILTROS,
+  NEST_RELATORIO_FUNCIONARIO,
+  NEST_RELATORIO_PARAMETROS,
+} from "@/config/constants";
+import { HeaderApp } from "@/components/shared/HeaderApp";
+import { formatCPF, getCurrentUser, logout } from "@/lib/utils";
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import("./LazyModalContent"));
 
 interface ReportParams {
-  profissionais: { code: string, name: string }[], 
-  empresas: { code: string, name: string }[], 
-  status: { code: string, name: string }[], 
-  tiposExame: { code: string, name: string }[], 
-  unidadesAtendimento: { code: string, name: string }[], 
-  grupo: { code: string, name: string }[], 
-  salas: { code: string, name: string }[], 
+  profissionais: { code: string; name: string }[];
+  empresas: { code: string; name: string }[];
+  status: { code: string; name: string }[];
+  tiposExame: { code: string; name: string }[];
+  unidadesAtendimento: { code: string; name: string }[];
+  grupo: { code: string; name: string }[];
+  salas: { code: string; name: string }[];
 }
 
 // Interface para os filtros que serão enviados ao backend
@@ -161,7 +160,10 @@ const ModalSkeleton = () => (
           <Skeleton className="h-6 w-40 rounded-lg" />
           <div className="space-y-3">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center gap-4 p-3 border rounded-lg">
+              <div
+                key={i}
+                className="flex items-center gap-4 p-3 border rounded-lg"
+              >
                 <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-3/4 rounded-lg" />
@@ -182,12 +184,12 @@ const ModalSkeleton = () => (
 
 // Função para converter Date para string no formato YYYY-MM-DD (para o backend)
 const formatDateToYYYYMMDD = (date: Date | null): string => {
-  if (!date) return '';
-  
+  if (!date) return "";
+
   const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+
   return `${year}-${month}-${day}`;
 };
 
@@ -212,7 +214,7 @@ export default function RelatoriosPage() {
     search: "",
     profissional: "",
     sala: "",
-    unidadeAtendimento: "", 
+    unidadeAtendimento: "",
   });
 
   const [appliedFilters, setAppliedFilters] = useState<typeof filters>(filters);
@@ -233,15 +235,19 @@ export default function RelatoriosPage() {
 
   // Modal de detalhes
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const [selectedAtendimento, setSelectedAtendimento] = useState<Scheduling | null>(null);
+  const [selectedAtendimento, setSelectedAtendimento] =
+    useState<Scheduling | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
 
   // Debounce para abertura do modal
-  const { isOpening: isModalOpening, openWithDebounce: openModalWithDebounce } = useModalDebounce(150);
+  const { isOpening: isModalOpening, openWithDebounce: openModalWithDebounce } =
+    useModalDebounce(150);
 
   // Estado para os atendimentos FILTRADOS
-  const [filteredAtendimentos, setFilteredAtendimentos] = useState<Scheduling[]>([]);
+  const [filteredAtendimentos, setFilteredAtendimentos] = useState<
+    Scheduling[]
+  >([]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -256,9 +262,10 @@ export default function RelatoriosPage() {
     setTimeout(() => {
       if (tableRef.current) {
         const tableTop = tableRef.current.offsetTop - 100; // 100px acima da tabela
+
         window.scrollTo({
           top: tableTop,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     }, 100);
@@ -268,22 +275,24 @@ export default function RelatoriosPage() {
   const getParamsReport = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await fetch(NEST_RELATORIO_PARAMETROS, { cache: "no-store" });
+      const response = await fetch(NEST_RELATORIO_PARAMETROS, {
+        cache: "no-store",
+      });
 
       if (!response.ok) {
         console.error("Erro ao buscar dados iniciais:", response.statusText);
+
         return null;
       }
 
       const params: ReportParams = await response.json();
 
-      setProfissionais(params.profissionais.map(p => p.name));
-      setEmpresas(params.empresas.map(p => p.name));
-      setGruposExames(params.grupo.map(p => p.name));
-      setTiposExame(params.tiposExame.map(p => p.name));
-      setSalas(params.salas.map(p => p.name));
-      setUnidadesAtendimento(params.unidadesAtendimento.map(p => p.name));
-            
+      setProfissionais(params.profissionais.map((p) => p.name));
+      setEmpresas(params.empresas.map((p) => p.name));
+      setGruposExames(params.grupo.map((p) => p.name));
+      setTiposExame(params.tiposExame.map((p) => p.name));
+      setSalas(params.salas.map((p) => p.name));
+      setUnidadesAtendimento(params.unidadesAtendimento.map((p) => p.name));
     } catch (err) {
       console.error("Erro ao carregar dados iniciais:", err);
     } finally {
@@ -291,34 +300,34 @@ export default function RelatoriosPage() {
     }
   }, []);
 
-
   // Função para converter Date para string no formato YYYY-MM-DD (para o backend)
-const formatDateToYYYYMMDD = (date: Date | null): string => {
-  if (!date) return '';
-  
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  
-  return `${year}-${month}-${day}`;
-};
+  const formatDateToYYYYMMDD = (date: Date | null): string => {
+    if (!date) return "";
 
-// Função para formatar data do input (yyyy-MM-dd) para exibição ou para o backend
-const formatDateForBackend = (dateString: string): string => {
-  if (!dateString) return '';
-  
-  // O input type="date" já retorna no formato yyyy-MM-dd
-  // Podemos usar diretamente para o backend
-  return dateString;
-};
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const day = date.getDate().toString().padStart(2, "0");
 
-// Função para validar se a data é válida
-const isValidDate = (dateString: string): boolean => {
-  if (!dateString) return false;
-  
-  const date = new Date(dateString);
-  return !isNaN(date.getTime());
-};
+    return `${year}-${month}-${day}`;
+  };
+
+  // Função para formatar data do input (yyyy-MM-dd) para exibição ou para o backend
+  const formatDateForBackend = (dateString: string): string => {
+    if (!dateString) return "";
+
+    // O input type="date" já retorna no formato yyyy-MM-dd
+    // Podemos usar diretamente para o backend
+    return dateString;
+  };
+
+  // Função para validar se a data é válida
+  const isValidDate = (dateString: string): boolean => {
+    if (!dateString) return false;
+
+    const date = new Date(dateString);
+
+    return !isNaN(date.getTime());
+  };
 
   // Carregar dados quando o componente montar
   useEffect(() => {
@@ -326,77 +335,91 @@ const isValidDate = (dateString: string): boolean => {
   }, [getParamsReport]);
 
   // Função para preparar os filtros para envio ao backend
-  const prepareFiltersForBackend = useCallback((currentFilters: typeof filters): FilterParams => {
-    const backendFilters: FilterParams = {};
+  const prepareFiltersForBackend = useCallback(
+    (currentFilters: typeof filters): FilterParams => {
+      const backendFilters: FilterParams = {};
 
-    // Converter datas para formato YYYY-MM-DD (já estão nesse formato do input)
-    if (currentFilters.dataInicio && isValidDate(currentFilters.dataInicio)) {
-      backendFilters.dataInicio = formatDateForBackend(currentFilters.dataInicio);
-    }
-
-    if (currentFilters.dataFim && isValidDate(currentFilters.dataFim)) {
-      backendFilters.dataFim = formatDateForBackend(currentFilters.dataFim);
-    }
-
-    // Adicionar outros filtros apenas se não estiverem vazios
-    if (currentFilters.empresa) backendFilters.empresa = currentFilters.empresa;
-    if (currentFilters.grupoExame) backendFilters.grupoExame = currentFilters.grupoExame;
-    if (currentFilters.tipoExame) backendFilters.tipoExame = currentFilters.tipoExame;
-    if (currentFilters.status) backendFilters.status = currentFilters.status;
-    if (currentFilters.search) backendFilters.search = currentFilters.search;
-    if (currentFilters.profissional) backendFilters.profissional = currentFilters.profissional;
-    if (currentFilters.sala) backendFilters.sala = currentFilters.sala;
-    if (currentFilters.unidadeAtendimento) backendFilters.unidadeAtendimento = currentFilters.unidadeAtendimento;
-
-    return backendFilters;
-  }, []);
-
-  // Buscar dados filtrados do backend com paginação
-  const fetchFilteredData = useCallback(async (filterParams: FilterParams, currentPage: number = 1) => {
-    try {
-      setIsFiltering(true);
-      
-      // Construir query string com os filtros E paginação
-      const queryParams = new URLSearchParams();
-      
-      // Adicionar filtros
-      Object.entries(filterParams).forEach(([key, value]) => {
-        if (value && value !== '') {
-          queryParams.append(key, value.toString());
-        }
-      });
-
-      // Adicionar parâmetros de paginação
-      queryParams.append('page', currentPage.toString());
-      queryParams.append('limit', rowsPerPage.toString());
-
-      const url = `${NEST_RELATORIO_FILTROS}?${queryParams.toString()}`;
-      
-      const response = await fetch(url, { 
-        cache: "no-store",
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Erro ao buscar dados filtrados: ${response.statusText}`);
+      // Converter datas para formato YYYY-MM-DD (já estão nesse formato do input)
+      if (currentFilters.dataInicio && isValidDate(currentFilters.dataInicio)) {
+        backendFilters.dataInicio = formatDateForBackend(
+          currentFilters.dataInicio,
+        );
       }
 
-      const result: PaginatedReportData = await response.json();
-      
-      // Atualizar estados de paginação
-      setTotalRecords(result.total);
-      setTotalPages(result.totalPages);
-      setPage(result.page);
-      setFilteredAtendimentos(result.data);
-      
-    } catch (error) {
-      console.error("Erro ao buscar dados filtrados:", error);
-    } finally {
-      setIsFiltering(false);
-    }
-  }, [rowsPerPage]);
+      if (currentFilters.dataFim && isValidDate(currentFilters.dataFim)) {
+        backendFilters.dataFim = formatDateForBackend(currentFilters.dataFim);
+      }
+
+      // Adicionar outros filtros apenas se não estiverem vazios
+      if (currentFilters.empresa)
+        backendFilters.empresa = currentFilters.empresa;
+      if (currentFilters.grupoExame)
+        backendFilters.grupoExame = currentFilters.grupoExame;
+      if (currentFilters.tipoExame)
+        backendFilters.tipoExame = currentFilters.tipoExame;
+      if (currentFilters.status) backendFilters.status = currentFilters.status;
+      if (currentFilters.search) backendFilters.search = currentFilters.search;
+      if (currentFilters.profissional)
+        backendFilters.profissional = currentFilters.profissional;
+      if (currentFilters.sala) backendFilters.sala = currentFilters.sala;
+      if (currentFilters.unidadeAtendimento)
+        backendFilters.unidadeAtendimento = currentFilters.unidadeAtendimento;
+
+      return backendFilters;
+    },
+    [],
+  );
+
+  // Buscar dados filtrados do backend com paginação
+  const fetchFilteredData = useCallback(
+    async (filterParams: FilterParams, currentPage: number = 1) => {
+      try {
+        setIsFiltering(true);
+
+        // Construir query string com os filtros E paginação
+        const queryParams = new URLSearchParams();
+
+        // Adicionar filtros
+        Object.entries(filterParams).forEach(([key, value]) => {
+          if (value && value !== "") {
+            queryParams.append(key, value.toString());
+          }
+        });
+
+        // Adicionar parâmetros de paginação
+        queryParams.append("page", currentPage.toString());
+        queryParams.append("limit", rowsPerPage.toString());
+
+        const url = `${NEST_RELATORIO_FILTROS}?${queryParams.toString()}`;
+
+        const response = await fetch(url, {
+          cache: "no-store",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Erro ao buscar dados filtrados: ${response.statusText}`,
+          );
+        }
+
+        const result: PaginatedReportData = await response.json();
+
+        // Atualizar estados de paginação
+        setTotalRecords(result.total);
+        setTotalPages(result.totalPages);
+        setPage(result.page);
+        setFilteredAtendimentos(result.data);
+      } catch (error) {
+        console.error("Erro ao buscar dados filtrados:", error);
+      } finally {
+        setIsFiltering(false);
+      }
+    },
+    [rowsPerPage],
+  );
 
   // Aplicar filtros
   const handleApplyFilters = useCallback(async () => {
@@ -405,22 +428,32 @@ const isValidDate = (dateString: string): boolean => {
     setPage(1);
 
     const backendFilters = prepareFiltersForBackend(filters);
+
     await fetchFilteredData(backendFilters, 1);
-    
+
     // Scroll para a tabela após aplicar filtros
     scrollToTableTop();
   }, [filters, prepareFiltersForBackend, fetchFilteredData, scrollToTableTop]);
 
   // Mudar de página
-  const handlePageChange = useCallback(async (newPage: number) => {
-    setPage(newPage);
-    
-    const backendFilters = prepareFiltersForBackend(appliedFilters);
-    await fetchFilteredData(backendFilters, newPage);
-    
-    // Scroll para o topo da tabela após mudar de página
-    scrollToTableTop();
-  }, [appliedFilters, prepareFiltersForBackend, fetchFilteredData, scrollToTableTop]);
+  const handlePageChange = useCallback(
+    async (newPage: number) => {
+      setPage(newPage);
+
+      const backendFilters = prepareFiltersForBackend(appliedFilters);
+
+      await fetchFilteredData(backendFilters, newPage);
+
+      // Scroll para o topo da tabela após mudar de página
+      scrollToTableTop();
+    },
+    [
+      appliedFilters,
+      prepareFiltersForBackend,
+      fetchFilteredData,
+      scrollToTableTop,
+    ],
+  );
 
   // Limpar filtros e resultados
   const handleClearFilters = useCallback(() => {
@@ -434,7 +467,7 @@ const isValidDate = (dateString: string): boolean => {
       search: "",
       profissional: "",
       sala: "",
-      unidadeAtendimento: "", 
+      unidadeAtendimento: "",
     });
     setAppliedFilters({
       dataInicio: "",
@@ -463,7 +496,7 @@ const isValidDate = (dateString: string): boolean => {
   // Calcular se há filtros ativos
   const hasActiveFilters = useMemo(() => {
     return Object.values(filters).some(
-      (value) => value !== null && value !== ""
+      (value) => value !== null && value !== "",
     );
   }, [filters]);
 
@@ -476,14 +509,18 @@ const isValidDate = (dateString: string): boolean => {
 
       openModalWithDebounce(async () => {
         try {
-          const response = await fetch(`${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`);
+          const response = await fetch(
+            `${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`,
+          );
 
           if (!response.ok) {
             const text = await response.text();
+
             console.error(`Erro ao receber detalhes do funcionário ${text}`);
           }
 
           const json = await response.json();
+
           setSelectedAtendimento(json);
         } catch (error) {
           console.error("Erro ao carregar detalhes:", error);
@@ -506,14 +543,14 @@ const isValidDate = (dateString: string): boolean => {
   // Atualizar atendimento após upload
   const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
     setFilteredAtendimentos((prev) => {
-      const foundIndex = prev.findIndex(
-        (p) => p._id === updated._id
-      );
+      const foundIndex = prev.findIndex((p) => p._id === updated._id);
 
       if (foundIndex === -1) return prev;
 
       const copy = [...prev];
+
       copy[foundIndex] = updated;
+
       return copy;
     });
   }, []);
@@ -554,7 +591,7 @@ const isValidDate = (dateString: string): boolean => {
   // Contador de filtros ativos
   const activeFiltersCount = useMemo(() => {
     return Object.values(filters).filter(
-      (value) => value !== null && value !== ""
+      (value) => value !== null && value !== "",
     ).length;
   }, [filters]);
 
@@ -612,8 +649,8 @@ const isValidDate = (dateString: string): boolean => {
                 Buscar por Funcionário
               </label>
               <Input
-                aria-label="Buscar por nome do funcionário"
                 isClearable
+                aria-label="Buscar por nome do funcionário"
                 placeholder="Digite o nome do funcionário..."
                 size="lg"
                 startContent={
@@ -631,11 +668,13 @@ const isValidDate = (dateString: string): boolean => {
                 Data Início
               </label>
               <Input
-                type="date"
                 aria-label="Data início"
                 placeholder="Selecione a data início"
+                type="date"
                 value={filters.dataInicio}
-                onChange={(e) => handleFilterChange("dataInicio", e.target.value)}
+                onChange={(e) =>
+                  handleFilterChange("dataInicio", e.target.value)
+                }
                 onClear={() => handleFilterChange("dataInicio", "")}
               />
             </div>
@@ -646,9 +685,9 @@ const isValidDate = (dateString: string): boolean => {
                 Data Fim
               </label>
               <Input
-                type="date"
                 aria-label="Data fim"
                 placeholder="Selecione a data fim"
+                type="date"
                 value={filters.dataFim}
                 onChange={(e) => handleFilterChange("dataFim", e.target.value)}
                 onClear={() => handleFilterChange("dataFim", "")}
@@ -677,7 +716,9 @@ const isValidDate = (dateString: string): boolean => {
 
             {/* Grupo de Exame */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Grupo de Exame</label>
+              <label className="text-sm font-medium text-gray-700">
+                Grupo de Exame
+              </label>
               <Select
                 aria-label="Selecionar grupo de exame"
                 className="w-full"
@@ -695,7 +736,9 @@ const isValidDate = (dateString: string): boolean => {
 
             {/* Tipo de Exame */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Tipo de Exame</label>
+              <label className="text-sm font-medium text-gray-700">
+                Tipo de Exame
+              </label>
               <Select
                 aria-label="Selecionar tipo de exame"
                 className="w-full"
@@ -857,7 +900,9 @@ const isValidDate = (dateString: string): boolean => {
                       <TableBody>
                         {filteredAtendimentos.map((atendimento) => (
                           <TableRow
-                            key={atendimento._id || atendimento.CODIGOPRONTUARIO}
+                            key={
+                              atendimento._id || atendimento.CODIGOPRONTUARIO
+                            }
                           >
                             <TableCell>
                               <div>
@@ -902,7 +947,10 @@ const isValidDate = (dateString: string): boolean => {
                                 size="sm"
                                 variant="flat"
                               >
-                                {atendimento.ATENDIMENTOSTATUS.replace(/_/g, " ")
+                                {atendimento.ATENDIMENTOSTATUS.replace(
+                                  /_/g,
+                                  " ",
+                                )
                                   .toLowerCase()
                                   .replace(/\b\w/g, (l) => l.toUpperCase())}
                               </Chip>
@@ -914,15 +962,17 @@ const isValidDate = (dateString: string): boolean => {
                             </TableCell>
                             <TableCell>
                               <Button
-                                aria-label={`Visualizar detalhes do atendimento de ${atendimento.NOME}`}
                                 isIconOnly
+                                aria-label={`Visualizar detalhes do atendimento de ${atendimento.NOME}`}
                                 className="text-blue-600 hover:text-blue-700"
+                                isLoading={loadingDetailsId === atendimento._id}
                                 size="sm"
                                 variant="light"
-                                isLoading={loadingDetailsId === atendimento._id}
                                 onPress={() => viewDetails(atendimento)}
                               >
-                                {loadingDetailsId !== atendimento._id && <EyeIcon size={16} />}
+                                {loadingDetailsId !== atendimento._id && (
+                                  <EyeIcon size={16} />
+                                )}
                               </Button>
                             </TableCell>
                           </TableRow>

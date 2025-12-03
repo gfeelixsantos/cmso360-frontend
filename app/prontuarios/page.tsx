@@ -457,52 +457,48 @@ export default function UnifiedProntuarioPage() {
 
     setSocketState(s);
 
-// ... dentro do useEffect do WebSocket ...
+    // ... dentro do useEffect do WebSocket ...
 
-    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
-      console.log("atualização recebida via websocket:", operation, schedule);
-      const newRecord = mapSchedulingToMedicalRecord(
-        schedule,
-        schedule.ATENDIMENTOSTATUS,
-      );
+    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
+      console.log("atualização recebida via websocket:", operation, schedule);
+      const newRecord = mapSchedulingToMedicalRecord(
+        schedule,
+        schedule.ATENDIMENTOSTATUS,
+      );
 
-      setRecords((prev) => {
-        let updatedRecords = [...prev];
+      setRecords((prev) => {
+        let updatedRecords = [...prev]; // 1. Tenta encontrar o índice do registro que está sendo atualizado/removido
 
-        // 1. Tenta encontrar o índice do registro que está sendo atualizado/removido
-        const existingIndex = updatedRecords.findIndex(
-          (ag) => ag.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
-        );
+        const existingIndex = updatedRecords.findIndex(
+          (ag) => ag.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
+        ); // 2. Lógica principal de atualização/remoção
 
-        // 2. Lógica principal de atualização/remoção
-        if (operation === MongoOperationTypes.DELETE) {
-          // Remoção direta, se for DELETE
-          updatedRecords = updatedRecords.filter(
-            (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
-          );
-        } else if (newRecord.currentStatus !== attendanceStatus) {
-          // *** SE O STATUS MUDOU E NÃO CORRESPONDE AO ATUAL, REMOVE DA LISTA! ***
-          if (existingIndex > -1) {
-            updatedRecords.splice(existingIndex, 1);
-            // Você pode querer dar um Toast aqui para feedback
-          }
-        } else {
-          // *** O STATUS É O MESMO (OU UM INSERT), ATUALIZA/ADICIONA. ***
-          if (existingIndex > -1) {
-            // UPDATE (mantém a posição, se possível, ou substitui)
-            updatedRecords[existingIndex] = newRecord;
-          } else if (operation === MongoOperationTypes.INSERT) {
-            // INSERT
-            updatedRecords.push(newRecord);
-          }
-        }
+        if (operation === MongoOperationTypes.DELETE) {
+          // Remoção direta, se for DELETE
+          updatedRecords = updatedRecords.filter(
+            (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
+          );
+        } else if (newRecord.currentStatus !== attendanceStatus) {
+          // *** SE O STATUS MUDOU E NÃO CORRESPONDE AO ATUAL, REMOVE DA LISTA! ***
+          if (existingIndex > -1) {
+            updatedRecords.splice(existingIndex, 1); // Você pode querer dar um Toast aqui para feedback
+          }
+        } else {
+          // *** O STATUS É O MESMO (OU UM INSERT), ATUALIZA/ADICIONA. ***
+          if (existingIndex > -1) {
+            // UPDATE (mantém a posição, se possível, ou substitui)
+            updatedRecords[existingIndex] = newRecord;
+          } else if (operation === MongoOperationTypes.INSERT) {
+            // INSERT
+            updatedRecords.push(newRecord);
+          }
+        } // Reordenar após a modificação para manter a UX
 
-        // Reordenar após a modificação para manter a UX
-        return updatedRecords.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-        );
-      });
-    };
+        return updatedRecords.sort((a, b) =>
+          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+        );
+      });
+    };
 
     onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
 
@@ -860,7 +856,7 @@ export default function UnifiedProntuarioPage() {
           selectedRecord={selectedRecord}
           onPdfIndexChange={handlePdfIndexChange}
         />
- 
+
         {/* RIGHT: Painel Lateral Componentizado */}
         <PainelDireita
           key={selectedRecord?.CODIGOPRONTUARIO || "no-selection"}

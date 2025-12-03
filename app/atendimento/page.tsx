@@ -322,7 +322,10 @@ const AtendimentoPage: React.FC = () => {
     // HANDLERS DE EVENTOS (CORRIGIDOS)
     // ---------------------------------------------------------
     const handleAtendimentos = (schedules?: Scheduling[]) => {
-      console.log("okss chamado", schedules?.some(s => s.NOME.includes("TESTE")))
+      console.log(
+        "okss chamado",
+        schedules?.some((s) => s.NOME.includes("TESTE")),
+      );
       if (schedules) {
         setAgendamentosGeral((prev) => {
           const merged = [...prev];
@@ -340,31 +343,32 @@ const AtendimentoPage: React.FC = () => {
 
     const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
 
+    const handleTicketUpdated = (ticket: Ticket) => {
+      console.log(
+        `🎫 Ticket ${ticket.id} atualizado: Status = ${ticket.status}`,
+      );
 
-const handleTicketUpdated = (ticket: Ticket) => {
-  console.log(`🎫 Ticket ${ticket.id} atualizado: Status = ${ticket.status}`);
+      // ✅ 1. Atualiza no gerenciador de tickets
+      addOrUpdate(ticket);
 
-  // ✅ 1. Atualiza no gerenciador de tickets
-  addOrUpdate(ticket);
+      // ✅ 2. Atualiza em agendamentosGeral
+      setAgendamentosGeral((prev) =>
+        prev.map((agendamento) =>
+          agendamento.TICKET?.id === ticket.id
+            ? { ...agendamento, TICKET: ticket }
+            : agendamento,
+        ),
+      );
 
-  // ✅ 2. Atualiza em agendamentosGeral
-  setAgendamentosGeral((prev) =>
-    prev.map((agendamento) =>
-      agendamento.TICKET?.id === ticket.id
-        ? { ...agendamento, TICKET: ticket }
-        : agendamento,
-    ),
-  );
-
-  // ✅ 3. Atualiza em agendamentos (filtrado)
-  setAgendamentos((prev) =>
-    prev.map((agendamento) =>
-      agendamento.TICKET?.id === ticket.id
-        ? { ...agendamento, TICKET: ticket }
-        : agendamento,
-    ),
-  );
-};
+      // ✅ 3. Atualiza em agendamentos (filtrado)
+      setAgendamentos((prev) =>
+        prev.map((agendamento) =>
+          agendamento.TICKET?.id === ticket.id
+            ? { ...agendamento, TICKET: ticket }
+            : agendamento,
+        ),
+      );
+    };
 
     const handleTicketError = (message: string) =>
       console.error(JSON.parse(message));
@@ -379,18 +383,18 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
     `_id: ${schedule._id}`
   );
 
-  switch (operation) {
-    case MongoOperationTypes.INSERT:
-    case MongoOperationTypes.UPDATE:
-      setAgendamentosGeral((prev) => {
-        // Procura índice existente
-        const index = prev.findIndex(
-          (ag) =>
-            ag._id === schedule._id ||
-            ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
-        );
+      switch (operation) {
+        case MongoOperationTypes.INSERT:
+        case MongoOperationTypes.UPDATE:
+          setAgendamentosGeral((prev) => {
+            // Procura índice existente
+            const index = prev.findIndex(
+              (ag) =>
+                ag._id === schedule._id ||
+                ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
+            );
 
-        let updated: Scheduling[];
+            let updated: Scheduling[];
 
         if (index !== -1) {
           // ATUALIZA existente (merge profundo para preservar dados)
@@ -439,31 +443,34 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
           console.log(`➕ [INSERT] ${schedule.NOME} adicionado (total: ${updated.length})`);
         }
 
-        // Remove duplicatas e ordena
-        const deduplicated = deduplicateSchedulings(updated);
-        console.log(
-          `✅ agendamentosGeral atualizado: ${prev.length} → ${deduplicated.length}`
-        );
-        
-        return deduplicated.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, 'pt-BR', { sensitivity: 'base' }),
-        );
-      });
-      break;
+            // Remove duplicatas e ordena
+            const deduplicated = deduplicateSchedulings(updated);
 
-    case MongoOperationTypes.DELETE:
-      setAgendamentosGeral((prev) => {
-        const filtered = prev.filter(
-          (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE
-        );
-        console.log(
-          `🗑️ [DELETE] ${schedule.NOME} removido (${prev.length} → ${filtered.length})`
-        );
-        return filtered;
-      });
-      break;
-  }
-};
+            console.log(
+              `✅ agendamentosGeral atualizado: ${prev.length} → ${deduplicated.length}`,
+            );
+
+            return deduplicated.sort((a, b) =>
+              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+            );
+          });
+          break;
+
+        case MongoOperationTypes.DELETE:
+          setAgendamentosGeral((prev) => {
+            const filtered = prev.filter(
+              (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE,
+            );
+
+            console.log(
+              `🗑️ [DELETE] ${schedule.NOME} removido (${prev.length} → ${filtered.length})`,
+            );
+
+            return filtered;
+          });
+          break;
+      }
+    };
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
       switch (request.type) {
