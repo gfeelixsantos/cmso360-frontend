@@ -160,6 +160,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
           <AtendimentoCardCompacto
             key={`compacto-${atend._id}`}
             atendimento={atend}
+            socket={socket}
           />
         ))}
       </div>

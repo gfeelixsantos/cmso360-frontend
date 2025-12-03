@@ -1,42 +1,19 @@
-import React from "react";
+import React, { useCallback } from "react";
 import { Card, Progress, Chip } from "@heroui/react";
 import { Clock, User, Ticket as Senha } from "lucide-react";
 
-import { TicketStatus } from "@/lib/ticket/ticket";
+import { TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { Socket } from "socket.io-client";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
+  socket: Socket;
 }
-
-// Função para calcular idade
-const calcularIdade = (dataNascimento: string | null): string => {
-  if (!dataNascimento) return "";
-  try {
-    const nascimento = new Date(dataNascimento);
-    const hoje = new Date();
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const diaAtual = hoje.getDate();
-    const mesNascimento = nascimento.getMonth();
-    const diaNascimento = nascimento.getDate();
-
-    if (
-      mesAtual < mesNascimento ||
-      (mesAtual === mesNascimento && diaAtual < diaNascimento)
-    ) {
-      idade--;
-    }
-
-    return `${idade} anos`;
-  } catch (error) {
-    return "";
-  }
-};
 
 // Tema visual por status
 const getStatusVisual = (status: string) => {
@@ -90,6 +67,7 @@ const useExamProgress = (exames: ExamRegister[]) => {
 // Componente compacto
 const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
   atendimento,
+  socket,
 }) => {
   const { border, bg } = getStatusVisual(atendimento.TICKET.status);
   const { progress, completed, total } = useExamProgress(
@@ -107,6 +85,9 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
     return horas > 0 ? `${horas}h ${minutosRestantes}m` : `${minutos}m`;
   };
 
+  const forceReturn = useCallback(() => {
+    executarAcao(atendimento.TICKET.id, TicketActionType.RETORNAR, atendimento.UNIDADEATENDIMENTO, socket);
+  },[])
 
 
   return (
@@ -180,7 +161,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
 
             <div className="flex items-center gap-1">
               <Senha className="h-3 w-3" />
-              <span>
+              <span onClick={() => forceReturn()}>
                 {Number(atendimento.TICKET.numero) < 0
                   ? "N/A"
                   : atendimento.TICKET.prefixo + atendimento.TICKET.numero}
@@ -194,3 +175,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
 };
 
 export default React.memo(AtendimentoCardCompacto);
+function executarAcao(id: number, RETORNAR: TicketActionType, UNIDADEATENDIMENTO: string, socket: any) {
+  throw new Error("Function not implemented.");
+}
+

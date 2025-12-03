@@ -369,11 +369,8 @@ const handleTicketUpdated = (ticket: Ticket) => {
     const handleTicketError = (message: string) =>
       console.error(JSON.parse(message));
 
-    // HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
+// HANDLER PRINCIPAL - PREVINE DUPLICAÇÃO
 // AtendimentoPage.tsx
-
-// AtendimentoPage.tsx
-
 const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
   console.log(
     `📥 [${operation}] ${schedule.NOME} | ` +
@@ -396,7 +393,7 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
         let updated: Scheduling[];
 
         if (index !== -1) {
-          // ✅ ATUALIZA existente (merge profundo para preservar dados)
+          // ATUALIZA existente (merge profundo para preservar dados)
           updated = [...prev];
           updated[index] = {
             ...updated[index], // Preserva campos antigos
@@ -404,7 +401,38 @@ const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
             EXAMES: schedule.EXAMES || updated[index].EXAMES, // ✅ Garante EXAMES
             TICKET: schedule.TICKET || updated[index].TICKET, // ✅ Garante TICKET
           };
-          console.log(`🔄 [UPDATE] ${schedule.NOME} atualizado no índice ${index}`);
+          // Log de debug
+          const current = prev[index];
+          const prevTicket = current?.TICKET;
+          const newTicket = schedule?.TICKET;
+
+          const prevDate = prevTicket?.updatedAt
+          ? new Date(prevTicket.updatedAt)
+          : null;
+
+        const newDate = newTicket?.updatedAt
+          ? new Date(newTicket.updatedAt)
+          : null;
+
+        // ============================
+        // LOG COMPARATIVO COMPLETO
+        // ============================
+        console.log(
+          "⏱️ [COMPARE BEFORE UPDATE]",
+          `\n  Nome: ${schedule.NOME}`,
+          `\n  Status: ${prevTicket?.status} → ${newTicket?.status}`,
+          `\n  Prev: ${prevDate?.toISOString() || "null"}`,
+          `\n  New:  ${newDate?.toISOString() || "null"}`,
+          `\n  Mais recente? ${
+            newDate && prevDate ? newDate > prevDate : "N/A"
+          }`
+        );
+
+        // BLOQUEIA update mais antigo
+        if (prevDate && newDate && newDate < prevDate) {
+          console.log(`⚠️ [IGNORADO] Update descartado (mais antigo).`);
+        }
+         
         } else {
           // ✅ ADICIONA novo
           updated = [...prev, schedule];
