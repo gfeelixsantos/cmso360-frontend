@@ -575,15 +575,14 @@ const AtendimentoPage: React.FC = () => {
               codigosDeAtendimento={codigosDeAtendimento}
               conectado={conectado}
               exameSelecionado={exameSelecionado}
-              preparacoesFinalizadas={preparacaoFinalizada}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
-              setTicketSelecionado={setTicketSelecionado}
+              // setTicketSelecionado={setTicketSelecionado}
               socket={socketRef.current}
-              tickets={tickets}
+              // tickets={tickets}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={() => setModalAtendimentoAberto(true)}
-              onPreparationRequests={empreparacao}
+              // onPreparationRequests={empreparacao}
             />
           ) : (
             <EmptyState

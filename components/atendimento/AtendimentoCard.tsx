@@ -48,7 +48,7 @@ interface AtendimentoCardProps {
   unidadeSelecionada: string;
   socket: Socket;
   onHandleModal: (state: boolean) => void;
-  setTicketSelecionado: (ticket: Ticket | null) => void;
+  // setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
 }
@@ -687,7 +687,7 @@ const TicketActions: React.FC<{
   socket: Socket;
   atendimento: Scheduling;
   onHandleModal: (state: boolean) => void;
-  setTicketSelecionado: (ticket: Ticket) => void;
+  // setTicketSelecionado: (ticket: Ticket) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
 }> = ({
@@ -697,7 +697,7 @@ const TicketActions: React.FC<{
   socket,
   atendimento,
   onHandleModal,
-  setTicketSelecionado,
+  // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
@@ -855,7 +855,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   unidadeSelecionada,
   socket,
   onHandleModal,
-  setTicketSelecionado,
+  // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
@@ -892,7 +892,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
               exameSelecionado={exameSelecionado}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
-              setTicketSelecionado={setTicketSelecionado}
+              // setTicketSelecionado={setTicketSelecionado}
               socket={socket}
               ticket={atendimento.TICKET}
               unidadeSelecionada={unidadeSelecionada}

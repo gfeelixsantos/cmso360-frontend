@@ -16,32 +16,30 @@ import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface MainContentProps {
   conectado: boolean;
-  tickets: Ticket[];
+  // tickets: Ticket[];
   agendamentos: Scheduling[];
   socket: Socket;
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  setTicketSelecionado: (ticket: Ticket | null) => void;
+  // setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   onHandleModal: (state: Boolean) => void;
-  onPreparationRequests: PreparationRequest[];
-  preparacoesFinalizadas: PreparationRequest[];
   exameSelecionado: string;
 }
 
 const AtendimentoContent: React.FC<MainContentProps> = ({
   conectado,
-  tickets,
+  // tickets,
   agendamentos,
   socket,
   salaSelecionada,
   codigosDeAtendimento,
   unidadeSelecionada,
-  setTicketSelecionado,
+  // setTicketSelecionado,
   onHandleModal,
-  onPreparationRequests,
-  preparacoesFinalizadas,
+  // onPreparationRequests,
+  // preparacoesFinalizadas,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
@@ -50,7 +48,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
 
   // Efeito para controlar o estado de carregamento inicial
   useEffect(() => {
-    if (conectado && agendamentos && tickets) {
+    if (conectado && agendamentos) {
       // Pequeno delay para garantir que os dados estão processados
       const timer = setTimeout(() => {
         setEstaCarregando(false);
@@ -59,7 +57,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
 
       return () => clearTimeout(timer);
     }
-  }, [conectado, agendamentos, tickets]);
+  }, [conectado, agendamentos]);
 
   // Efeito para mostrar loading durante atualizações via socket
   useEffect(() => {
@@ -111,28 +109,28 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     });
   }, [agendamentos]);
 
-  const ticketsComInfoDeOutrasSalas = useMemo(() => {
-    if (!tickets) return new Map();
+  const AgendamentosComInfoDeOutrasSalas = useMemo(() => {
+    if (!agendamentos) return new Map();
 
     return new Map(
-      tickets
+      agendamentos
         .filter(
           (t) =>
-            (t.status === TicketStatus.EM_ATENDIMENTO ||
-              t.status === TicketStatus.EM_CHAMADA) &&
-            t.sala != salaSelecionada &&
-            t.sala != "" &&
-            t.grupo == TicketGroups.EXAME,
+            (t.TICKET.status === TicketStatus.EM_ATENDIMENTO ||
+            t.TICKET.status === TicketStatus.EM_CHAMADA) &&
+            t.TICKET.sala != salaSelecionada &&
+            t.TICKET.sala != "" &&
+            t.TICKET.grupo == TicketGroups.EXAME,
         )
-        .map((t) => [t.id, { status: t.status, sala: t.sala }]),
+        .map((t) => [t.TICKET.id, { status: t.TICKET.status, sala: t.TICKET.sala }]),
     );
-  }, [tickets, salaSelecionada]);
+  }, [agendamentos, salaSelecionada]);
 
   const atendimentoOutrasSalas = useMemo(() => {
     return AtendimentosOrdenados.filter(
-      (a) => a?.TICKET && ticketsComInfoDeOutrasSalas.has(a.TICKET.id),
+      (a) => a?.TICKET && AgendamentosComInfoDeOutrasSalas.has(a.TICKET.id),
     ).map((a) => {
-      const infoTicketOutraSala = ticketsComInfoDeOutrasSalas.get(a.TICKET.id)!;
+      const infoTicketOutraSala = AgendamentosComInfoDeOutrasSalas.get(a.TICKET.id)!;
 
       return {
         ...a,
@@ -143,7 +141,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         },
       };
     });
-  }, [AtendimentosOrdenados, ticketsComInfoDeOutrasSalas]);
+  }, [AtendimentosOrdenados, AgendamentosComInfoDeOutrasSalas]);
 
   const prontuariosEmAtendimento = useMemo(
     () => new Set(atendimentoOutrasSalas.map((p) => p.CODIGOPRONTUARIO)),
@@ -179,7 +177,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }
 
   // Loading elegante com HeroUI durante o carregamento
-  if (estaCarregando || !agendamentos || !tickets) {
+  if (estaCarregando || !agendamentos) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-default-50/50">
         <div className="text-center space-y-6">
@@ -216,7 +214,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       <AtendimentoList
         codigosDeAtendimento={codigosDeAtendimento}
         exameSelecionado={exameSelecionado}
-        preparacoesFinalizadas={preparacoesFinalizadas}
+        // preparacoesFinalizadas={preparacoesFinalizadas}
         salaSelecionada={salaSelecionada}
         senhasComPrefixo={senhasComPrefixo}
         senhasEmAtendimento={atendimentoOutrasSalas}
@@ -224,11 +222,11 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         senhasOrdenadas={AtendimentosOrdenados}
         senhasPreferenciais={senhasPreferenciais}
         setFuncionarioSelecionado={setFuncionarioSelecionado}
-        setTicketSelecionado={setTicketSelecionado}
+        // setTicketSelecionado={setTicketSelecionado}
         socket={socket}
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
-        onPreparationRequests={onPreparationRequests}
+        // onPreparationRequests={onPreparationRequests}
       />
     </main>
   );

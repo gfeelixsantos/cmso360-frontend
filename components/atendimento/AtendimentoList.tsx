@@ -34,7 +34,7 @@ interface SenhasListProps {
   senhasEmAtendimento: Scheduling[];
 
   /** Set ticket clicado */
-  setTicketSelecionado: (ticket: Ticket | null) => void;
+  // setTicketSelecionado: (ticket: Ticket | null) => void;
 
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   /** Instância do socket */
@@ -50,9 +50,9 @@ interface SenhasListProps {
 
   onHandleModal: (state: Boolean) => void;
 
-  onPreparationRequests: PreparationRequest[];
+  // onPreparationRequests: PreparationRequest[];
 
-  preparacoesFinalizadas: PreparationRequest[];
+  // preparacoesFinalizadas: PreparationRequest[];
 
   exameSelecionado: string;
 }
@@ -89,7 +89,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   senhasComPrefixo,
   senhasNormais,
   senhasEmAtendimento,
-  setTicketSelecionado,
+  // setTicketSelecionado,
   socket,
   salaSelecionada,
   codigosDeAtendimento,
@@ -117,7 +117,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
             salaSelecionada={salaSelecionada}
             senhas={senhasPreferenciais}
             setFuncionarioSelecionado={setFuncionarioSelecionado}
-            setTicketSelecionado={setTicketSelecionado}
+            // setTicketSelecionado={setTicketSelecionado}
             socket={socket}
             title={`Preferencial: ${senhasPreferenciais.length}`}
             unidadeSelecionada={unidadeSelecionada}
@@ -133,7 +133,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
             salaSelecionada={salaSelecionada}
             senhas={senhasComPrefixo}
             setFuncionarioSelecionado={setFuncionarioSelecionado}
-            setTicketSelecionado={setTicketSelecionado}
+            // setTicketSelecionado={setTicketSelecionado}
             socket={socket}
             title={`Prioridade: ${senhasComPrefixo.length}`}
             unidadeSelecionada={unidadeSelecionada}
@@ -148,7 +148,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
           salaSelecionada={salaSelecionada}
           senhas={senhasNormais}
           setFuncionarioSelecionado={setFuncionarioSelecionado}
-          setTicketSelecionado={setTicketSelecionado}
+          // setTicketSelecionado={setTicketSelecionado}
           socket={socket}
           title={`Atendimento: ${senhasNormais.length}`}
           unidadeSelecionada={unidadeSelecionada}
