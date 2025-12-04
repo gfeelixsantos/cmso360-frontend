@@ -73,7 +73,7 @@ type ConnectOptions = {
   onConnectError?: (err: any) => void;
 };
 
-export function createSocketIfNeeded(opts: ConnectOptions): Socket {
+function createSocketIfNeeded(opts: ConnectOptions): Socket {
   if (SINGLETON_SOCKET) return SINGLETON_SOCKET;
 
   const { auth, onConnect, onDisconnect, onConnectError } = opts;
@@ -106,7 +106,7 @@ export function createSocketIfNeeded(opts: ConnectOptions): Socket {
   return s;
 }
 
-export function closeSocket() {
+function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
       SINGLETON_SOCKET.removeAllListeners();
