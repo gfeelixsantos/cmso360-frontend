@@ -9,6 +9,7 @@ import {
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -69,6 +70,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
   atendimento,
   socket,
 }) => {
+  const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
   const { border, bg } = getStatusVisual(atendimento.TICKET.status);
   const { progress, completed, total } = useExamProgress(
     atendimento.EXAMES || [],
@@ -86,7 +88,8 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
   };
 
   const forceReturn = useCallback(() => {
-    executarAcao(
+    executarAtendimentoAcao(
+      atendimento._id,
       atendimento.TICKET.id,
       TicketActionType.RETORNAR,
       atendimento.UNIDADEATENDIMENTO,
@@ -179,11 +182,4 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
 };
 
 export default React.memo(AtendimentoCardCompacto);
-function executarAcao(
-  id: number,
-  RETORNAR: TicketActionType,
-  UNIDADEATENDIMENTO: string,
-  socket: any,
-) {
-  throw new Error("Function not implemented.");
-}
+
