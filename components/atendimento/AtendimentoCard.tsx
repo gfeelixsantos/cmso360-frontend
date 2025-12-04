@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Button,
@@ -712,8 +712,9 @@ const TicketActions: React.FC<{
     atendimento: Scheduling,
     action: TicketActionType,
   ) => {
+    
     const currentUser = getCurrentUser();
-
+    
     executarAtendimentoAcao(
       atendimento._id,
       ticket.id,
@@ -723,6 +724,7 @@ const TicketActions: React.FC<{
       salaSelecionada,
       exameSelecionado,
       currentUser?.nome,
+      atendimento.NOME,
     );
   };
 
@@ -732,7 +734,7 @@ const TicketActions: React.FC<{
     funcionario: Scheduling,
   ) => {
     const currentUser = getCurrentUser();
-
+    
     if (!firstClickMap[ticket.id]) {
       // Primeiro clique: executa ação, mas não abre o modal
       executarAtendimentoAcao(
@@ -800,12 +802,17 @@ const TicketActions: React.FC<{
 
   const isDisabled = handleDisabledStatus(ticket);
 
-  return (
-    <div className="flex items-center gap-2">
-      {/* Botão Chamar - Amarelo */}
+   return (
+    <div 
+      className="flex items-center gap-2"
+      role="group"
+      aria-label="Ações do ticket"
+    >
+      {/* Botão Chamar */}
       <Tooltip content="Chamar" placement="bottom">
         <Button
           isIconOnly
+          aria-label="Chamar paciente"
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isDisabled}
           size="md"
@@ -817,10 +824,11 @@ const TicketActions: React.FC<{
         </Button>
       </Tooltip>
 
-      {/* Botão Atender - Vermelho */}
+      {/* Botão Atender */}
       <Tooltip content="Atender" placement="bottom">
         <Button
           isIconOnly
+          aria-label="Atender paciente"
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isDisabled}
           size="md"
@@ -832,14 +840,14 @@ const TicketActions: React.FC<{
         </Button>
       </Tooltip>
 
-      {/* Botão Retornar - Cinza */}
+      {/* Botão Retornar */}
       <Tooltip content="Retornar" placement="bottom">
         <Button
           isIconOnly
+          aria-label="Retornar paciente à fila"
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           size="md"
           onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
-          // disabled={isDisabled}
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -848,14 +856,13 @@ const TicketActions: React.FC<{
   );
 };
 
-// Componente principal refatorado
+// Componente principal - CORRIGIDO
 const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   atendimento,
   salaSelecionada,
   unidadeSelecionada,
   socket,
   onHandleModal,
-  // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
@@ -878,6 +885,8 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   return (
     <Card
       className={`${cardBg} ${border} ${hoverBg} rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-4`}
+      role="article"
+      aria-label={`Atendimento de ${atendimento.NOME}`}
     >
       <div className="space-y-4">
         {/* Header com informações do funcionário e badge de status */}
@@ -892,7 +901,6 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
               exameSelecionado={exameSelecionado}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
-              // setTicketSelecionado={setTicketSelecionado}
               socket={socket}
               ticket={atendimento.TICKET}
               unidadeSelecionada={unidadeSelecionada}
@@ -901,7 +909,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           </div>
         </div>
 
-        {/* Observações e anotações (sempre visíveis) */}
+        {/* Observações e anotações */}
         <Observations atendimento={atendimento} />
 
         {/* Botão para ver detalhes dos exames */}
@@ -919,17 +927,23 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
             size="lg"
             variant="light"
             onPress={() => setShowExamDetails(!showExamDetails)}
+            aria-label={`${showExamDetails ? 'Ocultar' : 'Mostrar'} detalhes dos exames`}
+            aria-expanded={showExamDetails}
           >
             {/* Barra de progresso dos exames */}
             <ExamProgress exames={atendimento.EXAMES} />
           </Button>
         )}
 
-        {/* Detalhes dos exames em tabela (renderizado condicionalmente) */}
+        {/* Detalhes dos exames em tabela */}
         {showExamDetails && <ExamDetails exames={atendimento.EXAMES} />}
 
         {/* Footer com informações do ticket e anexos */}
-        <div className="space-y-3 pt-4 border-t border-gray-200">
+        <div 
+          className="space-y-3 pt-4 border-t border-gray-200"
+          role="contentinfo"
+          aria-label="Informações adicionais do atendimento"
+        >
           {/* Anexos */}
           {atendimento.ANEXOS && atendimento.ANEXOS.length > 0 && (
             <div className="flex gap-2">
@@ -943,20 +957,24 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
 
           {/* Informações do ticket */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <Clock className="h-4 w-4" />
+            <div 
+              className="flex items-center gap-2 text-xs text-gray-500"
+              aria-label="Detalhes do ticket"
+            >
+              <Clock className="h-4 w-4" aria-hidden="true" />
               <span>{formatarTempoEspera(atendimento.TICKET.emissao)}</span>
-              <User className="h-4 w-4 text-gray-400" />
+              <User className="h-4 w-4 text-gray-400" aria-hidden="true" />
               <span className="truncate">
                 {atendimento.TICKET.atendente?.split(" ")[0] || "Não atribuído"}
               </span>
-              <Senha className="h-4 w-4 text-gray-400" />
+              <Senha className="h-4 w-4 text-gray-400" aria-hidden="true" />
               {Number(atendimento.TICKET.numero) < 0
                 ? "N/A"
                 : atendimento.TICKET.prefixo + atendimento.TICKET.numero}
-              <Pin className="h-4 w-4 text-gray-400" />
+              <Pin className="h-4 w-4 text-gray-400" aria-hidden="true" />
               {atendimento.TICKET.unidade}
             </div>
+            <p className="text-xs text-gray-400">{exameSelecionado}</p>
           </div>
         </div>
       </div>

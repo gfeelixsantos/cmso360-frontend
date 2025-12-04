@@ -4,69 +4,59 @@ import { Socket } from "socket.io-client";
 
 import AtendimentoCard from "./AtendimentoCard";
 
-import { Ticket } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
-// Interface para tipagem robusta
 interface SenhasSectionProps {
-  /** Título da seção (ex: "Senhas Preferenciais") */
   title: string;
-  // /** Lista de tickets (senhas) a serem exibidos */
-  // senhas: Ticket[];
-
-  /** Lista de tickets (senhas) a serem exibidos */
   senhas: Scheduling[];
-
-  /** Mensagem exibida quando a lista está vazia */
   emptyMessage: string;
-  // /** ID do dropdown aberto (se houver) */
-  // dropdownAguardarAberto: string | null;
-  // /** Callback para definir o dropdown aberto */
-  // setDropdownAguardarAberto: (value: string | null) => void;
-  /** Instância do socket */
   socket: Socket;
-  /** Sala atualmente selecionada */
   salaSelecionada: string;
-
   codigosDeAtendimento: Set<string>;
-
-  /** Unidade atualmente selecionada */
   unidadeSelecionada: string;
-
-  // agendamentos: Scheduling[]
-  onHandleModal: (state: Boolean) => void;
-  // setTicketSelecionado: (ticket: Ticket | null) => void;
+  onHandleModal: (state: boolean) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-
   exameSelecionado: string;
 }
 
-// Componente para o estado vazio
+// Componente para o estado vazio - CORRIGIDO
 const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
   title,
   emptyMessage,
-}) => (
-  <section
-    aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
-  >
-    <h3
-      className="text-lg font-semibold text-center mt-2 text-gray-900 mb-2"
-      id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+}) => {
+  const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
+  
+  return (
+    <section
+      aria-labelledby={sectionId}
+      role="region"
+      aria-live="polite"
+      aria-atomic="true"
     >
-      {title}
-    </h3>
-    <Card
-      aria-describedby="empty-section-description"
-      className="bg-white rounded-lg border border-gray-200 shadow-md p-4 text-center 
-        transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      role="alert"
-    >
-      <p className="text-sm text-gray-600">{emptyMessage}</p>
-    </Card>
-  </section>
-);
+      <h3
+        className="text-lg font-semibold text-center mt-2 text-gray-900 mb-2"
+        id={sectionId}
+      >
+        {title}
+      </h3>
+      <Card
+        aria-describedby={`${sectionId}-description`}
+        className="bg-white rounded-lg border border-gray-200 shadow-md p-4 text-center 
+          transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        role="status"
+      >
+        <p 
+          id={`${sectionId}-description`}
+          className="text-sm text-gray-600"
+        >
+          {emptyMessage}
+        </p>
+      </Card>
+    </section>
+  );
+};
 
-// Componente principal
+// Componente principal - CORRIGIDO
 const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   title,
   senhas,
@@ -75,41 +65,61 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   salaSelecionada,
   codigosDeAtendimento,
   unidadeSelecionada,
-  //agendamentos,
   onHandleModal,
-  // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
+  const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
+
   if (senhas.length === 0) {
     return <EmptySection emptyMessage={emptyMessage} title={title} />;
   }
 
   return (
     <section
-      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+      aria-labelledby={sectionId}
+      role="region"
+      aria-live="polite"
+      aria-atomic="true"
       className="space-y-4"
     >
       <h3
         className="text-lg mt-2 text-center font-semibold text-gray-900"
-        id={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+        id={sectionId}
       >
         {title}
       </h3>
-      <div className="space-y-4">
-        {senhas.map((atendimento) => (
-          <AtendimentoCard
-            key={atendimento._id?.toString()}
-            atendimento={atendimento}
-            exameSelecionado={exameSelecionado}
-            salaSelecionada={salaSelecionada}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
-            // setTicketSelecionado={setTicketSelecionado}
-            socket={socket}
-            unidadeSelecionada={unidadeSelecionada}
-            onHandleModal={onHandleModal}
-          />
-        ))}
+      <div 
+        className="space-y-4"
+        role="list"
+        aria-label={`Lista de ${title.toLowerCase()}`}
+      >
+        {senhas.map((atendimento, index) => {
+          // Verifica se o atendimento tem _id válido
+          const hasValidId = atendimento._id && atendimento._id.toString();
+          const key = hasValidId 
+            ? atendimento._id.toString() 
+            : `atendimento-${index}-${atendimento.CODIGOPRONTUARIO || ''}`;
+          
+          return (
+            <div
+              key={key}
+              role="listitem"
+              aria-label={`Atendimento de ${atendimento.NOME || 'Paciente'}`}
+            >
+              <AtendimentoCard
+                key={key}
+                atendimento={atendimento}
+                exameSelecionado={exameSelecionado}
+                salaSelecionada={salaSelecionada}
+                setFuncionarioSelecionado={setFuncionarioSelecionado}
+                socket={socket}
+                unidadeSelecionada={unidadeSelecionada}
+                onHandleModal={onHandleModal}
+              />
+            </div>
+          );
+        })}
       </div>
     </section>
   );

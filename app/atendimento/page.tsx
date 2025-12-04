@@ -202,6 +202,7 @@ const AtendimentoPage: React.FC = () => {
     }
   }, [router]);
 
+
   // ---------------------------------------------------------
   // Carrega tickets e solicitações de preparo ao conectar
   // ---------------------------------------------------------
@@ -264,6 +265,7 @@ const AtendimentoPage: React.FC = () => {
   // Filtragem de atendimentos
   // ---------------------------------------------------------
   useEffect(() => {
+    console.log("codigos de atendimento", codigosDeAtendimento)
     if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
       setAgendamentos([]);
 
@@ -553,6 +555,7 @@ const AtendimentoPage: React.FC = () => {
             statusSelecionado={statusSelecionado}
             unidadeSelecionada={unidadeSelecionada}
             onHandleExameSelecionado={(ex) => {
+              console.log("pagina pai", ex)
               const setList = new Set(
                 EXAMES_LIST[ex].map((e) => e.codigos).flat(),
               );

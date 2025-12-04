@@ -24,6 +24,7 @@ export interface SchedulingEntityManager {
     sala?: string,
     exame?: string,
     user?: string,
+    nomeFuncionario?: string,
   ) => void;
 
   // Handlers para atualizar lista via ChangeStream
@@ -88,9 +89,10 @@ export function useSchedulingEntityManager(
     action: TicketActionType,
     unidade: string,
     socket: Socket,
-    sala = "",
-    exame = "",
-    user = "",
+    sala: string = "",
+    exame: string = "",
+    user: string = "",
+    nomeFuncionario: string = "",
   ) => {
     if (!socket.connected) {
       alert("❌ Não conectado ao servidor");
@@ -106,6 +108,7 @@ export function useSchedulingEntityManager(
       sala,
       exame,
       user,
+      nomeFuncionario
     });
   };
 

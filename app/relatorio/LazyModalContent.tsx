@@ -628,7 +628,7 @@ const ExamesTable: React.FC<{
       formData.append("files", file);
 
       const resp = await fetch(
-        `${NEST_SCHEDULINGS_UPDATE_EXAM_RESULT}/resultadoexame`,
+        `${NEST_SCHEDULINGS_UPDATE_EXAM_RESULT}`,
         {
           method: "POST",
           body: formData,

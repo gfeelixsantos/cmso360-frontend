@@ -7,70 +7,39 @@ import AtendimentoSection from "./AtendimentoSection";
 import AtendimentoCardCompacto from "./AtendimentoCardCompacto";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
 
-// Interface para tipagem robusta
 interface SenhasListProps {
-  // /** Lista ordenada de todas as senhas */
-  // senhasOrdenadas: Ticket[];
-  // /** Lista de senhas preferenciais */
-  // senhasPreferenciais: Ticket[];
-  // /** Lista de senhas com prefixo */
-  // senhasComPrefixo: Ticket[];
-  // /** Lista de senhas normais */
-  // senhasNormais: Ticket[];
-
-  // senhasEmAtendimento: Ticket[]
-
-  /** Lista ordenada de todas as senhas */
   senhasOrdenadas: Scheduling[];
-  /** Lista de senhas preferenciais */
   senhasPreferenciais: Scheduling[];
-  /** Lista de senhas com prefixo */
   senhasComPrefixo: Scheduling[];
-  /** Lista de senhas normais */
   senhasNormais: Scheduling[];
-
   senhasEmAtendimento: Scheduling[];
-
-  /** Set ticket clicado */
-  // setTicketSelecionado: (ticket: Ticket | null) => void;
-
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  /** Instância do socket */
   socket: Socket;
-  /** Sala atualmente selecionada */
   salaSelecionada: string;
-
   codigosDeAtendimento: Set<string>;
-  /** Unidade atualmente selecionada */
   unidadeSelecionada: string;
-
-  // agendamentos: Scheduling[]
-
-  onHandleModal: (state: Boolean) => void;
-
-  // onPreparationRequests: PreparationRequest[];
-
-  // preparacoesFinalizadas: PreparationRequest[];
-
+  onHandleModal: (state: boolean) => void;
   exameSelecionado: string;
 }
 
-// Componente para o estado vazio
+// Componente para o estado vazio - CORRIGIDO
 const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
   <Card
     aria-describedby="empty-senhas-description"
     className="bg-white rounded-lg border border-gray-200 shadow-md p-8 text-center 
       transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-    role="alertdialog"
+    role="status" // Alterado de alertdialog para status
   >
     <div className="text-gray-600">
       <Clock
         aria-hidden="true"
         className="h-12 w-12 mx-auto mb-4 text-gray-400"
       />
-      <p className="text-lg font-semibold text-gray-900 mb-2">
+      <p 
+        id="empty-senhas-description"
+        className="text-lg font-semibold text-gray-900 mb-2"
+      >
         Nenhuma senha encontrada
       </p>
       <p className="text-sm">
@@ -82,14 +51,13 @@ const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
   </Card>
 );
 
-// Componente principal
+// Componente principal - CORRIGIDO
 const AtendimentoList: React.FC<SenhasListProps> = ({
   senhasOrdenadas,
   senhasPreferenciais,
   senhasComPrefixo,
   senhasNormais,
   senhasEmAtendimento,
-  // setTicketSelecionado,
   socket,
   salaSelecionada,
   codigosDeAtendimento,
@@ -98,73 +66,128 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   onHandleModal,
   exameSelecionado,
 }) => {
-  if (senhasOrdenadas.length === 0) {
+  // Correção: Verificar todas as listas, não apenas a principal
+  const todasSenhasVazias = 
+    senhasOrdenadas.length === 0 &&
+    senhasPreferenciais.length === 0 &&
+    senhasComPrefixo.length === 0 &&
+    senhasNormais.length === 0 &&
+    senhasEmAtendimento.length === 0;
+
+  if (todasSenhasVazias) {
     return <EmptyState />;
   }
 
+  // Calcular totais para aria-labels
+  const totalGeral = senhasOrdenadas.length;
+  const totalEmAtendimento = senhasEmAtendimento.length;
+
   return (
-    <section
-      aria-label="Lista de senhas organizadas por categoria"
-      className="space-y-6 p-4 bg-gray-50 rounded-lg flex gap-4"
+    <div
+      role="main"
+      aria-label={`Painel de atendimento - ${totalGeral} pacientes aguardando, ${totalEmAtendimento} em atendimento`}
+      className="space-y-6 p-4 bg-gray-50 rounded-lg"
     >
-      <div className="w-screen">
-        {senhasPreferenciais.length > 0 && (
-          <AtendimentoSection
-            key="senhas-preferenciais"
-            codigosDeAtendimento={codigosDeAtendimento}
-            emptyMessage="Nenhuma"
-            exameSelecionado={exameSelecionado}
-            salaSelecionada={salaSelecionada}
-            senhas={senhasPreferenciais}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
-            // setTicketSelecionado={setTicketSelecionado}
-            socket={socket}
-            title={`Preferencial: ${senhasPreferenciais.length}`}
-            unidadeSelecionada={unidadeSelecionada}
-            onHandleModal={onHandleModal}
-          />
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Coluna principal - senhas aguardando */}
+        <div className="flex-1 space-y-6">
+          <h2 className="sr-only">Senhas aguardando atendimento</h2>
+          
+          {senhasPreferenciais.length > 0 && (
+            <AtendimentoSection
+              key="senhas-preferenciais"
+              codigosDeAtendimento={codigosDeAtendimento}
+              emptyMessage="Nenhuma senha preferencial"
+              exameSelecionado={exameSelecionado}
+              salaSelecionada={salaSelecionada}
+              senhas={senhasPreferenciais}
+              setFuncionarioSelecionado={setFuncionarioSelecionado}
+              socket={socket}
+              title={`Preferencial (${senhasPreferenciais.length})`}
+              unidadeSelecionada={unidadeSelecionada}
+              onHandleModal={onHandleModal}
+            />
+          )}
+
+          {senhasComPrefixo.length > 0 && (
+            <AtendimentoSection
+              key="senhas-prioridade"
+              codigosDeAtendimento={codigosDeAtendimento}
+              emptyMessage="Nenhuma senha com prioridade"
+              exameSelecionado={exameSelecionado}
+              salaSelecionada={salaSelecionada}
+              senhas={senhasComPrefixo}
+              setFuncionarioSelecionado={setFuncionarioSelecionado}
+              socket={socket}
+              title={`Prioridade (${senhasComPrefixo.length})`}
+              unidadeSelecionada={unidadeSelecionada}
+              onHandleModal={onHandleModal}
+            />
+          )}
+
+          {senhasNormais.length > 0 && (
+            <AtendimentoSection
+              key="senhas-normais"
+              codigosDeAtendimento={codigosDeAtendimento}
+              emptyMessage="Nenhuma senha normal"
+              exameSelecionado={exameSelecionado}
+              salaSelecionada={salaSelecionada}
+              senhas={senhasNormais}
+              setFuncionarioSelecionado={setFuncionarioSelecionado}
+              socket={socket}
+              title={`Atendimento (${senhasNormais.length})`}
+              unidadeSelecionada={unidadeSelecionada}
+              onHandleModal={onHandleModal}
+            />
+          )}
+        </div>
+
+        {/* Coluna lateral - senhas em atendimento */}
+        {senhasEmAtendimento.length > 0 && (
+          <div className="lg:w-96 space-y-4">
+            <div 
+              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+              role="complementary"
+              aria-label={`Pacientes em atendimento (${senhasEmAtendimento.length})`}
+            >
+              <h3 
+                className="text-lg font-semibold text-gray-900 mb-4"
+                id="em-atendimento-title"
+              >
+                Em Atendimento ({senhasEmAtendimento.length})
+              </h3>
+              
+              <div 
+                className="space-y-3"
+                role="list"
+                aria-labelledby="em-atendimento-title"
+              >
+                {senhasEmAtendimento.map((atendimento, index) => {
+                  const key = atendimento._id?.toString() || `atendimento-compacto-${index}`;
+                  return (
+                    <div 
+                      key={key}
+                      role="listitem"
+                      aria-label={`${atendimento.NOME || 'Paciente'} em atendimento`}
+                    >
+                      <AtendimentoCardCompacto
+                        atendimento={atendimento}
+                        socket={socket}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         )}
-        {senhasComPrefixo.length > 0 && (
-          <AtendimentoSection
-            key="senhas-prioridade"
-            codigosDeAtendimento={codigosDeAtendimento}
-            emptyMessage="Nenhuma"
-            exameSelecionado={exameSelecionado}
-            salaSelecionada={salaSelecionada}
-            senhas={senhasComPrefixo}
-            setFuncionarioSelecionado={setFuncionarioSelecionado}
-            // setTicketSelecionado={setTicketSelecionado}
-            socket={socket}
-            title={`Prioridade: ${senhasComPrefixo.length}`}
-            unidadeSelecionada={unidadeSelecionada}
-            onHandleModal={onHandleModal}
-          />
-        )}
-        <AtendimentoSection
-          key="senhas-normais"
-          codigosDeAtendimento={codigosDeAtendimento}
-          emptyMessage="Nenhuma"
-          exameSelecionado={exameSelecionado}
-          salaSelecionada={salaSelecionada}
-          senhas={senhasNormais}
-          setFuncionarioSelecionado={setFuncionarioSelecionado}
-          // setTicketSelecionado={setTicketSelecionado}
-          socket={socket}
-          title={`Atendimento: ${senhasNormais.length}`}
-          unidadeSelecionada={unidadeSelecionada}
-          onHandleModal={onHandleModal}
-        />
       </div>
-      <div className="w-md mb-2">
-        {senhasEmAtendimento.map((atend) => (
-          <AtendimentoCardCompacto
-            key={`compacto-${atend._id}`}
-            atendimento={atend}
-            socket={socket}
-          />
-        ))}
+
+      {/* Mensagem de resumo para leitores de tela */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {`Total de pacientes: ${totalGeral}. Em atendimento: ${totalEmAtendimento}.`}
       </div>
-    </section>
+    </div>
   );
 };
 

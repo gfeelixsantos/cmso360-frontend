@@ -3,43 +3,31 @@ import { Socket } from "socket.io-client";
 import { Spinner } from "@heroui/react";
 
 import DisconnectedState from "../recepcao/main/DisconnectedState";
-
 import AtendimentoList from "./AtendimentoList";
 
-import {
-  PreparationRequest,
-  Ticket,
-  TicketGroups,
-  TicketStatus,
-} from "@/lib/ticket/ticket";
+import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface MainContentProps {
   conectado: boolean;
-  // tickets: Ticket[];
   agendamentos: Scheduling[];
   socket: Socket;
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  // setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  onHandleModal: (state: Boolean) => void;
+  onHandleModal: (state: boolean) => void; // Corrigido: boolean em vez de Boolean
   exameSelecionado: string;
 }
 
 const AtendimentoContent: React.FC<MainContentProps> = ({
   conectado,
-  // tickets,
   agendamentos,
   socket,
   salaSelecionada,
   codigosDeAtendimento,
   unidadeSelecionada,
-  // setTicketSelecionado,
   onHandleModal,
-  // onPreparationRequests,
-  // preparacoesFinalizadas,
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
@@ -49,13 +37,18 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   // Efeito para controlar o estado de carregamento inicial
   useEffect(() => {
     if (conectado && agendamentos) {
-      // Pequeno delay para garantir que os dados estão processados
       const timer = setTimeout(() => {
         setEstaCarregando(false);
         setDadosIniciaisCarregados(true);
       }, 200);
 
       return () => clearTimeout(timer);
+    }
+    
+    // Reset loading state when disconnected
+    if (!conectado) {
+      setEstaCarregando(true);
+      setDadosIniciaisCarregados(false);
     }
   }, [conectado, agendamentos]);
 
@@ -64,7 +57,6 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     if (dadosIniciaisCarregados && socket) {
       const handleAtualizacao = () => {
         setEstaCarregando(true);
-        // Loading rápido para atualizações
         const timer = setTimeout(() => setEstaCarregando(false), 300);
 
         return () => clearTimeout(timer);
@@ -84,7 +76,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }, [socket, dadosIniciaisCarregados]);
 
   const AtendimentosOrdenados = useMemo(() => {
-    if (!agendamentos) return [];
+    if (!agendamentos || agendamentos.length === 0) return [];
 
     return [...agendamentos].sort((a, b) => {
       const pendentesA =
@@ -110,25 +102,30 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }, [agendamentos]);
 
   const AgendamentosComInfoDeOutrasSalas = useMemo(() => {
-    if (!agendamentos) return new Map();
+    if (!agendamentos || agendamentos.length === 0) return new Map();
 
     return new Map(
       agendamentos
         .filter(
           (t) =>
-            (t.TICKET.status === TicketStatus.EM_ATENDIMENTO ||
-            t.TICKET.status === TicketStatus.EM_CHAMADA) &&
-            t.TICKET.sala != salaSelecionada &&
-            t.TICKET.sala != "" &&
-            t.TICKET.grupo == TicketGroups.EXAME,
+            t.TICKET && (
+              t.TICKET.status === TicketStatus.EM_ATENDIMENTO ||
+              t.TICKET.status === TicketStatus.EM_CHAMADA
+            ) &&
+            t.TICKET.sala !== salaSelecionada &&
+            t.TICKET.sala !== "" &&
+            t.TICKET.grupo === TicketGroups.EXAME
         )
-        .map((t) => [t.TICKET.id, { status: t.TICKET.status, sala: t.TICKET.sala }]),
+        .map((t) => [t.TICKET.id, { 
+          status: t.TICKET.status, 
+          sala: t.TICKET.sala 
+        }])
     );
   }, [agendamentos, salaSelecionada]);
 
   const atendimentoOutrasSalas = useMemo(() => {
     return AtendimentosOrdenados.filter(
-      (a) => a?.TICKET && AgendamentosComInfoDeOutrasSalas.has(a.TICKET.id),
+      (a) => a?.TICKET && AgendamentosComInfoDeOutrasSalas.has(a.TICKET.id)
     ).map((a) => {
       const infoTicketOutraSala = AgendamentosComInfoDeOutrasSalas.get(a.TICKET.id)!;
 
@@ -145,28 +142,36 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
 
   const prontuariosEmAtendimento = useMemo(
     () => new Set(atendimentoOutrasSalas.map((p) => p.CODIGOPRONTUARIO)),
-    [atendimentoOutrasSalas],
+    [atendimentoOutrasSalas]
   );
 
   const naoEstaEmOutrasSalas = useMemo(
     () => (atendimento: Scheduling) =>
       !prontuariosEmAtendimento.has(atendimento.CODIGOPRONTUARIO),
-    [prontuariosEmAtendimento],
+    [prontuariosEmAtendimento]
   );
 
   const [senhasPreferenciais, senhasComPrefixo, senhasNormais] = useMemo(() => {
+    if (!AtendimentosOrdenados || AtendimentosOrdenados.length === 0) {
+      return [[], [], []];
+    }
+
     const preferenciais = AtendimentosOrdenados.filter(
-      (s) => s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
+      (s) => s.TICKET?.preferencial && naoEstaEmOutrasSalas(s)
     );
+    
     const comPrefixo = AtendimentosOrdenados.filter(
       (s) =>
-        s.TICKET?.prefixo && !s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
+        s.TICKET?.prefixo && 
+        !s.TICKET?.preferencial && 
+        naoEstaEmOutrasSalas(s)
     );
+    
     const normais = AtendimentosOrdenados.filter(
       (s) =>
         !s.TICKET?.preferencial &&
         !s.TICKET?.prefixo &&
-        naoEstaEmOutrasSalas(s),
+        naoEstaEmOutrasSalas(s)
     );
 
     return [preferenciais, comPrefixo, normais];
@@ -179,7 +184,12 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   // Loading elegante com HeroUI durante o carregamento
   if (estaCarregando || !agendamentos) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-default-50/50">
+      <div 
+        className="min-h-screen flex items-center justify-center bg-default-50/50"
+        role="status"
+        aria-live="polite"
+        aria-label="Carregando atendimentos"
+      >
         <div className="text-center space-y-6">
           {/* Spinner do HeroUI com tamanho personalizado e cor primária */}
           <div className="flex justify-center">
@@ -191,6 +201,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
               }}
               color="success"
               size="lg"
+              aria-label="Carregando"
             />
           </div>
 
@@ -199,22 +210,49 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
             <h3 className="text-xl font-semibold text-default-700">
               Recebendo Atendimentos
             </h3>
-            <p className="text-default-500 text-medium">Aguarde...</p>
+            <p 
+              className="text-default-500 text-medium"
+              id="loading-description"
+            >
+              Aguarde...
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
+  // Calcular estatísticas para aria-label
+  const totalAtendimentos = AtendimentosOrdenados.length;
+  const totalPreferenciais = senhasPreferenciais.length;
+  const totalComPrefixo = senhasComPrefixo.length;
+  const totalNormais = senhasNormais.length;
+  const totalOutrasSalas = atendimentoOutrasSalas.length;
+
+  const ariaLabelMain = `Sistema de atendimento médico - ${totalAtendimentos} pacientes aguardando: ${totalPreferenciais} preferenciais, ${totalComPrefixo} com prioridade, ${totalNormais} normais. ${totalOutrasSalas} em atendimento em outras salas.`;
+
   return (
     <main
-      aria-label="Conteúdo principal do sistema de atendimento"
+      role="main"
+      aria-label={ariaLabelMain}
       className="min-h-screen"
     >
+      {/* Anúncio de atualizações para leitores de tela */}
+      <div 
+        className="sr-only" 
+        aria-live="polite" 
+        aria-atomic="true"
+        aria-relevant="additions removals"
+      >
+        {totalAtendimentos > 0 
+          ? `Lista de atendimentos carregada com ${totalAtendimentos} pacientes.` 
+          : "Nenhum paciente aguardando atendimento."
+        }
+      </div>
+
       <AtendimentoList
         codigosDeAtendimento={codigosDeAtendimento}
         exameSelecionado={exameSelecionado}
-        // preparacoesFinalizadas={preparacoesFinalizadas}
         salaSelecionada={salaSelecionada}
         senhasComPrefixo={senhasComPrefixo}
         senhasEmAtendimento={atendimentoOutrasSalas}
@@ -222,11 +260,9 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         senhasOrdenadas={AtendimentosOrdenados}
         senhasPreferenciais={senhasPreferenciais}
         setFuncionarioSelecionado={setFuncionarioSelecionado}
-        // setTicketSelecionado={setTicketSelecionado}
         socket={socket}
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
-        // onPreparationRequests={onPreparationRequests}
       />
     </main>
   );

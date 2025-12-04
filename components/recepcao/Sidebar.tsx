@@ -225,7 +225,10 @@ export function SidebarRecepcao({
                 ...examesAtendimento.map((s) => ({ label: s, value: s })),
               ]}
               value={exameSelecionado}
-              onChange={onHandleExameSelecionado}
+              onChange={(value) => {
+                console.log("Sidebar selecionou exame:", value); // ← Adicione este log
+                onHandleExameSelecionado(value);
+              }}
             />
           )}
         </section>

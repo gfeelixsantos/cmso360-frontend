@@ -33,6 +33,7 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
+import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 
 interface AtendimentoModalExamesProps {
   isOpen: boolean;
@@ -68,7 +69,7 @@ const AtendimentoModalExames = ({
   socket,
 }: AtendimentoModalExamesProps) => {
   const user = useUser();
-  const { executarAcao } = useEntityManager<Ticket>([]);
+  const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
   const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>(
     [],
   );
@@ -183,7 +184,8 @@ const AtendimentoModalExames = ({
         }
 
         // Retorna o ticket
-        executarAcao(
+        executarAtendimentoAcao(
+          funcionarioSelecionado._id,
           funcionarioSelecionado.TICKET.id,
           TicketActionType.RETORNAR,
           funcionarioSelecionado.UNIDADEATENDIMENTO,
@@ -224,7 +226,7 @@ const AtendimentoModalExames = ({
       exameParaAtualizar,
       sala,
       user,
-      executarAcao,
+      executarAtendimentoAcao,
       socket,
       verificarExamesPendentes,
       closeNotificationModal,
