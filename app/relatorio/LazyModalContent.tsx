@@ -39,13 +39,18 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
-import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {
-  NEST_SCHEDULINGS,
+  NEST_SCHEDULINGS_UPDATE,
   NEST_SCHEDULINGS_EXAM_UPDATE,
   NEST_SOC_CADASTROPESSOAS,
+  NEST_RELATORIO_FUNCIONARIO,
+  NEST_SCHEDULINGS_UPDATE_EXAM_RESULT,
 } from "@/config/constants";
-import { mapCadastroPessoasToUserInfo, formatCPF } from "@/lib/utils";
+import {
+  mapCadastroPessoasToUserInfo,
+  formatCPF,
+  getStatusColor,
+} from "@/lib/utils";
 import { ICadastroPessoas } from "@/lib/soc/interfaces/ICadastroPessoas";
 
 interface LazyModalContentProps {
@@ -91,23 +96,6 @@ const InformacoesGerais: React.FC<{
   onSave: (data: Partial<Scheduling>) => Promise<void>;
 }> = ({ atendimento, editMode, onEditModeChange, onSave }) => {
   const [isSaving, setIsSaving] = useState(false);
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case AtendimentoStatus.AGENDADO:
-        return "warning";
-      case AtendimentoStatus.EM_ATENDIMENTO:
-        return "primary";
-      case AtendimentoStatus.AGUARDANDO_RESULTADOS:
-        return "secondary";
-      case AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA:
-        return "default";
-      case AtendimentoStatus.FINALIZADO:
-        return "success";
-      default:
-        return "default";
-    }
-  };
 
   const handleEditToggle = () => {
     if (editMode.isEditing) {
@@ -534,7 +522,7 @@ const ExamesTable: React.FC<{
         formData.append("files", file);
       });
 
-      const response = await fetch(NEST_SCHEDULINGS, {
+      const response = await fetch(NEST_SCHEDULINGS_UPDATE, {
         method: "POST",
         body: formData,
       });
@@ -543,7 +531,7 @@ const ExamesTable: React.FC<{
         setFilesUpload([]);
         // Recarregar dados para atualizar o atendimento
         const updatedResponse = await fetch(
-          `${NEST_SCHEDULINGS}/${atendimento._id}`,
+          `${NEST_RELATORIO_FUNCIONARIO}/${atendimento._id}`,
         );
 
         if (updatedResponse.ok) {
@@ -639,10 +627,13 @@ const ExamesTable: React.FC<{
       formData.append("codigoExame", exame.codigoExame);
       formData.append("files", file);
 
-      const resp = await fetch(`${NEST_SCHEDULINGS}/resultadoexame`, {
-        method: "POST",
-        body: formData,
-      });
+      const resp = await fetch(
+        `${NEST_SCHEDULINGS_UPDATE_EXAM_RESULT}/resultadoexame`,
+        {
+          method: "POST",
+          body: formData,
+        },
+      );
 
       if (!resp.ok) {
         const text = await resp.text().catch(() => "Erro no servidor");
@@ -1092,7 +1083,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
   const handleSaveEmployeeData = async (data: Partial<Scheduling>) => {
     try {
-      const response = await fetch(`${NEST_SCHEDULINGS}/update/document`, {
+      const response = await fetch(`/update/document`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

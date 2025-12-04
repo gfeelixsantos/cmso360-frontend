@@ -182,17 +182,6 @@ const ModalSkeleton = () => (
   </div>
 );
 
-// Função para converter Date para string no formato YYYY-MM-DD (para o backend)
-const formatDateToYYYYMMDD = (date: Date | null): string => {
-  if (!date) return "";
-
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  const day = date.getDate().toString().padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};
-
 // Componente principal
 export default function RelatoriosPage() {
   const router = useRouter();
@@ -299,17 +288,6 @@ export default function RelatoriosPage() {
       setLoading(false);
     }
   }, []);
-
-  // Função para converter Date para string no formato YYYY-MM-DD (para o backend)
-  const formatDateToYYYYMMDD = (date: Date | null): string => {
-    if (!date) return "";
-
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, "0");
-    const day = date.getDate().toString().padStart(2, "0");
-
-    return `${year}-${month}-${day}`;
-  };
 
   // Função para formatar data do input (yyyy-MM-dd) para exibição ou para o backend
   const formatDateForBackend = (dateString: string): string => {

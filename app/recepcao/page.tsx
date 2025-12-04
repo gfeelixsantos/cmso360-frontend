@@ -231,15 +231,14 @@ const RecepcaoPage: React.FC = () => {
   // Ele garante que a busca aconteça independente do evento do socket.
   useEffect(() => {
     if (conectado && unidadeSelecionada) {
-      console.log("[Frontend] Conexão ativa. Iniciando carga de dados...");
       setIsLoading(true);
 
       Promise.all([
         loadInitialTickets(unidadeSelecionada),
         loadSocCompanies(),
-        // Passa explicitamente
       ]).finally(() => {
-        setIsLoading(false);
+        // Pequeno timer para receber os atendimentos do conect socket
+        setTimeout(() => setIsLoading(false), 4500);
       });
 
       if (salaSelecionada.includes("PREPARO")) {
@@ -304,25 +303,28 @@ const RecepcaoPage: React.FC = () => {
       auth: userSocket,
       transports: ["websocket"],
       reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 2000,
     });
 
     setSocketState(s);
 
     // --- Handlers ---
+
+    // Recebe os atendimentos já filtrados com unidade selecionada + unidade em branco
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules) {
-        const schedulesFiltred = schedules.filter(
-          (s) => !agendamentos.some((a) => a._id === s._id),
+        // Simplesmente define a lista completa recebida do servidor.
+        setAgendamentos(
+          schedules.sort((a, b) =>
+            a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+          ),
         );
-
-        setAgendamentos(schedulesFiltred);
       }
     };
 
-    const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
-    const handleTicketUpdated = (ticket: Ticket) => addOrUpdate(ticket);
+    const handleTicketEmitedOrUpdated = (ticket: Ticket) => addOrUpdate(ticket);
+
     const handleTicketError = (message: string) =>
       console.error(JSON.parse(message));
 
@@ -386,10 +388,10 @@ const RecepcaoPage: React.FC = () => {
 
     // --- Registro de Eventos ---
     onEvent(s, EventType.CONNECTION_REQUEST, handleAtendimentos);
-    onEvent(s, EventType.TICKET_EMITED, handleTicketEmited);
-    onEvent(s, EventType.TICKET_UPDATED, handleTicketUpdated);
+    onEvent(s, EventType.TICKET_EMITED, handleTicketEmitedOrUpdated);
+    onEvent(s, EventType.TICKET_UPDATED, handleTicketEmitedOrUpdated);
     onEvent(s, EventType.TICKET_ERROR, handleTicketError);
-    // onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
+    onEvent(s, EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
     onEvent(s, EventType.PREPARATION_REQUEST, handlePreparationRequest);
 
     s.on("disconnect", (reason) => {
@@ -397,15 +399,6 @@ const RecepcaoPage: React.FC = () => {
       // Mas limpa dados visuais para evitar confusão
       if (reason === "io client disconnect") {
         setConectado(false);
-      }
-
-      if (reason !== "io client disconnect") {
-        addToast({
-          title: "Conexão instável",
-          severity: "danger",
-          color: "foreground",
-          variant: "flat",
-        });
       }
     });
 
@@ -417,8 +410,8 @@ const RecepcaoPage: React.FC = () => {
       s.off("connect");
       s.off("disconnect");
       s.off("connect_error");
-      s.off(EventType.TICKET_EMITED, handleTicketEmited);
-      s.off(EventType.TICKET_UPDATED, handleTicketUpdated);
+      s.off(EventType.TICKET_EMITED, handleTicketEmitedOrUpdated);
+      s.off(EventType.TICKET_UPDATED, handleTicketEmitedOrUpdated);
       s.off(EventType.TICKET_ERROR, handleTicketError);
       s.off(EventType.UPDATE_SCHEDULE, handleUpdateSchedule);
       s.off(EventType.PREPARATION_REQUEST, handlePreparationRequest);
@@ -429,7 +422,7 @@ const RecepcaoPage: React.FC = () => {
   const handleModal = useCallback(() => {
     setAgendamentosAtivos(agendamentos);
     setModalAtendimentoAberto(!modalAtendimentoAberto);
-  }, [modalAtendimentoAberto, agendamentos]);
+  }, [modalAtendimentoAberto]);
 
   const calcularEstatisticas = useCallback(() => {
     const senhasFiltradas = getAll();

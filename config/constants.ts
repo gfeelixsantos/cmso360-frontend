@@ -24,10 +24,9 @@ const TICKET_QUERY =
 
 export const NEST_TICKET_QUERY = NEST_URL + TICKET_QUERY;
 
-const SCHEDULINGS =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS ?? "[.ENV] Schedulings url nulo";
-
-export const NEST_SCHEDULINGS = NEST_URL + SCHEDULINGS;
+export const NEST_SCHEDULINGS_UPDATE = NEST_URL + "schedulings/update";
+export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT =
+  NEST_URL + "schedulings/update/resultadoexame"; // envia resultados de exame pdf
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 export const NEST_PRONTUARIO_PARAMETROS =

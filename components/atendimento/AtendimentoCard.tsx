@@ -32,7 +32,6 @@ import {
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 
-import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser } from "@/lib/utils";
 import { Ticket, TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 import {
@@ -41,6 +40,7 @@ import {
 } from "@/lib/scheduling/interface/scheduling";
 import { EXAMES_LIST } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -701,25 +701,28 @@ const TicketActions: React.FC<{
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
-  const { executarAcao } = useEntityManager<Ticket>([]);
+  const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
   // 🔹 Armazena IDs que já tiveram o primeiro clique
   const [firstClickMap, setFirstClickMap] = useState<Record<string, boolean>>(
     {},
   );
 
   // Utilizado para chamar e nas demais ações
-  const handleExecutarAcao = (ticket: Ticket, action: TicketActionType) => {
+  const handleExecutarAcao = (
+    atendimento: Scheduling,
+    action: TicketActionType,
+  ) => {
     const currentUser = getCurrentUser();
 
-    executarAcao(
+    executarAtendimentoAcao(
+      atendimento._id,
       ticket.id,
       action,
       unidadeSelecionada,
       socket,
       salaSelecionada,
-      currentUser?.nome,
-      atendimento.NOME,
       exameSelecionado,
+      currentUser?.nome,
     );
   };
 
@@ -732,12 +735,14 @@ const TicketActions: React.FC<{
 
     if (!firstClickMap[ticket.id]) {
       // Primeiro clique: executa ação, mas não abre o modal
-      executarAcao(
+      executarAtendimentoAcao(
+        atendimento._id,
         ticket.id,
         action,
         unidadeSelecionada,
         socket,
         salaSelecionada,
+        exameSelecionado,
         currentUser?.nome,
       );
       setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
@@ -757,14 +762,10 @@ const TicketActions: React.FC<{
     }
   };
 
-  const handleRetornar = (ticket: Ticket, action: TicketActionType) => {
-    if (ticket.status === TicketStatus.EM_PREPARACAO) {
-      const response = confirm("Deseja retornar a senha da preparação?");
-
-      return response
-        ? executarAcao(ticket.id, action, unidadeSelecionada, socket)
-        : null;
-    }
+  const handleRetornar = (
+    atendimento: Scheduling,
+    action: TicketActionType,
+  ) => {
     // Reseta o clique para permitir novo ciclo
     setFirstClickMap((prev) => {
       const updated = { ...prev };
@@ -774,7 +775,13 @@ const TicketActions: React.FC<{
       return updated;
     });
 
-    return executarAcao(ticket.id, action, unidadeSelecionada, socket);
+    return executarAtendimentoAcao(
+      atendimento._id,
+      ticket.id,
+      action,
+      unidadeSelecionada,
+      socket,
+    );
   };
 
   const handleDisabledStatus = (ticket: Ticket) => {
@@ -802,7 +809,9 @@ const TicketActions: React.FC<{
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isDisabled}
           size="md"
-          onPress={() => handleExecutarAcao(ticket, TicketActionType.CHAMAR)}
+          onPress={() =>
+            handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
+          }
         >
           <Phone className="h-4 w-4" />
         </Button>
@@ -829,7 +838,7 @@ const TicketActions: React.FC<{
           isIconOnly
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           size="md"
-          onPress={() => handleRetornar(ticket, TicketActionType.RETORNAR)}
+          onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
           // disabled={isDisabled}
         >
           <ArrowLeft className="h-4 w-4" />

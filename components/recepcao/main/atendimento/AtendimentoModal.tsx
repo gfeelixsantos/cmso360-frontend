@@ -13,7 +13,6 @@ import {
   Search as IconSearch,
   Clock,
   Building2,
-  User,
   X,
   Filter,
   Send,
@@ -55,8 +54,8 @@ import {
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
   EXAMES_LIST,
-  NEST_SCHEDULINGS,
   NEST_SCHEDULINGS_RECORDS,
+  NEST_SCHEDULINGS_UPDATE,
   NEST_SOC_PEDIDOEXAME,
   NEST_SOC_PEDIDOEXAME_CREDENCIADAS,
   NEST_TICKETS_URL,
@@ -75,6 +74,7 @@ import {
   formatBrithdayDate,
   formatCPF,
   formatPhone,
+  getStatusColor,
 } from "@/lib/utils";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -446,7 +446,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setCpf(formatCPF(paciente.CPFFUNCIONARIO || ""));
       setTelefone(formatPhone(paciente.TELEFONE || ""));
       setTipoExame(TIPOS_EXAME[paciente.TIPOEXAMENOME] || "");
-      setSelectedSchedulingId(paciente.SCHEDULINGCODE || "");
+      setSelectedSchedulingId(paciente.CODIGOPRONTUARIO || "");
       setObservacoes(paciente.OBSERVACOES || "");
       setAnotacoes("");
       setPreferencialTipo("");
@@ -454,6 +454,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setIsBindServiceSelected(false);
 
       setIsLoading(false);
+      console.log("okss chamado");
     },
     [handleAtendimentoCredenciada, funcionarioSelecionado],
   );
@@ -620,8 +621,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         }
       }
     }
-
-    setFilesUpload([]);
   };
 
   const handleFileUpload = async (
@@ -784,7 +783,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     try {
       formData.append("scheduling", JSON.stringify(funcionarioSelecionado));
 
-      const submmitResponse = await fetch(NEST_SCHEDULINGS, {
+      const submmitResponse = await fetch(NEST_SCHEDULINGS_UPDATE, {
         method: "POST",
         body: formData,
       });
@@ -860,7 +859,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     data,
   }: ListChildComponentProps & { data?: Scheduling[] }) {
     const paciente: Scheduling = (data as Scheduling[])[index];
-    const isSelected = selectedSchedulingId === paciente.SCHEDULINGCODE;
+    const isSelected = selectedSchedulingId === paciente.CODIGOPRONTUARIO;
 
     // Renderiza o card sem o Tooltip se não houver observações
     if (!paciente.OBSERVACOES) {
@@ -879,7 +878,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               }
             }}
             // Adicionei a classe 'relative' para que o chip 'absolute' funcione
-            className={`relative p-2 rounded-lg border cursor-pointer transition-all duration-200 ${
+            className={` p-2 rounded-lg border cursor-pointer transition-all duration-200 ${
               isSelected
                 ? "bg-[#e6f0ff] border-[#003366] ring-2 ring-[#003366]/20 shadow-md"
                 : "bg-white border-gray-200 hover:border-[#003366] hover:shadow-sm hover:scale-[1.01]"
@@ -889,9 +888,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <User
-                    className={`h-4 w-4 ${isSelected ? "text-[#003366]" : "text-[#003366]"}`}
-                  />
                   <div
                     className={`font-medium text-sm truncate ${isSelected ? "text-[#003366]" : ""}`}
                   >
@@ -921,17 +917,19 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             </div>
             {/* Chip do ASOSTATUS fixo no canto inferior direito */}
             {paciente.ASOSTATUS === AsoStatus.GERADO && (
-              <div className="absolute bottom-2 right-2  text-green-400">
-                <span className="text-xs">
-                  {paciente.ATENDIMENTOSTATUS != "AGENDADO"
-                    ? paciente.ATENDIMENTOSTATUS
-                    : "ASO OK"}
+              <div className=" bottom-2 right-4 text-green-400">
+                <span
+                  className={`text-left text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
+                >
+                  {paciente.ATENDIMENTOSTATUS.replace(/_/g, " ")
+                    .toLowerCase()
+                    .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </span>
               </div>
             )}
 
             {paciente.ASOSTATUS === AsoStatus.KIT_CREDENCIADA && (
-              <div className="absolute bottom-2 right-2 text-yellow-400">
+              <div className=" bottom-2 right-2 text-yellow-400">
                 <span className="text-xs">{paciente.ASOSTATUS}</span>
               </div>
             )}
@@ -1347,6 +1345,52 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                     Selecione o tipo de exame.
                   </div>
                 )}
+
+                <div className="mt-4">
+                  {empresa && codigoFuncionario && funcionarioSelecionado && (
+                    <Checkbox
+                      color="primary"
+                      disabled={isLoading}
+                      isSelected={isBindServiceSelected}
+                      onValueChange={handleBindService}
+                    >
+                      <span className="text-sm text-gray-700">
+                        Repetição de exame
+                      </span>
+                    </Checkbox>
+                  )}
+
+                  {isBindServiceSelected && (
+                    <div className="mt-1 flex flex-col align-center items-start space-x-2">
+                      <div className="mt-2 mb-2">
+                        {records && (
+                          <Select
+                            className="min-w-lg"
+                            disabled={isLoading}
+                            label="Prontuários"
+                            placeholder="prontuários disponíveis"
+                            selectedKeys={recordsCodes}
+                            selectionMode="multiple"
+                            size="sm"
+                            onSelectionChange={(keys) => {
+                              const stringKeys = new Set(
+                                Array.from(keys).map(String),
+                              );
+
+                              setRecordsCodes(stringKeys);
+                            }}
+                          >
+                            {records.map((rec) => (
+                              <SelectItem key={String(rec.IDFICHA)}>
+                                {`${convertTipoAsoNome(rec.TPASO)} - ${rec.DATAFICHA} - ${convertRespAso(rec.RESASO)}`}
+                              </SelectItem>
+                            ))}
+                          </Select>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Exames (checkbox grid) */}
@@ -1494,81 +1538,37 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
               {/* Vincular prontuário */}
               <div>
-                {empresa && codigoFuncionario && (
-                  <Checkbox
-                    color="success"
+                <div>
+                  <input
+                    multiple
+                    accept=".pdf,image/*"
+                    className="hidden"
                     disabled={isLoading}
-                    isSelected={isBindServiceSelected}
-                    onValueChange={handleBindService}
+                    id="file-upload"
+                    type="file"
+                    onChange={handleFileUpload}
+                  />
+                  <label
+                    className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${
+                      isLoading
+                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                        : "bg-blue-500 text-white hover:bg-blue-600"
+                    }`}
+                    htmlFor="file-upload"
                   >
-                    <span className="text-sm text-gray-700">
-                      Vincular atendimento
-                    </span>
-                  </Checkbox>
-                )}
-
-                {isBindServiceSelected && (
-                  <div className="mt-1 flex flex-col align-center items-start space-x-2">
-                    <div className="mt-2 mb-2">
-                      {records && (
-                        <Select
-                          className="min-w-lg"
-                          disabled={isLoading}
-                          label="Prontuários"
-                          placeholder="prontuários disponíveis"
-                          selectedKeys={recordsCodes}
-                          selectionMode="multiple"
-                          size="sm"
-                          onSelectionChange={(keys) => {
-                            const stringKeys = new Set(
-                              Array.from(keys).map(String),
-                            );
-
-                            setRecordsCodes(stringKeys);
-                          }}
-                        >
-                          {records.map((rec) => (
-                            <SelectItem key={String(rec.IDFICHA)}>
-                              {`${convertTipoAsoNome(rec.TPASO)} - ${rec.DATAFICHA} - ${convertRespAso(rec.RESASO)}`}
-                            </SelectItem>
-                          ))}
-                        </Select>
-                      )}
-                    </div>
-                    <div>
-                      <input
-                        multiple
-                        accept=".pdf,image/*"
-                        className="hidden"
-                        disabled={isLoading}
-                        id="file-upload"
-                        type="file"
-                        onChange={handleFileUpload}
-                      />
-                      <label
-                        className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded ${
-                          isLoading
-                            ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                            : "bg-blue-500 text-white hover:bg-blue-600"
-                        }`}
-                        htmlFor="file-upload"
-                      >
-                        Documentos{" "}
-                        {filesUpload.length > 0 ? filesUpload.length : ""}
-                      </label>
-                      {filesUpload.map((file) => (
-                        <Chip
-                          key={file.name}
-                          className="mt-2 text-xs"
-                          size="sm"
-                          onClose={() => handleRemoveFile(file.name)}
-                        >
-                          {file.name}
-                        </Chip>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                    Anexos {filesUpload.length > 0 ? filesUpload.length : ""}
+                  </label>
+                  {filesUpload.map((file) => (
+                    <Chip
+                      key={file.name}
+                      className="mt-2 text-xs"
+                      size="sm"
+                      onClose={() => handleRemoveFile(file.name)}
+                    >
+                      {file.name}
+                    </Chip>
+                  ))}
+                </div>
               </div>
 
               {/* Atendimento Preferencial */}
@@ -1687,7 +1687,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   height={280}
                   itemCount={filteredAgendamentos.length}
                   itemData={filteredAgendamentos}
-                  itemSize={90} // Aumentado para acomodar o chip de selecionado
+                  itemSize={110} // Aumentado para acomodar o chip de selecionado
                   width={"100%"}
                 >
                   {(props) => (

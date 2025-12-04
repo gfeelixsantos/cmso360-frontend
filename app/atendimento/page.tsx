@@ -19,12 +19,8 @@ import {
   CustomEventMap,
   emitEvent,
   EventType,
-  onEvent,
 } from "@/lib/websocket/events/events";
-import {
-  PreparationRequestTypes,
-  WebsocketType,
-} from "@/lib/websocket/enums/websocket.enum";
+import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
 import EmptyState from "@/components/recepcao/main/EmptyState";
@@ -33,9 +29,7 @@ import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
   PreparationRequest,
-  PreparationRequestModel,
   Ticket,
-  TicketActionType,
   TicketGroups,
   TicketStatus,
 } from "@/lib/ticket/ticket";
@@ -126,7 +120,10 @@ export function closeSocket() {
 }
 
 // Helper para registrar handlers de eventos (idempotente): retorna função para desregistrar
-function registerHandlers(s: Socket, handlers: { [K in keyof CustomEventMap]?: (...args: any[]) => void }) {
+function registerHandlers(
+  s: Socket,
+  handlers: { [K in keyof CustomEventMap]?: (...args: any[]) => void },
+) {
   Object.entries(handlers).forEach(([event, fn]) => {
     if (!fn) return;
     // evita múltiplas inscrições iguais usando off antes
@@ -146,34 +143,6 @@ function registerHandlers(s: Socket, handlers: { [K in keyof CustomEventMap]?: (
   };
 }
 
-// =================================================================================
-// DEDUPLICADOR (mantive sua implementação)
-// =================================================================================
-const deduplicateSchedulings = (schedulings: Scheduling[]): Scheduling[] => {
-  const uniqueMap = new Map<string, Scheduling>();
-
-  schedulings.forEach((scheduling) => {
-    const key = scheduling._id || scheduling.SCHEDULINGCODE;
-
-    if (key && !uniqueMap.has(key)) {
-      uniqueMap.set(key, scheduling);
-    }
-  });
-
-  const deduplicated = Array.from(uniqueMap.values());
-
-  if (
-    schedulings.length !== deduplicated.length &&
-    process.env.NODE_ENV === "development"
-  ) {
-    console.warn(
-      `⚠️ Removidas ${schedulings.length - deduplicated.length} duplicatas de agendamentos`,
-    );
-  }
-
-  return deduplicated;
-};
-
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
 const AtendimentoPage: React.FC = () => {
@@ -184,18 +153,25 @@ const AtendimentoPage: React.FC = () => {
   const [statusSelecionado, setStatusSelecionado] = useState("");
   const [salaSelecionada, setSalaSelecionada] = useState("");
   const [exameSelecionado, setExameSelecionado] = useState("");
-  const [codigosDeAtendimento, setCodigosDeAtendimento] = useState<Set<string>>(new Set());
+  const [codigosDeAtendimento, setCodigosDeAtendimento] = useState<Set<string>>(
+    new Set(),
+  );
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Scheduling[]>([]);
   const [empreparacao, setEmPreparacao] = useState<PreparationRequest[]>([]);
-  const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<PreparationRequest[]>([]);
+  const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<
+    PreparationRequest[]
+  >([]);
   const [modalAtendimentoAberto, setModalAtendimentoAberto] = useState(false);
   const [modalAlert, setModalAlert] = useState<boolean>(false);
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(null);
-  const [funcionarioSelecionado, setFuncionarioSelecionado] = useState<Scheduling | null>(null);
+  const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(
+    null,
+  );
+  const [funcionarioSelecionado, setFuncionarioSelecionado] =
+    useState<Scheduling | null>(null);
   const [socCompanies, setSocCompanies] = useState<CadastroEmpresa[]>([]);
   const router = useRouter();
   const {
@@ -290,10 +266,12 @@ const AtendimentoPage: React.FC = () => {
   useEffect(() => {
     if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
       setAgendamentos([]);
+
       return;
     }
     if (!agendamentosGeral || agendamentosGeral.length === 0) {
       setAgendamentos([]);
+
       return;
     }
 
@@ -311,6 +289,7 @@ const AtendimentoPage: React.FC = () => {
         ),
     );
 
+    console.log("meus atendimentos", meusAtendimentos);
     setAgendamentos(meusAtendimentos);
   }, [agendamentosGeral, codigosDeAtendimento, exameSelecionado]);
 
@@ -322,7 +301,9 @@ const AtendimentoPage: React.FC = () => {
 
     // Se já estava conectado, força reconexão automática
     if (conectado) {
-      console.log("♻️ Mudança de contexto detectada → Recriando conexão WebSocket...");
+      console.log(
+        "♻️ Mudança de contexto detectada → Recriando conexão WebSocket...",
+      );
       closeSocket();
       setConectado(false);
       setTimeout(() => setConectado(true), 300);
@@ -348,17 +329,19 @@ const AtendimentoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
+
       return;
     }
 
     if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) {
       setModalText(
         <p>
-          Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e{' '}
+          Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e{" "}
           <strong>EXAME</strong> antes de conectar.
         </p>,
       );
       setModalAlert(true);
+
       return;
     }
 
@@ -389,7 +372,6 @@ const AtendimentoPage: React.FC = () => {
         try {
           await Promise.all([loadSocCompanies(), loadInitialTickets()]);
           emitEvent(socket, EventType.TICKET_INFO, unidadeSelecionada);
-          if (salaSelecionada.includes("PREPARO")) subscribeNotification();
         } catch (err) {
           console.warn("Erro ao carregar dados iniciais:", err);
         } finally {
@@ -424,113 +406,52 @@ const AtendimentoPage: React.FC = () => {
 
           schedules.forEach((schedule) => {
             const exists = merged.some((a) => a._id === schedule._id);
+
             if (!exists) merged.push(schedule);
           });
 
-          return deduplicateSchedulings(merged);
+          return merged;
         });
       }
     };
 
-    const handleTicketEmited = (ticket: Ticket) => addOrUpdate(ticket);
+    const handleUpdateSchedule = ({
+      operation,
+      schedule,
+    }: SchedulingChange) => {
+      console.log("opeção", operation);
+      console.log("schedule", schedule);
 
-    const handleTicketUpdated = (ticket: Ticket) => {
-      addOrUpdate(ticket);
-
-      setAgendamentosGeral((prev) =>
-        prev.map((agendamento) =>
-          agendamento.TICKET?.id === ticket.id
-            ? { ...agendamento, TICKET: ticket }
-            : agendamento,
-        ),
-      );
-
-      setAgendamentos((prev) =>
-        prev.map((agendamento) =>
-          agendamento.TICKET?.id === ticket.id
-            ? { ...agendamento, TICKET: ticket }
-            : agendamento,
-        ),
-      );
-    };
-
-    const handleTicketError = (message: string) =>
-      console.error(JSON.parse(message));
-
-    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
       switch (operation) {
         case MongoOperationTypes.INSERT:
+          setAgendamentosGeral((prev) => [...prev, schedule]);
+
+          break;
+
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral((prev) => {
-            const index = prev.findIndex(
-              (ag) => ag._id === schedule._id || ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE,
+            const idx = prev.findIndex(
+              (p) => p.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
             );
 
-            let updated: Scheduling[];
+            if (idx != -1) prev[idx] = schedule;
 
-            if (index !== -1) {
-              updated = [...prev];
-              updated[index] = {
-                ...updated[index],
-                ...schedule,
-                EXAMES: schedule.EXAMES || updated[index].EXAMES,
-                TICKET: schedule.TICKET || updated[index].TICKET,
-              };
-
-              const current = prev[index];
-              const prevTicket = current?.TICKET;
-              const newTicket = schedule?.TICKET;
-
-              const prevDate = prevTicket?.updatedAt ? new Date(prevTicket.updatedAt) : null;
-              const newDate = newTicket?.updatedAt ? new Date(newTicket.updatedAt) : null;
-
-              if (prevDate && newDate && newDate < prevDate) {
-                console.log(`⚠️ [IGNORADO] Update descartado (mais antigo).`);
-                return prev;
-              }
-            } else {
-              updated = [...prev, schedule];
-            }
-
-            const deduplicated = deduplicateSchedulings(updated);
-
-            return deduplicated.sort((a, b) =>
-              a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-            );
+            return [...prev];
           });
           break;
-        case MongoOperationTypes.DELETE:
-          setAgendamentosGeral((prev) => prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE));
-          break;
-      }
-    };
 
-    const handlePreparationRequest = (request: PreparationRequestModel) => {
-      switch (request.type) {
-        case PreparationRequestTypes.SUCCESS:
-          addOrUpdate(request.request.tickets!);
-          setEmPreparacao((prev) => [...prev, request.request]);
-          break;
-        case PreparationRequestTypes.FINISHED:
-          executarAcao(
-            request.request.ticketId!,
-            TicketActionType.PREPARO_OK,
-            unidadeSelecionada,
-            s,
+        case MongoOperationTypes.DELETE:
+          console.log("deletar em atendimento foi chamado...");
+          setAgendamentosGeral((prev) =>
+            prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
           );
-          setEmPreparacao((prev) => prev.filter((req) => req.ticketId !== request.request.ticketId));
-          setPreparacaoFinalizada((prev) => [...prev, request.request]);
           break;
       }
     };
 
     const unregister = registerHandlers(s, {
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
-      [EventType.TICKET_EMITED]: handleTicketEmited,
-      [EventType.TICKET_UPDATED]: handleTicketUpdated,
-      [EventType.TICKET_ERROR]: handleTicketError,
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
-      [EventType.PREPARATION_REQUEST]: handlePreparationRequest,
     } as any);
 
     // cleanup quando a flag conectado mudar para false
@@ -542,6 +463,8 @@ const AtendimentoPage: React.FC = () => {
       }
       // não desconectar aqui automaticamente; deixamos o usuário disparar desconexão via handleConectar (toggle)
       // se você preferir desconectar automaticamente, chame closeSocket(); socketRef.current = null;
+      closeSocket();
+      socketRef.current = null;
     };
   }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
@@ -555,13 +478,30 @@ const AtendimentoPage: React.FC = () => {
       recepcaoAguardando:
         senhasFiltradas.filter(
           (s) =>
-            s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.RECEPCAO,
-        ).length + senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK).length,
-      examesAguardando: senhasFiltradas.filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.EXAME).length,
-      emAtendimento: senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO).length + senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA).length,
-      preparacao: senhasFiltradas.filter((s) => s.status === TicketStatus.EM_PREPARACAO).length,
-      raiox: senhasFiltradas.filter((s) => s.status === TicketStatus.ENCAMINHADO_RX).length,
-      finalizados: senhasFiltradas.filter((s) => s.status === TicketStatus.FINALIZADO).length,
+            s.status === TicketStatus.AGUARDANDO &&
+            s.grupo === TicketGroups.RECEPCAO,
+        ).length +
+        senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK)
+          .length,
+      examesAguardando: senhasFiltradas.filter(
+        (s) =>
+          s.status === TicketStatus.AGUARDANDO &&
+          s.grupo === TicketGroups.EXAME,
+      ).length,
+      emAtendimento:
+        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO)
+          .length +
+        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA)
+          .length,
+      preparacao: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.EM_PREPARACAO,
+      ).length,
+      raiox: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
+      ).length,
+      finalizados: senhasFiltradas.filter(
+        (s) => s.status === TicketStatus.FINALIZADO,
+      ).length,
       total: senhasFiltradas.length,
     });
   };
@@ -613,7 +553,10 @@ const AtendimentoPage: React.FC = () => {
             statusSelecionado={statusSelecionado}
             unidadeSelecionada={unidadeSelecionada}
             onHandleExameSelecionado={(ex) => {
-              const setList = new Set(EXAMES_LIST[ex].map((e) => e.codigos).flat());
+              const setList = new Set(
+                EXAMES_LIST[ex].map((e) => e.codigos).flat(),
+              );
+
               setCodigosDeAtendimento(setList);
               setExameSelecionado(ex);
             }}
@@ -696,4 +639,3 @@ export default AtendimentoPage;
 function subscribeNotification() {
   throw new Error("Function not implemented.");
 }
-

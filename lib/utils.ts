@@ -1,5 +1,6 @@
 import { IUserInfo } from "./user/interfaces/IUser";
 import { ICadastroPessoas } from "./soc/interfaces/ICadastroPessoas";
+import { AtendimentoStatus } from "./scheduling/enum/scheduling.enum";
 
 export async function fetchBodyJson<T>(
   url: string,
@@ -213,3 +214,25 @@ export function ordemAlfabetica(data: string[]) {
 
   return data.sort((a, b) => a.localeCompare(b, "pt-BR"));
 }
+
+/**
+ *
+ * @param status em que o ATENDIMENTOSTATUS se encontra
+ * @returns cor referente a situação
+ */
+export const getStatusColor = (status: string) => {
+  switch (status) {
+    case AtendimentoStatus.AGENDADO:
+      return "default";
+    case AtendimentoStatus.EM_ATENDIMENTO:
+      return "danger";
+    case AtendimentoStatus.AGUARDANDO_RESULTADOS:
+      return "secondary";
+    case AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA:
+      return "warning";
+    case AtendimentoStatus.FINALIZADO:
+      return "success";
+    default:
+      return "primary";
+  }
+};

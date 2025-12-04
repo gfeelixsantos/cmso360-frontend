@@ -52,7 +52,7 @@ export interface Ticket {
   atendente: string;
   profissional: string;
   grupo: TicketGroups | string;
-  updatedAt?: string
+  updatedAt?: string;
 }
 
 export type TicketEmitedDto = {

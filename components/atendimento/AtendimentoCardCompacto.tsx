@@ -1,6 +1,7 @@
 import React, { useCallback } from "react";
 import { Card, Progress, Chip } from "@heroui/react";
 import { Clock, User, Ticket as Senha } from "lucide-react";
+import { Socket } from "socket.io-client";
 
 import { TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 import {
@@ -8,7 +9,6 @@ import {
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { Socket } from "socket.io-client";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -86,9 +86,13 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
   };
 
   const forceReturn = useCallback(() => {
-    executarAcao(atendimento.TICKET.id, TicketActionType.RETORNAR, atendimento.UNIDADEATENDIMENTO, socket);
-  },[])
-
+    executarAcao(
+      atendimento.TICKET.id,
+      TicketActionType.RETORNAR,
+      atendimento.UNIDADEATENDIMENTO,
+      socket,
+    );
+  }, []);
 
   return (
     <Card
@@ -175,7 +179,11 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
 };
 
 export default React.memo(AtendimentoCardCompacto);
-function executarAcao(id: number, RETORNAR: TicketActionType, UNIDADEATENDIMENTO: string, socket: any) {
+function executarAcao(
+  id: number,
+  RETORNAR: TicketActionType,
+  UNIDADEATENDIMENTO: string,
+  socket: any,
+) {
   throw new Error("Function not implemented.");
 }
-

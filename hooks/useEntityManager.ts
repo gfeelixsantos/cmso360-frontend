@@ -91,7 +91,7 @@ export function useEntityManager<T extends BaseEntity>(
 
       return;
     }
-    console.log("action recebida", action);
+
     socket.emit("ticket_action", {
       ticketId,
       action,

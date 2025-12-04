@@ -218,7 +218,20 @@ const Header = ({ unidade }: { unidade?: string }) => {
       <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
         <div className="flex items-center">
           <div className="text-center md:text-left">
-            <h1 className="text-xl md:text-2xl lg:text-3xl font-bold">CMSO</h1>
+            {unidade && (
+              <div className="flex items-center justify-start">
+                <MapPinIcon
+                  className="h-4 w-4 md:h-5 md:w-5 mr-2"
+                  style={{ color: COLOR_PALETTE.secondary }}
+                />
+                <span
+                  className="font-semibold text-sm md:text-base lg:text-lg"
+                  style={{ color: COLOR_PALETTE.light }}
+                >
+                  CMSO {unidade}
+                </span>
+              </div>
+            )}
             <p
               className="text-sm md:text-base"
               style={{ color: COLOR_PALETTE.secondary }}
@@ -229,22 +242,7 @@ const Header = ({ unidade }: { unidade?: string }) => {
         </div>
 
         <div className="text-center md:text-right flex-1">
-          {unidade && (
-            <div className="flex items-center justify-center md:justify-end mb-2">
-              <MapPinIcon
-                className="h-4 w-4 md:h-5 md:w-5 mr-2"
-                style={{ color: COLOR_PALETTE.secondary }}
-              />
-              <span
-                className="font-semibold text-sm md:text-base lg:text-lg"
-                style={{ color: COLOR_PALETTE.light }}
-              >
-                {unidade}
-              </span>
-            </div>
-          )}
-
-          <div className="flex flex-col xs:flex-row items-center justify-center md:justify-end gap-2 md:gap-3 lg:gap-4">
+          <div className="flex flex-col xs:flex-row items-end justify-end md:justify-end gap-1 md:gap-3 lg:gap-4">
             <div className="flex items-center">
               <CalendarIcon
                 className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2"
@@ -752,7 +750,7 @@ const TicketOptionsScreen = ({
             className="text-xs md:text-sm lg:text-base"
             style={{ color: COLOR_PALETTE.gray }}
           >
-            Escolha abaixo a opção que melhor atende sua necessidade
+            Escolha abaixo uma opção de atendimento
           </p>
         </motion.div>
 

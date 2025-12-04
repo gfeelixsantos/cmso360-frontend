@@ -1,5 +1,6 @@
 "use client";
-import React, { useState, useMemo, useCallback } from "react";
+
+import React, { useState, useCallback, lazy, Suspense } from "react";
 import {
   Chip,
   Drawer,
@@ -12,7 +13,7 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  ModalFooter,
+  Skeleton,
 } from "@heroui/react";
 import { VariableSizeList as List } from "react-window";
 import {
@@ -24,18 +25,16 @@ import {
   Clock,
   Calendar,
   Plus,
-  ExternalLink,
-  CheckCircle,
-  Clock as ClockIcon,
-  AlertCircle,
   Stethoscope,
-  User,
-  MapPin,
-  Calendar as CalendarIcon,
+  Eye,
 } from "lucide-react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
+
+// Importar o LazyModalContent
+const LazyModalContent = lazy(() => import("@/app/relatorio/LazyModalContent"));
 
 interface AgendamentosListProps {
   agendadosFiltrados: Scheduling[];
@@ -68,204 +67,48 @@ const StatusBadge: React.FC<{ status: string }> = React.memo(({ status }) => {
 
 StatusBadge.displayName = "StatusBadge";
 
-// Componente para o status do exame
-const ExameStatus: React.FC<{ status: string }> = React.memo(({ status }) => {
-  const statusConfig = {
-    FINALIZADO: { color: "success", icon: CheckCircle, label: "Finalizado" },
-    PENDENTE: { color: "warning", icon: ClockIcon, label: "Pendente" },
-    CANCELADO: { color: "danger", icon: AlertCircle, label: "Cancelado" },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig] || {
-    color: "default",
-    icon: FileText,
-    label: status,
-  };
-  const IconComponent = config.icon;
-
-  return (
-    <Chip
-      className="text-xs font-medium flex items-center gap-1"
-      color={config.color as "success" | "warning" | "danger" | "default"}
-      size="sm"
-      variant="flat"
-    >
-      <IconComponent size={12} />
-      {config.label}
-    </Chip>
-  );
-});
-
-ExameStatus.displayName = "ExameStatus";
-
-// Modal para exibir os exames
-const ExamesModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
-  exames: any[];
-  nomePaciente: string;
-}> = React.memo(({ isOpen, onClose, exames, nomePaciente }) => {
-  const examesFinalizados = exames.filter(
-    (exame) => exame.status === "FINALIZADO",
-  );
-  const examesPendentes = exames.filter((exame) => exame.status === "PENDENTE");
-
-  return (
-    <Modal isOpen={isOpen} size="xl" onClose={onClose}>
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
-          <div className="flex items-center gap-2">
-            <Stethoscope size={20} />
-            <h3 className="text-lg font-semibold">Exames do Paciente</h3>
-          </div>
-          <p className="text-sm text-gray-600">{nomePaciente}</p>
-        </ModalHeader>
-        <ModalBody>
-          <div className="space-y-4">
-            {/* Exames Pendentes */}
-            {examesPendentes.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-                  <ClockIcon className="text-amber-500" size={14} />
-                  Exames Pendentes ({examesPendentes.length})
-                </h4>
+// Skeleton para o modal de detalhes
+const ModalSkeleton = () => (
+  <div className="space-y-6">
+    <ModalHeader>
+      <div className="w-full space-y-3">
+        <Skeleton className="h-7 w-64 rounded-lg" />
+        <Skeleton className="h-4 w-48 rounded-lg" />
+      </div>
+    </ModalHeader>
+    <ModalBody>
+      <div className="space-y-6">
+        {/* Informações Gerais Skeleton */}
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-48 rounded-lg" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="space-y-3">
+                <Skeleton className="h-5 w-32 rounded-lg" />
                 <div className="space-y-2">
-                  {examesPendentes.map((exame, index) => (
-                    <ExameCard
-                      key={exame.sequencialResultadoExame || index}
-                      exame={exame}
-                    />
+                  {[...Array(4)].map((_, j) => (
+                    <div key={j} className="space-y-1">
+                      <Skeleton className="h-3 w-24 rounded-lg" />
+                      <Skeleton className="h-4 w-full rounded-lg" />
+                    </div>
                   ))}
                 </div>
               </div>
-            )}
-
-            {/* Exames Finalizados */}
-            {examesFinalizados.length > 0 && (
-              <div>
-                <h4 className="text-sm font-medium text-gray-900 mb-2 flex items-center gap-2">
-                  <CheckCircle className="text-green-500" size={14} />
-                  Exames Finalizados ({examesFinalizados.length})
-                </h4>
-                <div className="space-y-2">
-                  {examesFinalizados.map((exame, index) => (
-                    <ExameCard
-                      key={exame.sequencialResultadoExame || index}
-                      exame={exame}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Caso não haja exames */}
-            {exames.length === 0 && (
-              <div className="text-center py-6 text-gray-500">
-                <Stethoscope className="mx-auto mb-3 text-gray-300" size={32} />
-                <p className="text-sm">Nenhum exame encontrado</p>
-              </div>
-            )}
+            ))}
           </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button color="primary" onPress={onClose}>
-            Fechar
-          </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
-  );
-});
-
-ExamesModal.displayName = "ExamesModal";
-
-// Card individual compacto para cada exame
-const ExameCard: React.FC<{ exame: any }> = React.memo(({ exame }) => (
-  <div className="flex items-start justify-between p-3 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-    <div className="flex-1 min-w-0">
-      {/* Nome do exame e status na mesma linha */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-sm font-medium text-gray-900 leading-tight flex-1">
-          {exame.nomeExame}
-        </h4>
-        <div className="flex-shrink-0">
-          <ExameStatus status={exame.status} />
         </div>
       </div>
-
-      {/* Informações compactas em linha */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-gray-600">
-        {/* Código do exame (se aplicável) */}
-        {exame.codigoExame &&
-          exame.codigoExame !== "clinico" &&
-          exame.codigoExame !== "triagem" && (
-            <div className="flex items-center gap-1">
-              <FileText className="text-gray-400" size={10} />
-              <span>{exame.codigoExame}</span>
-            </div>
-          )}
-
-        {/* Data do exame */}
-        {exame.dataExame && (
-          <div className="flex items-center gap-1">
-            <CalendarIcon className="text-gray-400" size={10} />
-            <span>{new Date(exame.dataExame).toLocaleDateString("pt-BR")}</span>
-          </div>
-        )}
-
-        {/* Profissional */}
-        {exame.profissional && (
-          <div className="flex items-center gap-1">
-            <User className="text-gray-400" size={10} />
-            <span className="truncate max-w-[120px]">{exame.profissional}</span>
-          </div>
-        )}
-
-        {/* Sala */}
-        {exame.sala && (
-          <div className="flex items-center gap-1">
-            <MapPin className="text-gray-400" size={10} />
-            <span>{exame.sala}</span>
-          </div>
-        )}
-      </div>
-
-      {/* Preparação (se houver) */}
-      {exame.preparacao && (
-        <div className="mt-2 text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
-          <strong>Preparação:</strong> {exame.preparacao}
-        </div>
-      )}
-    </div>
-
-    {/* Botão de resultado alinhado à direita */}
-    {exame.url && (
-      <div className="flex-shrink-0 ml-3">
-        <Button
-          as="a"
-          className="text-xs min-w-0 px-2"
-          color="primary"
-          href={exame.url}
-          rel="noopener noreferrer"
-          size="sm"
-          startContent={<ExternalLink size={10} />}
-          target="_blank"
-          variant="flat"
-        >
-          Resultado
-        </Button>
-      </div>
-    )}
+    </ModalBody>
   </div>
-));
+);
 
-ExameCard.displayName = "ExameCard";
-
-// Badge para mostrar resumo dos exames no card principal
+// Badge para mostrar resumo dos exames no card principal - AGORA ABRE O MODAL COMPLETO
 const ExamesBadge: React.FC<{
   exames: any[];
-  onOpen: (e: React.MouseEvent) => void;
-}> = React.memo(({ exames, onOpen }) => {
+  nomePaciente: string;
+  agendamento: Scheduling;
+  onOpenDetails: (agendamento: Scheduling) => void;
+}> = React.memo(({ exames, nomePaciente, agendamento, onOpenDetails }) => {
   if (!exames || exames.length === 0) return null;
 
   const examesFinalizados = exames.filter(
@@ -275,6 +118,11 @@ const ExamesBadge: React.FC<{
     (exame) => exame.status === "PENDENTE",
   ).length;
 
+  const handleOpenModal = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onOpenDetails(agendamento);
+  };
+
   return (
     <div className="mt-2">
       <Button
@@ -282,19 +130,13 @@ const ExamesBadge: React.FC<{
         size="sm"
         startContent={<Stethoscope size={14} />}
         variant="flat"
-        onPress={() => {
-          const syntheticEvent = {
-            stopPropagation: () => {},
-          } as React.MouseEvent;
-
-          onOpen(syntheticEvent);
-        }}
+        onClick={handleOpenModal}
       >
         <span className="flex-1 text-left">
           Exames: {examesFinalizados} finalizado(s), {examesPendentes}{" "}
           pendente(s)
         </span>
-        <FileText className="ml-auto" size={12} />
+        <Eye className="ml-auto" size={12} />
       </Button>
     </div>
   );
@@ -302,115 +144,151 @@ const ExamesBadge: React.FC<{
 
 ExamesBadge.displayName = "ExamesBadge";
 
-// Componente memoizado para cada item (mantido igual)
+// Modal de Detalhes Completo
+const DetalhesModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  atendimento: Scheduling | null;
+  loading: boolean;
+}> = ({ isOpen, onClose, atendimento, loading }) => {
+  return (
+    <Modal
+      aria-label="Modal de detalhes do atendimento"
+      classNames={{
+        base: "max-h-[90vh]",
+        wrapper: "z-[1000]",
+      }}
+      isOpen={isOpen}
+      scrollBehavior="inside"
+      size="5xl"
+      onClose={onClose}
+    >
+      <ModalContent>
+        {loading || !atendimento ? (
+          <ModalBody className="py-8">
+            <ModalSkeleton />
+          </ModalBody>
+        ) : (
+          <Suspense fallback={<ModalSkeleton />}>
+            <LazyModalContent
+              atendimento={atendimento}
+              onClose={onClose}
+              onUpdateScheduling={(updated: any) => {
+                // Aqui você pode atualizar o estado se necessário
+                console.log("Atendimento atualizado:", updated);
+              }}
+            />
+          </Suspense>
+        )}
+      </ModalContent>
+    </Modal>
+  );
+};
+
+// Componente memoizado para cada item
 const AgendamentoItem = React.memo(
   ({
     agendamento,
     style,
     onSelect,
+    onOpenDetails,
+    loadingDetailsId,
   }: {
     agendamento: Scheduling;
     style: React.CSSProperties;
     onSelect: (agendamento: Scheduling) => void;
+    onOpenDetails: (agendamento: Scheduling) => void;
+    loadingDetailsId: string | null;
   }) => {
-    const [showExamesModal, setShowExamesModal] = useState(false);
-
     const handleClick = useCallback(() => {
       onSelect(agendamento);
     }, [onSelect, agendamento]);
 
-    const handleOpenExames = useCallback((e: React.MouseEvent) => {
-      e.stopPropagation();
-      setShowExamesModal(true);
-    }, []);
-
-    const handleCloseExames = useCallback(() => {
-      setShowExamesModal(false);
-    }, []);
+    const handleOpenDetails = useCallback(
+      (e: React.MouseEvent) => {
+        e.stopPropagation();
+        onOpenDetails(agendamento);
+      },
+      [agendamento, onOpenDetails],
+    );
 
     return (
-      <>
-        <div
-          className="rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer p-4 my-2"
-          style={style}
-          onClick={handleClick}
-        >
-          <div className="flex justify-between items-start mb-3">
-            <div className="flex-1 min-w-0">
+      <div
+        className="rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer p-4 my-2"
+        style={style}
+        onClick={handleClick}
+      >
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between">
               <h3 className="text-base font-semibold text-gray-900 truncate">
                 {agendamento.NOME}
               </h3>
-              <div className="flex items-center mt-1 text-sm text-gray-500">
-                <Clock className="mr-2" size={14} />
-                <span>
-                  {agendamento.HORARIO != "" ? agendamento.HORARIO : "N/A"}
-                </span>
-              </div>
+              <Button
+                isIconOnly
+                aria-label={`Ver detalhes de ${agendamento.NOME}`}
+                className="text-blue-600 hover:text-blue-700"
+                isLoading={loadingDetailsId === agendamento._id}
+                size="sm"
+                variant="light"
+                onClick={handleOpenDetails}
+              >
+                <Eye size={16} />
+              </Button>
             </div>
-            <div className="ml-3 flex-shrink-0">
-              <StatusBadge status={agendamento.ATENDIMENTOSTATUS} />
+            <div className="flex items-center mt-1 text-sm text-gray-500">
+              <Clock className="mr-2" size={14} />
+              <span>
+                {agendamento.HORARIO != "" ? agendamento.HORARIO : "N/A"}
+              </span>
             </div>
           </div>
-
-          <div className="text-sm">
-            <div className="flex items-center text-gray-700">
-              <Building2
-                className="text-gray-500 mr-3 flex-shrink-0"
-                size={16}
-              />
-              <span className="truncate">{agendamento.NOMEEMPRESA}</span>
-            </div>
-            <div className="flex items-center text-gray-700">
-              <Briefcase
-                className="text-gray-500 mr-3 flex-shrink-0"
-                size={16}
-              />
-              <span className="truncate">{agendamento.NOMECARGO}</span>
-            </div>
-            <div className="flex items-center text-gray-700">
-              <FileText
-                className="text-gray-500 mr-3 flex-shrink-0"
-                size={16}
-              />
-              <span className="truncate">{agendamento.TIPOEXAMENOME}</span>
-            </div>
-
-            {/* Observações */}
-            {agendamento.OBSERVACOES && (
-              <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 mt-2">
-                <p className="text-xs text-amber-700">
-                  <strong>Observações:</strong> {agendamento.OBSERVACOES}
-                </p>
-              </div>
-            )}
-
-            {/* Badge dos Exames */}
-            {agendamento.EXAMES && agendamento.EXAMES.length > 0 && (
-              <ExamesBadge
-                exames={agendamento.EXAMES}
-                onOpen={handleOpenExames}
-              />
-            )}
+          <div className="ml-3 flex-shrink-0">
+            <StatusBadge status={agendamento.ATENDIMENTOSTATUS} />
           </div>
         </div>
 
-        {/* Modal de Exames */}
-        {agendamento.EXAMES && (
-          <ExamesModal
-            exames={agendamento.EXAMES}
-            isOpen={showExamesModal}
-            nomePaciente={agendamento.NOME}
-            onClose={handleCloseExames}
-          />
-        )}
-      </>
+        <div className="text-sm">
+          <div className="flex items-center text-gray-700">
+            <Building2 className="text-gray-500 mr-3 flex-shrink-0" size={16} />
+            <span className="truncate">{agendamento.NOMEEMPRESA}</span>
+          </div>
+          <div className="flex items-center text-gray-700">
+            <Briefcase className="text-gray-500 mr-3 flex-shrink-0" size={16} />
+            <span className="truncate">{agendamento.NOMECARGO}</span>
+          </div>
+          <div className="flex items-center text-gray-700">
+            <FileText className="text-gray-500 mr-3 flex-shrink-0" size={16} />
+            <span className="truncate">{agendamento.TIPOEXAMENOME}</span>
+          </div>
+
+          {/* Observações */}
+          {agendamento.OBSERVACOES && (
+            <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 mt-2">
+              <p className="text-xs text-amber-700">
+                <strong>Observações:</strong> {agendamento.OBSERVACOES}
+              </p>
+            </div>
+          )}
+
+          {/* Badge dos Exames - AGORA ABRE O MODAL COMPLETO */}
+          {agendamento.EXAMES && agendamento.EXAMES.length > 0 && (
+            <ExamesBadge
+              agendamento={agendamento}
+              exames={agendamento.EXAMES}
+              nomePaciente={agendamento.NOME}
+              onOpenDetails={onOpenDetails}
+            />
+          )}
+        </div>
+      </div>
     );
   },
 );
 
 AgendamentoItem.displayName = "AgendamentoItem";
 
-// Restante do componente mantido igual...
+// Componente principal
 const AgendamentosList: React.FC<AgendamentosListProps> = ({
   agendadosFiltrados,
   conectado,
@@ -418,66 +296,31 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [buscaSenha, setBuscaSenha] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [selectedAtendimento, setSelectedAtendimento] =
+    useState<Scheduling | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
+
   const listRef = React.useRef<List>(null);
 
-  // Processamento único dos dados
-  const { agendamentosOrdenados, agendamentosUnicos } = useMemo(() => {
-    // Remove duplicados
-    const uniqueMap = new Map();
-    const unicos: Scheduling[] = [];
-
-    agendadosFiltrados.forEach((item) => {
-      if (!uniqueMap.has(item.SCHEDULINGCODE)) {
-        uniqueMap.set(item.SCHEDULINGCODE, true);
-        unicos.push(item);
-      }
-    });
-
-    // Filtra pelo input
-    const buscaLower = buscaSenha.toLowerCase();
-    const filtrados = buscaSenha
-      ? unicos.filter(
-          (agendamento) =>
-            (agendamento.NOME &&
-              agendamento.NOME.toLowerCase().includes(buscaLower)) ||
-            (agendamento.NOMEEMPRESA &&
-              agendamento.NOMEEMPRESA.toLowerCase().includes(buscaLower)) ||
-            (agendamento.NOMECARGO &&
-              agendamento.NOMECARGO.toLowerCase().includes(buscaLower)),
-        )
-      : unicos;
-
-    // Ordena por ordem alfabética (por nome)
-    const ordenados = [...filtrados].sort((a, b) => {
-      const nomeA = a.NOME?.toLowerCase() || "";
-      const nomeB = b.NOME?.toLowerCase() || "";
-
-      return nomeA.localeCompare(nomeB);
-    });
-
-    return { agendamentosOrdenados: ordenados, agendamentosUnicos: unicos };
-  }, [agendadosFiltrados, buscaSenha]);
-
-  // Calcular altura dinâmica para cada item (agora fixa com espaço para o badge)
+  // Calcular altura dinâmica para cada item
   const getItemSize = useCallback(
     (index: number) => {
-      const agendamento = agendamentosOrdenados[index];
-      // Altura base fixa
+      const agendamento = agendadosFiltrados[index];
       let height = 180;
 
-      // Se tiver observação, adiciona altura extra fixa
       if (agendamento.OBSERVACOES) {
-        height += 50; // Altura fixa para observações
+        height += 50;
       }
 
-      // Se tiver exames, adiciona altura fixa para o badge
       if (agendamento.EXAMES && agendamento.EXAMES.length > 0) {
-        height += 40; // Altura fixa para o badge de exames
+        height += 40;
       }
 
       return height;
     },
-    [agendamentosOrdenados],
+    [agendadosFiltrados],
   );
 
   // Resetar as alturas dos itens quando os dados mudarem
@@ -485,10 +328,36 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
     if (listRef.current) {
       listRef.current.resetAfterIndex(0);
     }
-  }, [agendamentosOrdenados]);
+  }, [agendadosFiltrados]);
 
   const handleItemSelect = useCallback((agendamento: Scheduling) => {
     setIsOpen(false);
+  }, []);
+
+  const handleOpenDetails = useCallback(async (agendamento: Scheduling) => {
+    setSelectedAtendimento(agendamento);
+    setLoadingDetailsId(agendamento._id);
+    setModalLoading(true);
+    setModalOpen(true);
+
+    try {
+      // Buscar detalhes completos do atendimento
+      const response = await fetch(
+        `${NEST_RELATORIO_FUNCIONARIO}${agendamento._id}`,
+      );
+
+      if (!response.ok) {
+        throw new Error(`Erro: ${response.statusText}`);
+      }
+      const detalhes = await response.json();
+
+      setSelectedAtendimento(detalhes);
+    } catch (error) {
+      console.error("Erro ao carregar detalhes:", error);
+    } finally {
+      setModalLoading(false);
+      setLoadingDetailsId(null);
+    }
   }, []);
 
   const handleSearchChange = useCallback(
@@ -505,13 +374,21 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
   const renderRow = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => (
       <AgendamentoItem
-        agendamento={agendamentosOrdenados[index]}
+        agendamento={agendadosFiltrados[index]}
+        loadingDetailsId={loadingDetailsId}
         style={style}
+        onOpenDetails={handleOpenDetails}
         onSelect={handleItemSelect}
       />
     ),
-    [agendamentosOrdenados, handleItemSelect],
+    [agendadosFiltrados, handleItemSelect, handleOpenDetails, loadingDetailsId],
   );
+
+  const handleCloseModal = useCallback(() => {
+    setSelectedAtendimento(null);
+    setLoadingDetailsId(null);
+    setModalOpen(false);
+  }, []);
 
   return (
     <>
@@ -526,13 +403,13 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
       </Button>
 
       <Drawer
-        disableAnimation={false} // (opcional)
-        hideCloseButton={true} // Remove botão de fechar
-        isDismissable={false} // Não fecha ao clicar fora
+        disableAnimation={false}
+        hideCloseButton={true}
+        isDismissable={false}
         isOpen={isOpen}
         placement="left"
         size="md"
-        onOpenChange={() => {}} // Ignora eventos automáticos de fechamento
+        onOpenChange={() => {}}
       >
         <DrawerContent className="max-w-lg mx-auto">
           <DrawerHeader className="flex flex-col border-b border-gray-200 px-5 py-4 bg-gray-50 rounded-t-xl">
@@ -543,11 +420,11 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
             </div>
             <p className="text-sm text-gray-600 mt-2">
               {
-                agendamentosOrdenados.filter(
+                agendadosFiltrados.filter(
                   (a) => a.UNIDADEATENDIMENTO === unidadeSelecionada,
                 ).length
               }{" "}
-              em {unidadeSelecionada} de {agendamentosOrdenados.length}{" "}
+              em {unidadeSelecionada} de {agendadosFiltrados.length}{" "}
               agendamento(s)
             </p>
           </DrawerHeader>
@@ -584,12 +461,12 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
                   )}
                 </div>
 
-                {agendamentosOrdenados.length > 0 ? (
+                {agendadosFiltrados.length > 0 ? (
                   <div className="bg-white rounded-xl p-1 shadow-sm">
                     <List
                       ref={listRef}
                       height={520}
-                      itemCount={agendamentosOrdenados.length}
+                      itemCount={agendadosFiltrados.length}
                       itemSize={getItemSize}
                       width="100%"
                     >
@@ -636,6 +513,14 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
           </DrawerFooter>
         </DrawerContent>
       </Drawer>
+
+      {/* Modal de Detalhes Completo */}
+      <DetalhesModal
+        atendimento={selectedAtendimento}
+        isOpen={modalOpen}
+        loading={modalLoading}
+        onClose={handleCloseModal}
+      />
     </>
   );
 };
