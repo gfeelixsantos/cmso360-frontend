@@ -200,8 +200,8 @@ const AtendimentoModalExames = ({
           type: "success",
           title: "Exame Concluído",
           message: todosExamesConcluidos
-            ? "Concluído, pode dispensar/liberar o funcionário."
-            : "Funcionário deve aguardar demais exames.",
+            ? "Concluído, pode LIBERAR o funcionário."
+            : "Funcionário deve AGUARDAR demais exames.",
           showCancel: false,
           isLoading: false,
           onConfirm: () => {

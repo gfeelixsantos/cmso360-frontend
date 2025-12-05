@@ -29,7 +29,7 @@ import { getCurrentUser, logout, urlBase64ToUint8Array } from "@/lib/utils";
 import EmptyState from "@/components/recepcao/main/EmptyState";
 import MainContent from "@/components/recepcao/main/MainContent";
 import AtendimentoModal from "@/components/recepcao/main/atendimento/AtendimentoModal";
-import { SidebarRecepcao } from "@/components/recepcao/Sidebar";
+import { SidebarRecepcao } from "@/components/shared/Sidebar";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {

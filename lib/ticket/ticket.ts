@@ -49,6 +49,7 @@ export interface Ticket {
   type: WebsocketType.TICKET;
   unidade: string;
   sala: string;
+  exame: string | null;
   atendente: string;
   profissional: string;
   grupo: TicketGroups | string;

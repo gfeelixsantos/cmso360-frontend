@@ -100,6 +100,7 @@ const TicketActions: React.FC<{
       socket,
       salaSelecionada,
       currentUser?.nome,
+      
     );
   };
 

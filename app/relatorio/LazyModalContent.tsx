@@ -168,69 +168,6 @@ const InformacoesGerais: React.FC<{
   return (
     <div className="space-y-6">
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-lg border-b pb-2 text-left">
-            Informações do Atendimento
-          </h3>
-          <div className="flex items-center gap-2">
-            {editMode.isEditing ? (
-              <>
-                <Tooltip content="Cancelar edição">
-                  <Button
-                    isIconOnly
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    color="danger"
-                    size="sm"
-                    variant="light"
-                    onPress={handleEditToggle}
-                  >
-                    <X size={16} />
-                  </Button>
-                </Tooltip>
-                <Tooltip content="Salvar alterações">
-                  <Button
-                    isIconOnly
-                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                    color="success"
-                    isLoading={isSaving}
-                    size="sm"
-                    variant="light"
-                    onPress={handleSave}
-                  >
-                    <Save size={16} />
-                  </Button>
-                </Tooltip>
-              </>
-            ) : (
-              <>
-                <Tooltip content="Sincronizar dados">
-                  <Button
-                    isIconOnly
-                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
-                    color="secondary"
-                    size="sm"
-                    variant="light"
-                    onPress={() => console.log("Sincronizar dados")}
-                  >
-                    <RefreshCw size={16} />
-                  </Button>
-                </Tooltip>
-                <Tooltip content="Editar dados do paciente">
-                  <Button
-                    isIconOnly
-                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                    color="primary"
-                    size="sm"
-                    variant="light"
-                    onPress={handleEditToggle}
-                  >
-                    <Edit size={16} />
-                  </Button>
-                </Tooltip>
-              </>
-            )}
-          </div>
-        </div>
 
         {/* Informações principais alinhadas à esquerda */}
         <div className="space-y-6 text-left">
@@ -764,18 +701,27 @@ const ExamesTable: React.FC<{
           <h3 className="text-lg font-semibold text-gray-900">
             Exames Realizados
           </h3>
-          <Tooltip content="Visualizar prontuário completo">
-            <Button
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-              color="primary"
-              size="sm"
-              startContent={<User size={16} />}
-              variant="light"
-              onPress={handleViewMedicalRecord}
-            >
-              Prontuário
-            </Button>
-          </Tooltip>
+                {/* Estatísticas */}
+      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full" />
+          <span>
+            Finalizados:{" "}
+            {localExames.filter((e) => e.status === "FINALIZADO").length}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+          <span>
+            Pendentes:{" "}
+            {localExames.filter((e) => e.status === "PENDENTE").length}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 bg-blue-500 rounded-full" />
+          <span>Com resultado: {localExames.filter((e) => e.url).length}</span>
+        </div>
+      </div>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
@@ -788,66 +734,6 @@ const ExamesTable: React.FC<{
           />
         </div>
       </div>
-
-      {/* Upload de Documentos */}
-      {/* <div className="bg-gray-50 p-4 rounded-lg border">
-        <h4 className="font-medium text-gray-900 mb-3">Upload de Documentos</h4>
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div>
-            <input
-              id="file-upload"
-              type="file"
-              multiple
-              accept=".pdf,image/*"
-              onChange={handleFileUpload}
-              className="hidden"
-              disabled={isUploading}
-            />
-            <label
-              htmlFor="file-upload"
-              className={`cursor-pointer inline-flex items-center px-4 py-2 rounded-lg border transition-colors ${
-                isUploading 
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed border-gray-300' 
-                  : 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500'
-              }`}
-            >
-              <Upload size={16} className="mr-2" />
-              Selecionar Documentos {filesUpload.length > 0 ? `(${filesUpload.length})` : ""}
-            </label>
-          </div>
-          
-          {filesUpload.length > 0 && (
-            <Button
-              color="success"
-              onPress={handleSubmitFiles}
-              isLoading={isUploading}
-              className="text-white"
-            >
-              Enviar Arquivos
-            </Button>
-          )}
-        </div>
-
-        {filesUpload.length > 0 && (
-          <div className="mt-3 space-y-2">
-            <p className="text-sm text-gray-600">Arquivos selecionados:</p>
-            <div className="flex flex-wrap gap-2">
-              {filesUpload.map(file => (
-                <Chip
-                  key={file.name}
-                  size="sm"
-                  onClose={() => handleRemoveFile(file.name)}
-                  variant="flat"
-                  color="primary"
-                  className="text-xs"
-                >
-                  {file.name}
-                </Chip>
-              ))}
-            </div>
-          </div>
-        )}
-      </div> */}
 
       {/* Tabela de Exames */}
       <div className="border border-gray-200 rounded-lg overflow-hidden">
@@ -944,7 +830,7 @@ const ExamesTable: React.FC<{
                   <TableCell>
                     <div className="flex items-center justify-center gap-2 flex-wrap">
                       {/* Botão Reemitir */}
-                      <Button
+                      {/* <Button
                         className="text-purple-600 hover:text-purple-700 text-xs"
                         color="secondary"
                         isLoading={isReemitindo}
@@ -954,7 +840,7 @@ const ExamesTable: React.FC<{
                         onPress={() => handleReemitirExame(exame)}
                       >
                         {isReemitindo ? "Reemitindo..." : "Reemitir"}
-                      </Button>
+                      </Button> */}
 
                       {exame.url && (
                         <Tooltip content="Visualizar">
@@ -1043,27 +929,64 @@ const ExamesTable: React.FC<{
           </TableBody>
         </Table>
       </div>
+            {/* Upload de Documentos */}
+      <div className="bg-gray-50 p-4 rounded-lg border">
+        <h4 className="font-medium text-gray-900 mb-3">Upload de Documentos</h4>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div>
+            <input
+              id="file-upload"
+              type="file"
+              multiple
+              accept=".pdf,image/*"
+              onChange={handleFileUpload}
+              className="hidden"
+              disabled={isUploading}
+            />
+            <label
+              htmlFor="file-upload"
+              className={`cursor-pointer inline-flex items-center px-4 py-2 rounded-lg border transition-colors ${
+                isUploading 
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed border-gray-300' 
+                  : 'bg-blue-500 text-white hover:bg-blue-600 border-blue-500'
+              }`}
+            >
+              <Upload size={16} className="mr-2" />
+              Selecionar Documentos {filesUpload.length > 0 ? `(${filesUpload.length})` : ""}
+            </label>
+          </div>
+          
+          {filesUpload.length > 0 && (
+            <Button
+              color="success"
+              onPress={handleSubmitFiles}
+              isLoading={isUploading}
+              className="text-white"
+            >
+              Enviar Arquivos
+            </Button>
+          )}
+        </div>
 
-      {/* Estatísticas */}
-      <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-green-500 rounded-full" />
-          <span>
-            Finalizados:{" "}
-            {localExames.filter((e) => e.status === "FINALIZADO").length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-yellow-500 rounded-full" />
-          <span>
-            Pendentes:{" "}
-            {localExames.filter((e) => e.status === "PENDENTE").length}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 bg-blue-500 rounded-full" />
-          <span>Com resultado: {localExames.filter((e) => e.url).length}</span>
-        </div>
+        {filesUpload.length > 0 && (
+          <div className="mt-3 space-y-2">
+            <p className="text-sm text-gray-600">Arquivos selecionados:</p>
+            <div className="flex flex-wrap gap-2">
+              {filesUpload.map(file => (
+                <Chip
+                  key={file.name}
+                  size="sm"
+                  onClose={() => handleRemoveFile(file.name)}
+                  variant="flat"
+                  color="primary"
+                  className="text-xs"
+                >
+                  {file.name}
+                </Chip>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1132,7 +1055,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
               <Button
                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                 color="primary"
-                size="sm"
+                size="md"
                 startContent={<User size={16} />}
                 variant="light"
                 onPress={handleViewMedicalRecord}
@@ -1140,6 +1063,66 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                 Visualizar Prontuário
               </Button>
             </Tooltip>
+                    <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {editMode.isEditing ? (
+              <>
+                <Tooltip content="Cancelar edição">
+                  <Button
+                    isIconOnly
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                    color="danger"
+                    size="md"
+                    variant="light"
+                    // onPress={handleEditToggle}
+                  >
+                    <X size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Salvar alterações">
+                  <Button
+                    isIconOnly
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    color="success"
+                    // isLoading={isSaving}
+                    size="md"
+                    variant="light"
+                    // onPress={handleSave}
+                  >
+                    <Save size={16} />
+                  </Button>
+                </Tooltip>
+              </>
+            ) : (
+              <>
+                <Tooltip content="Sincronizar dados">
+                  <Button
+                    isIconOnly
+                    className="text-purple-600 hover:text-purple-700 hover:bg-purple-50"
+                    color="secondary"
+                    size="sm"
+                    variant="light"
+                    onPress={() => console.log("Sincronizar dados")}
+                  >
+                    <RefreshCw size={16} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content="Editar dados do paciente">
+                  <Button
+                    isIconOnly
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    color="primary"
+                    size="sm"
+                    variant="light"
+                    // onPress={handleEditToggle}
+                  >
+                    <Edit size={16} />
+                  </Button>
+                </Tooltip>
+              </>
+            )}
+          </div>
+        </div>
           </div>
         </div>
       </ModalHeader>

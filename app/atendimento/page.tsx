@@ -24,7 +24,7 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
 import EmptyState from "@/components/recepcao/main/EmptyState";
-import { SidebarRecepcao } from "@/components/recepcao/Sidebar";
+import { SidebarRecepcao } from "@/components/shared/Sidebar";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
@@ -265,7 +265,6 @@ const AtendimentoPage: React.FC = () => {
   // Filtragem de atendimentos
   // ---------------------------------------------------------
   useEffect(() => {
-    console.log("codigos de atendimento", codigosDeAtendimento)
     if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
       setAgendamentos([]);
 
@@ -421,8 +420,6 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
-      console.log("opeção", operation);
-      console.log("schedule", schedule);
 
       switch (operation) {
         case MongoOperationTypes.INSERT:
@@ -555,7 +552,6 @@ const AtendimentoPage: React.FC = () => {
             statusSelecionado={statusSelecionado}
             unidadeSelecionada={unidadeSelecionada}
             onHandleExameSelecionado={(ex) => {
-              console.log("pagina pai", ex)
               const setList = new Set(
                 EXAMES_LIST[ex].map((e) => e.codigos).flat(),
               );

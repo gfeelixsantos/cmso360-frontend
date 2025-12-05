@@ -32,6 +32,7 @@ import {
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
+import { getStatusColor } from "@/lib/utils";
 
 // Importar o LazyModalContent
 const LazyModalContent = lazy(() => import("@/app/relatorio/LazyModalContent"));
@@ -43,24 +44,14 @@ interface AgendamentosListProps {
 }
 
 const StatusBadge: React.FC<{ status: string }> = React.memo(({ status }) => {
-  const statusConfig = {
-    EM_ATENDIMENTO: {
-      color: "danger",
-      label: AtendimentoStatus.EM_ATENDIMENTO,
-    },
-    AGENDADO: { color: "primary", label: AtendimentoStatus.AGENDADO },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig] || "";
-
   return (
     <Chip
       className="text-xs font-medium"
-      color={config.color as "success" | "warning" | "danger" | "primary"}
+      color={getStatusColor(status)}
       size="sm"
       variant="flat"
     >
-      {config.label}
+      {status.replace(/_/g, " ")}
     </Chip>
   );
 });
@@ -125,19 +116,10 @@ const ExamesBadge: React.FC<{
 
   return (
     <div className="mt-2">
-      <Button
-        className="w-full justify-start text-xs h-8 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100"
-        size="sm"
-        startContent={<Stethoscope size={14} />}
-        variant="flat"
-        onClick={handleOpenModal}
-      >
-        <span className="flex-1 text-left">
+      <span className="flex-1 text-left">
           Exames: {examesFinalizados} finalizado(s), {examesPendentes}{" "}
           pendente(s)
         </span>
-        <Eye className="ml-auto" size={12} />
-      </Button>
     </div>
   );
 });
@@ -216,7 +198,7 @@ const AgendamentoItem = React.memo(
       <div
         className="rounded-xl bg-white border border-gray-200 hover:border-blue-300 hover:shadow-sm transition-all cursor-pointer p-4 my-2"
         style={style}
-        onClick={handleClick}
+        onClick={handleOpenDetails}
       >
         <div className="flex justify-between items-start mb-3">
           <div className="flex-1 min-w-0">
@@ -224,23 +206,15 @@ const AgendamentoItem = React.memo(
               <h3 className="text-base font-semibold text-gray-900 truncate">
                 {agendamento.NOME}
               </h3>
-              <Button
-                isIconOnly
-                aria-label={`Ver detalhes de ${agendamento.NOME}`}
-                className="text-blue-600 hover:text-blue-700"
-                isLoading={loadingDetailsId === agendamento._id}
-                size="sm"
-                variant="light"
-                onClick={handleOpenDetails}
-              >
-                <Eye size={16} />
-              </Button>
             </div>
             <div className="flex items-center mt-1 text-sm text-gray-500">
               <Clock className="mr-2" size={14} />
               <span>
                 {agendamento.HORARIO != "" ? agendamento.HORARIO : "N/A"}
               </span>
+              <span className="truncate ml-4">
+                {agendamento.TIPOEXAMENOME}
+                </span>
             </div>
           </div>
           <div className="ml-3 flex-shrink-0">
@@ -250,21 +224,15 @@ const AgendamentoItem = React.memo(
 
         <div className="text-sm">
           <div className="flex items-center text-gray-700">
-            <Building2 className="text-gray-500 mr-3 flex-shrink-0" size={16} />
             <span className="truncate">{agendamento.NOMEEMPRESA}</span>
           </div>
           <div className="flex items-center text-gray-700">
-            <Briefcase className="text-gray-500 mr-3 flex-shrink-0" size={16} />
             <span className="truncate">{agendamento.NOMECARGO}</span>
-          </div>
-          <div className="flex items-center text-gray-700">
-            <FileText className="text-gray-500 mr-3 flex-shrink-0" size={16} />
-            <span className="truncate">{agendamento.TIPOEXAMENOME}</span>
           </div>
 
           {/* Observações */}
           {agendamento.OBSERVACOES && (
-            <div className="p-2.5 bg-gray-50 rounded-lg border border-gray-200 mt-2">
+            <div className="p-2.5 bg-amber-50 rounded-lg border border-amber-200 mt-2">
               <p className="text-xs text-amber-700">
                 <strong>Observações:</strong> {agendamento.OBSERVACOES}
               </p>
@@ -405,15 +373,15 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
       <Drawer
         disableAnimation={false}
         hideCloseButton={true}
-        isDismissable={false}
+        isDismissable={true}
         isOpen={isOpen}
         placement="left"
         size="md"
-        onOpenChange={() => {}}
       >
         <DrawerContent className="max-w-lg mx-auto">
           <DrawerHeader className="flex flex-col border-b border-gray-200 px-5 py-4 bg-gray-50 rounded-t-xl">
-            <div className="flex items-center justify-between w-full">
+            <div className="flex items-center justify-start gap-4 w-full">
+              <Calendar className="w-5 h-5" />
               <h2 className="text-xl font-bold text-gray-900">
                 Lista de Agendamentos
               </h2>

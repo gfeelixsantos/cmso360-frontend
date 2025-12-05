@@ -90,7 +90,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
     >
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Coluna principal - senhas aguardando */}
-        <div className="flex-1 space-y-6">
+        <div className="space-y-6 w-[720]">
           <h2 className="sr-only">Senhas aguardando atendimento</h2>
           
           {senhasPreferenciais.length > 0 && (
@@ -146,7 +146,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
         {senhasEmAtendimento.length > 0 && (
           <div className="lg:w-96 space-y-4">
             <div 
-              className="bg-white p-4 rounded-lg shadow-sm border border-gray-200"
+              className="p-4 shadow-sm"
               role="complementary"
               aria-label={`Pacientes em atendimento (${senhasEmAtendimento.length})`}
             >

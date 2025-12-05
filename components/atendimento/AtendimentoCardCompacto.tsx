@@ -159,10 +159,14 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
           </div>
 
           <div className="flex items-center gap-3">
+
             <div className="flex items-center gap-1">
               <User className="h-3 w-3" />
               <span className="truncate max-w-20">
-                {atendimento.TICKET.atendente?.split(" ")[0] || "N/A"}
+                {atendimento.TICKET.profissional?.split(" ")[0] || "N/A" }
+              </span>
+              <span>
+              {atendimento.TICKET.exame} 
               </span>
             </div>
 

@@ -11,6 +11,8 @@ import {
   Settings,
   Volume2,
   VolumeX,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 import {
@@ -108,7 +110,7 @@ const examesColors: Record<string, { primary: string; text: string }> = {
   ECG: { primary: "#4E211E", text: "#ffffff" },
   EEG: { primary: "#17843A", text: "#ffffff" },
   Espirometria: { primary: "#835cb9", text: "#ffffff" },
-  ATENDIMENTO: { primary: "#09008a", text: "#ffffff" },
+  RECEPCAO: { primary: "#09008a", text: "#ffffff" },
   Laboratório: { primary: "#BB6101", text: "#ffffff" },
   Psicossocial: { primary: "#310966", text: "#ffffff" },
   "Raio-X": { primary: "#8F8E92", text: "#1a1a1a" },
@@ -164,7 +166,7 @@ const mesAtual = (date: Date): string => {
 // Componentes responsivos
 const CounterCard = ({ label, value }: { label: string; value: number }) => (
   <div
-    className="rounded-2xl px-3 sm:px-4 py-2 sm:py-3 shadow-sm border min-w-[80px] sm:min-w-[100px] lg:min-w-[120px] backdrop-blur-sm"
+    className="rounded-2xl px-2 sm:px-3 md:px-4 py-1 sm:py-2 md:py-3 shadow-sm border min-w-[60px] sm:min-w-[80px] md:min-w-[100px] lg:min-w-[120px] backdrop-blur-sm"
     style={{
       backgroundColor: COLOR_PALETTE.white,
       borderColor: COLOR_PALETTE.border,
@@ -172,13 +174,13 @@ const CounterCard = ({ label, value }: { label: string; value: number }) => (
     }}
   >
     <div
-      className="text-xl sm:text-2xl lg:text-3xl font-black leading-none tracking-tight text-center"
+      className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black leading-none tracking-tight text-center"
       style={{ color: COLOR_PALETTE.primary }}
     >
       {value}
     </div>
     <div
-      className="mt-1 text-xs sm:text-xs lg:text-sm uppercase tracking-wider font-semibold text-center truncate px-1"
+      className="mt-1 text-xs sm:text-xs md:text-sm uppercase tracking-wider font-semibold text-center truncate px-1"
       style={{ color: COLOR_PALETTE.textLight }}
     >
       {label}
@@ -194,7 +196,7 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
 
   return (
     <motion.div
-      className="rounded-xl p-3 sm:p-4 flex-1 min-w-0 shadow-sm border backdrop-blur-sm"
+      className="rounded-xl p-2 sm:p-3 md:p-4 flex-1 min-w-0 shadow-sm border backdrop-blur-sm"
       style={{
         backgroundColor: colors.primary + "20",
         borderColor: colors.primary,
@@ -204,90 +206,98 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       whileHover={{ y: -2, scale: 1.02 }}
     >
       <div
-        className="text-lg sm:text-xl lg:text-2xl font-bold truncate"
+        className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold truncate"
         style={{ color: colors.primary }}
       >
         {c.name ? c.name : `SENHA ${c.ticket}`}
       </div>
       <div
-        className="mt-2 inline-flex items-center gap-2 font-bold text-base sm:text-lg lg:text-xl rounded-full px-3 py-1"
+        className="mt-1 sm:mt-2 inline-flex items-center gap-1 sm:gap-2 font-bold text-sm sm:text-base md:text-lg lg:text-xl rounded-full px-2 sm:px-3 py-0.5 sm:py-1"
         style={{
           backgroundColor: colors.primary,
           color: colors.text,
         }}
       >
         <span className="truncate">{c.sala}</span>
-        <span className="w-2 h-2 rounded-full bg-current animate-pulse" />
+        <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-current animate-pulse" />
         <span className="truncate">{c.exame}</span>
       </div>
     </motion.div>
   );
 };
 
-// Modal de Ativação de Áudio
-const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => (
-  <motion.div
-    animate={{ opacity: 1 }}
-    className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
-    initial={{ opacity: 0 }}
-  >
+// Modal de Ativação de Áudio com suporte a tela cheia
+const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => {
+  const handleActivate = () => {
+    onActivate();
+  };
+
+  return (
     <motion.div
-      animate={{ scale: 1, opacity: 1 }}
-      className="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-md mx-auto shadow-2xl"
-      initial={{ scale: 0.8, opacity: 0 }}
-      style={{
-        borderColor: COLOR_PALETTE.border,
-      }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      initial={{ opacity: 0 }}
     >
-      <div className="text-center">
-        <div
-          className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center"
-          style={{
-            backgroundColor: COLOR_PALETTE.primary,
-            backgroundImage:
-              "linear-gradient(135deg, #44735e 0%, #5a8c7a 100%)",
-          }}
-        >
-          <Volume2 className="text-white" size={24} />
+      <motion.div
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 w-full max-w-md mx-auto shadow-2xl"
+        initial={{ scale: 0.8, opacity: 0 }}
+        style={{
+          borderColor: COLOR_PALETTE.border,
+        }}
+      >
+        <div className="text-center">
+          <div
+            className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto mb-3 sm:mb-4 rounded-2xl flex items-center justify-center"
+            style={{
+              backgroundColor: COLOR_PALETTE.primary,
+              backgroundImage:
+                "linear-gradient(135deg, #44735e 0%, #5a8c7a 100%)",
+            }}
+          >
+            <Maximize2 className="text-white" size={20} />
+          </div>
+
+          <h2
+            className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
+            style={{ color: COLOR_PALETTE.primary }}
+          >
+            Ativação de Áudio e Tela Cheia
+          </h2>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600 mb-2">
+              <Maximize2 size={16} />
+              <span>Modo tela cheia será ativado</span>
+            </div>
+            <div className="flex items-center justify-center gap-2 text-xs sm:text-sm text-gray-600">
+              <Volume2 size={16} />
+              <span>Áudio será liberado</span>
+            </div>
+          </div>
+
+          <button
+            className="w-full rounded-xl px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 font-bold text-white transition-all hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base"
+            style={{
+              background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
+              boxShadow: "0 4px 14px rgba(68, 115, 94, 0.3)",
+            }}
+            onClick={handleActivate}
+          >
+            <Maximize2 className="inline mr-2" size={18} /> ATIVAR ÁUDIO E TELA CHEIA
+          </button>
+
+          <button
+            className="w-full mt-2 sm:mt-3 text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            style={{ color: COLOR_PALETTE.textLight }}
+            onClick={() => onActivate()}
+          >
+            Continuar sem áudio e tela cheia
+          </button>
         </div>
-
-        <h2
-          className="text-xl sm:text-2xl font-bold mb-4"
-          style={{ color: COLOR_PALETTE.primary }}
-        >
-          Ativação de Áudio
-        </h2>
-
-        <p
-          className="text-sm sm:text-base text-gray-600 mb-6"
-          style={{ color: COLOR_PALETTE.textLight }}
-        >
-          Para uma melhor experiência, ative o áudio do painel. Clique no botão
-          abaixo para liberar a reprodução de sons.
-        </p>
-
-        <button
-          className="w-full rounded-xl px-4 sm:px-6 py-3 sm:py-4 font-bold text-white transition-all hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base"
-          style={{
-            background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
-            boxShadow: "0 4px 14px rgba(68, 115, 94, 0.3)",
-          }}
-          onClick={onActivate}
-        >
-          <Volume2 className="inline mr-2" size={20} /> ATIVAR ÁUDIO
-        </button>
-
-        <button
-          className="w-full mt-3 text-xs sm:text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          style={{ color: COLOR_PALETTE.textLight }}
-          onClick={onActivate}
-        >
-          Pular e continuar sem áudio
-        </button>
-      </div>
+      </motion.div>
     </motion.div>
-  </motion.div>
-);
+  );
+};
 
 // Idle Screen com conteúdo de divulgação
 interface IdleProps {
@@ -327,22 +337,22 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
       initial={{ opacity: 0 }}
       transition={{ duration: 1 }}
     >
-      <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-2">
+      <div className="absolute top-2 sm:top-4 left-1/2 transform -translate-x-1/2 z-10 flex gap-1 sm:gap-2">
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
               index === itemAtual ? "bg-white scale-125" : "bg-white/50"
             }`}
           />
         ))}
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="flex-1 flex items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 bg-gradient-to-br from-gray-50 to-gray-100">
         <motion.div
           key={item.id}
           animate={{ scale: 1, opacity: 1 }}
-          className="w-full h-full max-w-4xl max-h-4xl rounded-3xl overflow-hidden shadow-2xl bg-white"
+          className="w-full h-full max-w-3xl sm:max-w-4xl md:max-w-5xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-xl sm:shadow-2xl bg-white"
           initial={{ scale: 0.9, opacity: 0 }}
           transition={{ duration: 0.8 }}
         >
@@ -364,17 +374,17 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         </motion.div>
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 xl:p-12 bg-gradient-to-br from-green-600 to-green-950">
+      <div className="flex-1 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 bg-gradient-to-br from-green-600 to-green-950">
         <motion.div
           key={`content-${item.id}`}
           animate={{ x: 0, opacity: 1 }}
-          className="text-white max-w-2xl w-full"
+          className="text-white max-w-xl sm:max-w-2xl w-full"
           initial={{ x: 50, opacity: 0 }}
           transition={{ duration: 0.8 }}
         >
           <motion.h1
             animate={{ y: 0, opacity: 1 }}
-            className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-4 leading-tight"
+            className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-black mb-2 sm:mb-3 md:mb-4 leading-tight"
             initial={{ y: 30, opacity: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
@@ -384,7 +394,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
           {item.subtitulo && (
             <motion.p
               animate={{ y: 0, opacity: 1 }}
-              className="text-base sm:text-lg lg:text-xl xl:text-2xl font-light mb-4 sm:mb-6 lg:mb-8 text-blue-200"
+              className="text-sm sm:text-base md:text-lg lg:text-xl font-light mb-3 sm:mb-4 md:mb-6 text-blue-200"
               initial={{ y: 20, opacity: 0 }}
               transition={{ delay: 0.4, duration: 0.6 }}
             >
@@ -394,22 +404,22 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
 
           <motion.div
             animate={{ y: 0, opacity: 1 }}
-            className="space-y-3 sm:space-y-4"
+            className="space-y-2 sm:space-y-3"
             initial={{ y: 20, opacity: 0 }}
             transition={{ delay: 0.6, duration: 0.6 }}
           >
             {Array.isArray(item.conteudo) ? (
-              <ul className="space-y-2 sm:space-y-3">
+              <ul className="space-y-1 sm:space-y-2">
                 {item.conteudo.map((linha, index) => (
                   <motion.li
                     key={index}
                     animate={{ x: 0, opacity: 1 }}
-                    className="flex items-start gap-2 sm:gap-3 text-sm sm:text-base lg:text-lg"
+                    className="flex items-start gap-1 sm:gap-2 md:gap-3 text-xs sm:text-sm md:text-base lg:text-lg"
                     initial={{ x: -20, opacity: 0 }}
                     transition={{ delay: 0.8 + index * 0.1, duration: 0.5 }}
                   >
-                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full mt-2 sm:mt-3 flex-shrink-0" />
-                    <span className="leading-relaxed text-sm sm:text-base lg:text-lg xl:text-xl">
+                    <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-orange-400 rounded-full mt-1.5 sm:mt-2 md:mt-3 flex-shrink-0" />
+                    <span className="leading-relaxed text-xs sm:text-sm md:text-base lg:text-lg">
                       {linha}
                     </span>
                   </motion.li>
@@ -418,7 +428,7 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
             ) : (
               <motion.p
                 animate={{ x: 0, opacity: 1 }}
-                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed"
+                className="text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed"
                 initial={{ x: -20, opacity: 0 }}
                 transition={{ delay: 0.8, duration: 0.5 }}
               >
@@ -429,11 +439,11 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
 
           <motion.div
             animate={{ scale: 1, opacity: 1 }}
-            className="mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-white/20"
+            className="mt-4 sm:mt-6 pt-3 sm:pt-4 border-t border-white/20"
             initial={{ scale: 0, opacity: 0 }}
             transition={{ delay: 1.2, duration: 0.5 }}
           >
-            <div className="flex flex-col sm:flex-row items-center justify-between text-xs sm:text-sm text-white/70 gap-2">
+            <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-white/70 gap-1 sm:gap-2">
               <span>{new Date().getFullYear()} • CMSO</span>
               <span className="truncate">{unidadeSelecionada}</span>
             </div>
@@ -472,7 +482,7 @@ const ConfigModal = ({
     >
       <motion.div
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-2xl p-4 sm:p-6 w-full max-w-md mx-auto shadow-xl"
+        className="bg-white rounded-2xl p-3 sm:p-4 md:p-6 w-full max-w-md mx-auto shadow-xl"
         exit={{ scale: 0.9, opacity: 0 }}
         initial={{ scale: 0.9, opacity: 0 }}
         style={{
@@ -481,22 +491,22 @@ const ConfigModal = ({
         onClick={(e) => e.stopPropagation()}
       >
         <h2
-          className="text-xl sm:text-2xl font-bold mb-4"
+          className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4"
           style={{ color: COLOR_PALETTE.primary }}
         >
           Configurações do Painel
         </h2>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div>
             <label
-              className="block text-sm font-medium mb-2"
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2"
               style={{ color: COLOR_PALETTE.text }}
             >
               Unidade
             </label>
             <select
-              className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-sm sm:text-base"
+              className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-xs sm:text-sm md:text-base"
               style={{
                 borderColor: COLOR_PALETTE.border,
                 color: COLOR_PALETTE.text,
@@ -515,20 +525,20 @@ const ConfigModal = ({
 
           <div className="flex items-center justify-between">
             <span
-              className="text-sm sm:text-base"
+              className="text-xs sm:text-sm md:text-base"
               style={{ color: COLOR_PALETTE.text }}
             >
               Áudio
             </span>
             <button
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
                 audioHabilitado ? "bg-green-500" : "bg-gray-300"
               }`}
               onClick={() => setAudioHabilitado(!audioHabilitado)}
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                  audioHabilitado ? "translate-x-6" : "translate-x-1"
+                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
+                  audioHabilitado ? "translate-x-5 sm:translate-x-6" : "translate-x-0.5 sm:translate-x-1"
                 }`}
               />
             </button>
@@ -538,14 +548,14 @@ const ConfigModal = ({
             className="flex items-center gap-2 text-xs sm:text-sm"
             style={{ color: COLOR_PALETTE.textLight }}
           >
-            {audioHabilitado ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {audioHabilitado ? <Volume2 size={14} /> : <VolumeX size={14} />}
             {audioHabilitado ? "Áudio ativado" : "Áudio desativado"}
           </div>
         </div>
 
-        <div className="flex gap-2 sm:gap-3 mt-6">
+        <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
           <button
-            className="flex-1 rounded-xl px-3 sm:px-4 py-2 sm:py-3 font-semibold transition-all border text-sm sm:text-base"
+            className="flex-1 rounded-xl px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 font-semibold transition-all border text-xs sm:text-sm md:text-base"
             style={{
               borderColor: COLOR_PALETTE.border,
               color: COLOR_PALETTE.text,
@@ -556,7 +566,7 @@ const ConfigModal = ({
             Fechar
           </button>
           <button
-            className="flex-1 rounded-xl px-3 sm:px-4 py-2 sm:py-3 font-semibold text-white transition-all text-sm sm:text-base"
+            className="flex-1 rounded-xl px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 font-semibold text-white transition-all text-xs sm:text-sm md:text-base"
             style={{
               backgroundColor: COLOR_PALETTE.primary,
             }}
@@ -575,6 +585,28 @@ const ConfigModal = ({
 
 // Socket como variável global fora do componente
 let socket: Socket | null = null;
+
+// Função para entrar em tela cheia
+const enterFullscreen = (element: HTMLElement) => {
+  if (element.requestFullscreen) {
+    element.requestFullscreen();
+  } else if ((element as any).webkitRequestFullscreen) {
+    (element as any).webkitRequestFullscreen();
+  } else if ((element as any).msRequestFullscreen) {
+    (element as any).msRequestFullscreen();
+  }
+};
+
+// Função para sair da tela cheia
+const exitFullscreen = () => {
+  if (document.exitFullscreen) {
+    document.exitFullscreen();
+  } else if ((document as any).webkitExitFullscreen) {
+    (document as any).webkitExitFullscreen();
+  } else if ((document as any).msExitFullscreen) {
+    (document as any).msExitFullscreen();
+  }
+};
 
 export default function PainelPage() {
   const [chamadaAtual, setChamadaAtual] = useState<PainelCall>();
@@ -598,6 +630,7 @@ export default function PainelPage() {
   const [unidadeSelecionada, setUnidadeSelecionada] = useState<string>("");
   const [showConfig, setShowConfig] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Estados para controle do idle
   const [isIdle, setIsIdle] = useState(false);
@@ -820,6 +853,20 @@ export default function PainelPage() {
     if (ativas.length > 0) iniciarLoop();
   }, [ativas, iniciarLoop]);
 
+  // Função para ativar áudio e tela cheia
+  const handleActivateAudioAndFullscreen = () => {
+    setAudioHabilitado(true);
+    setShowAudioModal(false);
+    
+    // Entrar em tela cheia após um breve delay para garantir que o modal foi fechado
+    setTimeout(() => {
+      if (containerRef.current) {
+        enterFullscreen(containerRef.current);
+        setIsFullscreen(true);
+      }
+    }, 100);
+  };
+
   // Ativar modal de áudio após liberação
   useEffect(() => {
     if (isLiberado) {
@@ -840,6 +887,23 @@ export default function PainelPage() {
       if (returnTimeoutRef.current) clearTimeout(returnTimeoutRef.current);
     };
   }, [isLiberado, resetarIdleTimer]);
+
+  // Monitorar mudanças no modo tela cheia
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+    };
+  }, []);
 
   // Inicialização do WebSocket - UMA VEZ APENAS
   useEffect(() => {
@@ -1032,49 +1096,49 @@ export default function PainelPage() {
         }}
       >
         <div
-          className="w-full max-w-md rounded-2xl p-6 sm:p-8 shadow-lg border"
+          className="w-full max-w-md rounded-2xl p-4 sm:p-6 md:p-8 shadow-lg border"
           style={{
             backgroundColor: COLOR_PALETTE.white,
             borderColor: COLOR_PALETTE.border,
             boxShadow: "0 8px 32px rgba(68, 115, 94, 0.1)",
           }}
         >
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <div className="text-center">
               <div
-                className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 rounded-2xl flex items-center justify-center shadow-sm"
+                className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-20 mx-auto mb-3 sm:mb-4 rounded-2xl flex items-center justify-center shadow-sm"
                 style={{
                   backgroundColor: COLOR_PALETTE.primary,
                   backgroundImage: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                 }}
               >
-                <Monitor className="text-white" size={28} />
+                <Monitor className="text-white" size={20} />
               </div>
               <h1
-                className="text-xl sm:text-2xl font-bold"
+                className="text-lg sm:text-xl md:text-2xl font-bold"
                 style={{ color: COLOR_PALETTE.primary }}
               >
                 Painel de Chamadas
               </h1>
               <p
-                className="mt-2 text-sm sm:text-base"
+                className="mt-1 sm:mt-2 text-xs sm:text-sm md:text-base"
                 style={{ color: COLOR_PALETTE.textLight }}
               >
                 Acesso restrito ao pessoal autorizado
               </p>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
                 <label
-                  className="text-sm font-semibold"
+                  className="text-xs sm:text-sm font-semibold"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   Chave de Acesso
                 </label>
                 <input
                   autoFocus
-                  className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 text-base sm:text-lg transition-all"
+                  className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 text-sm sm:text-base md:text-lg transition-all"
                   id="serialInput"
                   placeholder="Digite a chave..."
                   style={{
@@ -1088,13 +1152,13 @@ export default function PainelPage() {
 
               <div>
                 <label
-                  className="text-sm font-semibold"
+                  className="text-xs sm:text-sm font-semibold"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   Unidade
                 </label>
                 <select
-                  className="w-full rounded-xl border px-3 sm:px-4 py-2 sm:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 transition-all text-sm sm:text-base"
+                  className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 transition-all text-xs sm:text-sm md:text-base"
                   defaultValue=""
                   id="unidadeSelect"
                   style={{
@@ -1115,7 +1179,7 @@ export default function PainelPage() {
               </div>
 
               <button
-                className="w-full rounded-xl px-4 sm:px-6 py-3 sm:py-4 font-bold text-white mt-4 transition-all hover:shadow-lg transform hover:scale-[1.02] text-sm sm:text-base"
+                className="w-full rounded-xl px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 font-bold text-white mt-3 sm:mt-4 transition-all hover:shadow-lg transform hover:scale-[1.02] text-xs sm:text-sm md:text-base"
                 style={{
                   background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                   boxShadow: "0 4px 14px rgba(68, 115, 94, 0.3)",
@@ -1134,7 +1198,7 @@ export default function PainelPage() {
                   validarAcesso(serial, unidade);
                 }}
               >
-                <Monitor className="inline mr-2" size={20} /> ACESSAR PAINEL
+                <Monitor className="inline mr-2" size={16} /> ACESSAR PAINEL
               </button>
             </div>
           </div>
@@ -1156,18 +1220,41 @@ export default function PainelPage() {
       <AnimatePresence>
         {showAudioModal && (
           <AudioActivationModal
-            onActivate={() => {
-              setAudioHabilitado(true);
-              setShowAudioModal(false);
-            }}
+            onActivate={handleActivateAudioAndFullscreen}
           />
         )}
       </AnimatePresence>
 
+      {/* Botão de Tela Cheia */}
+      <motion.button
+        animate={{ scale: 1, opacity: 1 }}
+        className="fixed bottom-16 sm:bottom-20 right-4 sm:right-6 z-40 rounded-full p-2 sm:p-3 shadow-lg border transition-all"
+        initial={{ scale: 0, opacity: 0 }}
+        style={{
+          backgroundColor: COLOR_PALETTE.white,
+          borderColor: COLOR_PALETTE.border,
+          color: COLOR_PALETTE.primary,
+          boxShadow: "0 4px 20px rgba(68, 115, 94, 0.2)",
+        }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {
+          if (isFullscreen && containerRef.current) {
+            exitFullscreen();
+            setIsFullscreen(false);
+          } else if (containerRef.current) {
+            enterFullscreen(containerRef.current);
+            setIsFullscreen(true);
+          }
+        }}
+      >
+        {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+      </motion.button>
+
       {/* Botão de Configurações Flutuante */}
       <motion.button
         animate={{ scale: 1, opacity: 1 }}
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 rounded-full p-3 sm:p-4 shadow-lg border transition-all"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 rounded-full p-2 sm:p-3 shadow-lg border transition-all"
         initial={{ scale: 0, opacity: 0 }}
         style={{
           backgroundColor: COLOR_PALETTE.white,
@@ -1179,7 +1266,7 @@ export default function PainelPage() {
         whileTap={{ scale: 0.9 }}
         onClick={() => setShowConfig(true)}
       >
-        <Settings size={20} />
+        <Settings size={18} />
       </motion.button>
 
       {/* Modal de Configurações */}
@@ -1204,40 +1291,40 @@ export default function PainelPage() {
         {showPainel && !deveExibirIdle && (
           <motion.div
             animate={{ opacity: 1, scale: 1 }}
-            className="flex-1 flex flex-col min-h-0"
+            className="flex-1 flex flex-col min-h-0 p-1 sm:p-2"
             exit={{ opacity: 0, scale: 1.05 }}
             initial={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.8 }}
           >
             <header
-              className="w-full border-b py-2 px-2 sm:px-4 lg:px-6 backdrop-blur-sm shrink-0"
+              className="w-full border-b py-1 sm:py-2 px-2 sm:px-3 md:px-4 lg:px-6 backdrop-blur-sm shrink-0"
               style={{
                 backgroundColor: COLOR_PALETTE.white,
                 borderColor: COLOR_PALETTE.border,
                 boxShadow: "0 1px 3px rgba(68, 115, 94, 0.05)",
               }}
             >
-              <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 items-center gap-2 sm:gap-4">
-                <div className="flex items-center gap-2 sm:gap-4 justify-center sm:justify-start order-2 sm:order-1">
+              <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 items-center gap-1 sm:gap-2 md:gap-4">
+                <div className="flex items-center gap-1 sm:gap-2 md:gap-4 justify-center sm:justify-start order-2 sm:order-1">
                   <div
-                    className="rounded-2xl p-2 sm:p-3 shadow-sm border"
+                    className="rounded-2xl p-1.5 sm:p-2 md:p-3 shadow-sm border"
                     style={{
                       backgroundColor: COLOR_PALETTE.primary,
                       borderColor: COLOR_PALETTE.accent,
                       backgroundImage: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
                     }}
                   >
-                    <Monitor className="text-white" size={24} />
+                    <Monitor className="text-white" size={16} />
                   </div>
                   <div>
                     <div
-                      className="text-xs sm:text-sm uppercase tracking-wide font-semibold"
+                      className="text-xs sm:text-xs md:text-sm uppercase tracking-wide font-semibold"
                       style={{ color: COLOR_PALETTE.textLight }}
                     >
                       Unidade
                     </div>
                     <div
-                      className="text-base sm:text-xl font-bold truncate max-w-[150px] sm:max-w-none"
+                      className="text-sm sm:text-base md:text-lg font-bold truncate max-w-[120px] sm:max-w-[150px] md:max-w-none"
                       style={{ color: COLOR_PALETTE.text }}
                     >
                       {unidadeSelecionada}
@@ -1247,34 +1334,34 @@ export default function PainelPage() {
 
                 <div className="text-center order-1 sm:order-2">
                   <div
-                    className="text-sm sm:text-base lg:text-lg font-semibold"
+                    className="text-xs sm:text-sm md:text-base lg:text-lg font-semibold"
                     style={{ color: COLOR_PALETTE.text }}
                   >
                     {dataCompleta}
                   </div>
                   <div
-                    className="text-2xl sm:text-3xl lg:text-4xl font-black tabular-nums flex items-center justify-center gap-2 sm:gap-3 mt-1"
+                    className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tabular-nums flex items-center justify-center gap-1 sm:gap-2 md:gap-3 mt-0.5 sm:mt-1"
                     style={{ color: COLOR_PALETTE.primary }}
                   >
-                    <Clock size={20} /> {hora}
+                    <Clock size={14} /> {hora}
                   </div>
                 </div>
 
-                <div className="flex justify-center sm:justify-end gap-2 sm:gap-4 order-3">
+                <div className="flex justify-center sm:justify-end gap-1 sm:gap-2 md:gap-4 order-3">
                   <CounterCard label="Chamando" value={ativas.length} />
                   <CounterCard label="Aguardando" value={espera.length} />
                 </div>
               </div>
             </header>
 
-            <main className="flex-1 flex flex-col px-1 sm:px-2 lg:px-4 py-2 sm:py-4 max-w-7xl mx-auto w-full min-h-0">
-              <section className="flex-1 flex items-center justify-center mb-2 sm:mb-4 lg:mb-6 min-h-0">
+            <main className="flex-1 flex flex-col px-1 sm:px-2 md:px-3 lg:px-4 py-1 sm:py-2 md:py-3 lg:py-4 max-w-7xl mx-auto w-full min-h-0">
+              <section className="flex-1 flex items-center justify-center mb-1 sm:mb-2 md:mb-3 lg:mb-4 min-h-0">
                 <AnimatePresence mode="wait">
                   {chamadaAtual ? (
                     <motion.div
                       key={chamadaAtual.id}
                       animate={{ opacity: 1, scale: 1 }}
-                      className="w-full max-w-6xl rounded-2xl p-4 sm:p-6 lg:p-8 xl:p-12 shadow-lg border text-center backdrop-blur-sm mx-1 sm:mx-2"
+                      className="w-full max-w-4xl sm:max-w-5xl lg:max-w-6xl rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 xl:p-8 shadow-lg border text-center backdrop-blur-sm mx-1"
                       exit={{ opacity: 0, scale: 0.9 }}
                       initial={{ opacity: 0, scale: 0.9 }}
                       style={{
@@ -1287,15 +1374,15 @@ export default function PainelPage() {
                     >
                       <motion.div
                         animate={{ scale: 1, opacity: 1 }}
-                        className="mb-4 sm:mb-6 lg:mb-8"
+                        className="mb-2 sm:mb-3 md:mb-4 lg:mb-6"
                         initial={{ scale: 0.95, opacity: 0 }}
                         transition={{ delay: 0.05 }}
                       >
                         <div
                           className={
                             chamadaAtual.name
-                              ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black mb-2 sm:mb-4 uppercase tracking-wider break-words"
-                              : "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black mb-2 sm:mb-4 uppercase tracking-wider"
+                              ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1"
+                              : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider px-1"
                           }
                           style={{ color: currentExamColors.primary }}
                         >
@@ -1303,10 +1390,10 @@ export default function PainelPage() {
                         </div>
                       </motion.div>
 
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-4 mb-2 lg:mb-4">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 md:gap-3 mb-1 lg:mb-2">
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="flex items-center gap-2 sm:gap-3 text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black px-3 sm:px-4 md:px-6 py-1 sm:py-2 md:py-3 rounded-full border"
+                          className="flex items-center gap-1 sm:gap-2 md:gap-3 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 md:py-2 rounded-full border"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             backgroundColor: currentExamColors.primary,
@@ -1315,12 +1402,12 @@ export default function PainelPage() {
                           }}
                           transition={{ delay: 0.1 }}
                         >
-                          <span>{chamadaAtual.sala}</span>
+                          <span className="truncate">{chamadaAtual.sala}</span>
                         </motion.div>
 
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black px-3 sm:px-4 md:px-6 py-1 sm:py-2 rounded-full border-2 text-center"
+                          className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-full border-2 text-center"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             borderColor: currentExamColors.primary,
@@ -1329,7 +1416,7 @@ export default function PainelPage() {
                           }}
                           transition={{ delay: 0.15 }}
                         >
-                          <span className="break-words">
+                          <span className="break-words px-1">
                             {chamadaAtual.exame || "ATENDIMENTO"}
                           </span>
                         </motion.div>
@@ -1339,16 +1426,16 @@ export default function PainelPage() {
                     <motion.div
                       key="aguardando"
                       animate={{ opacity: 1 }}
-                      className="text-center mx-2 sm:mx-4"
+                      className="text-center mx-1 sm:mx-2 md:mx-4"
                       initial={{ opacity: 0 }}
                     >
                       <Loader2
-                        className="animate-spin mx-auto mb-3 sm:mb-4 lg:mb-6"
-                        size={32}
+                        className="animate-spin mx-auto mb-2 sm:mb-3 md:mb-4 lg:mb-6"
+                        size={24}
                         style={{ color: COLOR_PALETTE.primary }}
                       />
                       <h2
-                        className="text-xl sm:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2 sm:mb-3 lg:mb-4"
+                        className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4"
                         style={{ color: COLOR_PALETTE.text }}
                       >
                         AGUARDANDO CHAMADAS
@@ -1358,20 +1445,20 @@ export default function PainelPage() {
                 </AnimatePresence>
               </section>
 
-              <section className="mt-auto px-1 sm:px-2 w-full shrink-0">
+              <section className="mt-auto px-1 w-full shrink-0">
                 <div
-                  className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl font-bold mb-2 sm:mb-3 lg:mb-4"
+                  className="flex items-center gap-1 sm:gap-2 md:gap-3 text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4"
                   style={{ color: COLOR_PALETTE.text }}
                 >
-                  <History size={18} style={{ color: COLOR_PALETTE.primary }} />
+                  <History size={14} style={{ color: COLOR_PALETTE.primary }} />
                   <span className="truncate">CHAMADAS ANTERIORES</span>
                 </div>
 
                 <div className="w-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-3 lg:gap-4 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-1 sm:gap-2 md:gap-3 lg:gap-4 w-full">
                     {anteriores.length === 0 ? (
                       <div
-                        className="col-span-2 text-sm sm:text-base lg:text-lg italic py-4 sm:py-6 lg:py-8 text-center w-full rounded-xl border"
+                        className="col-span-2 text-xs sm:text-sm md:text-base lg:text-lg italic py-2 sm:py-3 md:py-4 lg:py-6 text-center w-full rounded-lg border"
                         style={{
                           color: COLOR_PALETTE.textLight,
                           borderColor: COLOR_PALETTE.border,
