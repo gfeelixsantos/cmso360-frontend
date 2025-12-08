@@ -108,7 +108,7 @@ export function useSchedulingEntityManager(
       sala,
       exame,
       user,
-      nomeFuncionario
+      nomeFuncionario,
     });
   };
 

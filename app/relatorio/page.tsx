@@ -1,4 +1,3 @@
-// Página relatório
 // app/relatorios/page.tsx
 "use client";
 
@@ -29,15 +28,15 @@ import {
   Input,
   Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Spinner,
-  Skeleton,
+  Autocomplete,
+  AutocompleteItem,
 } from "@heroui/react";
 import { SearchIcon, FilterIcon, EyeIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
+
+import { LightModalSkeleton } from "./ModalSkeleton";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
@@ -47,7 +46,9 @@ import {
   NEST_RELATORIO_PARAMETROS,
 } from "@/config/constants";
 import { HeaderApp } from "@/components/shared/HeaderApp";
-import { formatCPF, getCurrentUser, logout } from "@/lib/utils";
+import { formatCPF, getCurrentUser, getStatusColor, logout } from "@/lib/utils";
+import { useModalOptimizer } from "@/hooks/useModalOptimizer";
+import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import("./LazyModalContent"));
@@ -62,7 +63,6 @@ interface ReportParams {
   salas: { code: string; name: string }[];
 }
 
-// Interface para os filtros que serão enviados ao backend
 interface FilterParams {
   dataInicio?: string;
   dataFim?: string;
@@ -76,7 +76,6 @@ interface FilterParams {
   unidadeAtendimento?: string;
 }
 
-// Interface para o retorno paginado do backend
 interface PaginatedReportData {
   data: Scheduling[];
   total: number;
@@ -84,103 +83,6 @@ interface PaginatedReportData {
   limit: number;
   totalPages: number;
 }
-
-// Hook para debounce do modal
-const useModalDebounce = (delay: number = 100) => {
-  const [isOpening, setIsOpening] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
-
-  const openWithDebounce = useCallback(
-    (callback: () => void) => {
-      setIsOpening(true);
-
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-
-      timeoutRef.current = setTimeout(() => {
-        callback();
-        setIsOpening(false);
-      }, delay);
-    },
-    [delay],
-  );
-
-  const cancel = useCallback(() => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      setIsOpening(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  return { isOpening, openWithDebounce, cancel };
-};
-
-// Componente skeleton melhorado para loading
-const ModalSkeleton = () => (
-  <div className="space-y-6">
-    <ModalHeader>
-      <div className="w-full space-y-3">
-        <Skeleton className="h-7 w-64 rounded-lg" />
-        <Skeleton className="h-4 w-48 rounded-lg" />
-      </div>
-    </ModalHeader>
-    <ModalBody>
-      <div className="space-y-6">
-        {/* Informações Gerais Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-48 rounded-lg" />
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="h-5 w-32 rounded-lg" />
-                <div className="space-y-2">
-                  {[...Array(4)].map((_, j) => (
-                    <div key={j} className="space-y-1">
-                      <Skeleton className="h-3 w-24 rounded-lg" />
-                      <Skeleton className="h-4 w-full rounded-lg" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Exames Skeleton */}
-        <div className="space-y-4">
-          <Skeleton className="h-6 w-40 rounded-lg" />
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className="flex items-center gap-4 p-3 border rounded-lg"
-              >
-                <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4 rounded-lg" />
-                  <Skeleton className="h-3 w-1/2 rounded-lg" />
-                </div>
-                <Skeleton className="h-8 w-20 rounded-lg" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </ModalBody>
-    <ModalFooter>
-      <Skeleton className="h-10 w-24 rounded-lg" />
-    </ModalFooter>
-  </div>
-);
 
 // Componente principal
 export default function RelatoriosPage() {
@@ -229,9 +131,11 @@ export default function RelatoriosPage() {
   const [modalLoading, setModalLoading] = useState(false);
   const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
 
-  // Debounce para abertura do modal
-  const { isOpening: isModalOpening, openWithDebounce: openModalWithDebounce } =
-    useModalDebounce(150);
+  // Hooks otimizados
+  const { preloadedData, preloadModalData, clearPreloadedData } =
+    useModalOptimizer();
+  const { isPending: isModalOpening, debounce: openModalWithDebounce } =
+    useOptimizedDebounce(250);
 
   // Estado para os atendimentos FILTRADOS
   const [filteredAtendimentos, setFilteredAtendimentos] = useState<
@@ -250,7 +154,7 @@ export default function RelatoriosPage() {
   const scrollToTableTop = useCallback(() => {
     setTimeout(() => {
       if (tableRef.current) {
-        const tableTop = tableRef.current.offsetTop - 100; // 100px acima da tabela
+        const tableTop = tableRef.current.offsetTop - 100;
 
         window.scrollTo({
           top: tableTop,
@@ -293,15 +197,12 @@ export default function RelatoriosPage() {
   const formatDateForBackend = (dateString: string): string => {
     if (!dateString) return "";
 
-    // O input type="date" já retorna no formato yyyy-MM-dd
-    // Podemos usar diretamente para o backend
     return dateString;
   };
 
   // Função para validar se a data é válida
   const isValidDate = (dateString: string): boolean => {
     if (!dateString) return false;
-
     const date = new Date(dateString);
 
     return !isNaN(date.getTime());
@@ -390,13 +291,20 @@ export default function RelatoriosPage() {
         setTotalPages(result.totalPages);
         setPage(result.page);
         setFilteredAtendimentos(result.data);
+
+        // Pré-carregar os primeiros 3 atendimentos da página
+        const firstThree = result.data.slice(0, 3);
+
+        firstThree.forEach((item) => {
+          preloadModalData(item._id);
+        });
       } catch (error) {
         console.error("Erro ao buscar dados filtrados:", error);
       } finally {
         setIsFiltering(false);
       }
     },
-    [rowsPerPage],
+    [rowsPerPage, preloadModalData],
   );
 
   // Aplicar filtros
@@ -464,7 +372,8 @@ export default function RelatoriosPage() {
     setPage(1);
     setTotalRecords(0);
     setTotalPages(0);
-  }, []);
+    clearPreloadedData();
+  }, [clearPreloadedData]);
 
   // Handler para mudanças rápidas nos filtros
   const handleFilterChange = useCallback((key: string, value: any) => {
@@ -478,6 +387,14 @@ export default function RelatoriosPage() {
     );
   }, [filters]);
 
+  // Pré-carregar quando o mouse passa sobre uma linha
+  const handleMouseEnterRow = useCallback(
+    (atendimentoId: string) => {
+      preloadModalData(atendimentoId);
+    },
+    [preloadModalData],
+  );
+
   // Função para visualizar detalhes
   const viewDetails = useCallback(
     (atendimento: Scheduling) => {
@@ -487,6 +404,21 @@ export default function RelatoriosPage() {
 
       openModalWithDebounce(async () => {
         try {
+          // Verificar se já temos dados pré-carregados
+          if (preloadedData[atendimento._id]) {
+            setSelectedAtendimento(preloadedData[atendimento._id]);
+            setModalLoading(false);
+            setLoadingDetailsId(null);
+
+            // Limpar da memória após uso (opcional)
+            setTimeout(() => {
+              clearPreloadedData(atendimento._id);
+            }, 5000);
+
+            return;
+          }
+
+          // Se não tiver pré-carregado, buscar normalmente
           const response = await fetch(
             `${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`,
           );
@@ -508,7 +440,7 @@ export default function RelatoriosPage() {
         }
       });
     },
-    [onOpen, openModalWithDebounce],
+    [onOpen, openModalWithDebounce, preloadedData, clearPreloadedData],
   );
 
   // Fechar modal
@@ -533,30 +465,12 @@ export default function RelatoriosPage() {
     });
   }, []);
 
-  // Função para obter a cor do status
-  const getStatusColor = useCallback((status: string) => {
-    switch (status) {
-      case AtendimentoStatus.AGENDADO:
-        return "warning";
-      case AtendimentoStatus.EM_ATENDIMENTO:
-        return "primary";
-      case AtendimentoStatus.AGUARDANDO_RESULTADOS:
-        return "secondary";
-      case AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA:
-        return "default";
-      case AtendimentoStatus.FINALIZADO:
-        return "success";
-      default:
-        return "default";
-    }
-  }, []);
-
   // Renderização otimizada do modal
   const renderModalContent = useMemo(() => {
     if (!selectedAtendimento) return null;
 
     return (
-      <Suspense fallback={<ModalSkeleton />}>
+      <Suspense fallback={<LightModalSkeleton />}>
         <LazyModalContent
           atendimento={selectedAtendimento}
           onClose={handleCloseModal}
@@ -640,7 +554,7 @@ export default function RelatoriosPage() {
               />
             </div>
 
-            {/* Data Início - CORRIGIDO */}
+            {/* Data Início */}
             <div className="space-y-2 flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
                 Data Início
@@ -657,7 +571,7 @@ export default function RelatoriosPage() {
               />
             </div>
 
-            {/* Data Fim - CORRIGIDO */}
+            {/* Data Fim */}
             <div className="space-y-2 flex flex-col gap-1">
               <label className="text-sm font-medium text-gray-700">
                 Data Fim
@@ -677,19 +591,28 @@ export default function RelatoriosPage() {
               <label className="text-sm font-medium text-gray-700">
                 Empresa
               </label>
-              <Select
+              <Autocomplete
+                allowsCustomValue={false}
+                allowsEmptyCollection={false}
                 aria-label="Selecionar empresa"
                 className="w-full"
-                selectedKeys={filters.empresa ? [filters.empresa] : []}
+                defaultItems={empresas.map((empresa) => ({
+                  id: empresa,
+                  name: empresa,
+                }))}
+                placeholder="Digite ou selecione uma empresa"
+                selectedKey={filters.empresa}
                 size="lg"
-                onSelectionChange={(keys) =>
-                  handleFilterChange("empresa", Array.from(keys)[0] || "")
+                onSelectionChange={(key) =>
+                  handleFilterChange("empresa", (key as string) || "")
                 }
               >
-                {empresas.map((empresa) => (
-                  <SelectItem key={empresa}>{empresa}</SelectItem>
-                ))}
-              </Select>
+                {(item) => (
+                  <AutocompleteItem key={item.id} textValue={item.name}>
+                    <span className="text-xs truncate">{item.name}</span>
+                  </AutocompleteItem>
+                )}
+              </Autocomplete>
             </div>
 
             {/* Grupo de Exame */}
@@ -881,6 +804,9 @@ export default function RelatoriosPage() {
                             key={
                               atendimento._id || atendimento.CODIGOPRONTUARIO
                             }
+                            onMouseEnter={() =>
+                              handleMouseEnterRow(atendimento._id)
+                            }
                           >
                             <TableCell>
                               <div>
@@ -1015,7 +941,8 @@ export default function RelatoriosPage() {
         aria-label="Modal de detalhes do atendimento"
         classNames={{
           base: "max-h-[90vh]",
-          wrapper: "z-[1000]",
+          wrapper: "z-[500]",
+          backdrop: "z-[400]",
         }}
         isOpen={isOpen}
         scrollBehavior="inside"
@@ -1024,9 +951,7 @@ export default function RelatoriosPage() {
       >
         <ModalContent>
           {modalLoading || isModalOpening ? (
-            <ModalBody className="py-8">
-              <ModalSkeleton />
-            </ModalBody>
+            <LightModalSkeleton />
           ) : (
             renderModalContent
           )}

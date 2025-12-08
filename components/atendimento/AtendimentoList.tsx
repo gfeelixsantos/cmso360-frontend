@@ -36,9 +36,9 @@ const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
         aria-hidden="true"
         className="h-12 w-12 mx-auto mb-4 text-gray-400"
       />
-      <p 
-        id="empty-senhas-description"
+      <p
         className="text-lg font-semibold text-gray-900 mb-2"
+        id="empty-senhas-description"
       >
         Nenhuma senha encontrada
       </p>
@@ -67,7 +67,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   exameSelecionado,
 }) => {
   // Correção: Verificar todas as listas, não apenas a principal
-  const todasSenhasVazias = 
+  const todasSenhasVazias =
     senhasOrdenadas.length === 0 &&
     senhasPreferenciais.length === 0 &&
     senhasComPrefixo.length === 0 &&
@@ -84,15 +84,15 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
 
   return (
     <div
-      role="main"
       aria-label={`Painel de atendimento - ${totalGeral} pacientes aguardando, ${totalEmAtendimento} em atendimento`}
       className="space-y-6 p-4 bg-gray-50 rounded-lg"
+      role="main"
     >
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Coluna principal - senhas aguardando */}
         <div className="space-y-6 w-[720]">
           <h2 className="sr-only">Senhas aguardando atendimento</h2>
-          
+
           {senhasPreferenciais.length > 0 && (
             <AtendimentoSection
               key="senhas-preferenciais"
@@ -145,30 +145,33 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
         {/* Coluna lateral - senhas em atendimento */}
         {senhasEmAtendimento.length > 0 && (
           <div className="lg:w-96 space-y-4">
-            <div 
+            <div
+              aria-label={`Pacientes em atendimento (${senhasEmAtendimento.length})`}
               className="p-4 shadow-sm"
               role="complementary"
-              aria-label={`Pacientes em atendimento (${senhasEmAtendimento.length})`}
             >
-              <h3 
+              <h3
                 className="text-lg font-semibold text-gray-900 mb-4"
                 id="em-atendimento-title"
               >
                 Em Atendimento ({senhasEmAtendimento.length})
               </h3>
-              
-              <div 
+
+              <div
+                aria-labelledby="em-atendimento-title"
                 className="space-y-3"
                 role="list"
-                aria-labelledby="em-atendimento-title"
               >
                 {senhasEmAtendimento.map((atendimento, index) => {
-                  const key = atendimento._id?.toString() || `atendimento-compacto-${index}`;
+                  const key =
+                    atendimento._id?.toString() ||
+                    `atendimento-compacto-${index}`;
+
                   return (
-                    <div 
+                    <div
                       key={key}
+                      aria-label={`${atendimento.NOME || "Paciente"} em atendimento`}
                       role="listitem"
-                      aria-label={`${atendimento.NOME || 'Paciente'} em atendimento`}
                     >
                       <AtendimentoCardCompacto
                         atendimento={atendimento}
@@ -184,7 +187,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
       </div>
 
       {/* Mensagem de resumo para leitores de tela */}
-      <div className="sr-only" aria-live="polite" aria-atomic="true">
+      <div aria-atomic="true" aria-live="polite" className="sr-only">
         {`Total de pacientes: ${totalGeral}. Em atendimento: ${totalEmAtendimento}.`}
       </div>
     </div>

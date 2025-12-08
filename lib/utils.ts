@@ -236,3 +236,13 @@ export const getStatusColor = (status: string) => {
       return "primary";
   }
 };
+
+/**
+ *
+ * @param date Ajustar 3 horas para UTC-3 (Brasília)
+ * @returns
+ */
+export const adjustForBrazilTime = (date: Date): Date => {
+  // Subtrair 3 horas (180 minutos) para ajustar UTC para horário de Brasília
+  return new Date(date.getTime() - 3 * 60 * 60 * 1000);
+};

@@ -202,7 +202,6 @@ const AtendimentoPage: React.FC = () => {
     }
   }, [router]);
 
-
   // ---------------------------------------------------------
   // Carrega tickets e solicitações de preparo ao conectar
   // ---------------------------------------------------------
@@ -420,7 +419,6 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
-
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => [...prev, schedule]);

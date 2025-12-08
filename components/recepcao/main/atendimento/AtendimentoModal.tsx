@@ -1508,7 +1508,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   {anexos.map((anexo: FileUpload, index) => (
                     <Button
                       key={anexo.Name || index}
-                      color="primary"
+                      color="default"
                       disabled={isLoading}
                       size="sm"
                       variant="light"
@@ -1552,7 +1552,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                     className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${
                       isLoading
                         ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                        : "bg-blue-500 text-white hover:bg-blue-600"
+                        : "bg-gray-500 text-white hover:bg-gray-600"
                     }`}
                     htmlFor="file-upload"
                   >

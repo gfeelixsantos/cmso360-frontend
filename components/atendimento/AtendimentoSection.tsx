@@ -25,13 +25,13 @@ const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
   emptyMessage,
 }) => {
   const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
-  
+
   return (
     <section
-      aria-labelledby={sectionId}
-      role="region"
-      aria-live="polite"
       aria-atomic="true"
+      aria-labelledby={sectionId}
+      aria-live="polite"
+      role="region"
     >
       <h3
         className="text-lg font-semibold text-center mt-2 text-gray-900 mb-2"
@@ -45,10 +45,7 @@ const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
           transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         role="status"
       >
-        <p 
-          id={`${sectionId}-description`}
-          className="text-sm text-gray-600"
-        >
+        <p className="text-sm text-gray-600" id={`${sectionId}-description`}>
           {emptyMessage}
         </p>
       </Card>
@@ -77,11 +74,11 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
 
   return (
     <section
-      aria-labelledby={sectionId}
-      role="region"
-      aria-live="polite"
       aria-atomic="true"
+      aria-labelledby={sectionId}
+      aria-live="polite"
       className="space-y-4"
+      role="region"
     >
       <h3
         className="text-lg mt-2 text-center font-semibold text-gray-900"
@@ -89,23 +86,23 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
       >
         {title}
       </h3>
-      <div 
+      <div
+        aria-label={`Lista de ${title.toLowerCase()}`}
         className="space-y-4"
         role="list"
-        aria-label={`Lista de ${title.toLowerCase()}`}
       >
         {senhas.map((atendimento, index) => {
           // Verifica se o atendimento tem _id válido
           const hasValidId = atendimento._id && atendimento._id.toString();
-          const key = hasValidId 
-            ? atendimento._id.toString() 
-            : `atendimento-${index}-${atendimento.CODIGOPRONTUARIO || ''}`;
-          
+          const key = hasValidId
+            ? atendimento._id.toString()
+            : `atendimento-${index}-${atendimento.CODIGOPRONTUARIO || ""}`;
+
           return (
             <div
               key={key}
+              aria-label={`Atendimento de ${atendimento.NOME || "Paciente"}`}
               role="listitem"
-              aria-label={`Atendimento de ${atendimento.NOME || 'Paciente'}`}
             >
               <AtendimentoCard
                 key={key}

@@ -410,7 +410,7 @@ const formatarParaInputDate = (data: string): string => {
   return data;
 };
 
-// Componente de input ultra-leve para decibéis
+// Componente de input ultra-leve para decibéis com validação de múltiplos de 5
 const DecibelInput = React.memo(
   ({
     value,
@@ -423,11 +423,22 @@ const DecibelInput = React.memo(
     placeholder?: string;
     className?: string;
   }) => {
+    // Ref para acessar o elemento input
+    const inputRef = React.useRef<HTMLInputElement>(null);
+
     const handleChange = useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const inputValue = e.target.value;
 
-        // Permite apenas números e limita a 3 dígitos
+        // Permite números, sinal negativo e os sinais de sem resposta
+        // Verifica primeiro se o usuário está tentando digitar um sinal de sem resposta
+        if (inputValue === "-" || inputValue === "--" || inputValue === "---") {
+          onChange(inputValue);
+
+          return;
+        }
+
+        // Caso contrário, permite apenas números e sinal de negativo
         const filteredValue = inputValue.replace(/[^\d\-]/g, "").slice(0, 3);
 
         onChange(filteredValue);
@@ -437,10 +448,71 @@ const DecibelInput = React.memo(
 
     const handleBlur = useCallback(
       (e: React.FocusEvent<HTMLInputElement>) => {
-        // Quando perde o foco, se estiver vazio, mantém vazio
-        // Se quiser voltar a colocar "--" quando vazio, troque para onChange("--")
-        if (e.target.value === "") {
+        const currentValue = e.target.value;
+
+        // Se for um sinal de sem resposta, mantém como está
+        if (
+          currentValue === "-" ||
+          currentValue === "--" ||
+          currentValue === "---"
+        ) {
+          onChange(currentValue);
+
+          return;
+        }
+
+        // Se estiver vazio, mantém vazio
+        if (currentValue === "") {
           onChange("");
+
+          return;
+        }
+
+        // Valida se é múltiplo de 5 (apenas para valores numéricos)
+        const numericValue = parseInt(currentValue, 10);
+
+        if (!isNaN(numericValue)) {
+          // Verifica se é múltiplo de 5
+          if (numericValue % 5 !== 0) {
+            // Mostra alerta e mantém o foco no campo
+            alert(
+              `Valor inserido inválido: ${currentValue}\n\nOs valores devem ser múltiplos de 5 (ex: 5, 10, 15, 20...)`,
+            );
+
+            // Mantém o valor errado no campo para correção
+            // Não chama onChange, mantém o valor atual
+
+            // Foca novamente no input após o alert
+            setTimeout(() => {
+              if (inputRef.current) {
+                inputRef.current.focus();
+                // Seleciona todo o texto para facilitar a correção
+                inputRef.current.select();
+              }
+            }, 10);
+
+            // Não limpa o campo - mantém o valor digitado para correção
+            return; // Importante: return aqui para não limpar o campo
+          } else {
+            // Aceita o valor se for múltiplo de 5
+            onChange(numericValue.toString());
+          }
+        } else {
+          // Se não for número válido e não for um sinal de sem resposta
+          alert(
+            `Valor inválido: "${currentValue}"\n\nDigite um número múltiplo de 5 ou "-" para sem resposta.`,
+          );
+
+          // Mantém o valor no campo para correção
+          // Foca novamente no input
+          setTimeout(() => {
+            if (inputRef.current) {
+              inputRef.current.focus();
+              inputRef.current.select();
+            }
+          }, 10);
+
+          return; // Não limpa o campo
         }
       },
       [onChange],
@@ -448,6 +520,7 @@ const DecibelInput = React.memo(
 
     return (
       <input
+        ref={inputRef}
         className={`h-8 w-full text-center border border-gray-300 rounded-md px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
         inputMode="numeric"
         placeholder={placeholder}
@@ -927,7 +1000,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     [],
   );
 
-  // Handler para campos de decibéis
+  // Handler para campos de decibéis com validação de múltiplos de 5
   const handleDecibelInputChange = useCallback(
     (field: keyof AudiometriaData, value: string) => {
       setFormData((prev) => ({ ...prev, [field]: value }));
@@ -1104,6 +1177,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             base: "m-0",
             wrapper: "w-5 h-5",
           }}
+          color={`${field.includes("OD") ? "danger" : "primary"}`}
           isSelected={formData[field] as boolean}
           onValueChange={(checked) => handleBooleanChange(field, checked)}
         />
@@ -1467,14 +1541,11 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
         />
 
         <div className="mb-4 flex justify-between items-center">
-          <div className="text-sm text-gray-600">
+          <div className="text-md text-gray-600">
             <p className="mb-1">
               {resultadosCalculados
                 ? "✅ Resultados calculados"
-                : "⚠️ Preencha todos os campos da tabela antes de calcular"}
-            </p>
-            <p className="text-xs text-amber-600">
-              💡 Todos os campos são obrigatórios para cálculo dos resultados.
+                : "🔴 Preencha todos os campos da tabela antes de calcular"}
             </p>
           </div>
           <div className="flex gap-2">

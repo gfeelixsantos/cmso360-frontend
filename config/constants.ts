@@ -25,8 +25,11 @@ const TICKET_QUERY =
 export const NEST_TICKET_QUERY = NEST_URL + TICKET_QUERY;
 
 export const NEST_SCHEDULINGS_UPDATE = NEST_URL + "schedulings/update";
-export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT =
-  NEST_URL + "schedulings/update/resultadoexame"; // envia resultados de exame pdf
+export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
+export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario`; // adiciona id na query
+export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}schedulings/sync-soc`;
+export const NEST_SCHEDULINGS_DELETE = `${NEST_URL}schedulings/delete`;
+export const NEST_SCHEDULINGS_DELETE_ATTACHMENT = `${NEST_URL}schedulings/delete-attachment`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 export const NEST_PRONTUARIO_PARAMETROS =

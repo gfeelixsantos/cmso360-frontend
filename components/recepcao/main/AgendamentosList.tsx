@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useCallback, lazy, Suspense } from "react";
+import React, { useState, useCallback, lazy, Suspense, useMemo } from "react";
 import {
   Chip,
   Drawer,
@@ -16,21 +16,9 @@ import {
   Skeleton,
 } from "@heroui/react";
 import { VariableSizeList as List } from "react-window";
-import {
-  Building2,
-  Briefcase,
-  FileText,
-  Search,
-  X,
-  Clock,
-  Calendar,
-  Plus,
-  Stethoscope,
-  Eye,
-} from "lucide-react";
+import { Search, X, Clock, Calendar, Plus } from "lucide-react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
 import { getStatusColor } from "@/lib/utils";
 
@@ -117,9 +105,8 @@ const ExamesBadge: React.FC<{
   return (
     <div className="mt-2">
       <span className="flex-1 text-left">
-          Exames: {examesFinalizados} finalizado(s), {examesPendentes}{" "}
-          pendente(s)
-        </span>
+        Exames: {examesFinalizados} finalizado(s), {examesPendentes} pendente(s)
+      </span>
     </div>
   );
 });
@@ -210,11 +197,9 @@ const AgendamentoItem = React.memo(
             <div className="flex items-center mt-1 text-sm text-gray-500">
               <Clock className="mr-2" size={14} />
               <span>
-                {agendamento.HORARIO != "" ? agendamento.HORARIO : "N/A"}
+                {agendamento.HORARIO != "" ? agendamento.HORARIO : "Aguardando"}
               </span>
-              <span className="truncate ml-4">
-                {agendamento.TIPOEXAMENOME}
-                </span>
+              <span className="truncate ml-4">{agendamento.TIPOEXAMENOME}</span>
             </div>
           </div>
           <div className="ml-3 flex-shrink-0">
@@ -272,10 +257,30 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
 
   const listRef = React.useRef<List>(null);
 
+  // Filtrar agendamentos com base na busca
+  const agendamentosFiltrados = useMemo(() => {
+    if (!buscaSenha.trim()) {
+      return agendadosFiltrados.filter(
+        (a) => a.UNIDADEATENDIMENTO === unidadeSelecionada,
+      );
+    }
+
+    const termoBusca = buscaSenha.toLowerCase().trim();
+
+    return agendadosFiltrados.filter(
+      (agendamento) =>
+        agendamento.UNIDADEATENDIMENTO === unidadeSelecionada &&
+        (agendamento.NOME.toLowerCase().includes(termoBusca) ||
+          agendamento.NOMEEMPRESA.toLowerCase().includes(termoBusca) ||
+          (agendamento.NOMECARGO &&
+            agendamento.NOMECARGO.toLowerCase().includes(termoBusca))),
+    );
+  }, [agendadosFiltrados, unidadeSelecionada, buscaSenha]);
+
   // Calcular altura dinâmica para cada item
   const getItemSize = useCallback(
     (index: number) => {
-      const agendamento = agendadosFiltrados[index];
+      const agendamento = agendamentosFiltrados[index];
       let height = 180;
 
       if (agendamento.OBSERVACOES) {
@@ -288,7 +293,7 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
 
       return height;
     },
-    [agendadosFiltrados],
+    [agendamentosFiltrados],
   );
 
   // Resetar as alturas dos itens quando os dados mudarem
@@ -296,7 +301,7 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
     if (listRef.current) {
       listRef.current.resetAfterIndex(0);
     }
-  }, [agendadosFiltrados]);
+  }, [agendamentosFiltrados]);
 
   const handleItemSelect = useCallback((agendamento: Scheduling) => {
     setIsOpen(false);
@@ -342,14 +347,19 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
   const renderRow = useCallback(
     ({ index, style }: { index: number; style: React.CSSProperties }) => (
       <AgendamentoItem
-        agendamento={agendadosFiltrados[index]}
+        agendamento={agendamentosFiltrados[index]}
         loadingDetailsId={loadingDetailsId}
         style={style}
         onOpenDetails={handleOpenDetails}
         onSelect={handleItemSelect}
       />
     ),
-    [agendadosFiltrados, handleItemSelect, handleOpenDetails, loadingDetailsId],
+    [
+      agendamentosFiltrados,
+      handleItemSelect,
+      handleOpenDetails,
+      loadingDetailsId,
+    ],
   );
 
   const handleCloseModal = useCallback(() => {
@@ -387,13 +397,13 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
               </h2>
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {
-                agendadosFiltrados.filter(
-                  (a) => a.UNIDADEATENDIMENTO === unidadeSelecionada,
-                ).length
-              }{" "}
-              em {unidadeSelecionada} de {agendadosFiltrados.length}{" "}
-              agendamento(s)
+              {agendamentosFiltrados.length} agendamento(s) em{" "}
+              {unidadeSelecionada}
+              {buscaSenha && (
+                <span className="ml-2 text-blue-600 font-medium">
+                  • Busca: "{buscaSenha}"
+                </span>
+              )}
             </p>
           </DrawerHeader>
 
@@ -429,12 +439,12 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
                   )}
                 </div>
 
-                {agendadosFiltrados.length > 0 ? (
+                {agendamentosFiltrados.length > 0 ? (
                   <div className="bg-white rounded-xl p-1 shadow-sm">
                     <List
                       ref={listRef}
                       height={520}
-                      itemCount={agendadosFiltrados.length}
+                      itemCount={agendamentosFiltrados.length}
                       itemSize={getItemSize}
                       width="100%"
                     >
@@ -445,13 +455,28 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
                   <div className="flex flex-col items-center justify-center p-10 text-gray-500 bg-white rounded-xl border border-dashed border-gray-300 shadow-sm">
                     <Search className="mb-4 text-gray-400" size={48} />
                     <p className="text-lg font-medium mb-1">
-                      Nenhum agendamento encontrado
+                      {buscaSenha
+                        ? "Nenhum agendamento encontrado"
+                        : "Nenhum agendamento para esta unidade"}
                     </p>
                     <p className="text-sm text-center text-gray-600">
                       {buscaSenha
-                        ? "Tente ajustar os termos da busca ou limpar os filtros."
-                        : "Não há agendamentos para exibir no momento."}
+                        ? 'Nenhum agendamento encontrado para a busca "' +
+                          buscaSenha +
+                          '". Tente ajustar os termos.'
+                        : "Não há agendamentos para a unidade " +
+                          unidadeSelecionada +
+                          " no momento."}
                     </p>
+                    {buscaSenha && (
+                      <Button
+                        className="mt-4"
+                        variant="flat"
+                        onPress={clearSearch}
+                      >
+                        Limpar busca
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>

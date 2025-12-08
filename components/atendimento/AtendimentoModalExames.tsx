@@ -24,8 +24,7 @@ import FichaClinicaWhirlpool from "../exames/FichaClinicaWhirlpool";
 
 import { AtendimentoRules } from "./AtendimentoRules";
 
-import { useEntityManager } from "@/hooks/useEntityManager";
-import { Ticket, TicketActionType } from "@/lib/ticket/ticket";
+import { TicketActionType } from "@/lib/ticket/ticket";
 import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useUser } from "@/hooks/useUser";

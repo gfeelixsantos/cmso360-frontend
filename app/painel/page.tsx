@@ -283,7 +283,8 @@ const AudioActivationModal = ({ onActivate }: { onActivate: () => void }) => {
             }}
             onClick={handleActivate}
           >
-            <Maximize2 className="inline mr-2" size={18} /> ATIVAR ÁUDIO E TELA CHEIA
+            <Maximize2 className="inline mr-2" size={18} /> ATIVAR ÁUDIO E TELA
+            CHEIA
           </button>
 
           <button
@@ -538,7 +539,9 @@ const ConfigModal = ({
             >
               <span
                 className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
-                  audioHabilitado ? "translate-x-5 sm:translate-x-6" : "translate-x-0.5 sm:translate-x-1"
+                  audioHabilitado
+                    ? "translate-x-5 sm:translate-x-6"
+                    : "translate-x-0.5 sm:translate-x-1"
                 }`}
               />
             </button>
@@ -857,7 +860,7 @@ export default function PainelPage() {
   const handleActivateAudioAndFullscreen = () => {
     setAudioHabilitado(true);
     setShowAudioModal(false);
-    
+
     // Entrar em tela cheia após um breve delay para garantir que o modal foi fechado
     setTimeout(() => {
       if (containerRef.current) {
@@ -894,14 +897,20 @@ export default function PainelPage() {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('msfullscreenchange', handleFullscreenChange);
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", handleFullscreenChange);
+    document.addEventListener("msfullscreenchange", handleFullscreenChange);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('msfullscreenchange', handleFullscreenChange);
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+      document.removeEventListener(
+        "webkitfullscreenchange",
+        handleFullscreenChange,
+      );
+      document.removeEventListener(
+        "msfullscreenchange",
+        handleFullscreenChange,
+      );
     };
   }, []);
 
@@ -1219,9 +1228,7 @@ export default function PainelPage() {
       {/* Modal de Ativação de Áudio */}
       <AnimatePresence>
         {showAudioModal && (
-          <AudioActivationModal
-            onActivate={handleActivateAudioAndFullscreen}
-          />
+          <AudioActivationModal onActivate={handleActivateAudioAndFullscreen} />
         )}
       </AnimatePresence>
 
