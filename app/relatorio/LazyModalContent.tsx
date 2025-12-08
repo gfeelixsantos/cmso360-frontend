@@ -1651,7 +1651,7 @@ const ExamesTable: React.FC<{
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    {exame.url ? (
+                    {exame.url && (
                       <div className="flex flex-col gap-1">
                         <Button
                           className="w-full"
@@ -1663,35 +1663,28 @@ const ExamesTable: React.FC<{
                         >
                           Visualizar Resultado
                         </Button>
-                        <span className="text-xs text-gray-500">
-                          Resultado disponível
-                        </span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col gap-1">
-                        <span className="text-xs text-gray-400">
-                          Aguardando resultado
-                        </span>
-                        <Button
-                          color="primary"
-                          size="sm"
-                          startContent={<Upload size={14} />}
-                          variant="flat"
-                          onPress={() =>
-                            setUploadExamModal({
-                              isOpen: true,
-                              exame,
-                              selectedFiles: [],
-                              isUploading: false,
-                              error: "",
-                              success: false,
-                            })
-                          }
-                        >
-                          Enviar Resultado
-                        </Button>
                       </div>
                     )}
+                    <div className="flex flex-col gap-1">
+                      <Button
+                        color="primary"
+                        size="sm"
+                        startContent={<Upload size={14} />}
+                        variant="flat"
+                        onPress={() =>
+                          setUploadExamModal({
+                            isOpen: true,
+                            exame,
+                            selectedFiles: [],
+                            isUploading: false,
+                            error: "",
+                            success: false,
+                          })
+                        }
+                      >
+                        Enviar Resultado
+                      </Button>
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
