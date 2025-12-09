@@ -21,6 +21,7 @@ import { Search, X, Clock, Calendar, Plus } from "lucide-react";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
 import { getStatusColor } from "@/lib/utils";
+import { useUser } from "@/hooks/useUser";
 
 // Importar o LazyModalContent
 const LazyModalContent = lazy(() => import("@/app/relatorio/LazyModalContent"));
@@ -120,6 +121,7 @@ const DetalhesModal: React.FC<{
   atendimento: Scheduling | null;
   loading: boolean;
 }> = ({ isOpen, onClose, atendimento, loading }) => {
+  const userApp = useUser()
   return (
     <Modal
       aria-label="Modal de detalhes do atendimento"
@@ -142,6 +144,7 @@ const DetalhesModal: React.FC<{
             <LazyModalContent
               atendimento={atendimento}
               onClose={onClose}
+              userApp={userApp}
               onUpdateScheduling={(updated: any) => {
                 // Aqui você pode atualizar o estado se necessário
                 console.log("Atendimento atualizado:", updated);
