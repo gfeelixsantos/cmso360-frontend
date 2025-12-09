@@ -38,6 +38,7 @@ import {
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
+import { IUserInfo } from "@/hooks/useUser";
 
 // ============================================
 // COMPONENTE: ExamesTable
@@ -55,8 +56,9 @@ interface UploadExamModalState {
 const ExamesTable: React.FC<{
   exames: ExamRegister[];
   atendimento: Scheduling;
+  userApp: IUserInfo | null
   onUpdateScheduling?: (updated: Scheduling) => void;
-}> = ({ exames, atendimento, onUpdateScheduling }) => {
+}> = ({ exames, atendimento, userApp, onUpdateScheduling }) => {
   const [localExames, setLocalExames] = useState<ExamRegister[]>(exames || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [uploadExamModal, setUploadExamModal] = useState<UploadExamModalState>({
@@ -428,17 +430,19 @@ const ExamesTable: React.FC<{
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu aria-label="Ações do exame">
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Pen size={14} />}
-                            textValue="Editar Exame"
-                            onPress={() =>
-                              setEditExamModal({ isOpen: true, exam: exame })
-                            }
-                          >
-                            Editar Exame
-                          </DropdownItem>
-
+                          {userApp?.codigo == exame.codigoProfissional ? (
+                            <DropdownItem
+                              key="edit"
+                              startContent={<Pen size={14} />}
+                              textValue="Editar Exame"
+                              onPress={() =>
+                                setEditExamModal({ isOpen: true, exam: exame })
+                              }
+                            >
+                              Editar Exame
+                            </DropdownItem>
+                            ) : null
+                          }
                           {exame.url ? (
                             <DropdownItem
                               key="delete-result"

@@ -25,9 +25,13 @@ import {
   NEST_SCHEDULINGS_ANEXO_REMOVE,
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { IUserInfo } from "@/hooks/useUser";
+
+
 
 interface LazyModalContentProps {
   atendimento: Scheduling;
+  userApp: IUserInfo | null
   onClose: () => void;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
@@ -37,6 +41,7 @@ interface LazyModalContentProps {
 // ============================================
 const LazyModalContent: React.FC<LazyModalContentProps> = ({
   atendimento,
+  userApp,
   onClose,
   onUpdateScheduling,
 }) => {
@@ -331,6 +336,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         />
         <ExamesTable
           atendimento={atendimento}
+          userApp={userApp}
           exames={atendimento.EXAMES}
           onUpdateScheduling={onUpdateScheduling}
         />
