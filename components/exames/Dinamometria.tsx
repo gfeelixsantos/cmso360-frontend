@@ -1,3 +1,4 @@
+// Dinamometria.tsx
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -60,6 +61,12 @@ interface DinamometriaData {
   observacoesFinais: string;
 }
 
+interface TipoDinamometriaPreenchido {
+  palmar: boolean;
+  escapular: boolean;
+  dorsal: boolean;
+}
+
 const Dinamometria: React.FC<DinamometriaProps> = ({
   atendimento,
   exame,
@@ -72,6 +79,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   const [formErrors, setFormErrors] = useState<{
     ladoDominante?: string;
     sexo?: string;
+    tipoDinamometria?: string;
   }>({});
 
   const [formData, setFormData] = useState<DinamometriaData>({
@@ -112,6 +120,13 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     observacoesFinais: "",
   });
 
+  const [tiposPreenchidos, setTiposPreenchidos] =
+    useState<TipoDinamometriaPreenchido>({
+      palmar: false,
+      escapular: false,
+      dorsal: false,
+    });
+
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
@@ -132,6 +147,46 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       }));
     }
   }, [user, formData.profissional]);
+
+  // Verificar quais tipos de dinamometria foram preenchidos
+  useEffect(() => {
+    const palmarPreenchido =
+      formData.palmarDireita1.trim() !== "" ||
+      formData.palmarDireita2.trim() !== "" ||
+      formData.palmarDireita3.trim() !== "" ||
+      formData.palmarEsquerda1.trim() !== "" ||
+      formData.palmarEsquerda2.trim() !== "" ||
+      formData.palmarEsquerda3.trim() !== "";
+
+    const escapularPreenchido =
+      formData.escapular1.trim() !== "" ||
+      formData.escapular2.trim() !== "" ||
+      formData.escapular3.trim() !== "";
+
+    const dorsalPreenchido =
+      formData.dorsal1.trim() !== "" ||
+      formData.dorsal2.trim() !== "" ||
+      formData.dorsal3.trim() !== "";
+
+    setTiposPreenchidos({
+      palmar: palmarPreenchido,
+      escapular: escapularPreenchido,
+      dorsal: dorsalPreenchido,
+    });
+  }, [
+    formData.palmarDireita1,
+    formData.palmarDireita2,
+    formData.palmarDireita3,
+    formData.palmarEsquerda1,
+    formData.palmarEsquerda2,
+    formData.palmarEsquerda3,
+    formData.escapular1,
+    formData.escapular2,
+    formData.escapular3,
+    formData.dorsal1,
+    formData.dorsal2,
+    formData.dorsal3,
+  ]);
 
   // Função auxiliar para calcular média
   const calcularMedia = useCallback((valores: string[]): string => {
@@ -209,11 +264,17 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.dorsalMedia,
     formData.ladoDominante,
     formData.sexo,
+    tiposPreenchidos,
   ]);
 
   const validarFormulario = useCallback(() => {
-    const errors: { ladoDominante?: string; sexo?: string } = {};
+    const errors: {
+      ladoDominante?: string;
+      sexo?: string;
+      tipoDinamometria?: string;
+    } = {};
 
+    // Validação de dados obrigatórios
     if (!formData.ladoDominante) {
       errors.ladoDominante = "Lado dominante é obrigatório";
     }
@@ -222,10 +283,21 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       errors.sexo = "Sexo é obrigatório";
     }
 
+    // Validação de pelo menos um tipo de dinamometria preenchido
+    const peloMenosUmTipoPreenchido =
+      tiposPreenchidos.palmar ||
+      tiposPreenchidos.escapular ||
+      tiposPreenchidos.dorsal;
+
+    if (!peloMenosUmTipoPreenchido) {
+      errors.tipoDinamometria =
+        "É obrigatório preencher ao menos um tipo de dinamometria (palmar, escapular ou dorsal)";
+    }
+
     setFormErrors(errors);
 
     return Object.keys(errors).length === 0;
-  }, [formData.ladoDominante, formData.sexo]);
+  }, [formData.ladoDominante, formData.sexo, tiposPreenchidos]);
 
   // Função para avaliar dinamometria palmar
   const avaliarDinamometriaPalmar = useCallback(
@@ -266,15 +338,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   );
 
   const calcularResultado = useCallback(() => {
-    // Obter todas as médias como números
-    const mediaPalmarDir =
-      parseFloat(formData.palmarDireitaMedia.replace(",", ".")) || 0;
-    const mediaPalmarEsq =
-      parseFloat(formData.palmarEsquerdaMedia.replace(",", ".")) || 0;
-    const mediaEscapular =
-      parseFloat(formData.escapularMedia.replace(",", ".")) || 0;
-    const mediaDorsal = parseFloat(formData.dorsalMedia.replace(",", ".")) || 0;
-
     // Verificar se temos dados suficientes para avaliação
     if (!formData.ladoDominante || !formData.sexo) {
       setFormData((prev) => ({
@@ -287,52 +350,110 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       return;
     }
 
-    // Avaliar cada tipo de dinamometria
+    // Obter todas as médias como números
+    const mediaPalmarDir =
+      parseFloat(formData.palmarDireitaMedia.replace(",", ".")) || 0;
+    const mediaPalmarEsq =
+      parseFloat(formData.palmarEsquerdaMedia.replace(",", ".")) || 0;
+    const mediaEscapular =
+      parseFloat(formData.escapularMedia.replace(",", ".")) || 0;
+    const mediaDorsal = parseFloat(formData.dorsalMedia.replace(",", ".")) || 0;
+
+    // Lista para armazenar os resultados individuais
+    const resultadosIndividuais: string[] = [];
+    let todosNormais = true;
+    let algumPreenchido = false;
+
+    // Avaliar cada tipo de dinamometria separadamente
     let palmarNormal = false;
     let escapularNormal = false;
     let dorsalNormal = false;
 
-    if (formData.ladoDominante === "Direito") {
-      palmarNormal = avaliarDinamometriaPalmar(
-        mediaPalmarDir,
-        mediaPalmarEsq,
-        formData.sexo,
+    // Verificar e avaliar dinamometria palmar se preenchida
+    if (tiposPreenchidos.palmar && mediaPalmarDir > 0 && mediaPalmarEsq > 0) {
+      algumPreenchido = true;
+      if (formData.ladoDominante === "Direito") {
+        palmarNormal = avaliarDinamometriaPalmar(
+          mediaPalmarDir,
+          mediaPalmarEsq,
+          formData.sexo,
+        );
+      } else {
+        palmarNormal = avaliarDinamometriaPalmar(
+          mediaPalmarEsq,
+          mediaPalmarDir,
+          formData.sexo,
+        );
+      }
+      resultadosIndividuais.push(
+        `Palmar: ${palmarNormal ? "Normal" : "Alterado"}`,
       );
-    } else {
-      palmarNormal = avaliarDinamometriaPalmar(
-        mediaPalmarEsq,
-        mediaPalmarDir,
-        formData.sexo,
-      );
+      if (!palmarNormal) todosNormais = false;
     }
 
-    escapularNormal = avaliarDinamometriaEscapular(
-      mediaEscapular,
-      formData.sexo,
-    );
-    dorsalNormal = avaliarDinamometriaDorsal(mediaDorsal, formData.sexo);
+    // Verificar e avaliar dinamometria escapular se preenchida
+    if (tiposPreenchidos.escapular && mediaEscapular > 0) {
+      algumPreenchido = true;
+      escapularNormal = avaliarDinamometriaEscapular(
+        mediaEscapular,
+        formData.sexo,
+      );
+      resultadosIndividuais.push(
+        `Escapular: ${escapularNormal ? "Normal" : "Alterado"}`,
+      );
+      if (!escapularNormal) todosNormais = false;
+    }
 
-    // Determinar resultado final
-    const todasNormais = palmarNormal && escapularNormal && dorsalNormal;
-    const resultado = todasNormais ? "Normal" : "Alterado";
+    // Verificar e avaliar dinamometria dorsal se preenchida
+    if (tiposPreenchidos.dorsal && mediaDorsal > 0) {
+      algumPreenchido = true;
+      dorsalNormal = avaliarDinamometriaDorsal(mediaDorsal, formData.sexo);
+      resultadosIndividuais.push(
+        `Dorsal: ${dorsalNormal ? "Normal" : "Alterado"}`,
+      );
+      if (!dorsalNormal) todosNormais = false;
+    }
 
-    // Gerar observações detalhadas
+    // Determinar resultado final baseado nos tipos preenchidos
+    let resultadoFinal = "Normal";
     let observacoes = "";
 
-    if (todasNormais) {
-      observacoes = "Dentro dos padrões da normalidade";
+    if (!algumPreenchido) {
+      resultadoFinal = "Normal";
+      observacoes =
+        "Aguardando preenchimento de pelo menos um tipo de dinamometria.";
+    } else if (todosNormais) {
+      resultadoFinal = "Normal";
+      observacoes =
+        "Dentro dos padrões da normalidade para os tipos avaliados.";
     } else {
-      observacoes = "Fora dos padrões da normalidade.";
+      resultadoFinal = "Alterado";
+      observacoes = `Fora dos padrões da normalidade para: ${resultadosIndividuais
+        .filter((r) => r.includes("Alterado"))
+        .map((r) => r.split(":")[0])
+        .join(", ")}`;
     }
 
-    // Atualizar classificações individuais
+    // Atualizar classificações individuais apenas para os tipos preenchidos
     setFormData((prev) => ({
       ...prev,
-      resultado,
+      resultado: resultadoFinal,
       observacoesFinais: observacoes,
-      classificacaoPalmar: palmarNormal ? "Normal" : "Abaixo do esperado",
-      classificacaoEscapular: escapularNormal ? "Normal" : "Abaixo do esperado",
-      classificacaoDorsal: dorsalNormal ? "Normal" : "Abaixo do esperado",
+      classificacaoPalmar: tiposPreenchidos.palmar
+        ? palmarNormal
+          ? "Normal"
+          : "Abaixo do esperado"
+        : "",
+      classificacaoEscapular: tiposPreenchidos.escapular
+        ? escapularNormal
+          ? "Normal"
+          : "Abaixo do esperado"
+        : "",
+      classificacaoDorsal: tiposPreenchidos.dorsal
+        ? dorsalNormal
+          ? "Normal"
+          : "Abaixo do esperado"
+        : "",
     }));
   }, [
     formData.palmarDireitaMedia,
@@ -341,6 +462,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.dorsalMedia,
     formData.ladoDominante,
     formData.sexo,
+    tiposPreenchidos,
     avaliarDinamometriaPalmar,
     avaliarDinamometriaEscapular,
     avaliarDinamometriaDorsal,
@@ -652,6 +774,51 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     </div>
   );
 
+  // Adicionar indicador visual dos tipos preenchidos
+  const renderIndicadorTiposPreenchidos = () => (
+    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <span className="text-sm font-medium text-gray-700">
+            Tipos preenchidos:
+          </span>
+          <div className="flex space-x-3">
+            <div
+              className={`flex items-center ${tiposPreenchidos.palmar ? "text-green-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full mr-1 ${tiposPreenchidos.palmar ? "bg-green-500" : "bg-gray-300"}`}
+              />
+              <span className="text-xs">Palmar</span>
+            </div>
+            <div
+              className={`flex items-center ${tiposPreenchidos.escapular ? "text-green-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full mr-1 ${tiposPreenchidos.escapular ? "bg-green-500" : "bg-gray-300"}`}
+              />
+              <span className="text-xs">Escapular</span>
+            </div>
+            <div
+              className={`flex items-center ${tiposPreenchidos.dorsal ? "text-green-600" : "text-gray-400"}`}
+            >
+              <div
+                className={`w-2 h-2 rounded-full mr-1 ${tiposPreenchidos.dorsal ? "bg-green-500" : "bg-gray-300"}`}
+              />
+              <span className="text-xs">Dorsal</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-xs text-gray-500">Preencha ao menos um tipo</div>
+      </div>
+      {formErrors.tipoDinamometria && (
+        <div className="mt-2 text-red-500 text-sm font-medium">
+          ⚠ {formErrors.tipoDinamometria}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-6 min-h-screen">
       <HeaderExame agendamento={agendamento} exame={exame} />
@@ -659,6 +826,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       {/* 2. Dinamometria Palmar */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle number="2" title="Dinamometria Palmar" />
+
         {/* Dados Obrigatórios - Lado Dominante e Sexo */}
         <div className="p-4 ">
           <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide flex items-center">
@@ -879,15 +1047,41 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <SectionTitle number="5" title="Resultado e Observações" />
         <div className="p-4 ">
-          <Textarea
-            className="bg-white border-gray-300"
-            placeholder="Observações finais sobre a avaliação de força muscular..."
-            rows={4}
-            value={formData.observacoesFinais}
-            onChange={(e) =>
-              handleInputChange("observacoesFinais", e.target.value)
-            }
-          />
+          {/* Indicador de tipos preenchidos */}
+          {renderIndicadorTiposPreenchidos()}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Resultado Final
+            </label>
+            <Input
+              isReadOnly
+              className="border-gray-300 bg-gray-100 font-semibold"
+              classNames={{
+                input: `font-bold ${
+                  formData.resultado === "Normal"
+                    ? "text-green-600"
+                    : formData.resultado === "Alterado"
+                      ? "text-red-600"
+                      : "text-gray-600"
+                }`,
+              }}
+              value={formData.resultado}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Observações Finais
+            </label>
+            <Textarea
+              className="bg-white border-gray-300"
+              placeholder="Observações finais sobre a avaliação de força muscular..."
+              rows={4}
+              value={formData.observacoesFinais}
+              onChange={(e) =>
+                handleInputChange("observacoesFinais", e.target.value)
+              }
+            />
+          </div>
         </div>
       </Card>
 

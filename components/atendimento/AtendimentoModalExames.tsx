@@ -11,7 +11,7 @@ import {
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Socket } from "socket.io-client";
 
-import FichaClinicaOcupacional from "../exames/FichaClinica";
+import FichaClinicaOcupacional from "../exames/FichaClinicaOcupacional";
 import AcuidadeVisual from "../exames/AcuidadeVisual";
 import Espirometria from "../exames/Espirometria";
 import Dinamometria from "../exames/Dinamometria";

@@ -169,8 +169,7 @@ export default function LoginPage() {
       if (userLogged.data) {
         setCurrentUser(userLogged.data);
 
-        // pequena espera pro "Conectando..." aparecer
-        setTimeout(() => router.push("/dashboard"), 400);
+        router.push("/dashboard");
 
         return;
       }

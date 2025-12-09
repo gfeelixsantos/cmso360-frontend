@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import io, { Socket } from "socket.io-client";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Clock,
   History,
   Loader2,
   Monitor,
@@ -14,6 +13,7 @@ import {
   Maximize2,
   Minimize2,
 } from "lucide-react";
+import { Image } from "@heroui/react";
 
 import {
   NEST_URL,
@@ -1313,15 +1313,13 @@ export default function PainelPage() {
             >
               <div className="max-w-7xl mx-auto grid grid-cols-1 sm:grid-cols-3 items-center gap-1 sm:gap-2 md:gap-4">
                 <div className="flex items-center gap-1 sm:gap-2 md:gap-4 justify-center sm:justify-start order-2 sm:order-1">
-                  <div
-                    className="rounded-2xl p-1.5 sm:p-2 md:p-3 shadow-sm border"
-                    style={{
-                      backgroundColor: COLOR_PALETTE.primary,
-                      borderColor: COLOR_PALETTE.accent,
-                      backgroundImage: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
-                    }}
-                  >
-                    <Monitor className="text-white" size={16} />
+                  <div className="rounded-2xl p-1.5 sm:p-2 md:p-3">
+                    {/* <Monitor className="text-white" size={16} /> */}
+                    <Image
+                      alt="ícone CMSO"
+                      src="/images/cmso_icone.png"
+                      width={84}
+                    />
                   </div>
                   <div>
                     <div
@@ -1350,7 +1348,7 @@ export default function PainelPage() {
                     className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black tabular-nums flex items-center justify-center gap-1 sm:gap-2 md:gap-3 mt-0.5 sm:mt-1"
                     style={{ color: COLOR_PALETTE.primary }}
                   >
-                    <Clock size={14} /> {hora}
+                    {hora}
                   </div>
                 </div>
 
@@ -1397,10 +1395,10 @@ export default function PainelPage() {
                         </div>
                       </motion.div>
 
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 md:gap-3 mb-1 lg:mb-2">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 mb-1 lg:mb-2">
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="flex items-center gap-1 sm:gap-2 md:gap-3 text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 md:py-2 rounded-full border"
+                          className="flex items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 text-base sm:text-lg md:text-xl lg:text-3xl xl:text-4xl 2xl:text-5xl 3xl:text-6xl font-black px-2 sm:px-3 md:px-4 lg:px-6 py-0.5 sm:py-1 md:py-2 lg:py-3 rounded-full border"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             backgroundColor: currentExamColors.primary,
@@ -1414,7 +1412,7 @@ export default function PainelPage() {
 
                         <motion.div
                           animate={{ y: 0, opacity: 1 }}
-                          className="text-base sm:text-lg md:text-xl lg:text-2xl xl:text-3xl 2xl:text-4xl font-black px-2 sm:px-3 md:px-4 py-0.5 sm:py-1 rounded-full border-2 text-center"
+                          className="text-base sm:text-lg md:text-xl lg:text-3xl xl:text-4xl 2xl:text-5xl 3xl:text-6xl font-black px-2 sm:px-3 md:px-4 lg:px-6 py-0.5 sm:py-1 md:py-2 lg:py-3 rounded-full border-2 text-center"
                           initial={{ y: 10, opacity: 0 }}
                           style={{
                             borderColor: currentExamColors.primary,
@@ -1454,10 +1452,10 @@ export default function PainelPage() {
 
               <section className="mt-auto px-1 w-full shrink-0">
                 <div
-                  className="flex items-center gap-1 sm:gap-2 md:gap-3 text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4"
+                  className="flex ml-8 items-center gap-1 sm:gap-2 md:gap-3 text-sm sm:text-base md:text-lg lg:text-xl font-bold mb-1 sm:mb-2 md:mb-3 lg:mb-4"
                   style={{ color: COLOR_PALETTE.text }}
                 >
-                  <History size={14} style={{ color: COLOR_PALETTE.primary }} />
+                  <History size={24} style={{ color: COLOR_PALETTE.primary }} />
                   <span className="truncate">CHAMADAS ANTERIORES</span>
                 </div>
 

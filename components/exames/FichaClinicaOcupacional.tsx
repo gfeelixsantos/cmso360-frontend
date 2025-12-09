@@ -374,41 +374,59 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [tipoAdmissional, setTipoAdmissional] = useState<boolean>(false);
   const [pressaoAlterada, setPressaoAlterada] = useState<boolean>(false);
-  const [aplicarTesteArticular, setAplicarTesteArticular] =
-    useState<boolean>(false);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-
-  const [formData, setFormData] = useState<FichaClinicaData>({
-    ...VALOR_INICIAL,
-    codigoMedico: user?.nome ? user.codigo : "",
-    medico: user?.nome ? user.nome : "",
-  });
+  const [formData, setFormData] = useState<FichaClinicaData>(VALOR_INICIAL);
 
   const [showObservacoesPessoais, setShowObservacoesPessoais] =
     useState<boolean>(false);
+
+  // Preencher dados do médico quando user estiver disponível
+  useEffect(() => {
+    if (user?.codigo && user?.nome) {
+      setFormData((prev) => ({
+        ...prev,
+        codigoMedico: user.codigo,
+        medico: user.nome,
+      }));
+    }
+  }, [user?.codigo, user?.nome]);
 
   useEffect(() => {
     if (atendimento) {
       setAgendamento(atendimento);
     }
 
+    // Carregar formulário existente, preservando dados do médico
     if (formulario) {
       setFormData((prev) => ({
         ...prev,
         ...formulario,
+        // Só sobrescreve codigoMedico/medico se já não tiver dados do médico
+        codigoMedico: formulario.codigoMedico || prev.codigoMedico || "",
+        medico: formulario.medico || prev.medico || "",
       }));
     }
 
-    // Tipo exame (numérico/string) — normaliza também
     const tipoExame = String(atendimento?.TIPOEXAME ?? "");
 
-    if (tipoExame === "1") {
-      setTipoAdmissional(true);
-    } else {
-      setTipoAdmissional(false);
-    }
+    setTipoAdmissional(tipoExame === "1");
   }, [atendimento, formulario]);
+
+  // Efeito para garantir que campos médicos sejam preenchidos se ainda estiverem vazios
+  useEffect(() => {
+    if (
+      user?.codigo &&
+      user?.nome &&
+      (!formData.codigoMedico || !formData.medico)
+    ) {
+      setFormData((prev) => ({
+        ...prev,
+        codigoMedico: user.codigo,
+        medico: user.nome,
+      }));
+    }
+  }, [user, formData.codigoMedico, formData.medico]);
 
   // Verificar pressão arterial alterada - DEBOUNCED
   useEffect(() => {
@@ -521,19 +539,6 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
         ...prev,
         restricoes: {
           ...prev.restricoes!,
-          [field]: value,
-        },
-      }));
-    },
-    [],
-  );
-
-  const handleTestesArticularesChange = useCallback(
-    (field: keyof TestesArticulares, value: any) => {
-      setFormData((prev) => ({
-        ...prev,
-        testesArticulares: {
-          ...prev.testesArticulares!,
           [field]: value,
         },
       }));

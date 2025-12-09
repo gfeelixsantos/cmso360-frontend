@@ -237,8 +237,7 @@ const RecepcaoPage: React.FC = () => {
         loadInitialTickets(unidadeSelecionada),
         loadSocCompanies(),
       ]).finally(() => {
-        // Pequeno timer para receber os atendimentos do conect socket
-        setTimeout(() => setIsLoading(false), 4500);
+        setIsLoading(false);
       });
 
       if (salaSelecionada.includes("PREPARO")) {

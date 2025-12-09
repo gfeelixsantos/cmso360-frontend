@@ -30,6 +30,8 @@ export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario`; 
 export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}schedulings/sync-soc`;
 export const NEST_SCHEDULINGS_DELETE = `${NEST_URL}schedulings/delete`;
 export const NEST_SCHEDULINGS_DELETE_ATTACHMENT = `${NEST_URL}schedulings/delete-attachment`;
+export const NEST_SCHEDULINGS_ANEXO_UPLOAD = `${NEST_URL}schedulings/upload-anexo`;
+export const NEST_SCHEDULINGS_ANEXO_REMOVE = `${NEST_URL}schedulings/remove-anexo`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 export const NEST_PRONTUARIO_PARAMETROS =
@@ -250,6 +252,10 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
     {
       codigos: ["51.01.004-6", "50c", "10014"],
       nome: "Audiometria",
+    },
+    {
+      codigos: ["28032024"],
+      nome: "Avaliação Acústica da Voz",
     },
   ],
   "Acuidade Visual": [

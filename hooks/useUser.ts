@@ -16,7 +16,7 @@ export function useUser() {
   useEffect(() => {
     async function fetchUser() {
       try {
-        const response = await fetch("/api/auth");
+        const response = await fetch("/api/auth", { credentials: "include" });
 
         if (response.status === 200) {
           const { user } = await response.json();
