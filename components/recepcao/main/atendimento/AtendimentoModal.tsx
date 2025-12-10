@@ -922,7 +922,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   className={`text-left text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
                 >
                   {paciente.ATENDIMENTOSTATUS.replace(/_/g, " ")
-                    .toLowerCase()
                     .replace(/\b\w/g, (l: string) => l.toUpperCase())}
                 </span>
               </div>

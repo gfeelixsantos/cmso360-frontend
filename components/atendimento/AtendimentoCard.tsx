@@ -173,7 +173,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           className="font-semibold text-gray-900 truncate text-md"
           title={atendimento.NOME}
         >
-          {atendimento.NOME}
+          {atendimento.NOME.toUpperCase()}
         </h3>
 
         <div className="flex flex-wrap gap-3 text-xs text-gray-600">
@@ -189,7 +189,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
 
           {idade && (
             <div className="flex items-center gap-1">
-              <span title={atendimento.DATANASCIMENTO ?? ""}>- {idade}</span>
+              <span title={atendimento.DATANASCIMENTO ?? ""}> - {!idade.includes("NaN") ? idade : "" }</span>
             </div>
           )}
         </div>
