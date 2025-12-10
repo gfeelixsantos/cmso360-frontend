@@ -419,6 +419,7 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
+      console.log(operation, schedule)
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => [...prev, schedule]);

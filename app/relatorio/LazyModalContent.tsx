@@ -23,6 +23,7 @@ import {
   NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
+  NEST_SCHEDULINGS_PRONTUARIO,
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
@@ -144,11 +145,12 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     try {
       setLoadingViewMedicalRecord(true);
       const response = await fetch(
-        `${NEST_RELATORIO_FUNCIONARIO}/${atendimento._id}`,
+        `${NEST_SCHEDULINGS_PRONTUARIO}${atendimento._id}`,
       );
 
       if (!response.ok) {
-        throw new Error("Erro ao buscar prontuário");
+        const txt = await response.text()
+        throw new Error(`Erro ao buscar prontuário: ${txt}`);
       }
 
       const data = await response.json();
@@ -272,7 +274,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       <ModalHeader className="flex gap-2">
         <div className="flex items-center justify-between w-full">
           <div>
-            <h2 className="text-xl font-bold">{atendimento.NOME}</h2>
+            <h2 className="text-xl font-bold">{atendimento.NOME.toUpperCase()}</h2>
             <div className="flex gap-4 text-sm text-gray-600 mt-1">
               <span>{atendimento.TIPOEXAMENOME}</span>
               <span>{atendimento.DATAAGENDAMENTO}</span>

@@ -814,7 +814,7 @@ export default function RelatoriosPage() {
                             <TableCell>
                               <div>
                                 <p className="font-medium text-xs text-gray-900">
-                                  {atendimento.NOME}
+                                  {atendimento.NOME.toUpperCase()}
                                 </p>
                                 <p className="text-xs text-gray-500">
                                   CPF: {formatCPF(atendimento.CPFFUNCIONARIO)}

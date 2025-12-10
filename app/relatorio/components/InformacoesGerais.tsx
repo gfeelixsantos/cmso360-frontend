@@ -136,7 +136,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Nome
                 </label>
-                {renderField("NOME", "Nome", atendimento.NOME)}
+                {renderField("NOME", "Nome", atendimento.NOME.toUpperCase())}
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500 block mb-1">

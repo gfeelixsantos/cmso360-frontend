@@ -76,29 +76,41 @@ const useExamProgress = (exames: ExamRegister[]) => {
 const calcularIdade = (dataNascimento: string | null): string => {
   if (!dataNascimento) return "";
 
-  try {
-    const nascimento = new Date(dataNascimento);
-    const hoje = new Date();
-
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const mesAtual = hoje.getMonth();
-    const diaAtual = hoje.getDate();
-    const mesNascimento = nascimento.getMonth();
-    const diaNascimento = nascimento.getDate();
-
-    // Ajusta a idade se ainda não fez aniversário este ano
-    if (
-      mesAtual < mesNascimento ||
-      (mesAtual === mesNascimento && diaAtual < diaNascimento)
-    ) {
-      idade--;
-    }
-
-    return `${idade} anos`;
-  } catch (error) {
+  // Verifica se está no formato DD/MM/YYYY
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dataNascimento)) {
     return "";
   }
+
+  const [dia, mes, ano] = dataNascimento.split("/").map(Number);
+
+  // Validação de números (dia 1-31, mês 1-12, ano > 1900)
+  if (!dia || !mes || !ano || ano < 1900 || mes > 12 || dia > 31) {
+    return "";
+  }
+
+  // Cria a data de nascimento como Date JS
+  const nascimento = new Date(ano, mes - 1, dia);
+  if (isNaN(nascimento.getTime())) return "";
+
+  const hoje = new Date();
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
+
+  const mesAtual = hoje.getMonth();
+  const diaAtual = hoje.getDate();
+  const mesNasc = nascimento.getMonth();
+  const diaNasc = nascimento.getDate();
+
+  // Ajusta caso não tenha feito aniversário ainda
+  if (mesAtual < mesNasc || (mesAtual === mesNasc && diaAtual < diaNasc)) {
+    idade--;
+  }
+
+  // Proteção final
+  if (idade < 0 || isNaN(idade)) return "";
+
+  return `${idade} anos`;
 };
+
 
 // Função para determinar a cor do avatar baseado no ticket
 const getAvatarColor = (ticket: Ticket): string => {
