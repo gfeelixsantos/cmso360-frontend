@@ -143,6 +143,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const [records, setRecords] = useState<AsoFuncionarioDto[]>();
   const [recordsCodes, setRecordsCodes] = useState<Set<string>>(new Set());
   const [isOpenPreparationModal, setIsOpenPreparationModal] = useState(false);
+  const [somentePa, setSomentePa] = useState<boolean>(false)
 
   // referencia para o sidebar dos cards
   const listRef = useRef<any>(null);
@@ -340,17 +341,12 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
           if (response.ok) {
             const examesJson = await response.json();
-
+           
             // ✅ Cria nova cópia de paciente (imutável)
             const pacienteAtualizado = {
               ...paciente,
               EXAMES: [...paciente.EXAMES, ...examesJson],
             };
-
-            console.log(
-              "Funcionário atualizado com exames:",
-              pacienteAtualizado,
-            );
 
             // ✅ Atualiza o estado reativo — isso re-renderiza a UI
             setFuncionarioSelecionado(pacienteAtualizado);
@@ -452,9 +448,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setPreferencialTipo("");
       setAnexos(paciente.ANEXOS?.map((a) => a) || []);
       setIsBindServiceSelected(false);
-
+      setSomentePa(false)
       setIsLoading(false);
-      console.log("okss chamado");
     },
     [handleAtendimentoCredenciada, funcionarioSelecionado],
   );
@@ -489,6 +484,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     setAnexos([]);
     setFilesUpload([]);
     setIsBindServiceSelected(false);
+    setSomentePa(false)
     setRecords([]);
     setRecordsCodes(new Set());
     setFuncionarioSelecionado(null);
@@ -599,6 +595,33 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     link.click();
   };
+
+  // ---------------------------------------------------------
+  // Solicitação somente de PA
+  // ----------------------------------------------------------
+  const handleSomentePa = (value: boolean) => {
+    setSomentePa(value);
+
+    if (!codigoExames) return;
+
+    if (value === true) {
+      // Marcar -> remover Exame Clínico
+      setCodigoExames(prev =>
+        prev.filter(g => g !== "Exame Clínico")
+      );
+    } else {
+      // Desmarcar -> adicionar Exame Clínico novamente, se não existir
+      setCodigoExames(prev => {
+        if (!prev.includes("Exame Clínico")) {
+          return [...prev, "Exame Clínico"];
+        }
+        return prev;
+      });
+    }
+  };
+
+
+
 
   // ---------------------------------------------------------
   // Vincular atendimento
@@ -782,6 +805,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     try {
       formData.append("scheduling", JSON.stringify(funcionarioSelecionado));
+      formData.append("somentepa", String(somentePa))
 
       const submmitResponse = await fetch(NEST_SCHEDULINGS_UPDATE, {
         method: "POST",
@@ -1306,7 +1330,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   <label className="text-sm font-medium text-gray-700">
                     Tipo de Exame *
                   </label>
-                  <div className="text-xs text-gray-400">Selecione um</div>
                 </div>
 
                 <div
@@ -1347,16 +1370,29 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
                 <div className="mt-4">
                   {empresa && codigoFuncionario && funcionarioSelecionado && (
+                    <div className="flex justify-end">
                     <Checkbox
-                      color="primary"
+                      color="danger"
+                      disabled={isLoading}
+                      onValueChange={handleSomentePa}
+                      isSelected={somentePa}
+                    >
+                      <span className={`text-sm ${somentePa ? "text-red-600" : "text-gray-700"}`}>
+                        Somente P.A
+                      </span>
+                    </Checkbox>
+
+                    {/* <Checkbox
+                      color="success"
                       disabled={isLoading}
                       isSelected={isBindServiceSelected}
                       onValueChange={handleBindService}
                     >
                       <span className="text-sm text-gray-700">
-                        Repetição de exame
+                        Vincular ASO
                       </span>
-                    </Checkbox>
+                    </Checkbox> */}
+                    </div>
                   )}
 
                   {isBindServiceSelected && (

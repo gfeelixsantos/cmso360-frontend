@@ -106,7 +106,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
         <div className="flex justify-between items-start gap-2">
           <div className="min-w-0 flex-1">
             <h3 className="font-semibold text-sm text-gray-900 truncate">
-              {atendimento.NOME}
+              {atendimento.NOME.toUpperCase()}
             </h3>
             <div className="flex items-center gap-1 text-xs text-gray-600 mt-1">
               <span>{atendimento.TIPOEXAMENOME}</span>

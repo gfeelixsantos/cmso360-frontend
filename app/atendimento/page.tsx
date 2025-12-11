@@ -86,7 +86,6 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     reconnectionDelay: 2000,
     reconnectionDelayMax: 10000,
     timeout: 20000,
-    // Not setting pingInterval (server controls it). Keep default client behavior.
   });
 
   SINGLETON_SOCKET = s;

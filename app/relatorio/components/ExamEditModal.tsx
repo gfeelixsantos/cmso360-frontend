@@ -174,7 +174,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
             funcionarioId: atendimento._id,
             codigoExame: [exame.codigoExame],
             formulario: data,
-            sala: exame.sala, // Sala especial para edição
+            sala: exame.sala, 
             profissional: exame.profissional || "Desconhecido",
             isEditing: true, // Flag para indicar que é edição
           }),

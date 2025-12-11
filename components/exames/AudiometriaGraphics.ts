@@ -216,37 +216,45 @@ export function generateAudiogramSVG(form: AudiometriaData): {
       // --- SIMBOLOGIA CORRETA VO ---
       if (isRightEar) {
         // VO OD (Vermelho)
+       
         if (masked) {
-          // [ Colchete (OD Mascarada)
+          // Colchete [  (OD mascarada)
           const x_vertical = x - size - offset;
           const x_horizontal_end = x - offset;
 
           svg += `<path 
-                    d="M ${x_vertical} ${y - size} 
-                       V ${y + size} 
-                       M ${x_vertical} ${y - size} L ${x_horizontal_end} ${y - size} 
-                       M ${x_vertical} ${y + size} L ${x_horizontal_end} ${y + size}" 
-                    stroke="${color}" fill="none" stroke-width="1.5" />`;
+            d="M ${x_vertical} ${y - size}
+              V ${y + size}
+              M ${x_vertical} ${y - size} L ${x_horizontal_end} ${y - size}
+              M ${x_vertical} ${y + size} L ${x_horizontal_end} ${y + size}"
+            stroke="${color}" fill="none" stroke-width="1.5" />`;
         } else {
-          // < Angulado (OD Não Mascarada)
-          svg += `<path d="M ${x - offset} ${y} L ${x - size - offset} ${y - size} M ${x - offset} ${y} L ${x - size - offset} ${y + size}" stroke="${color}" fill="none" stroke-width="1.5" />`;
+
+            // < Angulado (OD não mascarado) 
+          svg += `<path
+            d="M ${x + size + offset} ${y - size} L ${x + offset} ${y}
+              M ${x + size + offset} ${y + size} L ${x + offset} ${y}"
+            stroke="${color}" fill="none" stroke-width="1.5" />`;
         }
       } else {
         // VO OE (Azul)
         if (masked) {
-          // ] Colchete (OE Mascarada)
+          // Colchete ] (OE mascarada)
           const x_vertical = x + size + offset;
           const x_horizontal_end = x + offset;
 
           svg += `<path 
-                    d="M ${x_vertical} ${y - size} 
-                       V ${y + size} 
-                       M ${x_vertical} ${y - size} L ${x_horizontal_end} ${y - size} 
-                       M ${x_vertical} ${y + size} L ${x_horizontal_end} ${y + size}" 
-                    stroke="${color}" fill="none" stroke-width="1.5" />`;
+            d="M ${x_vertical} ${y - size}
+              V ${y + size}
+              M ${x_vertical} ${y - size} L ${x_horizontal_end} ${y - size}
+              M ${x_vertical} ${y + size} L ${x_horizontal_end} ${y + size}"
+            stroke="${color}" fill="none" stroke-width="1.5" />`;
         } else {
-          // > Angulado (OE Não Mascarada)
-          svg += `<path d="M ${x + offset} ${y} L ${x + size + offset} ${y - size} M ${x + offset} ${y} L ${x + size + offset} ${y + size}" stroke="${color}" fill="none" stroke-width="1.5" />`;
+          // > Angulado (OE não mascarado)
+          svg += `<path
+            d="M ${x - size - offset} ${y - size} L ${x - offset} ${y}
+              M ${x - size - offset} ${y + size} L ${x - offset} ${y}"
+            stroke="${color}" fill="none" stroke-width="1.5" />`;
         }
       }
     });

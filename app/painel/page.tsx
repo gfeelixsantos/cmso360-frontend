@@ -220,7 +220,7 @@ const PreviousCallCard = ({ c }: { c: PainelCall }) => {
       >
         <span className="truncate">{c.sala}</span>
         <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-current animate-pulse" />
-        <span className="truncate">{c.exame}</span>
+        <span className="truncate">{c.exame ?? "ATENDIMENTO"}</span>
       </div>
     </motion.div>
   );

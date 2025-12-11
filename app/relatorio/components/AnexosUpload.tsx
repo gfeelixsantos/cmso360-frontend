@@ -232,14 +232,14 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                   <div className="min-w-0">
                     {/* Link quando tem StoragePath, texto normal quando não tem */}
                     {anexo.StoragePath ? (
-                      <button
+                      <Button
                         className="text-sm font-medium truncate text-blue-600 hover:text-blue-800 hover:underline text-left flex items-center gap-1"
                         title="Clique para abrir"
                         onClick={() => handleOpenAttachment(anexo)}
                       >
                         {anexo.Name}
                         <ExternalLink className="inline" size={12} />
-                      </button>
+                      </Button>
                     ) : (
                       <div className="text-sm font-medium truncate text-gray-700">
                         {anexo.Name}
@@ -272,7 +272,7 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
       {/* Sem anexos */}
       {files.length === 0 && anexos.length === 0 && (
         <div className="text-left py-4 text-gray-500 text-sm">
-          Nenhum anexo adicionado ainda
+          Nenhum anexo ao prontuário.
         </div>
       )}
 
