@@ -1045,8 +1045,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
         </div>
       )}
       {/* 6. TESTES CLÍNICOS ARTICULARES/COLUNA */}
-
-      <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
+      {!exame.includes("Triagem") && (
+              <Card className="mt-6 p-6 shadow-none border border-gray-200 bg-white">
         <SectionTitle title="Testes Clínicos Articulares/Coluna" />
 
         {/* 1 - PUNHOS */}
@@ -1842,6 +1842,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           </div>
         </div>
       </Card>
+      )}
+
 
       {/* 6. Dados Vitais */}
       <Card className="p-6 shadow-none border border-gray-200 bg-white">
