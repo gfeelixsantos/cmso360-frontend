@@ -143,7 +143,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const [records, setRecords] = useState<AsoFuncionarioDto[]>();
   const [recordsCodes, setRecordsCodes] = useState<Set<string>>(new Set());
   const [isOpenPreparationModal, setIsOpenPreparationModal] = useState(false);
-  const [somentePa, setSomentePa] = useState<boolean>(false)
+  const [somentePa, setSomentePa] = useState<boolean>(false);
 
   // referencia para o sidebar dos cards
   const listRef = useRef<any>(null);
@@ -341,7 +341,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
           if (response.ok) {
             const examesJson = await response.json();
-           
+
             // ✅ Cria nova cópia de paciente (imutável)
             const pacienteAtualizado = {
               ...paciente,
@@ -448,7 +448,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setPreferencialTipo("");
       setAnexos(paciente.ANEXOS?.map((a) => a) || []);
       setIsBindServiceSelected(false);
-      setSomentePa(false)
+      setSomentePa(false);
       setIsLoading(false);
     },
     [handleAtendimentoCredenciada, funcionarioSelecionado],
@@ -484,7 +484,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     setAnexos([]);
     setFilesUpload([]);
     setIsBindServiceSelected(false);
-    setSomentePa(false)
+    setSomentePa(false);
     setRecords([]);
     setRecordsCodes(new Set());
     setFuncionarioSelecionado(null);
@@ -606,22 +606,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     if (value === true) {
       // Marcar -> remover Exame Clínico
-      setCodigoExames(prev =>
-        prev.filter(g => g !== "Exame Clínico")
-      );
+      setCodigoExames((prev) => prev.filter((g) => g !== "Exame Clínico"));
     } else {
       // Desmarcar -> adicionar Exame Clínico novamente, se não existir
-      setCodigoExames(prev => {
+      setCodigoExames((prev) => {
         if (!prev.includes("Exame Clínico")) {
           return [...prev, "Exame Clínico"];
         }
+
         return prev;
       });
     }
   };
-
-
-
 
   // ---------------------------------------------------------
   // Vincular atendimento
@@ -805,7 +801,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     try {
       formData.append("scheduling", JSON.stringify(funcionarioSelecionado));
-      formData.append("somentepa", String(somentePa))
+      formData.append("somentepa", String(somentePa));
 
       const submmitResponse = await fetch(NEST_SCHEDULINGS_UPDATE, {
         method: "POST",
@@ -945,8 +941,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 <span
                   className={`text-left text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
                 >
-                  {paciente.ATENDIMENTOSTATUS.replace(/_/g, " ")
-                    .replace(/\b\w/g, (l: string) => l.toUpperCase())}
+                  {paciente.ATENDIMENTOSTATUS.replace(/_/g, " ").replace(
+                    /\b\w/g,
+                    (l: string) => l.toUpperCase(),
+                  )}
                 </span>
               </div>
             )}
@@ -1371,18 +1369,20 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 <div className="mt-4">
                   {empresa && codigoFuncionario && funcionarioSelecionado && (
                     <div className="flex justify-end">
-                    <Checkbox
-                      color="danger"
-                      disabled={isLoading}
-                      onValueChange={handleSomentePa}
-                      isSelected={somentePa}
-                    >
-                      <span className={`text-sm ${somentePa ? "text-red-600" : "text-gray-700"}`}>
-                        Somente P.A
-                      </span>
-                    </Checkbox>
+                      <Checkbox
+                        color="danger"
+                        disabled={isLoading}
+                        isSelected={somentePa}
+                        onValueChange={handleSomentePa}
+                      >
+                        <span
+                          className={`text-sm ${somentePa ? "text-red-600" : "text-gray-700"}`}
+                        >
+                          Somente P.A
+                        </span>
+                      </Checkbox>
 
-                    {/* <Checkbox
+                      {/* <Checkbox
                       color="success"
                       disabled={isLoading}
                       isSelected={isBindServiceSelected}

@@ -20,7 +20,6 @@ import {
   NEST_SCHEDULINGS_UPDATE,
   NEST_SCHEDULINGS_SYNC_SOC,
   NEST_SCHEDULINGS_DELETE,
-  NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
@@ -28,11 +27,9 @@ import {
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
 
-
-
 interface LazyModalContentProps {
   atendimento: Scheduling;
-  userApp: IUserInfo | null
+  userApp: IUserInfo | null;
   onClose: () => void;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
@@ -149,7 +146,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       );
 
       if (!response.ok) {
-        const txt = await response.text()
+        const txt = await response.text();
+
         throw new Error(`Erro ao buscar prontuário: ${txt}`);
       }
 
@@ -274,7 +272,9 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       <ModalHeader className="flex gap-2">
         <div className="flex items-center justify-between w-full">
           <div>
-            <h2 className="text-xl font-bold">{atendimento.NOME.toUpperCase()}</h2>
+            <h2 className="text-xl font-bold">
+              {atendimento.NOME.toUpperCase()}
+            </h2>
             <div className="flex gap-4 text-sm text-gray-600 mt-1">
               <span>{atendimento.TIPOEXAMENOME}</span>
               <span>{atendimento.DATAAGENDAMENTO}</span>
@@ -338,8 +338,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         />
         <ExamesTable
           atendimento={atendimento}
-          userApp={userApp}
           exames={atendimento.EXAMES}
+          userApp={userApp}
           onUpdateScheduling={onUpdateScheduling}
         />
         <AnexosUpload

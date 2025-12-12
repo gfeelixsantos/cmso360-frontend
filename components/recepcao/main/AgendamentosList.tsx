@@ -121,7 +121,8 @@ const DetalhesModal: React.FC<{
   atendimento: Scheduling | null;
   loading: boolean;
 }> = ({ isOpen, onClose, atendimento, loading }) => {
-  const userApp = useUser()
+  const userApp = useUser();
+
   return (
     <Modal
       aria-label="Modal de detalhes do atendimento"
@@ -143,8 +144,8 @@ const DetalhesModal: React.FC<{
           <Suspense fallback={<ModalSkeleton />}>
             <LazyModalContent
               atendimento={atendimento}
-              onClose={onClose}
               userApp={userApp}
+              onClose={onClose}
               onUpdateScheduling={(updated: any) => {
                 // Aqui você pode atualizar o estado se necessário
                 console.log("Atendimento atualizado:", updated);

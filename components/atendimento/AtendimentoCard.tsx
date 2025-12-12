@@ -90,6 +90,7 @@ const calcularIdade = (dataNascimento: string | null): string => {
 
   // Cria a data de nascimento como Date JS
   const nascimento = new Date(ano, mes - 1, dia);
+
   if (isNaN(nascimento.getTime())) return "";
 
   const hoje = new Date();
@@ -110,7 +111,6 @@ const calcularIdade = (dataNascimento: string | null): string => {
 
   return `${idade} anos`;
 };
-
 
 // Função para determinar a cor do avatar baseado no ticket
 const getAvatarColor = (ticket: Ticket): string => {
@@ -189,7 +189,10 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
 
           {idade && (
             <div className="flex items-center gap-1">
-              <span title={atendimento.DATANASCIMENTO ?? ""}> - {!idade.includes("NaN") ? idade : "" }</span>
+              <span title={atendimento.DATANASCIMENTO ?? ""}>
+                {" "}
+                - {!idade.includes("NaN") ? idade : ""}
+              </span>
             </div>
           )}
         </div>

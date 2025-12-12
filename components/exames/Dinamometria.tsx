@@ -343,8 +343,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       setFormData((prev) => ({
         ...prev,
         resultado: "Normal",
-        observacoesFinais:
-          "Aguardando preenchimento dos dados obrigatórios para avaliação.",
       }));
 
       return;
@@ -416,29 +414,21 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
     // Determinar resultado final baseado nos tipos preenchidos
     let resultadoFinal = "Normal";
-    let observacoes = "";
 
     if (!algumPreenchido) {
       resultadoFinal = "Normal";
-      observacoes =
-        "Aguardando preenchimento de pelo menos um tipo de dinamometria.";
+      
     } else if (todosNormais) {
       resultadoFinal = "Normal";
-      observacoes =
-        "Dentro dos padrões da normalidade para os tipos avaliados.";
+
     } else {
-      resultadoFinal = "Alterado";
-      observacoes = `Fora dos padrões da normalidade para: ${resultadosIndividuais
-        .filter((r) => r.includes("Alterado"))
-        .map((r) => r.split(":")[0])
-        .join(", ")}`;
+      resultadoFinal = "Alterado";;
     }
 
     // Atualizar classificações individuais apenas para os tipos preenchidos
     setFormData((prev) => ({
       ...prev,
       resultado: resultadoFinal,
-      observacoesFinais: observacoes,
       classificacaoPalmar: tiposPreenchidos.palmar
         ? palmarNormal
           ? "Normal"

@@ -216,7 +216,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
       // --- SIMBOLOGIA CORRETA VO ---
       if (isRightEar) {
         // VO OD (Vermelho)
-       
+
         if (masked) {
           // Colchete [  (OD mascarada)
           const x_vertical = x - size - offset;
@@ -229,8 +229,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
               M ${x_vertical} ${y + size} L ${x_horizontal_end} ${y + size}"
             stroke="${color}" fill="none" stroke-width="1.5" />`;
         } else {
-
-            // < Angulado (OD não mascarado) 
+          // < Angulado (OD não mascarado)
           svg += `<path
             d="M ${x + size + offset} ${y - size} L ${x + offset} ${y}
               M ${x + size + offset} ${y + size} L ${x + offset} ${y}"

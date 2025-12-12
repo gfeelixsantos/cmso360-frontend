@@ -370,8 +370,8 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
       nome: "Fluoreto urinário",
     },
     {
-      codigos: ['11072025'],
-      nome: 'Função hepática',
+      codigos: ["11072025"],
+      nome: "Função hepática",
     },
     {
       codigos: ["002000"],

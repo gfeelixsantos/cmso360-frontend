@@ -56,7 +56,7 @@ interface UploadExamModalState {
 const ExamesTable: React.FC<{
   exames: ExamRegister[];
   atendimento: Scheduling;
-  userApp: IUserInfo | null
+  userApp: IUserInfo | null;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }> = ({ exames, atendimento, userApp, onUpdateScheduling }) => {
   const [localExames, setLocalExames] = useState<ExamRegister[]>(exames || []);
@@ -441,8 +441,7 @@ const ExamesTable: React.FC<{
                             >
                               Editar Exame
                             </DropdownItem>
-                            ) : null
-                          }
+                          ) : null}
                           {exame.url ? (
                             <DropdownItem
                               key="delete-result"

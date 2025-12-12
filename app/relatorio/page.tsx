@@ -49,7 +49,7 @@ import { HeaderApp } from "@/components/shared/HeaderApp";
 import { formatCPF, getCurrentUser, getStatusColor, logout } from "@/lib/utils";
 import { useModalOptimizer } from "@/hooks/useModalOptimizer";
 import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
-import { IUserInfo, useUser } from "@/hooks/useUser";
+import { IUserInfo } from "@/hooks/useUser";
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import("./LazyModalContent"));
@@ -88,7 +88,7 @@ interface PaginatedReportData {
 // Componente principal
 export default function RelatoriosPage() {
   const router = useRouter();
-  const [ userApp, setUserApp] = useState<IUserInfo | null>(null)
+  const [userApp, setUserApp] = useState<IUserInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [isFiltering, setIsFiltering] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -151,7 +151,7 @@ export default function RelatoriosPage() {
       return router.push("/");
     }
 
-    setUserApp(currentUser)
+    setUserApp(currentUser);
   }, [router]);
 
   // Função para scroll para o topo da tabela
@@ -477,9 +477,9 @@ export default function RelatoriosPage() {
       <Suspense fallback={<LightModalSkeleton />}>
         <LazyModalContent
           atendimento={selectedAtendimento}
+          userApp={userApp}
           onClose={handleCloseModal}
           onUpdateScheduling={handleUpdateSchedulingFromModal}
-          userApp={userApp}
         />
       </Suspense>
     );

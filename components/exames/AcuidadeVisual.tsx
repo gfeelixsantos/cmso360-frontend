@@ -1,3 +1,4 @@
+// Código
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Card,
@@ -6,11 +7,12 @@ import {
   Textarea,
   RadioGroup,
   Radio,
+  Checkbox,
 } from "@heroui/react";
 import {
   FileText,
-  Plus,
-  Minus,
+  ChevronDown,
+  ChevronUp,
   AlertTriangle,
   Check,
   X,
@@ -44,7 +46,10 @@ interface AcuidadeVisualData {
   // Acuidade Visual - Perto
   pertoBinocular: string;
 
-  // Teste de Ishihara
+  // Teste de Ishihara - Campos de controle
+  ishiharaRealizado: boolean;
+
+  // Teste de Ishihara - Dados
   ishiharaPlaca1: string;
   ishiharaResultado1: string;
   ishiharaPlaca2: string;
@@ -69,7 +74,10 @@ interface AcuidadeVisualData {
   // Conclusão Ishihara
   conclusaoIshihara: string;
 
-  // Teste de Estereopsia
+  // Teste de Estereopsia - Campos de controle
+  estereopsiaRealizado: boolean;
+
+  // Teste de Estereopsia - Dados
   estereopsiaResultado: string;
   estereopsiaObservacao: string;
   estereopsiaAcertos: number;
@@ -244,26 +252,28 @@ const verificarCriteriosPCD = (formData: AcuidadeVisualData): ResultadoPCD => {
     );
   }
 
-  // Critério 4: Daltonismo total no teste de Ishihara
-  const resultadosIshihara = [
-    formData.ishiharaResultado1,
-    formData.ishiharaResultado2,
-    formData.ishiharaResultado3,
-    formData.ishiharaResultado4,
-    formData.ishiharaResultado5,
-    formData.ishiharaResultado6,
-    formData.ishiharaResultado7,
-    formData.ishiharaResultado8,
-    formData.ishiharaResultado9,
-    formData.ishiharaResultado10,
-  ];
+  // Critério 4: Daltonismo total no teste de Ishihara (apenas se o teste foi realizado)
+  if (formData.ishiharaRealizado) {
+    const resultadosIshihara = [
+      formData.ishiharaResultado1,
+      formData.ishiharaResultado2,
+      formData.ishiharaResultado3,
+      formData.ishiharaResultado4,
+      formData.ishiharaResultado5,
+      formData.ishiharaResultado6,
+      formData.ishiharaResultado7,
+      formData.ishiharaResultado8,
+      formData.ishiharaResultado9,
+      formData.ishiharaResultado10,
+    ];
 
-  const daltonismoTotalCount = resultadosIshihara.filter(
-    (result) => result === "Daltonismo total",
-  ).length;
+    const daltonismoTotalCount = resultadosIshihara.filter(
+      (result) => result === "Daltonismo total",
+    ).length;
 
-  if (daltonismoTotalCount >= 5) {
-    criterios.push("Daltonismo total identificado no teste de Ishihara");
+    if (daltonismoTotalCount >= 5) {
+      criterios.push("Daltonismo total identificado no teste de Ishihara");
+    }
   }
 
   return {
@@ -301,8 +311,6 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
-  const [showIshihara, setShowIshihara] = useState(false);
-  const [showEstereopsia, setShowEstereopsia] = useState(false);
   const [isAcuidadeConcluida, setIsAcuidadeConcluida] = useState(false);
 
   const [formData, setFormData] = useState<AcuidadeVisualData>({
@@ -317,7 +325,10 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     longeBinocular: "",
     pertoBinocular: "",
 
-    // Teste de Ishihara
+    // Teste de Ishihara - Campos de controle
+    ishiharaRealizado: false,
+
+    // Teste de Ishihara - Dados
     ishiharaPlaca1: "",
     ishiharaResultado1: "Normal",
     ishiharaPlaca2: "",
@@ -341,7 +352,10 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
     conclusaoIshihara: "Visão normal para cores",
 
-    // Teste de Estereopsia
+    // Teste de Estereopsia - Campos de controle
+    estereopsiaRealizado: false,
+
+    // Teste de Estereopsia - Dados
     estereopsiaResultado: "",
     estereopsiaObservacao: "",
     estereopsiaAcertos: 0,
@@ -356,6 +370,10 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     criterioPCDIdentificado: "",
   });
 
+  // Estados para controle de expansão
+  const [showIshihara, setShowIshihara] = useState(false);
+  const [showEstereopsia, setShowEstereopsia] = useState(false);
+
   // Preenchimento automático dos dados do atendimento
   useEffect(() => {
     if (atendimento) {
@@ -363,7 +381,24 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     }
 
     if (formulario) {
-      setFormData((prev) => ({ ...prev, ...formulario }));
+      const filledData = { ...formulario };
+
+      // Garantir que os campos booleanos existam
+      if (filledData.ishiharaRealizado === undefined) {
+        filledData.ishiharaRealizado = false;
+      }
+      if (filledData.estereopsiaRealizado === undefined) {
+        filledData.estereopsiaRealizado = false;
+      }
+      setFormData((prev) => ({ ...prev, ...filledData }));
+
+      // Expandir automaticamente se o teste já foi realizado
+      if (filledData.ishiharaRealizado) {
+        setShowIshihara(true);
+      }
+      if (filledData.estereopsiaRealizado) {
+        setShowEstereopsia(true);
+      }
     }
   }, [atendimento, formulario]);
 
@@ -396,6 +431,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     isAcuidadeConcluida,
     formData.longeOD,
     formData.longeOE,
+    formData.ishiharaRealizado,
     formData.ishiharaResultado1,
     formData.ishiharaResultado2,
     formData.ishiharaResultado3,
@@ -522,6 +558,55 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
     setFormData((prev) => ({ ...prev, ...updates }));
   }, []);
+
+  // Função para lidar com a mudança do checkbox do Ishihara
+  const handleIshiharaRealizadoChange = useCallback(
+    (isSelected: boolean) => {
+      handleInputChange("ishiharaRealizado", isSelected);
+
+      // Se marcar, expandir automaticamente
+      if (isSelected) {
+        setShowIshihara(true);
+      }
+      // Se desmarcar, limpar os dados do teste
+      else {
+        setShowIshihara(false);
+        const updates: Partial<AcuidadeVisualData> = {};
+
+        placasIshiharaConfig.forEach((placa) => {
+          updates[placa.fieldPlaca] = "";
+          updates[placa.fieldResultado] = "Normal";
+        });
+        setFormData((prev) => ({ ...prev, ...updates }));
+      }
+    },
+    [handleInputChange],
+  );
+
+  // Função para lidar com a mudança do checkbox da Estereopsia
+  const handleEstereopsiaRealizadoChange = useCallback(
+    (isSelected: boolean) => {
+      handleInputChange("estereopsiaRealizado", isSelected);
+
+      // Se marcar, expandir automaticamente
+      if (isSelected) {
+        setShowEstereopsia(true);
+      }
+      // Se desmarcar, limpar os dados do teste
+      else {
+        setShowEstereopsia(false);
+        setFormData((prev) => ({
+          ...prev,
+          estereopsiaRespostas: {},
+          estereopsiaAcertos: 0,
+          estereopsiaTotal: 9,
+          estereopsiaResultado: "",
+          resultadoEstereopsia: "",
+        }));
+      }
+    },
+    [handleInputChange],
+  );
 
   const handleSave = useCallback(() => {
     if (!isAcuidadeConcluida) {
@@ -896,7 +981,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                     <td className="border border-gray-300 px-4 py-2">
                       <Input
                         className="border-gray-300 text-center bg-white"
-                        placeholder="Ex: 20/20"
+                        placeholder="Ex: J1"
                         value={formData.pertoBinocular}
                         onChange={(e) =>
                           handleInputChange("pertoBinocular", e.target.value)
@@ -914,27 +999,45 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
       {/* 3. Teste de Ishihara (Opcional) */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <div className="flex items-center justify-between">
-          <SectionTitle number="3" title="Teste de Ishihara (Colorimetria)" />
+          <div className="flex items-center gap-3">
+            <Checkbox
+              classNames={{
+                label: "text-lg font-bold text-gray-800",
+                icon: "text-white",
+              }}
+              color="success"
+              isSelected={formData.ishiharaRealizado}
+              size="lg"
+              onValueChange={handleIshiharaRealizadoChange}
+            >
+              <span className="text-lg font-bold text-gray-800">
+                Teste de Ishihara (Colorimetria)
+              </span>
+            </Checkbox>
+            <span className="text-sm text-gray-500">(Opcional)</span>
+          </div>
 
-          <Button
-            className="flex items-center gap-2"
-            color="success"
-            startContent={
-              showIshihara ? (
-                <Minus className="h-4 w-4" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )
-            }
-            variant="flat"
-            onPress={() => setShowIshihara(!showIshihara)}
-          >
-            {showIshihara ? "Ocultar" : "Mostrar"}
-          </Button>
+          {formData.ishiharaRealizado && (
+            <Button
+              className="flex items-center gap-2"
+              color="default"
+              startContent={
+                showIshihara ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )
+              }
+              variant="light"
+              onPress={() => setShowIshihara(!showIshihara)}
+            >
+              {showIshihara ? "Ocultar" : "Realizar"}
+            </Button>
+          )}
         </div>
 
-        {showIshihara && (
-          <div>
+        {formData.ishiharaRealizado && showIshihara && (
+          <div className="mt-6">
             <div className="p-4">
               <p className="text-sm text-gray-600 mb-6">
                 Use "NA", "-", "nenhum" para quando não enxergar nenhum número.
@@ -1029,33 +1132,69 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
             </div>
           </div>
         )}
+
+        {!formData.ishiharaRealizado && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              Marque o checkbox acima para habilitar o teste de Ishihara
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* 4. Teste de Estereopsia (Opcional) */}
       <Card className="p-6 shadow-sm border border-gray-200 bg-white">
         <div className="flex items-center justify-between">
-          <SectionTitle
-            number="4"
-            title="Teste de Estereopsia (Profundidade)"
-          />
-          <Button
-            className="flex items-center gap-2"
-            color="success"
-            startContent={
-              showEstereopsia ? (
-                <Minus className="h-4 w-4" />
-              ) : (
-                <Plus className="h-4 w-4" />
-              )
-            }
-            variant="flat"
-            onPress={() => setShowEstereopsia(!showEstereopsia)}
-          >
-            {showEstereopsia ? "Ocultar" : "Mostrar"}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Checkbox
+              classNames={{
+                label: "text-lg font-bold text-gray-800",
+                icon: "text-white",
+              }}
+              color="success"
+              isSelected={formData.estereopsiaRealizado}
+              size="lg"
+              onValueChange={handleEstereopsiaRealizadoChange}
+            >
+              <span className="text-lg font-bold text-gray-800">
+                Teste de Estereopsia (Profundidade)
+              </span>
+            </Checkbox>
+            <span className="text-sm text-gray-500">(Opcional)</span>
+          </div>
+
+          {formData.estereopsiaRealizado && (
+            <Button
+              className="flex items-center gap-2"
+              color="default"
+              startContent={
+                showEstereopsia ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )
+              }
+              variant="light"
+              onPress={() => setShowEstereopsia(!showEstereopsia)}
+            >
+              {showEstereopsia ? "Ocultar" : "Realizar"}
+            </Button>
+          )}
         </div>
 
-        {showEstereopsia && <TesteEstereopsia />}
+        {formData.estereopsiaRealizado && showEstereopsia && (
+          <div className="mt-6">
+            <TesteEstereopsia />
+          </div>
+        )}
+
+        {!formData.estereopsiaRealizado && (
+          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <p className="text-sm text-gray-600">
+              Marque o checkbox acima para habilitar o teste de Estereopsia
+            </p>
+          </div>
+        )}
       </Card>
 
       {/* 5. Conclusão Geral */}
@@ -1100,11 +1239,19 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
             />
           </div>
 
-          {/* Campo oculto para armazenar o critério PCD identificado */}
+          {/* Campos ocultos para armazenar as variáveis booleanas e critério PCD */}
           <input type="hidden" value={formData.criterioPCDIdentificado} />
           <input
             type="hidden"
             value={formData.laudoOftalmologistaRecomendado ? "true" : "false"}
+          />
+          <input
+            type="hidden"
+            value={formData.ishiharaRealizado ? "true" : "false"}
+          />
+          <input
+            type="hidden"
+            value={formData.estereopsiaRealizado ? "true" : "false"}
           />
         </div>
       </Card>
