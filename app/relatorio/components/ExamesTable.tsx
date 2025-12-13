@@ -23,6 +23,7 @@ import {
   MoreVertical,
   Pen,
   Trash,
+  Printer,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -37,8 +38,8 @@ import {
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { NEST_RELATORIO_FUNCIONARIO } from "@/config/constants";
-import { IUserInfo } from "@/hooks/useUser";
+import { NEST_RELATORIO_FUNCIONARIO, NEST_SCHEDULINGS_EXAM_REISSUE } from "@/config/constants";
+import { IUserInfo, useUser } from "@/hooks/useUser";
 
 // ============================================
 // COMPONENTE: ExamesTable
@@ -79,9 +80,8 @@ const ExamesTable: React.FC<{
     isOpen: boolean;
     exam: ExamRegister | null;
   }>({ isOpen: false, exam: null });
-  const [reemitindoExams, setReemitindoExams] = useState<
-    Record<string, boolean>
-  >({});
+
+  const [reemitindoExams, setReemitindoExams] = useState<boolean>(false)
 
   // Função para buscar exames atualizados do backend
   const fetchUpdatedExames = async () => {
@@ -140,6 +140,43 @@ const ExamesTable: React.FC<{
     } else {
       // Se não recebeu os dados atualizados, faz uma nova requisição para buscar
       fetchUpdatedExames();
+    }
+  };
+
+  // Handle para reemitir exame
+   const handleReemitirExame = async (exame: ExamRegister) => {
+    setReemitindoExams(true);
+
+    try {
+        const response = await fetch(`${NEST_SCHEDULINGS_EXAM_REISSUE}`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            funcionarioId: atendimento._id,
+            codigoExame: exame.codigoExame,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Erro ao reemitir exame");
+        }
+
+        const result: Scheduling = await response.json();
+        
+        if(result){
+          alert("Reemissão enviada para processamento, atualize a página para visualizar o resultado.")
+        } else {
+          throw new Error("Atualização não concluída.")
+        }
+      
+    } catch (error) {
+      console.error("Erro ao reemitir exame:", error);
+      alert(error)
+    } finally {
+      // fim de atualizacao
+      setReemitindoExams(false)
     }
   };
 
@@ -430,6 +467,16 @@ const ExamesTable: React.FC<{
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu aria-label="Ações do exame">
+                          <DropdownItem
+                            key="reemitir"
+                            className="text-purple-600 hover:text-purple-700 text-xs"
+                            color="secondary"
+                            startContent={!reemitindoExams && <Printer size={14} />}
+                            variant="light"
+                            onPress={() => handleReemitirExame(exame)}
+                          >
+                            {reemitindoExams ? "Reemitindo..." : "Reemitir"}
+                          </DropdownItem>
                           {userApp?.codigo == exame.codigoProfissional ? (
                             <DropdownItem
                               key="edit"

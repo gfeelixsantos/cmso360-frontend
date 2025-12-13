@@ -54,7 +54,7 @@ import {
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
   EXAMES_LIST,
-  NEST_SCHEDULINGS_RECORDS,
+  NEST_SOC_RECORDS,
   NEST_SCHEDULINGS_UPDATE,
   NEST_SOC_PEDIDOEXAME,
   NEST_SOC_PEDIDOEXAME_CREDENCIADAS,
@@ -629,7 +629,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     // pela lógica implementada a negação faz a busca quando o check for true
     if (value) {
-      const url = `${NEST_SCHEDULINGS_RECORDS}empresa=${empresa}&funcionario=${codigoFuncionario}&ficha=${funcionarioSelecionado?.SEQUENCIAFICHA}`;
+      const url = `${NEST_SOC_RECORDS}empresa=${empresa}&funcionario=${codigoFuncionario}&ficha=${funcionarioSelecionado?.SEQUENCIAFICHA}`;
       const response = await fetch(url);
 
       if (response.ok) {

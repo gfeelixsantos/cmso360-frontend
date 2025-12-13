@@ -18,6 +18,7 @@ import { getCurrentUser, logout } from "@/lib/utils";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import { NEST_DASHBOARD } from "@/config/constants";
+import { StatisticsSection } from "./components/StatisticsSection";
 
 // Interfaces
 interface MenuCardProps {
@@ -330,6 +331,8 @@ export default function DashboardPage() {
               />
             ))}
           </div>
+
+          {/* <StatisticsSection /> */}
         </section>
 
         <motion.footer

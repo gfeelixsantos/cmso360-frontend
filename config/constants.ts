@@ -14,95 +14,46 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
   "ws",
 );
 
-const TICKETS_ENDPOINT =
-  process.env.NEXT_PUBLIC_NEST_TICKET_ENDPOINT ?? "[.ENV] Ticket endpoint nulo";
 
-export const NEST_TICKETS_URL = NEST_URL + TICKETS_ENDPOINT;
-
-const TICKET_QUERY =
-  process.env.NEXT_PUBLIC_NEST_TICKET_QUERY ?? "[.ENV] Ticket query nulo";
-
-export const NEST_TICKET_QUERY = NEST_URL + TICKET_QUERY;
-
-export const NEST_SCHEDULINGS_UPDATE = NEST_URL + "schedulings/update";
-export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
-export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario/`; // adiciona id na query
-export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}schedulings/sync-soc`;
-export const NEST_SCHEDULINGS_DELETE = `${NEST_URL}schedulings/delete`;
-export const NEST_SCHEDULINGS_DELETE_ATTACHMENT = `${NEST_URL}schedulings/delete-attachment`;
-export const NEST_SCHEDULINGS_ANEXO_UPLOAD = `${NEST_URL}schedulings/upload-anexo`;
-export const NEST_SCHEDULINGS_ANEXO_REMOVE = `${NEST_URL}schedulings/remove-anexo`;
+export const NEST_TICKETS_URL = `${NEST_URL}ticket`;
+export const NEST_TICKET_QUERY = `${NEST_URL}ticket?unidade=`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
-export const NEST_PRONTUARIO_PARAMETROS =
-  NEST_URL + "schedulings/record-params";
-export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
 
+export const NEST_SCHEDULINGS_ALL = `${NEST_URL}schedulings/all`;
+export const NEST_SCHEDULINGS_ANEXO_UPLOAD = `${NEST_URL}schedulings/upload-anexo`;
+export const NEST_SCHEDULINGS_ANEXO_REMOVE = `${NEST_URL}schedulings/remove-anexo`;
+export const NEST_SCHEDULINGS_DELETE = `${NEST_URL}schedulings/delete`;
+export const NEST_SCHEDULINGS_DELETE_ATTACHMENT = `${NEST_URL}schedulings/delete-attachment`;
+export const NEST_SCHEDULINGS_EXAM_UPDATE = `${NEST_URL}schedulings/exame/update`;
+export const NEST_SCHEDULINGS_EXAM_REISSUE = `${NEST_URL}schedulings/exame/reissue`;
+export const NEST_SCHEDULINGS_FINISH = `${NEST_URL}schedulings/finish`;
+export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario/`; // adiciona id na query
+export const NEST_SCHEDULINGS_STATISTICS = `${NEST_URL}schedulings/statistics`;
+export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}schedulings/sync-soc`;
+export const NEST_SCHEDULINGS_TODAY = `${NEST_URL}schedulings/today`;
+export const NEST_SCHEDULINGS_UPDATE = `${NEST_URL}schedulings/update`;
+export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
+
+
+
+export const NEST_PRONTUARIO_PARAMETROS = NEST_URL + "schedulings/record-params";
+export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
 export const NEST_RELATORIO_PARAMETROS = NEST_URL + "schedulings/report-params";
 export const NEST_RELATORIO_FILTROS = NEST_URL + "schedulings/report-filters";
 export const NEST_RELATORIO_FUNCIONARIO = NEST_URL + "schedulings/report/"; // schedulings/report/:ID ---> Busca funcionário
 
-export const NEST_SOC_AUDIOMETRIA_ANTERIOR =
-  NEST_URL + "soc/audiometria-anterior";
 
-const SCHEDULINGS_EXAM_UPDATE =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_EXAM_UPDATE ??
-  "[.ENV] Scheduling exam update nulo";
 
-export const NEST_SCHEDULINGS_EXAM_UPDATE = NEST_URL + SCHEDULINGS_EXAM_UPDATE;
+export const NEST_SOC_AUDIOMETRIA_ANTERIOR = `${NEST_URL}soc/audiometria-anterior`;
+export const NEST_SOC_COMPANIES = `${NEST_URL}soc/empresas`;
+export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
+export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
+export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
+export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
 
-const SCHEDULINGS_TODAY =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_TODAY ??
-  "[.ENV] Schedulings today nulo";
 
-export const NEST_SCHEDULINGS_TODAY = NEST_URL + SCHEDULINGS_TODAY;
-
-const SCHEDULINGS_ALL =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_ALL ?? "[.ENV] Schedulings ALL nulo";
-
-export const NEST_SCHEDULINGS_ALL = NEST_URL + SCHEDULINGS_ALL;
-
-const SCHEDULINGS_FINISH =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_FINISH ??
-  "[.ENV] Schedulings finish nulo";
-
-export const NEST_SCHEDULINGS_FINISH = NEST_URL + SCHEDULINGS_FINISH;
-
-const SCHEDULINGS_RECORDS =
-  process.env.NEXT_PUBLIC_NEST_SCHEDULINGS_RECORDS ??
-  "[.ENV] URL scheduling records nulo";
-
-export const NEST_SCHEDULINGS_RECORDS = NEST_URL + SCHEDULINGS_RECORDS;
-
-const SOC_COMPANIES =
-  process.env.NEXT_PUBLIC_NEST_SOC_COMPANIES ?? "[.ENV] SOC Companies nulo";
-
-export const NEST_SOC_COMPANIES = NEST_URL + SOC_COMPANIES;
-
-const SOC_CADASTROPESSOAS =
-  process.env.NEXT_PUBLIC_NEST_SOC_CADASTROPESSOAS ??
-  "[.ENV] SOC Cadastro pessoas nulo";
-
-export const NEST_SOC_CADASTROPESSOAS = NEST_URL + SOC_CADASTROPESSOAS;
-
-const SOC_PEDIDOEXAME =
-  process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME ??
-  "[.ENV] SOC ASO Funcionário nulo";
-
-export const NEST_SOC_PEDIDOEXAME = NEST_URL + SOC_PEDIDOEXAME;
-
-const SOC_PEDIDOEXAME_CREDENCIADAS =
-  process.env.NEXT_PUBLIC_NEST_SOC_PEDIDOEXAME_CREDENCIADAS ??
-  "[.ENV] SOC ASO Funcionário nulo";
-
-export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS =
-  NEST_URL + SOC_PEDIDOEXAME_CREDENCIADAS;
-
-const NOTIFICATION_URL =
-  process.env.NEXT_PUBLIC_NEST_NOTIFICATION_SUBSCRIBE ??
-  "[.ENV] Notification subscribe nulo";
-
-export const NEST_NOTIFICATION_URL = NEST_URL + NOTIFICATION_URL;
+export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;
 
 // ---------------------------------------------------------
 // NEXT APPLICATION

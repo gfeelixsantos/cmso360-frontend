@@ -160,6 +160,16 @@ const InformacoesGerais: React.FC<{
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500 block mb-1">
+                  Telefone
+                </label>
+                {renderField(
+                  "TELEFONE",
+                  "Telefone de Contato",
+                  atendimento?.TELEFONE ?? "",
+                )}
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-1">
                   Matrícula
                 </label>
                 {renderField(
@@ -335,10 +345,10 @@ const InformacoesGerais: React.FC<{
               {atendimento.OBSERVACOES && (
                 <div className="space-y-3">
                   <h4 className="font-medium text-sm text-gray-600 mb-2">
-                    Observações do Atendimento
+                    Observações do Agendamento
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                    <p className="text-xs text-gray-900 whitespace-pre-wrap">
                       {atendimento.OBSERVACOES}
                     </p>
                   </div>
@@ -351,7 +361,7 @@ const InformacoesGerais: React.FC<{
                     Anotações da Equipe
                   </h4>
                   <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                    <p className="text-xs text-gray-900 whitespace-pre-wrap">
                       {atendimento.ANOTACOES}
                     </p>
                   </div>
@@ -363,8 +373,8 @@ const InformacoesGerais: React.FC<{
                   <h4 className="font-medium text-sm text-gray-600 mb-2">
                     Recomendação Médica
                   </h4>
-                  <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <p className="text-sm text-gray-900 whitespace-pre-wrap">
+                  <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+                    <p className="text-sm text-red-900 font-bold whitespace-pre-wrap">
                       {atendimento.RECOMENDACAOMEDICA}
                     </p>
                   </div>
