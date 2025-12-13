@@ -129,7 +129,6 @@ export interface FichaClinicaData {
   duracaoRestricaoDias?: string;
   dataInicioRestricao?: string;
   informacaoAguardarAvaliacao?: string;
-  testesArticulares?: TestesArticulares;
 }
 
 // Constantes otimizadas
@@ -235,7 +234,6 @@ const VALOR_INICIAL: FichaClinicaData = {
   duracaoRestricaoDias: "",
   dataInicioRestricao: "",
   informacaoAguardarAvaliacao: "",
-  testesArticulares: {},
 };
 
 // Componente de input otimizado
