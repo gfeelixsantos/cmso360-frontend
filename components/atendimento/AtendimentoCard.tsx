@@ -882,7 +882,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
 }) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg } = getStatusVisual(
-    atendimento.TICKET.status,
+    atendimento.TICKET?.status,
   );
 
   const formatarTempoEspera = (emissao: string | Date) => {
@@ -909,7 +909,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
 
           {/* Ações do ticket */}
           <div className="flex flex-col gap-2">
-            <StatusBadge status={atendimento.TICKET.status} />
+            <StatusBadge status={atendimento.TICKET?.status} />
             <TicketActions
               atendimento={atendimento}
               exameSelecionado={exameSelecionado}

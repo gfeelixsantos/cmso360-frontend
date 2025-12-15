@@ -469,7 +469,6 @@ const ExamesTable: React.FC<{
                         <DropdownMenu aria-label="Ações do exame">
                           <DropdownItem
                             key="reemitir"
-                            className="text-purple-600 hover:text-purple-700 text-xs"
                             color="secondary"
                             startContent={!reemitindoExams && <Printer size={14} />}
                             variant="light"
