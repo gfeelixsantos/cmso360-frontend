@@ -8,6 +8,7 @@ import AtendimentoList from "./AtendimentoList";
 
 import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 
 interface MainContentProps {
   conectado: boolean;
@@ -76,31 +77,35 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     }
   }, [socket, dadosIniciaisCarregados]);
 
-  const AtendimentosOrdenados = useMemo(() => {
-    if (!agendamentos || agendamentos.length === 0) return [];
+const AtendimentosOrdenados = useMemo(() => {
+  if (!agendamentos || agendamentos.length === 0) return [];
 
-    return [...agendamentos].sort((a, b) => {
-      const pendentesA =
-        a.EXAMES?.filter((ex) => ex.status !== "FINALIZADO").length ?? 0;
-      const pendentesB =
-        b.EXAMES?.filter((ex) => ex.status !== "FINALIZADO").length ?? 0;
+  return [...agendamentos].sort((a, b) => {
+    const restantesA =
+      a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0;
 
-      const diferencaPendentes = pendentesA - pendentesB;
+    const restantesB =
+      b.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0;
 
-      if (diferencaPendentes !== 0) {
-        return diferencaPendentes;
-      }
+    // 1. Menos exames restantes vem primeiro
+    if (restantesA !== restantesB) {
+      return restantesA - restantesB;
+    }
 
-      const dataA = a.TICKET?.emissao
-        ? new Date(a.TICKET.emissao).getTime()
-        : 0;
-      const dataB = b.TICKET?.emissao
-        ? new Date(b.TICKET.emissao).getTime()
-        : 0;
+    // 2. Desempate por horário de chegada (mais antigo primeiro)
+    const dataA = a.TICKET?.emissao
+      ? new Date(a.TICKET.emissao).getTime()
+      : Number.MAX_SAFE_INTEGER;
 
-      return dataA - dataB;
-    });
-  }, [agendamentos]);
+    const dataB = b.TICKET?.emissao
+      ? new Date(b.TICKET.emissao).getTime()
+      : Number.MAX_SAFE_INTEGER;
+
+    return dataA - dataB;
+  });
+}, [agendamentos]);
+
+
 
   const AgendamentosComInfoDeOutrasSalas = useMemo(() => {
     if (!agendamentos || agendamentos.length === 0) return new Map();
