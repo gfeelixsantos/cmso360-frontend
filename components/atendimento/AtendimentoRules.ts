@@ -67,7 +67,7 @@ export class AtendimentoRules {
 
     // Regras Whirlpool (admissional + empresa específica)
     if (
-      exame === "Exame Clínico" || exame === "Triagem" &&
+      exame === "Exame Clínico" &&
       this.isAdmissional(funcionario) &&
       (this.isRhBrasilWhirlpool(funcionario) ||
         this.isWhirlpoolAdmissional(funcionario))
