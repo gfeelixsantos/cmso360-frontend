@@ -478,22 +478,21 @@ export default function UnifiedProntuarioPage() {
           updatedRecords = updatedRecords.filter(
             (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
           );
-        } else if (newRecord.currentStatus !== attendanceStatus) {
-          // *** SE O STATUS MUDOU E NÃO CORRESPONDE AO ATUAL, REMOVE DA LISTA! ***
-          if (existingIndex > -1) {
-            updatedRecords.splice(existingIndex, 1); // Você pode querer dar um Toast aqui para feedback
-          }
-        } else {
-          // *** O STATUS É O MESMO (OU UM INSERT), ATUALIZA/ADICIONA. ***
+        }  
+        
+        if (operation === MongoOperationTypes.UPDATE) {
           if (existingIndex > -1) {
             // UPDATE (mantém a posição, se possível, ou substitui)
             updatedRecords[existingIndex] = newRecord;
-          } else if (operation === MongoOperationTypes.INSERT) {
+          }  
+        } 
+        
+        if (operation === MongoOperationTypes.INSERT) {
             // INSERT
             updatedRecords.push(newRecord);
           }
-        } // Reordenar após a modificação para manter a UX
 
+        // Reordenar após a modificação para manter a UX
         return updatedRecords.sort((a, b) =>
           a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
         );
