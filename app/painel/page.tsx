@@ -38,7 +38,7 @@ const PAINEL_CONFIG = {
   tempoChamada: 2500,
   timerVideo: 10000,
   qtdChamadas: 1,
-  qtdFilaPainel: 8,
+  qtdFilaPainel: 12,
   tempoInatividadeMinutos: 1,
   duracaoIdleSegundos: 15,
   welcomeMessage: "Bem-vindo ao Centro Médico de Saúde Ocupacional.",
