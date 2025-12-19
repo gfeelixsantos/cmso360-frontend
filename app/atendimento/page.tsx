@@ -440,7 +440,7 @@ const AtendimentoPage: React.FC = () => {
         case MongoOperationTypes.DELETE:
           console.log("deletar em atendimento foi chamado...");
           setAgendamentosGeral((prev) =>
-            prev.filter((ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE),
+            prev.filter((ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO),
           );
           break;
       }
@@ -462,6 +462,8 @@ const AtendimentoPage: React.FC = () => {
       // se você preferir desconectar automaticamente, chame closeSocket(); socketRef.current = null;
       closeSocket();
       socketRef.current = null;
+      setConectado(false);
+      setIsLoading(false)
     };
   }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
@@ -469,43 +471,51 @@ const AtendimentoPage: React.FC = () => {
   // Estatísticas
   // ---------------------------------------------------------
   const calcularEstatisticas = () => {
-    const senhasFiltradas = getAll();
+  const senhasFiltradas = getAll();
+
+    const agendamentosSala = agendamentosGeral.filter(ag =>
+      ag.EXAMES?.some(ex => ex.grupo === exameSelecionado)
+    );
+
+    const ticketStatus = (ag: any) => ag.TICKET?.status;
 
     setEstatisticas({
       recepcaoAguardando:
         senhasFiltradas.filter(
-          (s) =>
-            s.status === TicketStatus.AGUARDANDO &&
-            s.grupo === TicketGroups.RECEPCAO,
-        ).length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK)
-          .length,
-      examesAguardando: senhasFiltradas.filter(
-        (s) =>
-          s.status === TicketStatus.AGUARDANDO &&
-          s.grupo === TicketGroups.EXAME,
+          s =>
+            s.grupo === TicketGroups.RECEPCAO
+        ).length,
+
+      examesAguardando: agendamentosSala.filter(
+        ag => ticketStatus(ag) === TicketStatus.AGUARDANDO
       ).length,
-      emAtendimento:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO)
-          .length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA)
-          .length,
+
+      emAtendimento: agendamentosSala.filter(
+        ag =>
+          ticketStatus(ag) === TicketStatus.AGUARDANDO ||
+          ticketStatus(ag) === TicketStatus.EM_CHAMADA
+      ).length,
+
       preparacao: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.EM_PREPARACAO,
+        s => s.status === TicketStatus.EM_PREPARACAO
       ).length,
+
       raiox: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
+        s => s.status === TicketStatus.ENCAMINHADO_RX
       ).length,
-      finalizados: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.FINALIZADO,
+
+      finalizados: agendamentosSala.filter(
+        ag => ticketStatus(ag) === TicketStatus.FINALIZADO
       ).length,
-      total: senhasFiltradas.length,
+
+      total: agendamentosSala.length,
     });
   };
 
+
   useEffect(() => {
     calcularEstatisticas();
-  }, [tickets]);
+  }, [tickets, agendamentosGeral]);
 
   if (!user) {
     return <CmsoLoading />;

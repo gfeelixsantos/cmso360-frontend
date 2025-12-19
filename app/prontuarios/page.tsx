@@ -457,47 +457,68 @@ export default function UnifiedProntuarioPage() {
 
     setSocketState(s);
 
-    // ... dentro do useEffect do WebSocket ...
-
     const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
-      console.log("atualização recebida via websocket:", operation, schedule);
-      const newRecord = mapSchedulingToMedicalRecord(
-        schedule,
-        schedule.ATENDIMENTOSTATUS,
-      );
+  setRecords((prev) => {
+    let updatedRecords = [...prev];
 
-      setRecords((prev) => {
-        let updatedRecords = [...prev]; // 1. Tenta encontrar o índice do registro que está sendo atualizado/removido
+    const index = updatedRecords.findIndex(
+      (r) => r.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
+    );
 
-        const existingIndex = updatedRecords.findIndex(
-          (ag) => ag.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
-        ); // 2. Lógica principal de atualização/remoção
+    const isStatusSelecionado =
+      schedule.ATENDIMENTOSTATUS === attendanceStatus;
 
-        if (operation === MongoOperationTypes.DELETE) {
-          // Remoção direta, se for DELETE
-          updatedRecords = updatedRecords.filter(
-            (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
-          );
-        }  
-        
-        if (operation === MongoOperationTypes.UPDATE) {
-          if (existingIndex > -1) {
-            // UPDATE (mantém a posição, se possível, ou substitui)
-            updatedRecords[existingIndex] = newRecord;
-          }  
-        } 
-        
-        if (operation === MongoOperationTypes.INSERT) {
-            // INSERT
-            updatedRecords.push(newRecord);
-          }
+    // DELETE → sempre remove
+    if (operation === MongoOperationTypes.DELETE) {
+      if (index > -1) {
+        updatedRecords.splice(index, 1);
+      }
 
-        // Reordenar após a modificação para manter a UX
-        return updatedRecords.sort((a, b) =>
-          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-        );
-      });
-    };
+      // 🔴 se o prontuário removido estiver selecionado
+      if (
+        selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO
+      ) {
+        setSelectedRecord(null);
+      }
+
+      return updatedRecords;
+    }
+
+    // UPDATE / INSERT → status diferente do selecionado
+    if (!isStatusSelecionado) {
+      if (index > -1) {
+        updatedRecords.splice(index, 1);
+      }
+
+      // 🔴 remove também da UI se estiver selecionado
+      if (
+        selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO
+      ) {
+        setSelectedRecord(null);
+      }
+
+      return updatedRecords;
+    }
+
+    // Status é o selecionado → inserir ou atualizar
+    const newRecord = mapSchedulingToMedicalRecord(
+      schedule,
+      schedule.ATENDIMENTOSTATUS,
+    );
+
+    if (index > -1) {
+      updatedRecords[index] = newRecord;
+    } else {
+      updatedRecords.push(newRecord);
+    }
+
+    return updatedRecords.sort((a, b) =>
+      a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+    );
+  });
+};
+
+
 
     onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
 

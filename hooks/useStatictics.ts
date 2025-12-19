@@ -1,15 +1,12 @@
 import { NEST_SCHEDULINGS_STATISTICS } from '@/config/constants';
 import { useState, useEffect, useCallback } from 'react';
 
-interface AtendimentoPorUnidade {
-  unidade: string;
-  totalAtendimentos: number;
-  porcentagem: number;
-}
 
 interface StatisticsData {
   totalGeral: number;
-  porUnidade: AtendimentoPorUnidade[];
+  porUnidade: UnidadeStatisticsDto[];
+  exames: ExameStatisticsDto[];
+  tickets: TicketStatisticsDto[];
   dataReferencia: Date;
   generatedAt: Date;
   source: 'cache' | 'database';
@@ -21,6 +18,60 @@ interface UseStatisticsOptions {
   data?: string;
   autoRefresh?: boolean;
   refreshInterval?: number;
+}
+
+// ===============================
+// 📊 DTO Principal
+// ===============================
+export type StatisticsResponseDto = {
+  porUnidade: UnidadeStatisticsDto[];
+  totaisGerais: TotaisGeraisDto;
+  dataReferencia: Date;
+  generatedAt: Date;
+  source: 'cache' | 'database';
+  processingTimeMs?: number;
+}
+
+// ===============================
+// 🏥 DTO Completo por Unidade
+// ===============================
+export type UnidadeStatisticsDto = {
+  unidade: string;
+  totalAgendamentos: number;
+  atendimentosPorStatus: Record<string, number>;
+  atendimentosPorTipoExame: Record<string, number>;
+  exames: ExameStatisticsDto[];
+  tickets: TicketStatisticsDto[];
+}
+
+// ===============================
+// 🧪 DTO de Exames
+// ===============================
+export type ExameStatisticsDto = {
+  nomeExame: string;
+  codigoExame: string;
+  total: number;
+  porStatus: Record<string, number>;
+}
+
+// ===============================
+// 🎟️ DTO de Tickets
+// ===============================
+export type TicketStatisticsDto = {
+  status: string;
+  total: number;
+  preferencial: number;
+}
+
+// ===============================
+// 📈 DTO de Totais Gerais (consolidado)
+// ===============================
+export type TotaisGeraisDto = {
+  totalAgendamentos: number;
+  atendimentosPorStatus: Record<string, number>;
+  atendimentosPorTipoExame: Record<string, number>;
+  totalExamesRealizados: number;
+  totalTicketsEmitidos: number;
 }
 
 export function useStatistics({

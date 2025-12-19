@@ -42,6 +42,7 @@ export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
 export const NEST_RELATORIO_PARAMETROS = NEST_URL + "schedulings/report-params";
 export const NEST_RELATORIO_FILTROS = NEST_URL + "schedulings/report-filters";
 export const NEST_RELATORIO_FUNCIONARIO = NEST_URL + "schedulings/report/"; // schedulings/report/:ID ---> Busca funcionário
+export const NEST_RELATORIO_CSV_DOWNLOAD = NEST_URL + "schedulings/csv-download"; // schedulings/report/:ID ---> Busca funcionário
 
 
 

@@ -78,32 +78,25 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }, [socket, dadosIniciaisCarregados]);
 
 const AtendimentosOrdenados = useMemo(() => {
-  if (!agendamentos || agendamentos.length === 0) return [];
+  if (!agendamentos?.length) return [];
 
-  return [...agendamentos].sort((a, b) => {
-    const restantesA =
-      a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0;
-
-    const restantesB =
-      b.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0;
-
-    // 1. Menos exames restantes vem primeiro
-    if (restantesA !== restantesB) {
-      return restantesA - restantesB;
-    }
-
-    // 2. Desempate por horário de chegada (mais antigo primeiro)
-    const dataA = a.TICKET?.emissao
-      ? new Date(a.TICKET.emissao).getTime()
-      : Number.MAX_SAFE_INTEGER;
-
-    const dataB = b.TICKET?.emissao
-      ? new Date(b.TICKET.emissao).getTime()
-      : Number.MAX_SAFE_INTEGER;
-
-    return dataA - dataB;
-  });
+  return agendamentos
+    .map(a => ({
+      ...a,
+      ticketTime: a.TICKET?.emissao
+        ? new Date(a.TICKET.emissao).getTime()
+        : Number.MAX_SAFE_INTEGER,
+      examesRestantes:
+        a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0
+    }))
+    .sort((a, b) => {
+      if (a.ticketTime !== b.ticketTime) {
+        return a.ticketTime - b.ticketTime;
+      }
+      return a.examesRestantes - b.examesRestantes;
+    });
 }, [agendamentos]);
+
 
 
 

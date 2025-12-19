@@ -249,7 +249,7 @@ export default function DashboardPage() {
       description: "Até dia atual",
     },
     {
-      title: "Atendimentos Hoje",
+      title: "Atendimentos Previstos",
       value: dashboardStats?.agendados,
       icon: <Calendar className="h-6 w-6" />,
       description: "Todas as unidades",
@@ -309,15 +309,15 @@ export default function DashboardPage() {
         </section>
 
         <section aria-labelledby="stats-title" className="mt-8">
-          <motion.h2
+          <motion.h1
             animate={{ opacity: 1, x: 0 }}
-            className="text-xl font-semibold text-gray-800 flex items-center mb-6"
+            className="text-2xl font-semibold text-gray-800 flex items-center mb-6"
             id="stats-title"
             initial={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.5, delay: 0.8 }}
           >
             Visão Geral do Sistema
-          </motion.h2>
+          </motion.h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {stats.map((stat, index) => (
               <StatsCard
@@ -332,7 +332,9 @@ export default function DashboardPage() {
             ))}
           </div>
 
-          {/* <StatisticsSection /> */}
+          <div>
+            <StatisticsSection />
+          </div>
         </section>
 
         <motion.footer

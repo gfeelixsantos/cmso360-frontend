@@ -930,7 +930,7 @@ export default function PainelPage() {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionAttempts: 5,
+      reconnectionDelayMax: 20000,
     });
 
     socket.on("connect", () => {
