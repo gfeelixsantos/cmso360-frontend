@@ -275,8 +275,8 @@ const consolidatedExames = useMemo(() => {
   };
 
   const getStatusColor = (percentage: number) => {
-    if (percentage >= 80) return 'text-green-600';
-    if (percentage >= 60) return 'text-yellow-600';
+    if (percentage >= 40) return 'text-green-600';
+    if (percentage >= 20) return 'text-yellow-600';
     return 'text-red-600';
   };
 
@@ -391,7 +391,7 @@ const consolidatedExames = useMemo(() => {
           
 
           {/* Tickets Emitidos */}
-          {/* <motion.div
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -416,47 +416,6 @@ const consolidatedExames = useMemo(() => {
                 )}
               </div>
             </div>
-          </motion.div> */}
-
-          {/* Média de Conclusão */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-5 w-5 text-[#44735E]" />
-                <p className="text-gray-700 text-sm font-medium">
-                  Média de Conclusão
-                </p>
-              </div>
-              {statisticsData?.porUnidade && (
-                <div className={`text-xl font-bold ${
-                  getStatusColor(Object.values(unitSummaries).reduce((sum, s) => sum + s.percentualFinalizados, 0) / 
-                  statisticsData.porUnidade.length || 0)
-                }`}>
-                  {(
-                    Object.values(unitSummaries).reduce((sum, s) => sum + s.percentualFinalizados, 0) / 
-                    statisticsData.porUnidade.length || 0
-                  ).toFixed(1)}%
-                </div>
-              )}
-            </div>
-            {statisticsData?.porUnidade && (
-              <>
-                <HorizontalProgressBar 
-                  value={Object.values(unitSummaries).reduce((sum, s) => sum + s.percentualFinalizados, 0)}
-                  max={statisticsData.porUnidade.length * 100}
-                  color="bg-gradient-to-r from-[#B8D864] to-[#44735E]"
-                />
-                <div className="flex justify-between mt-3 text-xs text-gray-500">
-                  <span>Por unidade</span>
-                  <span>{statisticsData.porUnidade.length} unidades</span>
-                </div>
-              </>
-            )}
           </motion.div>
 
           {/* Cabeçalho */}
@@ -483,9 +442,6 @@ const consolidatedExames = useMemo(() => {
             >
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-[#44735E] rounded-lg">
-                    <ChartBar className="h-5 w-5 text-white" />
-                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
                       Status Atendimentos
@@ -540,16 +496,10 @@ const consolidatedExames = useMemo(() => {
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 bg-green-900 rounded-lg">
-                      <Layers className="h-5 w-5 text-white" />
-                    </div>
                     <div>
                       <h3 className="text-lg font-semibold text-gray-900">
                         Tipos de Exame Solicitados
                       </h3>
-                      <p className="text-gray-600 text-sm">
-                        {Object.keys(statisticsData.totaisGerais.atendimentosPorTipoExame).length} tipos diferentes
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -611,13 +561,6 @@ const consolidatedExames = useMemo(() => {
                 <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
                     <div className="flex items-center gap-3">
-                      <div className={`p-3 rounded-xl ${
-                        hasData 
-                          ? 'bg-gradient-to-br from-[#44735E] to-[#B8D864] text-white shadow-sm' 
-                          : 'bg-gray-200 text-gray-400'
-                      }`}>
-                        <Building2 className="h-6 w-6" />
-                      </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
                           {unitName}
@@ -726,7 +669,7 @@ const consolidatedExames = useMemo(() => {
                     </div>
 
                     {/* Tickets da Unidade */}
-                    <div>
+                    {/* <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-purple-600" />
                         Tickets da Unidade
@@ -753,21 +696,18 @@ const consolidatedExames = useMemo(() => {
                           );
                         })}
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* EXAMES DA UNIDADE (SEPARADO POR GESTOR) */}
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-50 rounded-lg">
-                            <FileBarChart className="h-5 w-5 text-blue-600" />
-                          </div>
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                              Exames da Unidade {unitName}
+                              Exames de {unitName}
                             </h3>
                             <p className="text-gray-600 text-sm">
-                              {unitData.exames.length} tipos de exame • {unitSummary?.totalExamesFinalizados} finalizados*
+                              {unitData.exames.length} exames • {unitSummary?.totalExamesFinalizados} finalizados
                             </p>
                           </div>
                         </div>
@@ -825,17 +765,13 @@ const consolidatedExames = useMemo(() => {
 
                             return (
                               <div 
-                                key={`${unitName}-${exame.codigoExame}`}
+                                key={`${unitName}-${exame.nomeExame}`}
                                 className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
                               >
                                 <div className="flex items-start justify-between mb-3">
                                   <div className="flex-1 min-w-0">
                                     <div className="font-semibold text-gray-900 truncate">
                                       {exame.nomeExame}
-                                    </div>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Hash className="h-3 w-3 text-gray-400" />
-                                      <span className="text-xs text-gray-500 font-mono">{exame.codigoExame}</span>
                                     </div>
                                   </div>
                                   <div className="text-right">
@@ -846,11 +782,17 @@ const consolidatedExames = useMemo(() => {
 
                                 {/* Status */}
                                 <div className="flex gap-2 mb-3">
-                                  {pendentes > 0 && (
-                                    <UnitExamStatusBadge status="PENDENTE" count={pendentes} />
+                                  {pendentes > 0 && (      
+                                    <div className="flex items-center">
+                                      <UnitExamStatusBadge status="PENDENTE" count={pendentes} />
+                                      <span className="text-xs">Pendentes</span>
+                                    </div>
                                   )}
                                   {finalizados > 0 && (
-                                    <UnitExamStatusBadge status="FINALIZADO" count={finalizados} />
+                                    <div className="flex items-center">
+                                      <UnitExamStatusBadge status="FINALIZADO" count={finalizados} />
+                                      <span className="text-xs">Finalizados</span>
+                                    </div>
                                   )}
                                 </div>
 
@@ -956,7 +898,7 @@ const consolidatedExames = useMemo(() => {
             transition={{ delay: 0.4 }}
             className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
           >
-            <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+            {/* <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
                   <ChartPie className="h-5 w-5 text-white" />
@@ -970,11 +912,11 @@ const consolidatedExames = useMemo(() => {
                   </p>
                 </div>
               </div>
-            </div>
+            </div> */}
             
             <div className="p-5">
               <div className="space-y-4">
-                {consolidatedExames.slice(0, 6).map((exame, idx) => (
+                {/* {consolidatedExames.slice(0, 6).map((exame, idx) => (
                   <div key={idx} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div>
@@ -988,10 +930,10 @@ const consolidatedExames = useMemo(() => {
                         <div className="text-xl font-bold text-gray-900">{exame.total}</div>
                         <div className="text-xs text-gray-500">total geral</div>
                       </div>
-                    </div>
+                    </div> */}
 
                     {/* Distribuição por Unidade */}
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       {Object.entries(exame.porUnidade)
                         .sort(([,a], [,b]) => b.total - a.total)
                         .map(([unidade, dados]) => {
@@ -1023,9 +965,9 @@ const consolidatedExames = useMemo(() => {
                             </div>
                           );
                         })}
-                    </div>
-                  </div>
-                ))}
+                    </div> */}
+                  {/* </div>
+                ))} */}
               </div>
             </div>
           </motion.div>
