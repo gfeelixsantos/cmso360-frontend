@@ -460,10 +460,9 @@ const AtendimentoPage: React.FC = () => {
       }
       // não desconectar aqui automaticamente; deixamos o usuário disparar desconexão via handleConectar (toggle)
       // se você preferir desconectar automaticamente, chame closeSocket(); socketRef.current = null;
-      closeSocket();
-      socketRef.current = null;
-      setConectado(false);
-      setIsLoading(false)
+      // closeSocket();
+      // socketRef.current = null;
+
     };
   }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
