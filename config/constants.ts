@@ -140,17 +140,22 @@ export const TIPOS_EXAME: Record<string, string> = {
 };
 
 export const ESTIMATIVA_EXAMES: Record<string, number> = {
-  "Acuidade Visual": 25,
-  "Audiometria": 30,
-  "Avaliação Psicossocial": 30,
+  "Triagem": 10,
+
+  "Acuidade Visual": 15,
+  "Avaliação Psicossocial": 18,
+  "Laboratorial": 20,
+
+  "Espirometria": 22,
+  "EEG": 25,
+
+  "Audiometria": 28,
   "ECG": 30,
-  "EEG": 30,
-  "Espirometria": 25,
-  "Exame Clínico": 25,
-  "Laboratorial": 25,
-  "Raio-X": 25,
-  "Triagem": 15
+  "Raio-X": 32,
+
+  "Exame Clínico": 40
 };
+
 
 export const EMPRESAS_COM_PSICOLOGA = new Set([
   "263126", // RICLAN
