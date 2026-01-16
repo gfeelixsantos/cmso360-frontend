@@ -7,9 +7,10 @@ import DisconnectedState from "../recepcao/main/DisconnectedState";
 import AtendimentoList from "./AtendimentoList";
 
 import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
-import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import ContentLoading from "@/app/atendimento/components/ContentLoading";
+import { ESTIMATIVA_EXAMES } from "@/config/constants";
 
 interface MainContentProps {
   conectado: boolean;
@@ -78,27 +79,76 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     }
   }, [socket, dadosIniciaisCarregados]);
 
+
+const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
+  return exames
+    .filter(ex => ex.status !== ExamStatus.FINALIZADO)
+    .reduce((total, ex) => {
+      return total + (ESTIMATIVA_EXAMES[ex.grupo] ?? 20);
+    }, 0);
+};
+
+/*
+JANELA DE TOLERÂNCIA
+Até quantos minutos de diferença eu aceito reorganizar a fila sem quebrar a sensação de justiça
+
+Paciente A chegou 08:00
+Paciente B chegou 08:07
+Janela de tolerância = 10 minutos
+
+👉 A diferença é 7 minutos, então o sistema pode:
+Avaliar tempo estimado
+Encaixar quem termina mais rápido
+
+Agora outro caso:
+Paciente C chegou 08:20
+Diferença para A = 20 minutos
+
+👉 Está fora da janela
+FIFO puro
+Ninguém “passa na frente”
+*/
 const AtendimentosOrdenados = useMemo(() => {
-    if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
+  if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
     return [];
   }
 
+  const JANELA_TOLERANCIA = 10 * 60 * 1000; // 10 minutos
+
   return agendamentos
-    .map(a => ({
-      ...a,
-      ticketTime: a.TICKET?.emissao
+    .map(a => {
+      const ticketTime = a.TICKET?.emissao
         ? new Date(a.TICKET.emissao).getTime()
-        : Number.MAX_SAFE_INTEGER,
-      examesRestantes:
-        a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO).length ?? 0
-    }))
+        : Number.MAX_SAFE_INTEGER;
+
+      const examesPendentes =
+        a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO) ?? [];
+
+      return {
+        ...a,
+        ticketTime,
+        examesRestantes: examesPendentes.length,
+        tempoEstimado: calcularTempoEstimado(examesPendentes)
+      };
+    })
     .sort((a, b) => {
-      if (a.ticketTime !== b.ticketTime) {
-        return a.ticketTime - b.ticketTime;
+      const deltaTicket = a.ticketTime - b.ticketTime;
+
+      // 1️⃣ Fora da janela → FIFO puro
+      if (Math.abs(deltaTicket) > JANELA_TOLERANCIA) {
+        return deltaTicket;
       }
-      return a.examesRestantes - b.examesRestantes;
+
+      // 2️⃣ Dentro da janela → prioriza quem termina mais rápido
+      if (a.tempoEstimado !== b.tempoEstimado) {
+        return a.tempoEstimado - b.tempoEstimado;
+      }
+
+      // 3️⃣ Desempate final → quem chegou primeiro
+      return deltaTicket;
     });
 }, [agendamentos]);
+
 
 
 

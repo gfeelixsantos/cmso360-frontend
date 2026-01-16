@@ -139,6 +139,19 @@ export const TIPOS_EXAME: Record<string, string> = {
   "MONITORACAO PONTUAL": "MONITORAÇÃO PONTUAL",
 };
 
+export const ESTIMATIVA_EXAMES: Record<string, number> = {
+  "Acuidade Visual": 25,
+  "Audiometria": 30,
+  "Avaliação Psicossocial": 30,
+  "ECG": 30,
+  "EEG": 30,
+  "Espirometria": 25,
+  "Exame Clínico": 25,
+  "Laboratorial": 25,
+  "Raio-X": 25,
+  "Triagem": 15
+};
+
 export const EMPRESAS_COM_PSICOLOGA = new Set([
   "263126", // RICLAN
   "690978", // AUTOPORT
