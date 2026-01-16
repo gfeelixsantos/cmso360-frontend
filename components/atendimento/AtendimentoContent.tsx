@@ -9,6 +9,7 @@ import AtendimentoList from "./AtendimentoList";
 import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import ContentLoading from "@/app/atendimento/components/ContentLoading";
 
 interface MainContentProps {
   conectado: boolean;
@@ -78,7 +79,9 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   }, [socket, dadosIniciaisCarregados]);
 
 const AtendimentosOrdenados = useMemo(() => {
-  if (!agendamentos?.length) return [];
+    if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
+    return [];
+  }
 
   return agendamentos
     .map(a => ({
@@ -185,41 +188,7 @@ const AtendimentosOrdenados = useMemo(() => {
   // Loading elegante com HeroUI durante o carregamento
   if (estaCarregando || !agendamentos) {
     return (
-      <div
-        aria-label="Carregando atendimentos"
-        aria-live="polite"
-        className="min-h-screen flex items-center justify-center bg-default-50/50"
-        role="status"
-      >
-        <div className="text-center space-y-6">
-          {/* Spinner do HeroUI com tamanho personalizado e cor primária */}
-          <div className="flex justify-center">
-            <Spinner
-              aria-label="Carregando"
-              classNames={{
-                circle1: "border-b-green-700",
-                circle2: "border-b-yellow-400",
-                wrapper: "w-16 h-16",
-              }}
-              color="success"
-              size="lg"
-            />
-          </div>
-
-          {/* Conteúdo textual com animação sutil */}
-          <div className="space-y-2">
-            <h3 className="text-xl font-semibold text-default-700">
-              Recebendo Atendimentos
-            </h3>
-            <p
-              className="text-default-500 text-medium"
-              id="loading-description"
-            >
-              Aguarde...
-            </p>
-          </div>
-        </div>
-      </div>
+      <ContentLoading />
     );
   }
 

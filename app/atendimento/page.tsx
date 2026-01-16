@@ -94,11 +94,12 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     s.on("connect", () => onConnect?.(s));
 
     s.on("disconnect", (reason: string) => {
+      console.error("Socket disconnected:", reason);
       onDisconnect?.(reason);
     });
 
     s.on("connect_error", (err: any) => onConnectError?.(err));
-
+    console.log("WebSocket error:", s.id);
     registeredOnce = true;
   }
 
@@ -477,6 +478,7 @@ const AtendimentoPage: React.FC = () => {
     );
 
     const ticketStatus = (ag: any) => ag.TICKET?.status;
+    const exameStatus = (ag: any) => ag.EXAMES?.find((ex: any) => ex.grupo === exameSelecionado)?.status;
 
     setEstatisticas({
       recepcaoAguardando:
@@ -486,12 +488,12 @@ const AtendimentoPage: React.FC = () => {
         ).length,
 
       examesAguardando: agendamentosSala.filter(
-        ag => ticketStatus(ag) === TicketStatus.AGUARDANDO
+        ag => exameStatus(ag) === ExamStatus.PENDENTE
       ).length,
 
       emAtendimento: agendamentosSala.filter(
         ag =>
-          ticketStatus(ag) === TicketStatus.AGUARDANDO ||
+          ticketStatus(ag) === TicketStatus.EM_ATENDIMENTO ||
           ticketStatus(ag) === TicketStatus.EM_CHAMADA
       ).length,
 

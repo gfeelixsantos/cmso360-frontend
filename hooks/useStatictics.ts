@@ -78,7 +78,7 @@ export function useStatistics({
   unidade,
   data,
   autoRefresh = false,
-  refreshInterval = 300000, // 5 minutos
+  refreshInterval = 600000, // 10 minutos
 }: UseStatisticsOptions = {}) {
   const [statistics, setStatistics] = useState<StatisticsData | null>(null);
   const [loading, setLoading] = useState(true);

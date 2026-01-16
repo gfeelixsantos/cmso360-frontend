@@ -1,6 +1,7 @@
 "use client";
 
 import { ExameStatisticsDto, StatisticsResponseDto, useStatistics } from "@/hooks/useStatictics";
+import { TicketStatus } from "@/lib/ticket/ticket";
 import { Button } from "@heroui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
@@ -11,45 +12,16 @@ import {
   Users,
   FileText,
   Ticket,
-  CheckCircle,
-  Clock,
   Activity,
   ChevronDown,
   ChevronUp,
-  BarChart3,
-  Smartphone,
-  Zap,
   Calendar,
-  AlertTriangle,
-  CheckCheck,
-  Hourglass,
-  Target,
-  ClipboardCheck,
-  PieChart,
   Eye,
   EyeOff,
-  ListFilter,
-  BarChart,
+
   Layers,
-  Grid3x3,
-  Hash,
-  Tag,
-  Filter,
-  ChartBar,
-  ChartPie,
-  TrendingDown,
-  CheckSquare,
-  Clock4,
-  UserCheck,
-  FileBarChart,
-  BarChart2,
-  LineChart,
-  Grid,
   Users as UsersIcon,
-  Flag,
-  Shield,
-  Building,
-  MapPin
+
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
@@ -66,7 +38,6 @@ const UnitExamStatusBadge = ({ status, count }: { status: string; count: number 
           color: 'text-yellow-700',
           bg: 'bg-yellow-50',
           border: 'border-yellow-200',
-          icon: <AlertTriangle className="h-3 w-3" />
         };
       case 'AGUARDANDO_RESULTADO':
       case 'EM_ANALISE':
@@ -74,7 +45,6 @@ const UnitExamStatusBadge = ({ status, count }: { status: string; count: number 
           color: 'text-blue-700',
           bg: 'bg-blue-50',
           border: 'border-blue-200',
-          icon: <Hourglass className="h-3 w-3" />
         };
       case 'FINALIZADO':
       case 'CONCLUIDO':
@@ -82,14 +52,12 @@ const UnitExamStatusBadge = ({ status, count }: { status: string; count: number 
           color: 'text-green-700',
           bg: 'bg-green-50',
           border: 'border-green-200',
-          icon: <CheckCheck className="h-3 w-3" />
         };
       default:
         return { 
           color: 'text-gray-700',
           bg: 'bg-gray-50',
           border: 'border-gray-200',
-          icon: <FileText className="h-3 w-3" />
         };
     }
   };
@@ -98,7 +66,6 @@ const UnitExamStatusBadge = ({ status, count }: { status: string; count: number 
   
   return (
     <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${config.bg} ${config.border}`}>
-      {config.icon}
       <span className={`font-bold ${config.color}`}>{count}</span>
     </div>
   );
@@ -421,6 +388,7 @@ const consolidatedExames = useMemo(() => {
           {/* Cabeçalho */}
           <div className="flex lg:flex-row items-start lg:items-center justify-center">
             <Button
+              color="success"
               onClick={handleRefresh}
               disabled={loading || isRefreshing}
               className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
@@ -463,7 +431,6 @@ const consolidatedExames = useMemo(() => {
                         <div key={status} className="group">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <Activity className="h-4 w-4 text-gray-400" />
                               <span className="font-medium text-gray-900">{status}</span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -515,7 +482,6 @@ const consolidatedExames = useMemo(() => {
                         <div key={tipo} className="group">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <Hash className="h-4 w-4 text-gray-400" />
                               <span className="font-medium text-gray-900 truncate">{tipo}</span>
                             </div>
                             <div className="flex items-center gap-3">
@@ -669,7 +635,7 @@ const consolidatedExames = useMemo(() => {
                     </div>
 
                     {/* Tickets da Unidade */}
-                    {/* <div>
+                    <div>
                       <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                         <Ticket className="h-4 w-4 text-purple-600" />
                         Tickets da Unidade
@@ -677,26 +643,29 @@ const consolidatedExames = useMemo(() => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {unitData.tickets.map((ticket, idx) => {
                           const preferencialPercent = ticket.total > 0 ? (ticket.preferencial / ticket.total) * 100 : 0;
-                          return (
-                            <div key={idx} className="bg-gray-50 rounded-lg p-3">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="font-medium text-gray-900">{ticket.status}</span>
-                                <span className="text-lg font-bold text-gray-900">{ticket.total}</span>
+                          if(ticket.status != TicketStatus.AGUARDANDO){
+                            return (
+                              <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                                <div className="flex items-center justify-between mb-2">
+                                  <span className="font-medium text-gray-900">{ticket.status}</span>
+                                  <span className="text-lg font-bold text-gray-900">{ticket.total}</span>
+                                </div>
+                                <div className="text-xs text-gray-600 mb-2">
+                                  {ticket.preferencial} preferenciais ({preferencialPercent.toFixed(0)}%)
+                                </div>
+                                <HorizontalProgressBar 
+                                  value={ticket.preferencial}
+                                  max={ticket.total}
+                                  color="bg-purple-500"
+                                  showLabel={false}
+                                />
                               </div>
-                              <div className="text-xs text-gray-600 mb-2">
-                                {ticket.preferencial} preferenciais ({preferencialPercent.toFixed(0)}%)
-                              </div>
-                              <HorizontalProgressBar 
-                                value={ticket.preferencial}
-                                max={ticket.total}
-                                color="bg-purple-500"
-                                showLabel={false}
-                              />
-                            </div>
-                          );
+                            );
+                          }
+                    
                         })}
                       </div>
-                    </div> */}
+                    </div>
 
                     {/* EXAMES DA UNIDADE (SEPARADO POR GESTOR) */}
                     <div className="border-t border-gray-200 pt-6">

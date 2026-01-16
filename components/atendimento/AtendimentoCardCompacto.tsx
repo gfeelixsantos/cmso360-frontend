@@ -1,5 +1,5 @@
 import React, { useCallback } from "react";
-import { Card, Progress, Chip } from "@heroui/react";
+import { Card, Progress, Chip, Tooltip } from "@heroui/react";
 import { Clock, User, Ticket as Senha } from "lucide-react";
 import { Socket } from "socket.io-client";
 
@@ -10,6 +10,7 @@ import {
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
+import { getStatusColor } from "@/lib/utils";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -33,7 +34,7 @@ const getStatusVisual = (status: string) => {
 };
 
 // Cores do badge de status
-const getStatusColor = (status: string) => {
+const getStatusColorBackground = (status: string) => {
   switch (status) {
     case TicketStatus.AGUARDANDO:
       return "bg-green-100 text-green-800";
@@ -114,7 +115,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
           </div>
 
           <Chip
-            className={`${getStatusColor(atendimento.TICKET.status)} text-xs text-center p-4`}
+            className={`${getStatusColorBackground(atendimento.TICKET.status)} text-xs text-center p-4`}
             size="sm"
             variant="flat"
           >
@@ -132,9 +133,20 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
         {total > 0 && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-gray-600">
-              <span>
-                Exames: {completed}/{total}
-              </span>
+              <Tooltip 
+                size="sm"
+                placement="bottom"
+                content={
+                  atendimento.EXAMES.map(ex => (
+                    <div className="grid grid-cols-2 gap-2 text-xs justify-start" key={`${ex.codigoExame}-grid`}>
+                      <p >{ex.nomeExame}</p>
+                      <p >{ex.status}</p>
+                    </div>
+                  ))
+                }
+              >
+                <span>Exames {completed} / {total}</span>
+              </Tooltip>
               <span>{progress}%</span>
             </div>
             <Progress
