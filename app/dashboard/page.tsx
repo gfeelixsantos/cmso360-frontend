@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Clock,
   ChartNoAxesCombined,
+  Bell,
+  X,
 } from "lucide-react";
 
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -19,6 +21,8 @@ import { HeaderApp } from "@/components/shared/HeaderApp";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import { NEST_DASHBOARD } from "@/config/constants";
 import { StatisticsSection } from "./components/StatisticsSection";
+import { Button, Image } from "@heroui/react";
+import { getCurrentMessage, Message } from "./message/messageDisplay";
 
 // Interfaces
 interface MenuCardProps {
@@ -51,7 +55,143 @@ interface DashboardStats {
   aguardandoAvaliacaoMedica: number;
 }
 
-// Componentes
+
+// Constantes
+const SESSION_MESSAGE_KEY = "dashboard_current_message";
+const SESSION_SEEN_KEY = "message_seen";
+
+// Componente Modal de Mensagem
+const MessageModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  message: Message | null;
+}> = ({ isOpen, onClose, message }) => {
+  if (!isOpen || !message) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+      >
+        <div className="p-6 border-b border-gray-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <video
+                src="/images/gifs/Notification.webm"
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="h-20 w-20 object-contain"
+              >
+                
+              </video>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {message.title}
+                </h2>
+                <p className="text-md text-gray-500">{message.date}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Fechar"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[50vh]">
+          <div className="prose prose-lg max-w-none">
+            <div className="whitespace-pre-line text-gray-700">
+              {message.content}
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-gray-200 bg-gray-50">
+          <div className="flex justify-end">
+            <Button
+              onPress={onClose}
+              variant="ghost"
+              color="default"
+              className="px-6 py-2"
+            >
+              Entendi
+            </Button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
+// Botão flutuante para mensagens
+const MessageFloatingButton: React.FC<{
+  onClick: () => void;
+  hasMessage: boolean;
+}> = ({ onClick, hasMessage }) => (
+  <button
+   disabled={true}
+    onClick={onClick}
+    className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-[#44735E] rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center group"
+    aria-label="Visualizar mensagem atual"
+  >
+    <Bell className="h-6 w-6 text-white" />
+    {hasMessage && (
+      <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white animate-pulse" />
+    )}
+    <span className="absolute -top-10 right-0 bg-gray-900 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+      Ver mensagem
+    </span>
+  </button>
+);
+
+// Funções para gerenciar sessão
+const setSessionMessage = (message: Message): void => {
+  if (typeof window !== 'undefined') {
+    // Remove mensagem anterior e marcação de vista
+    sessionStorage.removeItem(SESSION_SEEN_KEY);
+    sessionStorage.setItem(SESSION_MESSAGE_KEY, JSON.stringify(message));
+  }
+};
+
+const getSessionMessage = (): Message | null => {
+  if (typeof window !== 'undefined') {
+    const messageStr = sessionStorage.getItem(SESSION_MESSAGE_KEY);
+    return messageStr ? JSON.parse(messageStr) : null;
+  }
+  return null;
+};
+
+const markMessageAsSeen = (): void => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.setItem(SESSION_SEEN_KEY, 'true');
+  }
+};
+
+const hasSeenMessage = (): boolean => {
+  if (typeof window !== 'undefined') {
+    return sessionStorage.getItem(SESSION_SEEN_KEY) === 'true';
+  }
+  return false;
+};
+
+const clearSessionMessage = (): void => {
+  if (typeof window !== 'undefined') {
+    sessionStorage.removeItem(SESSION_MESSAGE_KEY);
+    sessionStorage.removeItem(SESSION_SEEN_KEY);
+  }
+};
+
+
+
+// Componentes existentes...
 const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
   <motion.section
     animate={{ opacity: 1, y: 0 }}
@@ -167,7 +307,7 @@ const StatsCard: React.FC<StatsCardProps> = ({
   </article>
 );
 
-// Componente Principal CORRIGIDO
+// Componente Principal
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -176,6 +316,26 @@ export default function DashboardPage() {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats | null>(
     null,
   );
+  const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [hasNewMessage, setHasNewMessage] = useState(false);
+
+  // Buscar mensagem atual
+  const fetchAndSetMessage = async () => {
+    const message = await getCurrentMessage();
+    if (message) {
+      // Sempre sobrescreve a mensagem anterior na sessão
+      setSessionMessage(message);
+      setCurrentMessage(message);
+      
+      // Verificar se já foi vista
+      if (!hasSeenMessage()) {
+        setShowModal(true);
+      }
+      
+      setHasNewMessage(true);
+    }
+  };
 
   useEffect(() => {
     const initDashboard = async () => {
@@ -184,23 +344,36 @@ export default function DashboardPage() {
       if (!currentUser) {
         setIsLoading(false);
         router.push("/");
-
         return;
       }
 
       setUser(currentUser);
 
       try {
+        // Buscar dados do dashboard
         const res = await fetch(NEST_DASHBOARD);
 
         if (!res.ok) throw new Error("Erro ao buscar atendimentos");
 
         const responseStats: DashboardStats = await res.json();
-
         setDashboardStats(responseStats);
+
+        // Verificar se há mensagem na sessão
+        const storedMessage = getSessionMessage();
+        if (storedMessage) {
+          setCurrentMessage(storedMessage);
+          setHasNewMessage(true);
+          
+          // Mostrar modal apenas se ainda não foi vista
+          if (!hasSeenMessage()) {
+            // setShowModal(true);
+          }
+        } else {
+          // Buscar nova mensagem
+          // await fetchAndSetMessage();
+        }
       } catch (err) {
         console.error("Erro ao carregar atendimentos:", err);
-        // ✅ Define array vazio em caso de erro
         setDashboardStats(null);
       } finally {
         setIsLoading(false);
@@ -269,7 +442,6 @@ export default function DashboardPage() {
     },
   ];
 
-  // ✅ FIX 4: Mostrar loading até carregar tudo
   if (isLoading || !user) {
     return <CmsoLoading />;
   }
@@ -277,12 +449,15 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <HeaderApp
-        children={null}
         onLogout={() => {
+          // Limpar mensagem ao fazer logout
+          clearSessionMessage();
           logout();
           router.push("/");
         }}
-      />
+      >
+      <></>  
+      </HeaderApp>
 
       <main
         aria-label="Dashboard principal"
@@ -348,6 +523,26 @@ export default function DashboardPage() {
           </p>
         </motion.footer>
       </main>
+
+      {/* Modal de Mensagem */}
+      <MessageModal
+        isOpen={showModal}
+        onClose={() => {
+          markMessageAsSeen();
+          setShowModal(false);
+        }}
+        message={currentMessage}
+      />
+
+      {/* Botão flutuante para mensagens */}
+      {currentMessage && (
+        <MessageFloatingButton
+          onClick={() => {
+            setShowModal(true);
+          }}
+          hasMessage={hasNewMessage}
+        />
+      )}
     </div>
   );
 }

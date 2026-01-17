@@ -74,32 +74,98 @@ type ConnectOptions = {
 };
 
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
-  if (SINGLETON_SOCKET) return SINGLETON_SOCKET;
+  // ✅ Se já existe socket conectado, reutiliza
+  if (SINGLETON_SOCKET?.connected) {
+    console.log('♻️ Reutilizando socket existente:', SINGLETON_SOCKET.id);
+    return SINGLETON_SOCKET;
+  }
+
+  // ✅ Se existe mas está desconectado, remove
+  if (SINGLETON_SOCKET) {
+    try {
+      SINGLETON_SOCKET.removeAllListeners();
+      SINGLETON_SOCKET.disconnect();
+    } catch (err) {
+      console.warn('Erro ao limpar socket anterior:', err);
+    }
+    SINGLETON_SOCKET = null;
+  }
 
   const { auth, onConnect, onDisconnect, onConnectError } = opts;
 
+  // ✅ CORREÇÃO: Configurações otimizadas para estabilidade
   const s = io(NEST_URL, {
     auth,
-    transports: ["websocket"],
+    transports: ["websocket"], // Apenas WebSocket, sem polling
     reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 2000,
-    reconnectionDelayMax: 10000,
+    reconnectionAttempts: Infinity, // Tenta reconectar indefinidamente
+    reconnectionDelay: 1000, // ✅ Reduzido de 2000 para 1000ms
+    reconnectionDelayMax: 5000, // ✅ Reduzido de 10000 para 5000ms
     timeout: 20000,
+    // ✅ NOVO: Forçar nova conexão ao reconectar
+    forceNew: false, // Permite reusar conexão
+    // ✅ NOVO: Upgrade automático desabilitado (já usa websocket)
+    upgrade: false,
+    // ✅ NOVO: Manter conexão ativa
+    rememberUpgrade: true,
   });
 
   SINGLETON_SOCKET = s;
 
+  // ✅ CORREÇÃO: Registrar handlers apenas uma vez
   if (!registeredOnce) {
-    s.on("connect", () => onConnect?.(s));
+    s.on("connect", () => {
+      console.log('✅ Socket conectado:', s.id);
+      onConnect?.(s);
+    });
 
     s.on("disconnect", (reason: string) => {
-      console.error("Socket disconnected:", reason);
+      console.warn("⚠️ Socket desconectado:", reason);
+      
+      // ✅ NOVO: Distinguir desconexões normais de erros
+      if (reason === "io server disconnect") {
+        // Servidor forçou desconexão - reconectar manualmente
+        console.log("🔄 Servidor desconectou - tentando reconectar...");
+        s.connect();
+      } else if (reason === "transport close") {
+        // Conexão caiu - reconectar automático
+        console.log("🔄 Conexão perdida - reconexão automática...");
+      }
+      
       onDisconnect?.(reason);
     });
 
-    s.on("connect_error", (err: any) => onConnectError?.(err));
-    console.log("WebSocket error:", s.id);
+    s.on("connect_error", (err: any) => {
+      console.error("❌ Erro de conexão:", err.message);
+      onConnectError?.(err);
+    });
+
+    // ✅ NOVO: Monitorar reconexões
+    s.on("reconnect", (attemptNumber: number) => {
+      console.log(`✅ Reconectado após ${attemptNumber} tentativas`);
+    });
+
+    s.on("reconnect_attempt", (attemptNumber: number) => {
+      console.log(`🔄 Tentativa de reconexão #${attemptNumber}`);
+    });
+
+    s.on("reconnect_error", (err: any) => {
+      console.error("❌ Erro ao reconectar:", err.message);
+    });
+
+    s.on("reconnect_failed", () => {
+      console.error("❌ Falha ao reconectar após múltiplas tentativas");
+    });
+
+    // ✅ NOVO: Monitorar ping/pong para detectar problemas
+    s.on("ping", () => {
+      console.debug("📡 Ping enviado ao servidor");
+    });
+
+    s.on("pong", (latency: number) => {
+      console.debug(`📡 Pong recebido (${latency}ms)`);
+    });
+
     registeredOnce = true;
   }
 
@@ -109,39 +175,42 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
+      console.log('🔌 Fechando socket:', SINGLETON_SOCKET.id);
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
-      // ignore
+      console.warn('Erro ao fechar socket:', err);
     }
   }
   SINGLETON_SOCKET = null;
   registeredOnce = false;
 }
 
-// Helper para registrar handlers de eventos (idempotente): retorna função para desregistrar
+// Helper para registrar handlers de eventos
 function registerHandlers(
   s: Socket,
   handlers: { [K in keyof CustomEventMap]?: (...args: any[]) => void },
 ) {
   Object.entries(handlers).forEach(([event, fn]) => {
     if (!fn) return;
-    // evita múltiplas inscrições iguais usando off antes
-    s.off(event as any, fn as any);
+    // Remove handler anterior se existir
+    s.off(event as any);
     s.on(event as any, fn as any);
   });
 
+  // Retorna função de cleanup
   return () => {
     Object.entries(handlers).forEach(([event, fn]) => {
       if (!fn) return;
       try {
         s.off(event as any, fn as any);
       } catch (err) {
-        // noop
+        console.warn(`Erro ao remover handler ${event}:`, err);
       }
     });
   };
 }
+
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
@@ -149,6 +218,8 @@ const AtendimentoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(null);
   const [conectado, setConectado] = useState(false);
   const socketRef = useRef<Socket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const [isReconnecting, setIsReconnecting] = useState(false);
   const [unidadeSelecionada, setUnidadeSelecionada] = useState("");
   const [statusSelecionado, setStatusSelecionado] = useState("");
   const [salaSelecionada, setSalaSelecionada] = useState("");
@@ -296,18 +367,35 @@ const AtendimentoPage: React.FC = () => {
   // ---------------------------------------------------------
   // Reconexão automática ao mudar unidade/sala/exame
   // ---------------------------------------------------------
-  useEffect(() => {
+   useEffect(() => {
     if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) return;
 
-    // Se já estava conectado, força reconexão automática
-    if (conectado) {
-      console.log(
-        "♻️ Mudança de contexto detectada → Recriando conexão WebSocket...",
-      );
-      closeSocket();
-      setConectado(false);
-      setTimeout(() => setConectado(true), 300);
+    // Limpa timeout anterior
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
     }
+
+    // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
+    if (conectado) {
+      console.log('♻️ Mudança de contexto detectada - agendando reconexão...');
+      
+      reconnectTimeoutRef.current = setTimeout(() => {
+        console.log('🔄 Executando reconexão...');
+        closeSocket();
+        setConectado(false);
+        
+        // Reconecta após 300ms
+        setTimeout(() => {
+          setConectado(true);
+        }, 300);
+      }, 500);
+    }
+
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+    };
   }, [unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
   // ---------------------------------------------------------
@@ -315,7 +403,6 @@ const AtendimentoPage: React.FC = () => {
   // ---------------------------------------------------------
   const handleConectar = () => {
     if (conectado) {
-      // desconecta explicitamente
       closeSocket();
       socketRef.current = null;
       setConectado(false);
@@ -329,7 +416,6 @@ const AtendimentoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
-
       return;
     }
 
@@ -341,7 +427,6 @@ const AtendimentoPage: React.FC = () => {
         </p>,
       );
       setModalAlert(true);
-
       return;
     }
 
@@ -362,16 +447,24 @@ const AtendimentoPage: React.FC = () => {
       unidade: unidadeSelecionada,
     };
 
-    // cria ou pega o singleton
     const s = createSocketIfNeeded({
       auth,
       onConnect: async (socket) => {
-        console.log("Conectado ao WebSocket:", socket.id);
+        console.log("✅ Conectado ao WebSocket:", socket.id);
         socketRef.current = socket;
+        setIsReconnecting(false);
 
         try {
           await Promise.all([loadSocCompanies(), loadInitialTickets()]);
           emitEvent(socket, EventType.TICKET_INFO, unidadeSelecionada);
+          
+          addToast({
+            title: "Conectado",
+            description: `Conexão com servidor estabelecida.`,
+            severity: "success",
+            color: "foreground",
+            variant: "flat",
+          });
         } catch (err) {
           console.warn("Erro ao carregar dados iniciais:", err);
         } finally {
@@ -379,51 +472,72 @@ const AtendimentoPage: React.FC = () => {
         }
       },
       onDisconnect: (reason) => {
-        console.log("Socket desconectado reason=", reason);
-        // Se o fechamento foi solicitado pelo cliente (closeSocket), não mostrar alerta
+        console.log("⚠️ Socket desconectado, reason=", reason);
+        
+        // Só mostra alerta se não foi desconexão intencional
         if (reason !== "io client disconnect") {
-          addToast({
-            title: "Conexão perdida",
-            severity: "danger",
-            color: "foreground",
-            variant: "flat",
-          });
+          setIsReconnecting(true);
+          
+          // Mostra toast apenas se não reconectar em 2s
+          setTimeout(() => {
+            if (isReconnecting) {
+              addToast({
+                title: "Reconectando...",
+                description: "Tentando restabelecer conexão",
+                severity: "warning",
+                color: "foreground",
+                variant: "flat",
+              });
+            }
+          }, 2000);
+        } else {
+          setConectado(false);
         }
-        setConectado(false);
+        
         setIsLoading(false);
       },
       onConnectError: (err) => {
-        console.error("Erro ao conectar:", err);
+        console.error("❌ Erro ao conectar:", err);
         setIsLoading(false);
+        setIsReconnecting(false);
+        
+        addToast({
+          title: "Erro de conexão",
+          description: "Não foi possível conectar ao servidor",
+          severity: "danger",
+          color: "foreground",
+          variant: "flat",
+        });
       },
     });
 
-    // registra handlers específicos de evento (idempotente)
+    // ✅ CORREÇÃO: Handlers de eventos otimizados
     const handleAtendimentos = (schedules?: Scheduling[]) => {
-      if (schedules) {
+      if (schedules && Array.isArray(schedules)) {
+        console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
+        
         setAgendamentosGeral((prev) => {
-          const merged = [...prev];
-
-          schedules.forEach((schedule) => {
-            const exists = merged.some((a) => a._id === schedule._id);
-
-            if (!exists) merged.push(schedule);
-          });
-
-          return merged;
+          // ✅ Usa Map para merge eficiente
+          const map = new Map(prev.map(s => [s._id, s]));
+          schedules.forEach(schedule => map.set(schedule._id, schedule));
+          return Array.from(map.values());
         });
       }
     };
 
-    const handleUpdateSchedule = ({
-      operation,
-      schedule,
-    }: SchedulingChange) => {
-      console.log(operation, schedule);
+    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
+      console.log(`🔄 UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
+      
       switch (operation) {
         case MongoOperationTypes.INSERT:
-          setAgendamentosGeral((prev) => [...prev, schedule]);
-
+          setAgendamentosGeral((prev) => {
+            // Evita duplicatas
+            if (prev.some(p => p._id === schedule._id)) {
+              console.warn('⚠️ Agendamento duplicado ignorado:', schedule._id);
+              return prev;
+            }
+            return [...prev, schedule];
+          });
           break;
 
         case MongoOperationTypes.UPDATE:
@@ -432,14 +546,18 @@ const AtendimentoPage: React.FC = () => {
               (p) => p.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
             );
 
-            if (idx != -1) prev[idx] = schedule;
-
-            return [...prev];
+            if (idx !== -1) {
+              const updated = [...prev];
+              updated[idx] = schedule;
+              return updated;
+            }
+            
+            console.warn('⚠️ Agendamento não encontrado para UPDATE:', schedule.CODIGOPRONTUARIO);
+            return prev;
           });
           break;
 
         case MongoOperationTypes.DELETE:
-          console.log("deletar em atendimento foi chamado...");
           setAgendamentosGeral((prev) =>
             prev.filter((ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO),
           );
@@ -452,20 +570,25 @@ const AtendimentoPage: React.FC = () => {
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
     } as any);
 
-    // cleanup quando a flag conectado mudar para false
+    // ✅ Cleanup
     return () => {
-      try {
-        unregister();
-      } catch (err) {
-        // noop
-      }
-      // não desconectar aqui automaticamente; deixamos o usuário disparar desconexão via handleConectar (toggle)
-      // se você preferir desconectar automaticamente, chame closeSocket(); socketRef.current = null;
+      unregister();
+      // NÃO fecha o socket aqui - deixa o singleton gerenciar
       // closeSocket();
       // socketRef.current = null;
-
     };
   }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
+
+    // Cleanup ao desmontar componente
+  useEffect(() => {
+    return () => {
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current);
+      }
+      // Só fecha socket se estiver saindo da página
+      closeSocket();
+    };
+  }, []);
 
   // ---------------------------------------------------------
   // Estatísticas
