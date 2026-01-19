@@ -921,7 +921,6 @@ export function StatisticsSection() {
                                       }
                                       max={total}
                                       showLabel={false}
-                                      showLabel={false}
                                       value={finalizados}
                                     />
                                   </div>
