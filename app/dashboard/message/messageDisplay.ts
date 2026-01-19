@@ -34,5 +34,6 @@ export { getCurrentMessage };
 • Exportação do relatório em CSV
 • Validação aprimorada ficha clínica: peso, altura e PA
 • Correção DUM em ficha clínica
+* Exclusão de tickets pela recepção
 
 */

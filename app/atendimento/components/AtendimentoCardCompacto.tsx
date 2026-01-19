@@ -97,6 +97,21 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
     );
   }, []);
 
+  // Componente menor e focado (Single Responsibility)
+  const ExamesTooltipContent = ({ exames }: { exames: ExamRegister[] }) => (
+    <div className="flex flex-col gap-2 bg-gray-200 p-2 rounded-md max-w-[560px]">
+      {exames.map((ex) => (
+        <div 
+          key={ex.codigoExame} 
+          className="grid grid-cols-2 gap-4 text-xs min-w-[150px]"
+        >
+          <span className="font-medium">{ex.nomeExame}</span>
+          <span className="text-right opacity-80">{ex.status}</span>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <Card
       className={`${bg} ${border} rounded-lg p-3 mb-2 hover:shadow-md transition-shadow cursor-pointer`}
@@ -133,14 +148,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-gray-600">
               <Tooltip
-                content={
-                  atendimento.EXAMES.map(ex => (
-                    <div className="grid grid-cols-2 gap-2 text-xs justify-start" key={`${ex.codigoExame}-grid`}>
-                      <p >{ex.nomeExame}</p>
-                      <p >{ex.status}</p>
-                    </div>
-                  ))
-                }
+                content={<ExamesTooltipContent exames={atendimento.EXAMES} />}
                 placement="bottom"
                 size="sm"
                 >

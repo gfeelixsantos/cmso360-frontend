@@ -16,6 +16,7 @@ enum EventType {
   TICKET_ACTION_SUCCESS = "TICKET_ACTION_SUCCESS",
   TICKET_ERROR = "TICKET_ERROR",
   TICKET_INFO = "TICKET_INFO",
+  TICKET_DELETE = "TICKET_DELETE",
 
   // Schedule
   UPDATE_SCHEDULE = "UPDATE_SCHEDULE",
@@ -37,6 +38,7 @@ interface EventPayloadMap {
   [EventType.TICKET_ACTION_SUCCESS]: Ticket;
   [EventType.TICKET_ERROR]: string;
   [EventType.TICKET_INFO]: string;
+  [EventType.TICKET_DELETE]: number;
   [EventType.PAINEL_CALL]: PainelCall;
   [EventType.PAINEL_TICKETS]: PainelCall[];
   [EventType.UPDATE_SCHEDULE]: SchedulingChange;
@@ -52,6 +54,7 @@ interface CustomEventMap {
   [EventType.TICKET_ACTION_SUCCESS]: (payload: Ticket) => void;
   [EventType.TICKET_ERROR]: (payload: string) => void;
   [EventType.TICKET_INFO]: (payload: string) => void;
+  [EventType.TICKET_DELETE]: (payload: number) => void;
   [EventType.PAINEL_CALL]: (payload: PainelCall) => void;
   [EventType.PAINEL_TICKETS]: (payload: PainelCall[]) => void;
   [EventType.UPDATE_SCHEDULE]: (payload: SchedulingChange) => void;

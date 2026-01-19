@@ -24,6 +24,7 @@ import {
 } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IndexDb } from "@/lib/indexDb/indexdb";
+import { NEST_TICKET_DELETE } from "@/config/constants";
 
 // Interface para tipagem robusta
 interface SenhaCardProps {
@@ -34,6 +35,7 @@ interface SenhaCardProps {
   agendamentos: Scheduling[];
   onHandleModal: (state: Boolean) => void;
   setTicketSelecionado: (ticket: Ticket | null) => void;
+  onDeleteTicketNumber: (id: number) => void;
   onPreparationRequests: PreparationRequest[];
   preparacoesFinalizadas: PreparationRequest[];
 }
@@ -279,6 +281,7 @@ const SenhaCard: React.FC<SenhaCardProps> = ({
   socket,
   agendamentos,
   onHandleModal,
+  onDeleteTicketNumber,
   setTicketSelecionado,
   onPreparationRequests,
   preparacoesFinalizadas,
@@ -418,6 +421,7 @@ const SenhaCard: React.FC<SenhaCardProps> = ({
     }
   };
 
+
   useEffect(() => {
     handlePreparation();
   }, [onPreparationRequests, ticket]);
@@ -430,6 +434,15 @@ const SenhaCard: React.FC<SenhaCardProps> = ({
       role="region"
     >
       <div className="flex flex-col items-center flex-1 w-full">
+        {/* Botão de Exclusão */}
+        <Button
+          size="sm"
+          radius="full"
+          onPress={() => onDeleteTicketNumber(ticket.id)}
+          className="absolute top-1 right-1 min-w-6 h-6 w-6 p-0 text-[10px] bg-gray-200 hover:bg-red-200 hover:text-red-700 transition-all"
+        >
+          X
+        </Button>
         <TicketNumber ticket={ticket} />
 
         {/* Badge de status centralizado */}

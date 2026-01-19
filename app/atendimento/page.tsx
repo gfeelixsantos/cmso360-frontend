@@ -169,18 +169,6 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       console.debug(`📡 Pong recebido (${latency}ms)`);
     });
 
-    // Monitor de idle
-    setInterval(() => {
-      const idleTime = Date.now() - lastActivity;
-
-      if (idleTime > 60000) {
-        // 1 minuto sem pong
-        console.warn("⚠️ Conexão pode estar idle - forçando reconexão");
-        s.disconnect();
-        s.connect();
-      }
-    }, 60000);
-
     registeredOnce = true;
   }
 

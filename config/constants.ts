@@ -16,6 +16,7 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
 
 export const NEST_TICKETS_URL = `${NEST_URL}ticket`;
 export const NEST_TICKET_QUERY = `${NEST_URL}ticket?unidade=`;
+export const NEST_TICKET_DELETE = `${NEST_URL}ticket/delete/`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 
@@ -183,6 +184,7 @@ export const CODIGOS_RISCO_ALTURA = new Set([
   "336", // Diferença de nível maior que 2 metros / Queda em altura
   "395", // Queda em altura
   "777", // Trabalho eventual em altura
+  "782", // Queda com diferença de nível maior que dois metros
   "941", // Queda de pessoa com diferença de nível acima de dois metros (queda de altura)
   "978", // Trabalho em altura no acesso a partes superiores de tanques e instalações do Binder
   "1277", // Queda de altura em nivel dferente - ACID 1

@@ -243,6 +243,7 @@ const RecepcaoPage: React.FC = () => {
     addOrUpdate,
     getAll,
     executarAcao,
+    remove,
   } = useEntityManager<Ticket>([]);
 
   const [estatisticas, setEstatisticas] = useState({
@@ -455,7 +456,7 @@ const RecepcaoPage: React.FC = () => {
     setConectado(true);
   };
 
-  // ✅ CORREÇÃO: Conexão otimizada com singleton
+  // Conexão otimizada com singleton
   useEffect(() => {
     if (!conectado || !unidadeSelecionada || !salaSelecionada) {
       return;
@@ -472,7 +473,7 @@ const RecepcaoPage: React.FC = () => {
       unidade: unidadeSelecionada,
     };
 
-    // ✅ NOVO: Usa singleton ao invés de criar novo socket
+    // Usa singleton ao invés de criar novo socket
     const s = createSocketIfNeeded({
       auth: userSocket,
       onConnect: (socket) => {
@@ -482,7 +483,7 @@ const RecepcaoPage: React.FC = () => {
 
         addToast({
           title: "Conectado",
-          description: `WebSocket conectado: ${socket.id}`,
+          description: `Conexão estabelecida com o servidor.`,
           severity: "success",
           color: "foreground",
           variant: "flat",
@@ -546,6 +547,20 @@ const RecepcaoPage: React.FC = () => {
     const handleTicketError = (message: string) => {
       console.error("❌ Ticket error:", JSON.parse(message));
     };
+
+  const handleDeleteTicket = (id: number) => {
+    // Atualiza a lista de tickets removendo o excluído
+    remove(id);
+    
+    
+    // Opcional: Feedback visual
+    addToast({
+      title: "Ticket Removido",
+      severity: "success",
+      color: "foreground",
+      size: "sm",
+    });
+  };
 
     const handleUpdateSchedule = ({
       operation,
@@ -623,12 +638,13 @@ const RecepcaoPage: React.FC = () => {
       }
     };
 
-    // ✅ NOVO: Usa helper para registrar handlers
+    // Helper para registrar handlers
     const unregister = registerHandlers(s, {
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
       [EventType.TICKET_EMITED]: handleTicketEmitedOrUpdated,
       [EventType.TICKET_UPDATED]: handleTicketEmitedOrUpdated,
       [EventType.TICKET_ERROR]: handleTicketError,
+      [EventType.TICKET_DELETE]: handleDeleteTicket,
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
       [EventType.PREPARATION_REQUEST]: handlePreparationRequest,
     } as any);
@@ -640,7 +656,7 @@ const RecepcaoPage: React.FC = () => {
     };
   }, [conectado, unidadeSelecionada, salaSelecionada]);
 
-  // ✅ NOVO: Cleanup ao desmontar componente
+  // Cleanup ao desmontar componente
   useEffect(() => {
     return () => {
       if (reconnectTimeoutRef.current) {
