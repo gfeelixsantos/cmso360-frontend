@@ -143,6 +143,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
                 }
                 placement="bottom"
                 size="sm"
+                >
                 <span>
                   Exames {completed} / {total}
                 </span>
@@ -162,6 +163,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
             />
           </div>
         )}
+        
 
         {/* Footer com informações do ticket */}
         <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-200">
