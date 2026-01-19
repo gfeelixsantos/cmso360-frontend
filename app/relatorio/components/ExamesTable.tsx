@@ -38,8 +38,11 @@ import {
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
-import { NEST_RELATORIO_FUNCIONARIO, NEST_SCHEDULINGS_EXAM_REISSUE } from "@/config/constants";
-import { IUserInfo, useUser } from "@/hooks/useUser";
+import {
+  NEST_RELATORIO_FUNCIONARIO,
+  NEST_SCHEDULINGS_EXAM_REISSUE,
+} from "@/config/constants";
+import { IUserInfo } from "@/hooks/useUser";
 
 // ============================================
 // COMPONENTE: ExamesTable
@@ -81,7 +84,7 @@ const ExamesTable: React.FC<{
     exam: ExamRegister | null;
   }>({ isOpen: false, exam: null });
 
-  const [reemitindoExams, setReemitindoExams] = useState<boolean>(false)
+  const [reemitindoExams, setReemitindoExams] = useState<boolean>(false);
 
   // Função para buscar exames atualizados do backend
   const fetchUpdatedExames = async () => {
@@ -144,39 +147,40 @@ const ExamesTable: React.FC<{
   };
 
   // Handle para reemitir exame
-   const handleReemitirExame = async (exame: ExamRegister) => {
+  const handleReemitirExame = async (exame: ExamRegister) => {
     setReemitindoExams(true);
 
     try {
-        const response = await fetch(`${NEST_SCHEDULINGS_EXAM_REISSUE}`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            funcionarioId: atendimento._id,
-            codigoExame: exame.codigoExame,
-          }),
-        });
+      const response = await fetch(`${NEST_SCHEDULINGS_EXAM_REISSUE}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          funcionarioId: atendimento._id,
+          codigoExame: exame.codigoExame,
+        }),
+      });
 
-        if (!response.ok) {
-          throw new Error("Erro ao reemitir exame");
-        }
+      if (!response.ok) {
+        throw new Error("Erro ao reemitir exame");
+      }
 
-        const result: Scheduling = await response.json();
-        
-        if(result){
-          alert("Reemissão enviada para processamento, atualize a página para visualizar o resultado.")
-        } else {
-          throw new Error("Atualização não concluída.")
-        }
-      
+      const result: Scheduling = await response.json();
+
+      if (result) {
+        alert(
+          "Reemissão enviada para processamento, atualize a página para visualizar o resultado.",
+        );
+      } else {
+        throw new Error("Atualização não concluída.");
+      }
     } catch (error) {
       console.error("Erro ao reemitir exame:", error);
-      alert(error)
+      alert(error);
     } finally {
       // fim de atualizacao
-      setReemitindoExams(false)
+      setReemitindoExams(false);
     }
   };
 
@@ -470,7 +474,9 @@ const ExamesTable: React.FC<{
                           <DropdownItem
                             key="reemitir"
                             color="default"
-                            startContent={!reemitindoExams && <Printer size={14} />}
+                            startContent={
+                              !reemitindoExams && <Printer size={14} />
+                            }
                             variant="light"
                             onPress={() => handleReemitirExame(exame)}
                           >

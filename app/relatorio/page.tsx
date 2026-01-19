@@ -34,7 +34,13 @@ import {
   AutocompleteItem,
   Tooltip,
 } from "@heroui/react";
-import { SearchIcon, FilterIcon, EyeIcon, XIcon, DownloadIcon } from "lucide-react";
+import {
+  SearchIcon,
+  FilterIcon,
+  EyeIcon,
+  XIcon,
+  DownloadIcon,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { LightModalSkeleton } from "./ModalSkeleton";
@@ -335,68 +341,74 @@ export default function RelatoriosPage() {
     scrollToTableTop();
   }, [filters, prepareFiltersForBackend, fetchFilteredData, scrollToTableTop]);
 
-
-  
   // Função para exportar CSV com os IDs dos atendimentos filtrados
   const handleExportCSV = useCallback(async () => {
     try {
       if (!hasActiveFilters) {
         alert("Por favor, aplique filtros antes de exportar.");
+
         return;
       }
 
       if (totalRecords === 0) {
         alert("Não há resultados para exportar.");
+
         return;
       }
 
-    setIsExporting(true);
+      setIsExporting(true);
 
-    // Agora enviar os IDs para o endpoint de exportação CSV
-    const response = await fetch(NEST_RELATORIO_CSV_DOWNLOAD, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        ids: filteredAtendimentos.map(f => f._id),
-      }),
-    });
+      // Agora enviar os IDs para o endpoint de exportação CSV
+      const response = await fetch(NEST_RELATORIO_CSV_DOWNLOAD, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ids: filteredAtendimentos.map((f) => f._id),
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Erro na exportação: ${response.statusText}`);
+      if (!response.ok) {
+        throw new Error(`Erro na exportação: ${response.statusText}`);
+      }
+
+      // Criar blob a partir da resposta
+      const blob = await response.blob();
+
+      // Criar URL para o blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Criar elemento de link para download
+      const a = document.createElement("a");
+
+      a.href = url;
+
+      // Nome do arquivo com data atual
+      const now = new Date();
+      const dateStr = now.toISOString().split("T")[0];
+
+      a.download = `relatorio_atendimentos_${dateStr}.csv`;
+
+      // Disparar o download
+      document.body.appendChild(a);
+      a.click();
+
+      // Limpar
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Erro ao exportar CSV:", error);
+      alert("Erro ao exportar relatório. Tente novamente.");
+    } finally {
+      setIsExporting(false);
     }
-
-    // Criar blob a partir da resposta
-    const blob = await response.blob();
-    
-    // Criar URL para o blob
-    const url = window.URL.createObjectURL(blob);
-    
-    // Criar elemento de link para download
-    const a = document.createElement('a');
-    a.href = url;
-    
-    // Nome do arquivo com data atual
-    const now = new Date();
-    const dateStr = now.toISOString().split('T')[0];
-    a.download = `relatorio_atendimentos_${dateStr}.csv`;
-    
-    // Disparar o download
-    document.body.appendChild(a);
-    a.click();
-    
-    // Limpar
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-
-  } catch (error) {
-    console.error('Erro ao exportar CSV:', error);
-    alert('Erro ao exportar relatório. Tente novamente.');
-  } finally {
-    setIsExporting(false);
-  }
-}, [appliedFilters, hasActiveFilters, prepareFiltersForBackend, totalRecords]);
+  }, [
+    appliedFilters,
+    hasActiveFilters,
+    prepareFiltersForBackend,
+    totalRecords,
+  ]);
 
   // Mudar de página
   const handlePageChange = useCallback(
@@ -844,20 +856,22 @@ export default function RelatoriosPage() {
                   </span>
                 </div>
                 {hasResultsToExport && (
-                  <Tooltip 
-                  content="Exportar todos os resultados filtrados para CSV"
-                  placement="bottom"
+                  <Tooltip
+                    content="Exportar todos os resultados filtrados para CSV"
+                    placement="bottom"
                   >
                     <Button
                       color="primary"
-                      startContent={isExporting ? "" : <DownloadIcon size={16} />}
+                      disabled={isFiltering}
                       isLoading={isExporting}
                       size="sm"
+                      startContent={
+                        isExporting ? "" : <DownloadIcon size={16} />
+                      }
                       variant="flat"
                       onPress={handleExportCSV}
-                      disabled={isFiltering}
                     >
-                      { isExporting ? "Exportando..." : "Exportar CSV" }
+                      {isExporting ? "Exportando..." : "Exportar CSV"}
                     </Button>
                   </Tooltip>
                 )}

@@ -14,7 +14,6 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
   "ws",
 );
 
-
 export const NEST_TICKETS_URL = `${NEST_URL}ticket`;
 export const NEST_TICKET_QUERY = `${NEST_URL}ticket?unidade=`;
 
@@ -35,16 +34,14 @@ export const NEST_SCHEDULINGS_TODAY = `${NEST_URL}schedulings/today`;
 export const NEST_SCHEDULINGS_UPDATE = `${NEST_URL}schedulings/update`;
 export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
 
-
-
-export const NEST_PRONTUARIO_PARAMETROS = NEST_URL + "schedulings/record-params";
+export const NEST_PRONTUARIO_PARAMETROS =
+  NEST_URL + "schedulings/record-params";
 export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
 export const NEST_RELATORIO_PARAMETROS = NEST_URL + "schedulings/report-params";
 export const NEST_RELATORIO_FILTROS = NEST_URL + "schedulings/report-filters";
 export const NEST_RELATORIO_FUNCIONARIO = NEST_URL + "schedulings/report/"; // schedulings/report/:ID ---> Busca funcionário
-export const NEST_RELATORIO_CSV_DOWNLOAD = NEST_URL + "schedulings/csv-download"; // schedulings/report/:ID ---> Busca funcionário
-
-
+export const NEST_RELATORIO_CSV_DOWNLOAD =
+  NEST_URL + "schedulings/csv-download"; // schedulings/report/:ID ---> Busca funcionário
 
 export const NEST_SOC_AUDIOMETRIA_ANTERIOR = `${NEST_URL}soc/audiometria-anterior`;
 export const NEST_SOC_COMPANIES = `${NEST_URL}soc/empresas`;
@@ -52,7 +49,6 @@ export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
 export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
 export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
-
 
 export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;
 
@@ -140,22 +136,21 @@ export const TIPOS_EXAME: Record<string, string> = {
 };
 
 export const ESTIMATIVA_EXAMES: Record<string, number> = {
-  "Triagem": 10,
+  Triagem: 10,
 
   "Acuidade Visual": 15,
   "Avaliação Psicossocial": 18,
-  "Laboratorial": 20,
+  Laboratorial: 20,
 
-  "Espirometria": 22,
-  "EEG": 25,
+  Espirometria: 22,
+  EEG: 25,
 
-  "Audiometria": 28,
-  "ECG": 30,
+  Audiometria: 28,
+  ECG: 30,
   "Raio-X": 32,
 
-  "Exame Clínico": 40
+  "Exame Clínico": 40,
 };
-
 
 export const EMPRESAS_COM_PSICOLOGA = new Set([
   "263126", // RICLAN

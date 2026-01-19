@@ -14,15 +14,16 @@ import {
   Bell,
   X,
 } from "lucide-react";
+import { Button } from "@heroui/react";
+
+import { StatisticsSection } from "./components/StatisticsSection";
+import { getCurrentMessage, Message } from "./message/messageDisplay";
 
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { getCurrentUser, logout } from "@/lib/utils";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import { NEST_DASHBOARD } from "@/config/constants";
-import { StatisticsSection } from "./components/StatisticsSection";
-import { Button, Image } from "@heroui/react";
-import { getCurrentMessage, Message } from "./message/messageDisplay";
 
 // Interfaces
 interface MenuCardProps {
@@ -55,7 +56,6 @@ interface DashboardStats {
   aguardandoAvaliacaoMedica: number;
 }
 
-
 // Constantes
 const SESSION_MESSAGE_KEY = "dashboard_current_message";
 const SESSION_SEEN_KEY = "message_seen";
@@ -71,24 +71,22 @@ const MessageModal: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.95 }}
         className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        exit={{ opacity: 0, scale: 0.95 }}
+        initial={{ opacity: 0, scale: 0.95 }}
       >
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <video
-                src="/images/gifs/Notification.webm"
                 autoPlay
                 loop
                 muted
                 playsInline
                 className="h-20 w-20 object-contain"
-              >
-                
-              </video>
+                src="/images/gifs/Notification.webm"
+              />
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
                   {message.title}
@@ -97,9 +95,9 @@ const MessageModal: React.FC<{
               </div>
             </div>
             <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
               aria-label="Fechar"
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              onClick={onClose}
             >
               <X className="h-5 w-5 text-gray-500" />
             </button>
@@ -117,10 +115,10 @@ const MessageModal: React.FC<{
         <div className="p-6 border-t border-gray-200 bg-gray-50">
           <div className="flex justify-end">
             <Button
-              onPress={onClose}
-              variant="ghost"
-              color="default"
               className="px-6 py-2"
+              color="default"
+              variant="ghost"
+              onPress={onClose}
             >
               Entendi
             </Button>
@@ -137,10 +135,10 @@ const MessageFloatingButton: React.FC<{
   hasMessage: boolean;
 }> = ({ onClick, hasMessage }) => (
   <button
-   disabled={true}
-    onClick={onClick}
-    className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-[#44735E] rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center group"
     aria-label="Visualizar mensagem atual"
+    className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-[#44735E] rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center group"
+    disabled={true}
+    onClick={onClick}
   >
     <Bell className="h-6 w-6 text-white" />
     {hasMessage && (
@@ -154,7 +152,7 @@ const MessageFloatingButton: React.FC<{
 
 // Funções para gerenciar sessão
 const setSessionMessage = (message: Message): void => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // Remove mensagem anterior e marcação de vista
     sessionStorage.removeItem(SESSION_SEEN_KEY);
     sessionStorage.setItem(SESSION_MESSAGE_KEY, JSON.stringify(message));
@@ -162,34 +160,35 @@ const setSessionMessage = (message: Message): void => {
 };
 
 const getSessionMessage = (): Message | null => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     const messageStr = sessionStorage.getItem(SESSION_MESSAGE_KEY);
+
     return messageStr ? JSON.parse(messageStr) : null;
   }
+
   return null;
 };
 
 const markMessageAsSeen = (): void => {
-  if (typeof window !== 'undefined') {
-    sessionStorage.setItem(SESSION_SEEN_KEY, 'true');
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem(SESSION_SEEN_KEY, "true");
   }
 };
 
 const hasSeenMessage = (): boolean => {
-  if (typeof window !== 'undefined') {
-    return sessionStorage.getItem(SESSION_SEEN_KEY) === 'true';
+  if (typeof window !== "undefined") {
+    return sessionStorage.getItem(SESSION_SEEN_KEY) === "true";
   }
+
   return false;
 };
 
 const clearSessionMessage = (): void => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     sessionStorage.removeItem(SESSION_MESSAGE_KEY);
     sessionStorage.removeItem(SESSION_SEEN_KEY);
   }
 };
-
-
 
 // Componentes existentes...
 const WelcomeSection: React.FC<{ name: string }> = ({ name }) => (
@@ -323,16 +322,17 @@ export default function DashboardPage() {
   // Buscar mensagem atual
   const fetchAndSetMessage = async () => {
     const message = await getCurrentMessage();
+
     if (message) {
       // Sempre sobrescreve a mensagem anterior na sessão
       setSessionMessage(message);
       setCurrentMessage(message);
-      
+
       // Verificar se já foi vista
       if (!hasSeenMessage()) {
         setShowModal(true);
       }
-      
+
       setHasNewMessage(true);
     }
   };
@@ -344,6 +344,7 @@ export default function DashboardPage() {
       if (!currentUser) {
         setIsLoading(false);
         router.push("/");
+
         return;
       }
 
@@ -356,14 +357,16 @@ export default function DashboardPage() {
         if (!res.ok) throw new Error("Erro ao buscar atendimentos");
 
         const responseStats: DashboardStats = await res.json();
+
         setDashboardStats(responseStats);
 
         // Verificar se há mensagem na sessão
         const storedMessage = getSessionMessage();
+
         if (storedMessage) {
           setCurrentMessage(storedMessage);
           setHasNewMessage(true);
-          
+
           // Mostrar modal apenas se ainda não foi vista
           if (!hasSeenMessage()) {
             // setShowModal(true);
@@ -456,7 +459,7 @@ export default function DashboardPage() {
           router.push("/");
         }}
       >
-      <></>  
+        <></>
       </HeaderApp>
 
       <main
@@ -527,20 +530,20 @@ export default function DashboardPage() {
       {/* Modal de Mensagem */}
       <MessageModal
         isOpen={showModal}
+        message={currentMessage}
         onClose={() => {
           markMessageAsSeen();
           setShowModal(false);
         }}
-        message={currentMessage}
       />
 
       {/* Botão flutuante para mensagens */}
       {currentMessage && (
         <MessageFloatingButton
+          hasMessage={hasNewMessage}
           onClick={() => {
             setShowModal(true);
           }}
-          hasMessage={hasNewMessage}
         />
       )}
     </div>

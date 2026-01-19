@@ -11,17 +11,16 @@ import {
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Socket } from "socket.io-client";
 
-import FichaClinicaOcupacional from "../exames/FichaClinicaOcupacional";
-import AcuidadeVisual from "../exames/AcuidadeVisual";
-import Espirometria from "../exames/Espirometria";
-import Dinamometria from "../exames/Dinamometria";
-import Psicossocial from "../exames/Psicossocial";
-import ExamePadrao from "../exames/ExamePadrao";
-import AudiometriaOcupacional from "../exames/AudiometriaOcupacional";
-import KitAtendimento from "../exames/KitAtendimento";
-import Ultrassom from "../exames/Ultrassom";
-import FichaClinicaWhirlpool from "../exames/FichaClinicaWhirlpool";
-
+import FichaClinicaOcupacional from "./exames/FichaClinicaOcupacional";
+import AcuidadeVisual from "./exames/AcuidadeVisual";
+import Espirometria from "./exames/Espirometria";
+import Dinamometria from "./exames/Dinamometria";
+import Psicossocial from "./exames/Psicossocial";
+import ExamePadrao from "./exames/ExamePadrao";
+import AudiometriaOcupacional from "./exames/AudiometriaOcupacional";
+import KitAtendimento from "./exames/KitAtendimento";
+import Ultrassom from "./exames/Ultrassom";
+import FichaClinicaWhirlpool from "./exames/FichaClinicaWhirlpool";
 import { AtendimentoRules } from "./AtendimentoRules";
 
 import { TicketActionType } from "@/lib/ticket/ticket";

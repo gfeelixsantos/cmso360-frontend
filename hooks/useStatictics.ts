@@ -1,6 +1,6 @@
-import { NEST_SCHEDULINGS_STATISTICS } from '@/config/constants';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 
+import { NEST_SCHEDULINGS_STATISTICS } from "@/config/constants";
 
 interface StatisticsData {
   totalGeral: number;
@@ -9,7 +9,7 @@ interface StatisticsData {
   tickets: TicketStatisticsDto[];
   dataReferencia: Date;
   generatedAt: Date;
-  source: 'cache' | 'database';
+  source: "cache" | "database";
   processingTimeMs?: number;
 }
 
@@ -28,9 +28,9 @@ export type StatisticsResponseDto = {
   totaisGerais: TotaisGeraisDto;
   dataReferencia: Date;
   generatedAt: Date;
-  source: 'cache' | 'database';
+  source: "cache" | "database";
   processingTimeMs?: number;
-}
+};
 
 // ===============================
 // 🏥 DTO Completo por Unidade
@@ -42,7 +42,7 @@ export type UnidadeStatisticsDto = {
   atendimentosPorTipoExame: Record<string, number>;
   exames: ExameStatisticsDto[];
   tickets: TicketStatisticsDto[];
-}
+};
 
 // ===============================
 // 🧪 DTO de Exames
@@ -52,7 +52,7 @@ export type ExameStatisticsDto = {
   codigoExame: string;
   total: number;
   porStatus: Record<string, number>;
-}
+};
 
 // ===============================
 // 🎟️ DTO de Tickets
@@ -61,7 +61,7 @@ export type TicketStatisticsDto = {
   status: string;
   total: number;
   preferencial: number;
-}
+};
 
 // ===============================
 // 📈 DTO de Totais Gerais (consolidado)
@@ -72,7 +72,7 @@ export type TotaisGeraisDto = {
   atendimentosPorTipoExame: Record<string, number>;
   totalExamesRealizados: number;
   totalTicketsEmitidos: number;
-}
+};
 
 export function useStatistics({
   unidade,
@@ -90,11 +90,13 @@ export function useStatistics({
       setError(null);
 
       const params = new URLSearchParams();
-      if (unidade) params.append('unidade', unidade);
-      if (data) params.append('data', data);
 
-      const url = `${NEST_SCHEDULINGS_STATISTICS}${params.toString() ? `?${params.toString()}` : ''}`;
-      console.log(url)
+      if (unidade) params.append("unidade", unidade);
+      if (data) params.append("data", data);
+
+      const url = `${NEST_SCHEDULINGS_STATISTICS}${params.toString() ? `?${params.toString()}` : ""}`;
+
+      console.log(url);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -102,10 +104,11 @@ export function useStatistics({
       }
 
       const result = await response.json();
+
       setStatistics(result);
     } catch (err) {
       setError(err as Error);
-      console.error('Erro ao buscar estatísticas:', err);
+      console.error("Erro ao buscar estatísticas:", err);
     } finally {
       setLoading(false);
     }
@@ -119,6 +122,7 @@ export function useStatistics({
     if (!autoRefresh) return;
 
     const interval = setInterval(fetchStatistics, refreshInterval);
+
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchStatistics]);
 

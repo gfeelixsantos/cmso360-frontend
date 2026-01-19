@@ -15,11 +15,12 @@ const getCurrentMessage = async (): Promise<Message | null> => {
       content: `
         
       `,
-      date: new Date().toLocaleDateString('pt-BR'),
+      date: new Date().toLocaleDateString("pt-BR"),
       isImportant: false,
     };
   } catch (error) {
-    console.error('Erro ao buscar mensagem:', error);
+    console.error("Erro ao buscar mensagem:", error);
+
     return null;
   }
 };

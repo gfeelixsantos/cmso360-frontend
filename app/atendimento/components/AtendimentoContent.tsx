@@ -1,13 +1,15 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Socket } from "socket.io-client";
-import { Spinner } from "@heroui/react";
 
-import DisconnectedState from "../recepcao/main/DisconnectedState";
+import DisconnectedState from "../../recepcao/components/DisconnectedState";
 
 import AtendimentoList from "./AtendimentoList";
 
 import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
-import { ExamRegister, Scheduling } from "@/lib/scheduling/interface/scheduling";
+import {
+  ExamRegister,
+  Scheduling,
+} from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import ContentLoading from "@/app/atendimento/components/ContentLoading";
 import { ESTIMATIVA_EXAMES } from "@/config/constants";
@@ -79,16 +81,15 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     }
   }, [socket, dadosIniciaisCarregados]);
 
+  const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
+    return exames
+      .filter((ex) => ex.status !== ExamStatus.FINALIZADO)
+      .reduce((total, ex) => {
+        return total + (ESTIMATIVA_EXAMES[ex.grupo] ?? 20);
+      }, 0);
+  };
 
-const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
-  return exames
-    .filter(ex => ex.status !== ExamStatus.FINALIZADO)
-    .reduce((total, ex) => {
-      return total + (ESTIMATIVA_EXAMES[ex.grupo] ?? 20);
-    }, 0);
-};
-
-/*
+  /*
 JANELA DE TOLERÂNCIA
 Até quantos minutos de diferença eu aceito reorganizar a fila sem quebrar a sensação de justiça
 
@@ -108,50 +109,46 @@ Diferença para A = 20 minutos
 FIFO puro
 Ninguém “passa na frente”
 */
-const AtendimentosOrdenados = useMemo(() => {
-  if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
-    return [];
-  }
+  const AtendimentosOrdenados = useMemo(() => {
+    if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
+      return [];
+    }
 
-  const JANELA_TOLERANCIA = 10 * 60 * 1000; // 10 minutos
+    const JANELA_TOLERANCIA = 10 * 60 * 1000; // 10 minutos
 
-  return agendamentos
-    .map(a => {
-      const ticketTime = a.TICKET?.emissao
-        ? new Date(a.TICKET.emissao).getTime()
-        : Number.MAX_SAFE_INTEGER;
+    return agendamentos
+      .map((a) => {
+        const ticketTime = a.TICKET?.emissao
+          ? new Date(a.TICKET.emissao).getTime()
+          : Number.MAX_SAFE_INTEGER;
 
-      const examesPendentes =
-        a.EXAMES?.filter(ex => ex.status !== ExamStatus.FINALIZADO) ?? [];
+        const examesPendentes =
+          a.EXAMES?.filter((ex) => ex.status !== ExamStatus.FINALIZADO) ?? [];
 
-      return {
-        ...a,
-        ticketTime,
-        examesRestantes: examesPendentes.length,
-        tempoEstimado: calcularTempoEstimado(examesPendentes)
-      };
-    })
-    .sort((a, b) => {
-      const deltaTicket = a.ticketTime - b.ticketTime;
+        return {
+          ...a,
+          ticketTime,
+          examesRestantes: examesPendentes.length,
+          tempoEstimado: calcularTempoEstimado(examesPendentes),
+        };
+      })
+      .sort((a, b) => {
+        const deltaTicket = a.ticketTime - b.ticketTime;
 
-      // 1️⃣ Fora da janela → FIFO puro
-      if (Math.abs(deltaTicket) > JANELA_TOLERANCIA) {
+        // 1️⃣ Fora da janela → FIFO puro
+        if (Math.abs(deltaTicket) > JANELA_TOLERANCIA) {
+          return deltaTicket;
+        }
+
+        // 2️⃣ Dentro da janela → prioriza quem termina mais rápido
+        if (a.tempoEstimado !== b.tempoEstimado) {
+          return a.tempoEstimado - b.tempoEstimado;
+        }
+
+        // 3️⃣ Desempate final → quem chegou primeiro
         return deltaTicket;
-      }
-
-      // 2️⃣ Dentro da janela → prioriza quem termina mais rápido
-      if (a.tempoEstimado !== b.tempoEstimado) {
-        return a.tempoEstimado - b.tempoEstimado;
-      }
-
-      // 3️⃣ Desempate final → quem chegou primeiro
-      return deltaTicket;
-    });
-}, [agendamentos]);
-
-
-
-
+      });
+  }, [agendamentos]);
 
   const AgendamentosComInfoDeOutrasSalas = useMemo(() => {
     if (!agendamentos || agendamentos.length === 0) return new Map();
@@ -237,9 +234,7 @@ const AtendimentosOrdenados = useMemo(() => {
 
   // Loading elegante com HeroUI durante o carregamento
   if (estaCarregando || !agendamentos) {
-    return (
-      <ContentLoading />
-    );
+    return <ContentLoading />;
   }
 
   // Calcular estatísticas para aria-label

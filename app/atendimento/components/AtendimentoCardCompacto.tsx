@@ -10,7 +10,6 @@ import {
 } from "@/lib/scheduling/interface/scheduling";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
-import { getStatusColor } from "@/lib/utils";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
@@ -133,9 +132,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
         {total > 0 && (
           <div className="space-y-1">
             <div className="flex justify-between text-xs text-gray-600">
-              <Tooltip 
-                size="sm"
-                placement="bottom"
+              <Tooltip
                 content={
                   atendimento.EXAMES.map(ex => (
                     <div className="grid grid-cols-2 gap-2 text-xs justify-start" key={`${ex.codigoExame}-grid`}>
@@ -144,8 +141,11 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
                     </div>
                   ))
                 }
-              >
-                <span>Exames {completed} / {total}</span>
+                placement="bottom"
+                size="sm"
+                <span>
+                  Exames {completed} / {total}
+                </span>
               </Tooltip>
               <span>{progress}%</span>
             </div>

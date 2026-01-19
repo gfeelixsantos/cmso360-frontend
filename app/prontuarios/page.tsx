@@ -458,67 +458,61 @@ export default function UnifiedProntuarioPage() {
     setSocketState(s);
 
     const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
-  setRecords((prev) => {
-    let updatedRecords = [...prev];
+      setRecords((prev) => {
+        let updatedRecords = [...prev];
 
-    const index = updatedRecords.findIndex(
-      (r) => r.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
-    );
+        const index = updatedRecords.findIndex(
+          (r) => r.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
+        );
 
-    const isStatusSelecionado =
-      schedule.ATENDIMENTOSTATUS === attendanceStatus;
+        const isStatusSelecionado =
+          schedule.ATENDIMENTOSTATUS === attendanceStatus;
 
-    // DELETE → sempre remove
-    if (operation === MongoOperationTypes.DELETE) {
-      if (index > -1) {
-        updatedRecords.splice(index, 1);
-      }
+        // DELETE → sempre remove
+        if (operation === MongoOperationTypes.DELETE) {
+          if (index > -1) {
+            updatedRecords.splice(index, 1);
+          }
 
-      // 🔴 se o prontuário removido estiver selecionado
-      if (
-        selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO
-      ) {
-        setSelectedRecord(null);
-      }
+          // 🔴 se o prontuário removido estiver selecionado
+          if (selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO) {
+            setSelectedRecord(null);
+          }
 
-      return updatedRecords;
-    }
+          return updatedRecords;
+        }
 
-    // UPDATE / INSERT → status diferente do selecionado
-    if (!isStatusSelecionado) {
-      if (index > -1) {
-        updatedRecords.splice(index, 1);
-      }
+        // UPDATE / INSERT → status diferente do selecionado
+        if (!isStatusSelecionado) {
+          if (index > -1) {
+            updatedRecords.splice(index, 1);
+          }
 
-      // 🔴 remove também da UI se estiver selecionado
-      if (
-        selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO
-      ) {
-        setSelectedRecord(null);
-      }
+          // 🔴 remove também da UI se estiver selecionado
+          if (selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO) {
+            setSelectedRecord(null);
+          }
 
-      return updatedRecords;
-    }
+          return updatedRecords;
+        }
 
-    // Status é o selecionado → inserir ou atualizar
-    const newRecord = mapSchedulingToMedicalRecord(
-      schedule,
-      schedule.ATENDIMENTOSTATUS,
-    );
+        // Status é o selecionado → inserir ou atualizar
+        const newRecord = mapSchedulingToMedicalRecord(
+          schedule,
+          schedule.ATENDIMENTOSTATUS,
+        );
 
-    if (index > -1) {
-      updatedRecords[index] = newRecord;
-    } else {
-      updatedRecords.push(newRecord);
-    }
+        if (index > -1) {
+          updatedRecords[index] = newRecord;
+        } else {
+          updatedRecords.push(newRecord);
+        }
 
-    return updatedRecords.sort((a, b) =>
-      a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
-    );
-  });
-};
-
-
+        return updatedRecords.sort((a, b) =>
+          a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
+        );
+      });
+    };
 
     onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
 

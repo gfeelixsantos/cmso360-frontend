@@ -13,17 +13,17 @@ import {
 } from "@heroui/react";
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { AtendimentoRules } from "@/components/atendimento/AtendimentoRules";
-import AcuidadeVisual from "@/components/exames/AcuidadeVisual";
-import AudiometriaOcupacional from "@/components/exames/AudiometriaOcupacional";
-import Dinamometria from "@/components/exames/Dinamometria";
-import Espirometria from "@/components/exames/Espirometria";
-import ExamePadrao from "@/components/exames/ExamePadrao";
-import FichaClinicaOcupacional from "@/components/exames/FichaClinicaOcupacional";
-import FichaClinicaWhirlpool from "@/components/exames/FichaClinicaWhirlpool";
-import KitAtendimento from "@/components/exames/KitAtendimento";
-import Psicossocial from "@/components/exames/Psicossocial";
-import Ultrassom from "@/components/exames/Ultrassom";
+import { AtendimentoRules } from "@/app/atendimento/components/AtendimentoRules";
+import AcuidadeVisual from "@/app/atendimento/components/exames/AcuidadeVisual";
+import AudiometriaOcupacional from "@/app/atendimento/components/exames/AudiometriaOcupacional";
+import Dinamometria from "@/app/atendimento/components/exames/Dinamometria";
+import Espirometria from "@/app/atendimento/components/exames/Espirometria";
+import ExamePadrao from "@/app/atendimento/components/exames/ExamePadrao";
+import FichaClinicaOcupacional from "@/app/atendimento/components/exames/FichaClinicaOcupacional";
+import FichaClinicaWhirlpool from "@/app/atendimento/components/exames/FichaClinicaWhirlpool";
+import KitAtendimento from "@/app/atendimento/components/exames/KitAtendimento";
+import Psicossocial from "@/app/atendimento/components/exames/Psicossocial";
+import Ultrassom from "@/app/atendimento/components/exames/Ultrassom";
 import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {

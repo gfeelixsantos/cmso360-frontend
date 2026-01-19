@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { Plus, Wifi, WifiOff, Users } from "lucide-react";
 import { Button, Chip } from "@heroui/react";
 
-import AgendamentosList from "../recepcao/main/AgendamentosList";
+import AgendamentosList from "../../app/recepcao/components/AgendamentosList";
 
 import {
   EXAMES_LIST,

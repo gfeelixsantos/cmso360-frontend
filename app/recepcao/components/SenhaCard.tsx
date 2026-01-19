@@ -12,7 +12,7 @@ import {
 import { Clock, Phone, Pause, ArrowLeft, User, FilePlus } from "lucide-react";
 import { Socket } from "socket.io-client";
 
-import EmPreparacaoModal from "./atendimento/PreparoModal";
+import EmPreparacaoModal from "./PreparoModal";
 
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser } from "@/lib/utils";

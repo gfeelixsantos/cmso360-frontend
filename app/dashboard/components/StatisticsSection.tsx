@@ -1,13 +1,10 @@
 "use client";
 
-import { ExameStatisticsDto, StatisticsResponseDto, useStatistics } from "@/hooks/useStatictics";
-import { TicketStatus } from "@/lib/ticket/ticket";
 import { Button } from "@heroui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Building2, 
-  TrendingUp, 
-  RefreshCw, 
+import {
+  TrendingUp,
+  RefreshCw,
   AlertCircle,
   Users,
   FileText,
@@ -18,82 +15,99 @@ import {
   Calendar,
   Eye,
   EyeOff,
-
   Layers,
   Users as UsersIcon,
-
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
-
+import { TicketStatus } from "@/lib/ticket/ticket";
+import {
+  ExameStatisticsDto,
+  StatisticsResponseDto,
+  useStatistics,
+} from "@/hooks/useStatictics";
 
 // Componente de badge de status por unidade
-const UnitExamStatusBadge = ({ status, count }: { status: string; count: number }) => {
+const UnitExamStatusBadge = ({
+  status,
+  count,
+}: {
+  status: string;
+  count: number;
+}) => {
   const getStatusConfig = (status: string) => {
     const normalized = status.toUpperCase();
+
     switch (normalized) {
-      case 'PENDENTE':
-      case 'PENDENTE_LABORATORIO':
-        return { 
-          color: 'text-yellow-700',
-          bg: 'bg-yellow-50',
-          border: 'border-yellow-200',
+      case "PENDENTE":
+      case "PENDENTE_LABORATORIO":
+        return {
+          color: "text-yellow-700",
+          bg: "bg-yellow-50",
+          border: "border-yellow-200",
         };
-      case 'AGUARDANDO_RESULTADO':
-      case 'EM_ANALISE':
-        return { 
-          color: 'text-blue-700',
-          bg: 'bg-blue-50',
-          border: 'border-blue-200',
+      case "AGUARDANDO_RESULTADO":
+      case "EM_ANALISE":
+        return {
+          color: "text-blue-700",
+          bg: "bg-blue-50",
+          border: "border-blue-200",
         };
-      case 'FINALIZADO':
-      case 'CONCLUIDO':
-        return { 
-          color: 'text-green-700',
-          bg: 'bg-green-50',
-          border: 'border-green-200',
+      case "FINALIZADO":
+      case "CONCLUIDO":
+        return {
+          color: "text-green-700",
+          bg: "bg-green-50",
+          border: "border-green-200",
         };
       default:
-        return { 
-          color: 'text-gray-700',
-          bg: 'bg-gray-50',
-          border: 'border-gray-200',
+        return {
+          color: "text-gray-700",
+          bg: "bg-gray-50",
+          border: "border-gray-200",
         };
     }
   };
 
   const config = getStatusConfig(status);
-  
+
   return (
-    <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${config.bg} ${config.border}`}>
+    <div
+      className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${config.bg} ${config.border}`}
+    >
       <span className={`font-bold ${config.color}`}>{count}</span>
     </div>
   );
 };
 
 // Barra de progresso horizontal
-const HorizontalProgressBar = ({ value, max, color = 'bg-[#44735E]', showLabel = true }: { 
-  value: number; 
-  max: number; 
+const HorizontalProgressBar = ({
+  value,
+  max,
+  color = "bg-[#44735E]",
+  showLabel = true,
+}: {
+  value: number;
+  max: number;
   color?: string;
   showLabel?: boolean;
 }) => {
   const percentage = max > 0 ? (value / max) * 100 : 0;
-  
+
   return (
     <div className="w-full">
       {showLabel && (
         <div className="flex justify-between text-xs text-gray-600 mb-1">
-          <span>{value.toLocaleString('pt-BR')}</span>
+          <span>{value.toLocaleString("pt-BR")}</span>
           <span className="font-medium">{percentage.toFixed(1)}%</span>
         </div>
       )}
       <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
         <motion.div
-          initial={{ width: 0 }}
           animate={{ width: `${percentage}%` }}
-          transition={{ duration: 0.8 }}
           className={`h-1.5 rounded-full ${color}`}
+          initial={{ width: 0 }}
+          transition={{ duration: 0.8 }}
         />
       </div>
     </div>
@@ -107,10 +121,12 @@ export function StatisticsSection() {
   });
 
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
-  const [expandedExameUnit, setExpandedExameUnit] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [expandedExameUnit, setExpandedExameUnit] = useState<string | null>(
+    null,
+  );
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showAllExams, setShowAllExams] = useState<Record<string, boolean>>({});
-  const [lastUpdate, setLastUpdate] = useState<string>('');
+  const [lastUpdate, setLastUpdate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Cast data para o novo tipo
@@ -120,28 +136,32 @@ export function StatisticsSection() {
   const unitSummaries = useMemo(() => {
     if (!statisticsData?.porUnidade) return {};
 
-    const summaries: Record<string, {
-      totalExames: number;
-      totalExamesFinalizados: number;
-      totalExamesPendentes: number;
-      percentualFinalizados: number;
-      examesMaisRealizados: ExameStatisticsDto[];
-    }> = {};
+    const summaries: Record<
+      string,
+      {
+        totalExames: number;
+        totalExamesFinalizados: number;
+        totalExamesPendentes: number;
+        percentualFinalizados: number;
+        examesMaisRealizados: ExameStatisticsDto[];
+      }
+    > = {};
 
-    statisticsData.porUnidade.forEach(unidade => {
+    statisticsData.porUnidade.forEach((unidade) => {
       let totalExames = 0;
       let totalExamesFinalizados = 0;
       let totalExamesPendentes = 0;
 
-      unidade.exames.forEach(exame => {
+      unidade.exames.forEach((exame) => {
         totalExames += exame.total;
-        
-        const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-        const finalizados = 
-          (exame.porStatus.FINALIZADO || 0) + 
+
+        const pendentes =
+          exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
+        const finalizados =
+          (exame.porStatus.FINALIZADO || 0) +
           (exame.porStatus.CONCLUIDO || 0) +
           (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-        
+
         totalExamesPendentes += pendentes;
         totalExamesFinalizados += finalizados;
       });
@@ -154,7 +174,8 @@ export function StatisticsSection() {
         totalExames,
         totalExamesFinalizados,
         totalExamesPendentes,
-        percentualFinalizados: totalExames > 0 ? (totalExamesFinalizados / totalExames) * 100 : 0,
+        percentualFinalizados:
+          totalExames > 0 ? (totalExamesFinalizados / totalExames) * 100 : 0,
         examesMaisRealizados: examesOrdenados,
       };
     });
@@ -164,67 +185,76 @@ export function StatisticsSection() {
 
   // Consolidar exames gerais para comparação
   // Corrigir a definição de consolidatedExames no useMemo
-const consolidatedExames = useMemo(() => {
-  if (!statisticsData?.porUnidade) return [];
+  const consolidatedExames = useMemo(() => {
+    if (!statisticsData?.porUnidade) return [];
 
-  const examesMap = new Map<string, {
-    nomeExame: string;
-    codigoExame: string;
-    total: number;
-    porUnidade: Record<string, {
-      total: number;
-      finalizados: number;
-      pendentes: number;
-    }>;
-  }>();
-
-  statisticsData.porUnidade.forEach(unidade => {
-    unidade.exames.forEach(exame => {
-      const key = `${exame.codigoExame}-${exame.nomeExame}`;
-      
-      if (!examesMap.has(key)) {
-        examesMap.set(key, {
-          nomeExame: exame.nomeExame,
-          codigoExame: exame.codigoExame,
-          total: 0,
-          porUnidade: {},
-        });
+    const examesMap = new Map<
+      string,
+      {
+        nomeExame: string;
+        codigoExame: string;
+        total: number;
+        porUnidade: Record<
+          string,
+          {
+            total: number;
+            finalizados: number;
+            pendentes: number;
+          }
+        >;
       }
+    >();
 
-      const consolidado = examesMap.get(key)!;
-      consolidado.total += exame.total;
-      
-      const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-      const finalizados = 
-        (exame.porStatus.FINALIZADO || 0) + 
-        (exame.porStatus.CONCLUIDO || 0) +
-        (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-      
-      consolidado.porUnidade[unidade.unidade] = {
-        total: exame.total,
-        finalizados,
-        pendentes,
-      };
+    statisticsData.porUnidade.forEach((unidade) => {
+      unidade.exames.forEach((exame) => {
+        const key = `${exame.codigoExame}-${exame.nomeExame}`;
+
+        if (!examesMap.has(key)) {
+          examesMap.set(key, {
+            nomeExame: exame.nomeExame,
+            codigoExame: exame.codigoExame,
+            total: 0,
+            porUnidade: {},
+          });
+        }
+
+        const consolidado = examesMap.get(key)!;
+
+        consolidado.total += exame.total;
+
+        const pendentes =
+          exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
+        const finalizados =
+          (exame.porStatus.FINALIZADO || 0) +
+          (exame.porStatus.CONCLUIDO || 0) +
+          (exame.porStatus.AGUARDANDO_RESULTADO || 0);
+
+        consolidado.porUnidade[unidade.unidade] = {
+          total: exame.total,
+          finalizados,
+          pendentes,
+        };
+      });
     });
-  });
 
-  // Converter Map para Array
-  return Array.from(examesMap.values())
-    .sort((a, b) => b.total - a.total);
-}, [statisticsData]);
+    // Converter Map para Array
+    return Array.from(examesMap.values()).sort((a, b) => b.total - a.total);
+  }, [statisticsData]);
 
   // Unidades padrão
-  const defaultUnits = ['RIO CLARO', 'CORDEIRÓPOLIS', 'ARARAS'];
+  const defaultUnits = ["RIO CLARO", "CORDEIRÓPOLIS", "ARARAS"];
   const activeUnits = useMemo(() => {
     if (!statisticsData?.porUnidade) return defaultUnits;
-    const units = statisticsData.porUnidade.map(u => u.unidade);
+    const units = statisticsData.porUnidade.map((u) => u.unidade);
+
     return [...new Set([...defaultUnits, ...units])];
   }, [statisticsData]);
 
   useEffect(() => {
     if (statisticsData?.generatedAt) {
       const date = new Date(statisticsData.generatedAt);
-      setLastUpdate(date.toLocaleTimeString('pt-BR'));
+
+      setLastUpdate(date.toLocaleTimeString("pt-BR"));
     }
   }, [statisticsData]);
 
@@ -235,24 +265,25 @@ const consolidatedExames = useMemo(() => {
   };
 
   const toggleShowAllExams = (unitName: string) => {
-    setShowAllExams(prev => ({
+    setShowAllExams((prev) => ({
       ...prev,
-      [unitName]: !prev[unitName]
+      [unitName]: !prev[unitName],
     }));
   };
 
   const getStatusColor = (percentage: number) => {
-    if (percentage >= 40) return 'text-green-600';
-    if (percentage >= 20) return 'text-yellow-600';
-    return 'text-red-600';
+    if (percentage >= 40) return "text-green-600";
+    if (percentage >= 20) return "text-yellow-600";
+
+    return "text-red-600";
   };
 
   if (error) {
     return (
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="bg-gradient-to-br from-red-50 to-white border border-red-200 rounded-2xl p-6 shadow-sm"
+        initial={{ opacity: 0, y: 20 }}
       >
         <div className="flex items-start gap-4">
           <div className="p-3 bg-red-100 rounded-xl">
@@ -263,8 +294,8 @@ const consolidatedExames = useMemo(() => {
               Erro ao carregar estatísticas
             </h3>
             <button
-              onClick={handleRefresh}
               className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+              onClick={handleRefresh}
             >
               Tentar novamente
             </button>
@@ -279,12 +310,12 @@ const consolidatedExames = useMemo(() => {
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-6">
         <div className="animate-pulse space-y-6">
           <div className="flex justify-between">
-            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-            <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/4" />
+            <div className="h-8 w-8 bg-gray-200 rounded-full" />
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-40 bg-gray-200 rounded-xl"></div>
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-40 bg-gray-200 rounded-xl" />
             ))}
           </div>
         </div>
@@ -295,21 +326,19 @@ const consolidatedExames = useMemo(() => {
   return (
     <AnimatePresence>
       <motion.section
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.4 }}
         className="space-y-4"
+        exit={{ opacity: 0, y: -20 }}
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.4 }}
       >
-
-
         {/* KPI GERAIS */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
           {/* Atendimentos Totais */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-gradient-to-br from-[#44735E] to-[#2a4d3d] rounded-xl shadow-lg p-5 text-white"
+            initial={{ opacity: 0, scale: 0.95 }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -319,7 +348,9 @@ const consolidatedExames = useMemo(() => {
                     Total de Atendimentos
                   </p>
                 </div>
-                <p className="text-3xl font-bold">{statisticsData?.totaisGerais?.totalAgendamentos || 0}</p>
+                <p className="text-3xl font-bold">
+                  {statisticsData?.totaisGerais?.totalAgendamentos || 0}
+                </p>
                 <p className="text-white/70 text-xs mt-2">
                   {statisticsData?.porUnidade?.length || 0} unidades ativas
                 </p>
@@ -332,37 +363,38 @@ const consolidatedExames = useMemo(() => {
 
           {/* Exames Realizados */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.1 }}
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+            initial={{ opacity: 0, scale: 0.95 }}
+            transition={{ delay: 0.1 }}
           >
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <p className="text-gray-700 text-sm font-medium">
-                    Exames
-                  </p>
+                  <p className="text-gray-700 text-sm font-medium">Exames</p>
                 </div>
                 <p className="text-3xl font-bold text-gray-900">
                   {statisticsData?.totaisGerais?.totalExamesRealizados || 0}
                 </p>
                 {statisticsData?.porUnidade && (
                   <p className="text-gray-600 text-xs mt-2">
-                    {Object.values(unitSummaries).reduce((sum, s) => sum + s.totalExamesFinalizados, 0)} finalizados*
+                    {Object.values(unitSummaries).reduce(
+                      (sum, s) => sum + s.totalExamesFinalizados,
+                      0,
+                    )}{" "}
+                    finalizados*
                   </p>
                 )}
               </div>
             </div>
           </motion.div>
-          
 
           {/* Tickets Emitidos */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.2 }}
             className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
+            initial={{ opacity: 0, scale: 0.95 }}
+            transition={{ delay: 0.2 }}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -376,9 +408,13 @@ const consolidatedExames = useMemo(() => {
                 </p>
                 {statisticsData?.porUnidade && (
                   <p className="text-gray-600 text-xs mt-2">
-                    {statisticsData.porUnidade.reduce((sum, u) => 
-                      sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0), 0
-                    )} preferenciais
+                    {statisticsData.porUnidade.reduce(
+                      (sum, u) =>
+                        sum +
+                        u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0),
+                      0,
+                    )}{" "}
+                    preferenciais
                   </p>
                 )}
               </div>
@@ -388,13 +424,15 @@ const consolidatedExames = useMemo(() => {
           {/* Cabeçalho */}
           <div className="flex lg:flex-row items-start lg:items-center justify-center">
             <Button
-              color="success"
-              onClick={handleRefresh}
-              disabled={loading || isRefreshing}
               className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
+              color="success"
+              disabled={loading || isRefreshing}
+              onClick={handleRefresh}
             >
-              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span>{isRefreshing ? 'Atualizando...' : 'Atualizar Dados'}</span>
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
+              />
+              <span>{isRefreshing ? "Atualizando..." : "Atualizar Dados"}</span>
             </Button>
           </div>
         </div>
@@ -404,9 +442,9 @@ const consolidatedExames = useMemo(() => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Status Consolidados */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
             >
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
@@ -415,7 +453,8 @@ const consolidatedExames = useMemo(() => {
                       Status Atendimentos
                     </h3>
                     <p className="text-gray-600 text-sm">
-                      {statisticsData.totaisGerais.totalAgendamentos} atendimentos
+                      {statisticsData.totaisGerais.totalAgendamentos}{" "}
+                      atendimentos
                     </p>
                   </div>
                 </div>
@@ -423,28 +462,40 @@ const consolidatedExames = useMemo(() => {
 
               <div className="p-4">
                 <div className="space-y-3">
-                  {Object.entries(statisticsData.totaisGerais.atendimentosPorStatus)
-                    .sort(([,a], [,b]) => b - a)
+                  {Object.entries(
+                    statisticsData.totaisGerais.atendimentosPorStatus,
+                  )
+                    .sort(([, a], [, b]) => b - a)
                     .map(([status, count]) => {
-                      const percentage = (count / statisticsData.totaisGerais.totalAgendamentos) * 100;
+                      const percentage =
+                        (count /
+                          statisticsData.totaisGerais.totalAgendamentos) *
+                        100;
+
                       return (
                         <div key={status} className="group">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">{status}</span>
+                              <span className="font-medium text-gray-900">
+                                {status}
+                              </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600">{count}</span>
-                              <span className={`text-sm font-medium ${getStatusColor(percentage)}`}>
+                              <span className="text-sm text-gray-600">
+                                {count}
+                              </span>
+                              <span
+                                className={`text-sm font-medium ${getStatusColor(percentage)}`}
+                              >
                                 {percentage.toFixed(1)}%
                               </span>
                             </div>
                           </div>
-                          <HorizontalProgressBar 
-                            value={count} 
-                            max={statisticsData.totaisGerais.totalAgendamentos} 
+                          <HorizontalProgressBar
                             color="bg-blue-500"
+                            max={statisticsData.totaisGerais.totalAgendamentos}
                             showLabel={false}
+                            value={count}
                           />
                         </div>
                       );
@@ -455,10 +506,10 @@ const consolidatedExames = useMemo(() => {
 
             {/* Tipos de Exame Consolidados */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              transition={{ delay: 0.1 }}
             >
               <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center justify-between">
@@ -474,28 +525,40 @@ const consolidatedExames = useMemo(() => {
 
               <div className="p-4">
                 <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                  {Object.entries(statisticsData.totaisGerais.atendimentosPorTipoExame)
-                    .sort(([,a], [,b]) => b - a)
+                  {Object.entries(
+                    statisticsData.totaisGerais.atendimentosPorTipoExame,
+                  )
+                    .sort(([, a], [, b]) => b - a)
                     .map(([tipo, count]) => {
-                      const percentage = (count / statisticsData.totaisGerais.totalAgendamentos) * 100;
+                      const percentage =
+                        (count /
+                          statisticsData.totaisGerais.totalAgendamentos) *
+                        100;
+
                       return (
                         <div key={tipo} className="group">
                           <div className="flex items-center justify-between mb-1">
                             <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">{tipo}</span>
+                              <span className="font-medium text-gray-900 truncate">
+                                {tipo}
+                              </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600">{count}</span>
-                              <span className={`text-sm font-medium ${getStatusColor(percentage)}`}>
+                              <span className="text-sm text-gray-600">
+                                {count}
+                              </span>
+                              <span
+                                className={`text-sm font-medium ${getStatusColor(percentage)}`}
+                              >
                                 {percentage.toFixed(1)}%
                               </span>
                             </div>
                           </div>
-                          <HorizontalProgressBar 
-                            value={count} 
-                            max={statisticsData.totaisGerais.totalAgendamentos} 
+                          <HorizontalProgressBar
                             color="bg-green-500"
+                            max={statisticsData.totaisGerais.totalAgendamentos}
                             showLabel={false}
+                            value={count}
                           />
                         </div>
                       );
@@ -509,7 +572,9 @@ const consolidatedExames = useMemo(() => {
         {/* EXAMES POR UNIDADE (SEPARADO PARA CADA GESTOR) */}
         <div className="space-y-6">
           {activeUnits.map((unitName) => {
-            const unitData = statisticsData?.porUnidade?.find(u => u.unidade === unitName);
+            const unitData = statisticsData?.porUnidade?.find(
+              (u) => u.unidade === unitName,
+            );
             const hasData = !!unitData;
             const isExpanded = expandedUnit === unitName;
             const unitSummary = unitSummaries[unitName];
@@ -519,9 +584,9 @@ const consolidatedExames = useMemo(() => {
             return (
               <motion.div
                 key={unitName}
-                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+                initial={{ opacity: 0, y: 20 }}
               >
                 {/* Cabeçalho da Unidade */}
                 <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
@@ -537,7 +602,9 @@ const consolidatedExames = useMemo(() => {
                             <span className="text-lg font-bold text-[#44735E]">
                               {hasData ? unitData.totalAgendamentos : 0}
                             </span>
-                            <span className="text-gray-600 text-sm">atendimentos</span>
+                            <span className="text-gray-600 text-sm">
+                              atendimentos
+                            </span>
                           </div>
                           {hasData && unitSummary && (
                             <div className="flex items-center gap-2">
@@ -545,26 +612,34 @@ const consolidatedExames = useMemo(() => {
                               <span className="text-lg font-bold text-blue-600">
                                 {unitSummary.totalExames}
                               </span>
-                              <span className="text-gray-600 text-sm">exames</span>
+                              <span className="text-gray-600 text-sm">
+                                exames
+                              </span>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
-                    
+
                     {hasData && (
                       <div className="flex items-center gap-3">
                         {unitSummary && (
                           <div className="text-right">
-                            <div className={`text-lg font-bold ${getStatusColor(unitSummary.percentualFinalizados)}`}>
+                            <div
+                              className={`text-lg font-bold ${getStatusColor(unitSummary.percentualFinalizados)}`}
+                            >
                               {unitSummary.percentualFinalizados.toFixed(1)}%
                             </div>
-                            <div className="text-xs text-gray-500">conclusão</div>
+                            <div className="text-xs text-gray-500">
+                              conclusão
+                            </div>
                           </div>
                         )}
                         <button
-                          onClick={() => setExpandedUnit(isExpanded ? null : unitName)}
                           className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          onClick={() =>
+                            setExpandedUnit(isExpanded ? null : unitName)
+                          }
                         >
                           {isExpanded ? (
                             <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -580,10 +655,10 @@ const consolidatedExames = useMemo(() => {
                 {/* Detalhes da Unidade (Expandido) */}
                 {hasData && isExpanded && (
                   <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
                     className="p-5 space-y-6"
+                    exit={{ opacity: 0, height: 0 }}
+                    initial={{ opacity: 0, height: 0 }}
                   >
                     {/* Status e Tipos de Exame da Unidade */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -595,14 +670,24 @@ const consolidatedExames = useMemo(() => {
                         </h4>
                         <div className="space-y-2">
                           {Object.entries(unitData.atendimentosPorStatus)
-                            .sort(([,a], [,b]) => b - a)
+                            .sort(([, a], [, b]) => b - a)
                             .map(([status, count]) => (
-                              <div key={status} className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded">
+                              <div
+                                key={status}
+                                className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded"
+                              >
                                 <span className="text-gray-600">{status}</span>
                                 <div className="flex items-center gap-3">
-                                  <span className="font-bold text-gray-900">{count}</span>
+                                  <span className="font-bold text-gray-900">
+                                    {count}
+                                  </span>
                                   <span className="text-xs text-gray-500">
-                                    ({((count / unitData.totalAgendamentos) * 100).toFixed(1)}%)
+                                    (
+                                    {(
+                                      (count / unitData.totalAgendamentos) *
+                                      100
+                                    ).toFixed(1)}
+                                    %)
                                   </span>
                                 </div>
                               </div>
@@ -614,18 +699,35 @@ const consolidatedExames = useMemo(() => {
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                           <Layers className="h-4 w-4 text-green-600" />
-                          Tipos de Exame ({Object.keys(unitData.atendimentosPorTipoExame).length})
+                          Tipos de Exame (
+                          {
+                            Object.keys(unitData.atendimentosPorTipoExame)
+                              .length
+                          }
+                          )
                         </h4>
                         <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
                           {Object.entries(unitData.atendimentosPorTipoExame)
-                            .sort(([,a], [,b]) => b - a)
+                            .sort(([, a], [, b]) => b - a)
                             .map(([tipo, count]) => (
-                              <div key={tipo} className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded">
-                                <span className="text-gray-600 truncate">{tipo}</span>
+                              <div
+                                key={tipo}
+                                className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded"
+                              >
+                                <span className="text-gray-600 truncate">
+                                  {tipo}
+                                </span>
                                 <div className="flex items-center gap-3">
-                                  <span className="font-bold text-gray-900">{count}</span>
+                                  <span className="font-bold text-gray-900">
+                                    {count}
+                                  </span>
                                   <span className="text-xs text-gray-500">
-                                    ({((count / unitData.totalAgendamentos) * 100).toFixed(1)}%)
+                                    (
+                                    {(
+                                      (count / unitData.totalAgendamentos) *
+                                      100
+                                    ).toFixed(1)}
+                                    %)
                                   </span>
                                 </div>
                               </div>
@@ -642,27 +744,38 @@ const consolidatedExames = useMemo(() => {
                       </h4>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                         {unitData.tickets.map((ticket, idx) => {
-                          const preferencialPercent = ticket.total > 0 ? (ticket.preferencial / ticket.total) * 100 : 0;
-                          if(ticket.status != TicketStatus.AGUARDANDO){
+                          const preferencialPercent =
+                            ticket.total > 0
+                              ? (ticket.preferencial / ticket.total) * 100
+                              : 0;
+
+                          if (ticket.status != TicketStatus.AGUARDANDO) {
                             return (
-                              <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                              <div
+                                key={idx}
+                                className="bg-gray-50 rounded-lg p-3"
+                              >
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-gray-900">{ticket.status}</span>
-                                  <span className="text-lg font-bold text-gray-900">{ticket.total}</span>
+                                  <span className="font-medium text-gray-900">
+                                    {ticket.status}
+                                  </span>
+                                  <span className="text-lg font-bold text-gray-900">
+                                    {ticket.total}
+                                  </span>
                                 </div>
                                 <div className="text-xs text-gray-600 mb-2">
-                                  {ticket.preferencial} preferenciais ({preferencialPercent.toFixed(0)}%)
+                                  {ticket.preferencial} preferenciais (
+                                  {preferencialPercent.toFixed(0)}%)
                                 </div>
-                                <HorizontalProgressBar 
-                                  value={ticket.preferencial}
-                                  max={ticket.total}
+                                <HorizontalProgressBar
                                   color="bg-purple-500"
+                                  max={ticket.total}
                                   showLabel={false}
+                                  value={ticket.preferencial}
                                 />
                               </div>
                             );
                           }
-                    
                         })}
                       </div>
                     </div>
@@ -676,15 +789,20 @@ const consolidatedExames = useMemo(() => {
                               Exames de {unitName}
                             </h3>
                             <p className="text-gray-600 text-sm">
-                              {unitData.exames.length} exames • {unitSummary?.totalExamesFinalizados} finalizados
+                              {unitData.exames.length} exames •{" "}
+                              {unitSummary?.totalExamesFinalizados} finalizados
                             </p>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => setExpandedExameUnit(isExameUnitExpanded ? null : unitName)}
                             className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
+                            onClick={() =>
+                              setExpandedExameUnit(
+                                isExameUnitExpanded ? null : unitName,
+                              )
+                            }
                           >
                             {isExameUnitExpanded ? (
                               <>
@@ -700,8 +818,8 @@ const consolidatedExames = useMemo(() => {
                           </button>
                           {unitData.exames.length > 8 && (
                             <button
-                              onClick={() => toggleShowAllExams(unitName)}
                               className="flex items-center gap-1 text-sm text-[#44735E] hover:text-[#356349]"
+                              onClick={() => toggleShowAllExams(unitName)}
                             >
                               {showAllForUnit ? (
                                 <>
@@ -720,20 +838,29 @@ const consolidatedExames = useMemo(() => {
                       </div>
 
                       {/* Grid de Exames da Unidade */}
-                      <div className={`grid grid-cols-1 ${showAllForUnit ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4`}>
-                        {(showAllForUnit ? unitData.exames : unitData.exames.slice(0, 8))
+                      <div
+                        className={`grid grid-cols-1 ${showAllForUnit ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}
+                      >
+                        {(showAllForUnit
+                          ? unitData.exames
+                          : unitData.exames.slice(0, 8)
+                        )
                           .sort((a, b) => b.total - a.total)
                           .map((exame) => {
-                            const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-                            const finalizados = 
-                              (exame.porStatus.FINALIZADO || 0) + 
+                            const pendentes =
+                              exame.porStatus.PENDENTE ||
+                              exame.porStatus.PENDENTE_LABORATORIO ||
+                              0;
+                            const finalizados =
+                              (exame.porStatus.FINALIZADO || 0) +
                               (exame.porStatus.CONCLUIDO || 0) +
                               (exame.porStatus.AGUARDANDO_RESULTADO || 0);
                             const total = exame.total;
-                            const percentFinalizado = total > 0 ? (finalizados / total) * 100 : 0;
+                            const percentFinalizado =
+                              total > 0 ? (finalizados / total) * 100 : 0;
 
                             return (
-                              <div 
+                              <div
                                 key={`${unitName}-${exame.nomeExame}`}
                                 className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
                               >
@@ -744,23 +871,35 @@ const consolidatedExames = useMemo(() => {
                                     </div>
                                   </div>
                                   <div className="text-right">
-                                    <div className="text-xl font-bold text-gray-900">{total}</div>
-                                    <div className="text-xs text-gray-500">total</div>
+                                    <div className="text-xl font-bold text-gray-900">
+                                      {total}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      total
+                                    </div>
                                   </div>
                                 </div>
 
                                 {/* Status */}
                                 <div className="flex gap-2 mb-3">
-                                  {pendentes > 0 && (      
+                                  {pendentes > 0 && (
                                     <div className="flex items-center">
-                                      <UnitExamStatusBadge status="PENDENTE" count={pendentes} />
+                                      <UnitExamStatusBadge
+                                        count={pendentes}
+                                        status="PENDENTE"
+                                      />
                                       <span className="text-xs">Pendentes</span>
                                     </div>
                                   )}
                                   {finalizados > 0 && (
                                     <div className="flex items-center">
-                                      <UnitExamStatusBadge status="FINALIZADO" count={finalizados} />
-                                      <span className="text-xs">Finalizados</span>
+                                      <UnitExamStatusBadge
+                                        count={finalizados}
+                                        status="FINALIZADO"
+                                      />
+                                      <span className="text-xs">
+                                        Finalizados
+                                      </span>
                                     </div>
                                   )}
                                 </div>
@@ -770,25 +909,39 @@ const consolidatedExames = useMemo(() => {
                                   <div>
                                     <div className="flex justify-between text-xs text-gray-600 mb-1">
                                       <span>Conclusão</span>
-                                      <span className="font-medium">{percentFinalizado.toFixed(1)}%</span>
+                                      <span className="font-medium">
+                                        {percentFinalizado.toFixed(1)}%
+                                      </span>
                                     </div>
-                                    <HorizontalProgressBar 
-                                      value={finalizados}
+                                    <HorizontalProgressBar
+                                      color={
+                                        percentFinalizado >= 70
+                                          ? "bg-green-500"
+                                          : "bg-yellow-500"
+                                      }
                                       max={total}
-                                      color={percentFinalizado >= 70 ? 'bg-green-500' : 'bg-yellow-500'}
                                       showLabel={false}
+                                      showLabel={false}
+                                      value={finalizados}
                                     />
                                   </div>
-                                  
+
                                   {isExameUnitExpanded && (
                                     <div className="pt-2 border-t border-gray-200">
                                       <div className="text-xs text-gray-600">
                                         {Object.entries(exame.porStatus)
-                                          .sort(([,a], [,b]) => b - a)
+                                          .sort(([, a], [, b]) => b - a)
                                           .map(([status, count]) => (
-                                            <div key={status} className="flex justify-between">
-                                              <span>{status.replace(/_/g, ' ')}:</span>
-                                              <span className="font-medium">{count}</span>
+                                            <div
+                                              key={status}
+                                              className="flex justify-between"
+                                            >
+                                              <span>
+                                                {status.replace(/_/g, " ")}:
+                                              </span>
+                                              <span className="font-medium">
+                                                {count}
+                                              </span>
                                             </div>
                                           ))}
                                       </div>
@@ -803,11 +956,12 @@ const consolidatedExames = useMemo(() => {
                       {!showAllForUnit && unitData.exames.length > 8 && (
                         <div className="mt-4 text-center">
                           <button
-                            onClick={() => toggleShowAllExams(unitName)}
                             className="text-sm text-[#44735E] hover:text-[#356349] font-medium flex items-center justify-center gap-2 mx-auto"
+                            onClick={() => toggleShowAllExams(unitName)}
                           >
                             <Eye className="h-4 w-4" />
-                            Ver mais {unitData.exames.length - 8} exames desta unidade
+                            Ver mais {unitData.exames.length - 8} exames desta
+                            unidade
                           </button>
                         </div>
                       )}
@@ -817,16 +971,28 @@ const consolidatedExames = useMemo(() => {
                         <div className="mt-6 pt-6 border-t border-gray-200">
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">{unitSummary.totalExamesFinalizados}</div>
-                              <div className="text-sm text-gray-600">Exames finalizados*</div>
+                              <div className="text-2xl font-bold text-green-600">
+                                {unitSummary.totalExamesFinalizados}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Exames finalizados*
+                              </div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-yellow-600">{unitSummary.totalExamesPendentes}</div>
-                              <div className="text-sm text-gray-600">Exames pendentes</div>
+                              <div className="text-2xl font-bold text-yellow-600">
+                                {unitSummary.totalExamesPendentes}
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Exames pendentes
+                              </div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">{unitSummary.percentualFinalizados.toFixed(1)}%</div>
-                              <div className="text-sm text-gray-600">Taxa de conclusão</div>
+                              <div className="text-2xl font-bold text-blue-600">
+                                {unitSummary.percentualFinalizados.toFixed(1)}%
+                              </div>
+                              <div className="text-sm text-gray-600">
+                                Taxa de conclusão
+                              </div>
                             </div>
                           </div>
                           <div className="text-xs text-gray-500 text-center mt-2">
@@ -862,10 +1028,10 @@ const consolidatedExames = useMemo(() => {
         {/* VISÃO COMPARATIVA DE EXAMES ENTRE UNIDADES */}
         {consolidatedExames.length > 0 && (
           <motion.div
-            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.4 }}
             className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
+            initial={{ opacity: 0 }}
+            transition={{ delay: 0.4 }}
           >
             {/* <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
               <div className="flex items-center gap-3">
@@ -882,7 +1048,7 @@ const consolidatedExames = useMemo(() => {
                 </div>
               </div>
             </div> */}
-            
+
             <div className="p-5">
               <div className="space-y-4">
                 {/* {consolidatedExames.slice(0, 6).map((exame, idx) => (
@@ -901,8 +1067,8 @@ const consolidatedExames = useMemo(() => {
                       </div>
                     </div> */}
 
-                    {/* Distribuição por Unidade */}
-                    {/* <div className="space-y-2">
+                {/* Distribuição por Unidade */}
+                {/* <div className="space-y-2">
                       {Object.entries(exame.porUnidade)
                         .sort(([,a], [,b]) => b.total - a.total)
                         .map(([unidade, dados]) => {
@@ -935,13 +1101,12 @@ const consolidatedExames = useMemo(() => {
                           );
                         })}
                     </div> */}
-                  {/* </div>
+                {/* </div>
                 ))} */}
               </div>
             </div>
           </motion.div>
         )}
-
       </motion.section>
     </AnimatePresence>
   );

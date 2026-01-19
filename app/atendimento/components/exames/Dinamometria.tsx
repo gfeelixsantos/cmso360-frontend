@@ -417,12 +417,10 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
     if (!algumPreenchido) {
       resultadoFinal = "Normal";
-      
     } else if (todosNormais) {
       resultadoFinal = "Normal";
-
     } else {
-      resultadoFinal = "Alterado";;
+      resultadoFinal = "Alterado";
     }
 
     // Atualizar classificações individuais apenas para os tipos preenchidos

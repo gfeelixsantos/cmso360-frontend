@@ -1,5 +1,3 @@
-// AudiometriaOcupacional.tsx
-// Código atualizado com validação de campos e botão para ver audiometria anterior
 import React, { useState, useEffect, useCallback } from "react";
 import {
   Card,
@@ -10,8 +8,12 @@ import {
   Textarea,
   Checkbox,
   Spinner,
+  RadioGroup,
+  Radio,
 } from "@heroui/react";
 import { FileText, Calculator, Eye } from "lucide-react";
+
+import { AtendimentoRules } from "../AtendimentoRules";
 
 import HeaderExame from "./HeaderExame";
 import { generateAudiogramSVG } from "./AudiometriaGraphics";
@@ -57,6 +59,7 @@ export interface AudiometriaData {
   meatoscopiaOD: string;
   meatoscopiaOE: string;
   observacoesMeatoscopia: string;
+  orientacaoPlugSilicone: string;
 
   // Via Aérea
   viaAereaOD250: string;
@@ -285,6 +288,7 @@ const VALOR_INICIAL: AudiometriaData = {
   meatoscopiaOD: "SEM_OBSTRUCAO",
   meatoscopiaOE: "SEM_OBSTRUCAO",
   observacoesMeatoscopia: "",
+  orientacaoPlugSilicone: "",
 
   // ATUALIZAÇÃO 1: TODOS OS CAMPOS DA TABELA EM BRANCO (VAZIO)
   viaAereaOD250: "",
@@ -417,11 +421,13 @@ const DecibelInput = React.memo(
     onChange,
     placeholder = "",
     className = "",
+    arialabel,
   }: {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
     className?: string;
+    arialabel?: string;
   }) => {
     // Ref para acessar o elemento input
     const inputRef = React.useRef<HTMLInputElement>(null);
@@ -521,6 +527,7 @@ const DecibelInput = React.memo(
     return (
       <input
         ref={inputRef}
+        aria-label={arialabel}
         className={`h-8 w-full text-center border border-gray-300 rounded-md px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${className}`}
         inputMode="numeric"
         placeholder={placeholder}
@@ -959,6 +966,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [isLoading, setIsLoading] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [applyFormPlug, setApplyFormPlug] = useState(false);
   const [formData, setFormData] = useState<AudiometriaData>(VALOR_INICIAL);
   const [resultadosCalculados, setResultadosCalculados] = useState(false);
   const [carregandoAudiometriaAnterior, setCarregandoAudiometriaAnterior] =
@@ -985,6 +993,15 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       if (formulario.resultadoOD && formulario.resultadoOE) {
         setResultadosCalculados(true);
       }
+    }
+
+    // Validação para aplicar formulário de plug de silicone - utilizado em admissional Whirlpool e RH Brasil
+    if (
+      (AtendimentoRules.isAdmissional(atendimento) &&
+        AtendimentoRules.isRhBrasilWhirlpool(atendimento)) ||
+      AtendimentoRules.isWhirlpoolAdmissional(atendimento)
+    ) {
+      setApplyFormPlug(true);
     }
   }, [atendimento, formulario]);
 
@@ -1127,6 +1144,12 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       return;
     }
 
+    if (applyFormPlug && formData.orientacaoPlugSilicone === "") {
+      alert("Por favor, preencha o campo de uso de protetor auricular.");
+
+      return;
+    }
+
     setIsLoading(true);
     try {
       onSave?.(formData);
@@ -1146,6 +1169,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
           {OPCOES_SIM_NAO.map((option) => (
             <Checkbox
               key={option}
+              aria-label={`${label} - ${option}`}
               classNames={{ label: "text-sm text-gray-700" }}
               color="success"
               isSelected={formData[field] === option}
@@ -1530,6 +1554,32 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
               </div>
             </div>
           </div>
+          {applyFormPlug && (
+            <div className="p-4">
+              <h3 className="font-semibold text-gray-700 mb-3 text-sm uppercase tracking-wide">
+                Atendimento Whirlpool
+              </h3>
+              <RadioGroup
+                className="flex flex-row gap-12"
+                color="success"
+                isRequired={true}
+                label="Orientação plug silicone"
+                orientation="horizontal"
+                size="lg"
+                value={formData.orientacaoPlugSilicone}
+                onChange={(e) =>
+                  handleInputChange("orientacaoPlugSilicone", e.target.value)
+                }
+              >
+                <div className="flex flex-row gap-6">
+                  <Radio value={"P - Pequeno"}>Pequeno</Radio>
+                  <Radio value={"M - Médio"}>Médio</Radio>
+                  <Radio value={"G - Grande"}>Grande</Radio>
+                  <Radio value={"U - Universal"}>Universal</Radio>
+                </div>
+              </RadioGroup>
+            </div>
+          )}
         </div>
       </Card>
 
@@ -1636,6 +1686,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     className="border border-gray-300 p-1"
                   >
                     <DecibelInput
+                      arialabel={`Ouvido direito via aérea ${freq.label}`}
                       placeholder=""
                       value={
                         formData[
@@ -1682,6 +1733,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                   >
                     {freq.fieldVOOD ? (
                       <DecibelInput
+                        arialabel={`Ouvido direito via óssea ${freq.label}`}
                         placeholder=""
                         value={
                           formData[
@@ -1744,6 +1796,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     className="border border-gray-300 p-1"
                   >
                     <DecibelInput
+                      arialabel={`Ouvido esquerdo via aéria ${freq.label}`}
                       placeholder=""
                       value={
                         formData[
@@ -1790,6 +1843,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                   >
                     {freq.fieldVOOE ? (
                       <DecibelInput
+                        arialabel={`Ouvido esquerdo via óssea ${freq.label}`}
                         placeholder=""
                         value={
                           formData[

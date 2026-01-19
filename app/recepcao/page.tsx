@@ -15,20 +15,16 @@ import {
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
 import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
-import {
-  CustomEventMap,
-  EventType,
-  onEvent,
-} from "@/lib/websocket/events/events";
+import { CustomEventMap, EventType } from "@/lib/websocket/events/events";
 import {
   PreparationRequestTypes,
   WebsocketType,
 } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout, urlBase64ToUint8Array } from "@/lib/utils";
-import EmptyState from "@/components/recepcao/main/EmptyState";
-import MainContent from "@/components/recepcao/main/MainContent";
-import AtendimentoModal from "@/components/recepcao/main/atendimento/AtendimentoModal";
+import EmptyState from "@/app/recepcao/components/EmptyState";
+import MainContent from "@/app/recepcao/components/MainContent";
+import AtendimentoModal from "@/app/recepcao/components/AtendimentoModal";
 import { SidebarRecepcao } from "@/components/shared/Sidebar";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
@@ -52,10 +48,10 @@ import {
   NEST_URL,
 } from "@/config/constants";
 import { MongoOperationTypes } from "@/lib/scheduling/enum/scheduling.enum";
-import { PreparationGrid } from "@/components/recepcao/main/PreparationGrid";
+import { PreparationGrid } from "@/app/recepcao/components/PreparationGrid";
 import SenhasEstatisticas, {
   StatsModal,
-} from "@/components/recepcao/main/SenhasEstatisticas";
+} from "@/app/recepcao/components/SenhasEstatisticas";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
@@ -73,7 +69,8 @@ type ConnectOptions = {
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
   // ✅ Se já existe socket conectado, reutiliza
   if (SINGLETON_SOCKET?.connected) {
-    console.log('♻️ Reutilizando socket existente:', SINGLETON_SOCKET.id);
+    console.log("♻️ Reutilizando socket existente:", SINGLETON_SOCKET.id);
+
     return SINGLETON_SOCKET;
   }
 
@@ -83,7 +80,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
-      console.warn('Erro ao limpar socket anterior:', err);
+      console.warn("Erro ao limpar socket anterior:", err);
     }
     SINGLETON_SOCKET = null;
   }
@@ -109,13 +106,13 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
   // ✅ CORREÇÃO: Registrar handlers apenas uma vez
   if (!registeredOnce) {
     s.on("connect", () => {
-      console.log('✅ Socket conectado:', s.id);
+      console.log("✅ Socket conectado:", s.id);
       onConnect?.(s);
     });
 
     s.on("disconnect", (reason: string) => {
       console.warn("⚠️ Socket desconectado:", reason);
-      
+
       // ✅ NOVO: Distinguir desconexões normais de erros
       if (reason === "io server disconnect") {
         console.log("🔄 Servidor desconectou - tentando reconectar...");
@@ -123,7 +120,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       } else if (reason === "transport close") {
         console.log("🔄 Conexão perdida - reconexão automática...");
       }
-      
+
       onDisconnect?.(reason);
     });
 
@@ -167,11 +164,11 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
-      console.log('🔌 Fechando socket:', SINGLETON_SOCKET.id);
+      console.log("🔌 Fechando socket:", SINGLETON_SOCKET.id);
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
-      console.warn('Erro ao fechar socket:', err);
+      console.warn("Erro ao fechar socket:", err);
     }
   }
   SINGLETON_SOCKET = null;
@@ -383,13 +380,13 @@ const RecepcaoPage: React.FC = () => {
 
     // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
     if (conectado) {
-      console.log('♻️ Mudança de contexto detectada - agendando reconexão...');
-      
+      console.log("♻️ Mudança de contexto detectada - agendando reconexão...");
+
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Executando reconexão...');
+        console.log("🔄 Executando reconexão...");
         closeSocket();
         setConectado(false);
-        
+
         // Reconecta após 300ms
         setTimeout(() => {
           setConectado(true);
@@ -439,6 +436,7 @@ const RecepcaoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
+
       return;
     }
 
@@ -450,6 +448,7 @@ const RecepcaoPage: React.FC = () => {
         </p>,
       );
       setModalAlert(true);
+
       return;
     }
 
@@ -491,11 +490,11 @@ const RecepcaoPage: React.FC = () => {
       },
       onDisconnect: (reason) => {
         console.log("⚠️ Socket desconectado, reason=", reason);
-        
+
         // Só mostra alerta se não foi desconexão intencional
         if (reason !== "io client disconnect") {
           setIsReconnecting(true);
-          
+
           // Mostra toast apenas se não reconectar em 2s
           setTimeout(() => {
             if (isReconnecting) {
@@ -515,7 +514,7 @@ const RecepcaoPage: React.FC = () => {
       onConnectError: (err) => {
         console.error("❌ Erro ao conectar:", err);
         setIsReconnecting(false);
-        
+
         addToast({
           title: "Erro de conexão",
           description: "Não foi possível conectar ao servidor",
@@ -530,7 +529,7 @@ const RecepcaoPage: React.FC = () => {
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
         console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
-        
+
         setAgendamentos(
           schedules.sort((a, b) =>
             a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
@@ -540,12 +539,12 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handleTicketEmitedOrUpdated = (ticket: Ticket) => {
-      console.log('🎫 Ticket atualizado:', ticket.id);
+      console.log("🎫 Ticket atualizado:", ticket.id);
       addOrUpdate(ticket);
     };
 
     const handleTicketError = (message: string) => {
-      console.error('❌ Ticket error:', JSON.parse(message));
+      console.error("❌ Ticket error:", JSON.parse(message));
     };
 
     const handleUpdateSchedule = ({
@@ -553,26 +552,32 @@ const RecepcaoPage: React.FC = () => {
       schedule,
     }: SchedulingChange) => {
       console.log(`🔄 UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
-      
+
       setAgendamentos((prev) => {
         let newList = [...prev];
 
         switch (operation) {
           case MongoOperationTypes.INSERT:
             // ✅ Evita duplicatas
-            if (prev.some(ag => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE)) {
-              console.warn('⚠️ Agendamento duplicado ignorado:', schedule.SCHEDULINGCODE);
+            if (
+              prev.some((ag) => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE)
+            ) {
+              console.warn(
+                "⚠️ Agendamento duplicado ignorado:",
+                schedule.SCHEDULINGCODE,
+              );
+
               return prev;
             }
             newList.push(schedule);
             break;
-            
+
           case MongoOperationTypes.UPDATE:
             newList = newList.map((ag) =>
               ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE ? schedule : ag,
             );
             break;
-            
+
           case MongoOperationTypes.DELETE:
             newList = newList.filter(
               (ag) => ag.SCHEDULINGCODE !== schedule.SCHEDULINGCODE,
@@ -587,14 +592,14 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
-      console.log('🧪 Preparation request:', request.type);
-      
+      console.log("🧪 Preparation request:", request.type);
+
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
           addOrUpdate(request.request.tickets!);
           setEmPreparacao((prev) => [...prev, request.request]);
           break;
-          
+
         case PreparationRequestTypes.FINISHED:
           executarAcao(
             request.request.ticketId!,
@@ -635,7 +640,7 @@ const RecepcaoPage: React.FC = () => {
     };
   }, [conectado, unidadeSelecionada, salaSelecionada]);
 
-    // ✅ NOVO: Cleanup ao desmontar componente
+  // ✅ NOVO: Cleanup ao desmontar componente
   useEffect(() => {
     return () => {
       if (reconnectTimeoutRef.current) {

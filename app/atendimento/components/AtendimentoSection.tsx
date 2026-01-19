@@ -106,7 +106,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
             >
               <AtendimentoCard
                 key={key}
-                atendimento={atendimento }
+                atendimento={atendimento}
                 exameSelecionado={exameSelecionado}
                 salaSelecionada={salaSelecionada}
                 setFuncionarioSelecionado={setFuncionarioSelecionado}

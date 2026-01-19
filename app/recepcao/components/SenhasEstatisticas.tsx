@@ -1,27 +1,19 @@
 import { AnimatePresence } from "framer-motion";
 import {
-  AlertCircle,
   CheckCircle,
   Clock,
   FilePlus,
   Pause,
-  TrendingUp,
   Users,
   X,
-  Activity,
   BarChart3,
-  Download,
-  FileText,
-  Building,
   Eye,
 } from "lucide-react";
-import { useMemo } from "react";
 
-import { Ticket, TicketStatus } from "@/lib/ticket/ticket";
+import { Ticket } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { PreparationRequest } from "@/lib/ticket/ticket";
 import { StatisticsSection } from "@/app/dashboard/components/StatisticsSection";
-
 
 // Componente de botão de grupo para estatísticas - Compacto para header
 const StatButton: React.FC<{
@@ -48,7 +40,6 @@ const StatButton: React.FC<{
   </button>
 );
 
-
 // Componente de modal de estatísticas em tela cheia refatorado
 export const StatsModal: React.FC<{
   isOpen: boolean;
@@ -73,8 +64,6 @@ export const StatsModal: React.FC<{
   agendamentos,
   preparationRequests,
 }) => {
-
-
   return (
     <AnimatePresence>
       {isOpen && (
@@ -104,7 +93,6 @@ export const StatsModal: React.FC<{
 
               {/* Conteúdo do modal */}
               <div className="flex-1 overflow-y-auto p-4">
-                
                 <StatisticsSection />
               </div>
             </div>

@@ -573,67 +573,72 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     });
   }, []);
 
-// Validação do formulário
-const validateForm = useCallback((): boolean => {
-  const errors: Record<string, string> = {};
+  // Validação do formulário
+  const validateForm = useCallback((): boolean => {
+    const errors: Record<string, string> = {};
 
-  // 1. VALIDAÇÃO DA PRESSÃO ARTERIAL (OBRIGATÓRIO - pelo menos 1 aferição com valor)
-  const pressoesArteriais = Array.isArray(formData.pressaoArterial) 
-    ? formData.pressaoArterial 
-    : [];
-  
-  if (pressoesArteriais.length === 0) {
-    errors.pressaoArterial = "Pelo menos uma aferição de pressão arterial é obrigatória";
-  } else {
-    // Verifica se todas as aferições têm valor válido
-    const temAfericaoValida = pressoesArteriais.some(pa => 
-      pa.valor && pa.valor.trim() && pa.valor.includes('/')
-    );
-    
-    if (!temAfericaoValida) {
-      errors.pressaoArterial = "É necessário preencher o valor da pressão arterial (formato: 120/80)";
+    // 1. VALIDAÇÃO DA PRESSÃO ARTERIAL (OBRIGATÓRIO - pelo menos 1 aferição com valor)
+    const pressoesArteriais = Array.isArray(formData.pressaoArterial)
+      ? formData.pressaoArterial
+      : [];
+
+    if (pressoesArteriais.length === 0) {
+      errors.pressaoArterial =
+        "Pelo menos uma aferição de pressão arterial é obrigatória";
+    } else {
+      // Verifica se todas as aferições têm valor válido
+      const temAfericaoValida = pressoesArteriais.some(
+        (pa) => pa.valor && pa.valor.trim() && pa.valor.includes("/"),
+      );
+
+      if (!temAfericaoValida) {
+        errors.pressaoArterial =
+          "É necessário preencher o valor da pressão arterial (formato: 120/80)";
+      }
     }
-  }
 
-  // 2. VALIDAÇÃO DO PESO (OBRIGATÓRIO)
-  if (!formData.peso.trim()) {
-    errors.peso = "Peso é obrigatório";
-  }
-
-  // 3. VALIDAÇÃO DA ALTURA (OBRIGATÓRIO)
-  if (!formData.altura.trim()) {
-    errors.altura = "Altura é obrigatória";
-  }
-
-  // 4. Validações existentes (mantidas sem alteração)
-  if (showObservacoesPessoais && !formData.observacoesDoencasPessoais.trim()) {
-    errors.observacoesDoencasPessoais =
-      "Observações são obrigatórias quando há doenças pessoais selecionadas";
-  }
-
-  if (formData.conclusao === "Apto com restrições") {
-    if (!formData.duracaoRestricaoDias?.trim()) {
-      errors.duracaoRestricaoDias =
-        "Duração provável é obrigatória para apto com restrições";
+    // 2. VALIDAÇÃO DO PESO (OBRIGATÓRIO)
+    if (!formData.peso.trim()) {
+      errors.peso = "Peso é obrigatório";
     }
-    if (!formData.dataInicioRestricao?.trim()) {
-      errors.dataInicioRestricao =
-        "Data de início é obrigatória para apto com restrições";
+
+    // 3. VALIDAÇÃO DA ALTURA (OBRIGATÓRIO)
+    if (!formData.altura.trim()) {
+      errors.altura = "Altura é obrigatória";
     }
-  }
 
-  if (
-    formData.conclusao === "Aguardar Avaliação" &&
-    !formData.informacaoAguardarAvaliacao?.trim()
-  ) {
-    errors.informacaoAguardarAvaliacao =
-      "Informação médica é obrigatória para aguardar avaliação";
-  }
+    // 4. Validações existentes (mantidas sem alteração)
+    if (
+      showObservacoesPessoais &&
+      !formData.observacoesDoencasPessoais.trim()
+    ) {
+      errors.observacoesDoencasPessoais =
+        "Observações são obrigatórias quando há doenças pessoais selecionadas";
+    }
 
-  setFormErrors(errors);
+    if (formData.conclusao === "Apto com restrições") {
+      if (!formData.duracaoRestricaoDias?.trim()) {
+        errors.duracaoRestricaoDias =
+          "Duração provável é obrigatória para apto com restrições";
+      }
+      if (!formData.dataInicioRestricao?.trim()) {
+        errors.dataInicioRestricao =
+          "Data de início é obrigatória para apto com restrições";
+      }
+    }
 
-  return Object.keys(errors).length === 0;
-}, [formData, showObservacoesPessoais]);
+    if (
+      formData.conclusao === "Aguardar Avaliação" &&
+      !formData.informacaoAguardarAvaliacao?.trim()
+    ) {
+      errors.informacaoAguardarAvaliacao =
+        "Informação médica é obrigatória para aguardar avaliação";
+    }
+
+    setFormErrors(errors);
+
+    return Object.keys(errors).length === 0;
+  }, [formData, showObservacoesPessoais]);
 
   const handleSave = useCallback(async () => {
     if (!validateForm()) {

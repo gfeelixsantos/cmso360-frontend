@@ -23,7 +23,7 @@ import {
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
-import EmptyState from "@/components/recepcao/main/EmptyState";
+import EmptyState from "@/app/recepcao/components/EmptyState";
 import { SidebarRecepcao } from "@/components/shared/Sidebar";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
@@ -51,9 +51,9 @@ import {
 } from "@/lib/scheduling/enum/scheduling.enum";
 import SenhasEstatisticas, {
   StatsModal,
-} from "@/components/recepcao/main/SenhasEstatisticas";
-import AtendimentoContent from "@/components/atendimento/AtendimentoContent";
-import AtendimentoModalExames from "@/components/atendimento/AtendimentoModalExames";
+} from "@/app/recepcao/components/SenhasEstatisticas";
+import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
+import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 
 // =================================================================================
@@ -76,7 +76,8 @@ type ConnectOptions = {
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
   // ✅ Se já existe socket conectado, reutiliza
   if (SINGLETON_SOCKET?.connected) {
-    console.log('♻️ Reutilizando socket existente:', SINGLETON_SOCKET.id);
+    console.log("♻️ Reutilizando socket existente:", SINGLETON_SOCKET.id);
+
     return SINGLETON_SOCKET;
   }
 
@@ -86,14 +87,14 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
-      console.warn('Erro ao limpar socket anterior:', err);
+      console.warn("Erro ao limpar socket anterior:", err);
     }
     SINGLETON_SOCKET = null;
   }
 
   const { auth, onConnect, onDisconnect, onConnectError } = opts;
 
-  // ✅ CORREÇÃO: Configurações otimizadas para estabilidade
+  // Configurações socket
   const s = io(NEST_URL, {
     auth,
     transports: ["websocket"], // Apenas WebSocket, sem polling
@@ -102,26 +103,28 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     reconnectionDelay: 1000, // ✅ Reduzido de 2000 para 1000ms
     reconnectionDelayMax: 5000, // ✅ Reduzido de 10000 para 5000ms
     timeout: 20000,
-    // ✅ NOVO: Forçar nova conexão ao reconectar
+    // Forçar nova conexão ao reconectar
     forceNew: false, // Permite reusar conexão
-    // ✅ NOVO: Upgrade automático desabilitado (já usa websocket)
+    // Upgrade automático desabilitado (já usa websocket)
     upgrade: false,
-    // ✅ NOVO: Manter conexão ativa
+    // Manter conexão ativa
     rememberUpgrade: true,
   });
 
   SINGLETON_SOCKET = s;
 
-  // ✅ CORREÇÃO: Registrar handlers apenas uma vez
+  // Registrar handlers apenas uma vez
   if (!registeredOnce) {
+    let lastActivity = Date.now();
+
     s.on("connect", () => {
-      console.log('✅ Socket conectado:', s.id);
+      console.log("✅ Socket conectado:", s.id);
       onConnect?.(s);
     });
 
     s.on("disconnect", (reason: string) => {
       console.warn("⚠️ Socket desconectado:", reason);
-      
+
       // ✅ NOVO: Distinguir desconexões normais de erros
       if (reason === "io server disconnect") {
         // Servidor forçou desconexão - reconectar manualmente
@@ -131,7 +134,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
         // Conexão caiu - reconectar automático
         console.log("🔄 Conexão perdida - reconexão automática...");
       }
-      
+
       onDisconnect?.(reason);
     });
 
@@ -140,7 +143,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       onConnectError?.(err);
     });
 
-    // ✅ NOVO: Monitorar reconexões
+    // Monitorar reconexões
     s.on("reconnect", (attemptNumber: number) => {
       console.log(`✅ Reconectado após ${attemptNumber} tentativas`);
     });
@@ -157,7 +160,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       console.error("❌ Falha ao reconectar após múltiplas tentativas");
     });
 
-    // ✅ NOVO: Monitorar ping/pong para detectar problemas
+    // Monitorar ping/pong para detectar problemas
     s.on("ping", () => {
       console.debug("📡 Ping enviado ao servidor");
     });
@@ -165,6 +168,18 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     s.on("pong", (latency: number) => {
       console.debug(`📡 Pong recebido (${latency}ms)`);
     });
+
+    // Monitor de idle
+    setInterval(() => {
+      const idleTime = Date.now() - lastActivity;
+
+      if (idleTime > 60000) {
+        // 1 minuto sem pong
+        console.warn("⚠️ Conexão pode estar idle - forçando reconexão");
+        s.disconnect();
+        s.connect();
+      }
+    }, 60000);
 
     registeredOnce = true;
   }
@@ -175,11 +190,11 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
-      console.log('🔌 Fechando socket:', SINGLETON_SOCKET.id);
+      console.log("🔌 Fechando socket:", SINGLETON_SOCKET.id);
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
-      console.warn('Erro ao fechar socket:', err);
+      console.warn("Erro ao fechar socket:", err);
     }
   }
   SINGLETON_SOCKET = null;
@@ -210,7 +225,6 @@ function registerHandlers(
     });
   };
 }
-
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
@@ -367,7 +381,7 @@ const AtendimentoPage: React.FC = () => {
   // ---------------------------------------------------------
   // Reconexão automática ao mudar unidade/sala/exame
   // ---------------------------------------------------------
-   useEffect(() => {
+  useEffect(() => {
     if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) return;
 
     // Limpa timeout anterior
@@ -377,13 +391,13 @@ const AtendimentoPage: React.FC = () => {
 
     // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
     if (conectado) {
-      console.log('♻️ Mudança de contexto detectada - agendando reconexão...');
-      
+      console.log("♻️ Mudança de contexto detectada - agendando reconexão...");
+
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log('🔄 Executando reconexão...');
+        console.log("🔄 Executando reconexão...");
         closeSocket();
         setConectado(false);
-        
+
         // Reconecta após 300ms
         setTimeout(() => {
           setConectado(true);
@@ -416,6 +430,7 @@ const AtendimentoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
+
       return;
     }
 
@@ -427,6 +442,7 @@ const AtendimentoPage: React.FC = () => {
         </p>,
       );
       setModalAlert(true);
+
       return;
     }
 
@@ -457,7 +473,7 @@ const AtendimentoPage: React.FC = () => {
         try {
           await Promise.all([loadSocCompanies(), loadInitialTickets()]);
           emitEvent(socket, EventType.TICKET_INFO, unidadeSelecionada);
-          
+
           addToast({
             title: "Conectado",
             description: `Conexão com servidor estabelecida.`,
@@ -473,11 +489,11 @@ const AtendimentoPage: React.FC = () => {
       },
       onDisconnect: (reason) => {
         console.log("⚠️ Socket desconectado, reason=", reason);
-        
+
         // Só mostra alerta se não foi desconexão intencional
         if (reason !== "io client disconnect") {
           setIsReconnecting(true);
-          
+
           // Mostra toast apenas se não reconectar em 2s
           setTimeout(() => {
             if (isReconnecting) {
@@ -493,14 +509,14 @@ const AtendimentoPage: React.FC = () => {
         } else {
           setConectado(false);
         }
-        
+
         setIsLoading(false);
       },
       onConnectError: (err) => {
         console.error("❌ Erro ao conectar:", err);
         setIsLoading(false);
         setIsReconnecting(false);
-        
+
         addToast({
           title: "Erro de conexão",
           description: "Não foi possível conectar ao servidor",
@@ -515,27 +531,34 @@ const AtendimentoPage: React.FC = () => {
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
         console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
-        
+
         setAgendamentosGeral((prev) => {
           // ✅ Usa Map para merge eficiente
-          const map = new Map(prev.map(s => [s._id, s]));
-          schedules.forEach(schedule => map.set(schedule._id, schedule));
+          const map = new Map(prev.map((s) => [s._id, s]));
+
+          schedules.forEach((schedule) => map.set(schedule._id, schedule));
+
           return Array.from(map.values());
         });
       }
     };
 
-    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
+    const handleUpdateSchedule = ({
+      operation,
+      schedule,
+    }: SchedulingChange) => {
       console.log(`🔄 UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
-      
+
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => {
             // Evita duplicatas
-            if (prev.some(p => p._id === schedule._id)) {
-              console.warn('⚠️ Agendamento duplicado ignorado:', schedule._id);
+            if (prev.some((p) => p._id === schedule._id)) {
+              console.warn("⚠️ Agendamento duplicado ignorado:", schedule._id);
+
               return prev;
             }
+
             return [...prev, schedule];
           });
           break;
@@ -548,18 +571,26 @@ const AtendimentoPage: React.FC = () => {
 
             if (idx !== -1) {
               const updated = [...prev];
+
               updated[idx] = schedule;
+
               return updated;
             }
-            
-            console.warn('⚠️ Agendamento não encontrado para UPDATE:', schedule.CODIGOPRONTUARIO);
+
+            console.warn(
+              "⚠️ Agendamento não encontrado para UPDATE:",
+              schedule.CODIGOPRONTUARIO,
+            );
+
             return prev;
           });
           break;
 
         case MongoOperationTypes.DELETE:
           setAgendamentosGeral((prev) =>
-            prev.filter((ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO),
+            prev.filter(
+              (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
+            ),
           );
           break;
       }
@@ -579,7 +610,7 @@ const AtendimentoPage: React.FC = () => {
     };
   }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
-    // Cleanup ao desmontar componente
+  // Cleanup ao desmontar componente
   useEffect(() => {
     return () => {
       if (reconnectTimeoutRef.current) {
@@ -594,48 +625,46 @@ const AtendimentoPage: React.FC = () => {
   // Estatísticas
   // ---------------------------------------------------------
   const calcularEstatisticas = () => {
-  const senhasFiltradas = getAll();
+    const senhasFiltradas = getAll();
 
-    const agendamentosSala = agendamentosGeral.filter(ag =>
-      ag.EXAMES?.some(ex => ex.grupo === exameSelecionado)
+    const agendamentosSala = agendamentosGeral.filter((ag) =>
+      ag.EXAMES?.some((ex) => ex.grupo === exameSelecionado),
     );
 
     const ticketStatus = (ag: any) => ag.TICKET?.status;
-    const exameStatus = (ag: any) => ag.EXAMES?.find((ex: any) => ex.grupo === exameSelecionado)?.status;
+    const exameStatus = (ag: any) =>
+      ag.EXAMES?.find((ex: any) => ex.grupo === exameSelecionado)?.status;
 
     setEstatisticas({
-      recepcaoAguardando:
-        senhasFiltradas.filter(
-          s =>
-            s.grupo === TicketGroups.RECEPCAO
-        ).length,
+      recepcaoAguardando: senhasFiltradas.filter(
+        (s) => s.grupo === TicketGroups.RECEPCAO,
+      ).length,
 
       examesAguardando: agendamentosSala.filter(
-        ag => exameStatus(ag) === ExamStatus.PENDENTE
+        (ag) => exameStatus(ag) === ExamStatus.PENDENTE,
       ).length,
 
       emAtendimento: agendamentosSala.filter(
-        ag =>
+        (ag) =>
           ticketStatus(ag) === TicketStatus.EM_ATENDIMENTO ||
-          ticketStatus(ag) === TicketStatus.EM_CHAMADA
+          ticketStatus(ag) === TicketStatus.EM_CHAMADA,
       ).length,
 
       preparacao: senhasFiltradas.filter(
-        s => s.status === TicketStatus.EM_PREPARACAO
+        (s) => s.status === TicketStatus.EM_PREPARACAO,
       ).length,
 
       raiox: senhasFiltradas.filter(
-        s => s.status === TicketStatus.ENCAMINHADO_RX
+        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
       ).length,
 
       finalizados: agendamentosSala.filter(
-        ag => ticketStatus(ag) === TicketStatus.FINALIZADO
+        (ag) => ticketStatus(ag) === TicketStatus.FINALIZADO,
       ).length,
 
       total: agendamentosSala.length,
     });
   };
-
 
   useEffect(() => {
     calcularEstatisticas();

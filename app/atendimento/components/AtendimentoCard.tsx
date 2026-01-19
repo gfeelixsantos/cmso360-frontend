@@ -154,6 +154,9 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
       className={`flex-shrink-0 w-10 h-10 ${avatarColor} rounded-full flex items-center justify-center font-semibold text-xs ${textColor}`}
     >
       <span className="text-lg">{ticketNumber}</span>
+      {atendimento.TICKET.preferencialTipo && (
+        <span className="text-sm">{atendimento.TICKET.preferencialTipo}</span>
+      )}
     </div>
   );
 };
