@@ -396,13 +396,13 @@ const ExamesTable: React.FC<{
                       <div className="font-medium text-gray-900 text-sm">
                         {exame.nomeExame}
                       </div>
-                      <div className="flex gap-4 text-xs text-gray-500">
-                        <span>{formatDate(exame.dataExame)}</span>
-                        <span>{exame.sala}</span>
-                        <span>{exame.profissional}</span>
+                      <div className="flex flex-col text-xs text-gray-500">
+                        <div>{formatDate(exame.dataExame)}</div>
+                        <div>{exame.sala} - {exame.profissional}</div>
+                        <div></div>
                       </div>
                       {waitTime && (
-                        <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                        <div className="flex items-center text-xs text-gray-500">
                           <span>Espera: {waitTime}</span>
                         </div>
                       )}

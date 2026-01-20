@@ -344,6 +344,8 @@ export default function RelatoriosPage() {
   // Função para exportar CSV com os IDs dos atendimentos filtrados
   const handleExportCSV = useCallback(async () => {
     try {
+            
+
       if (!hasActiveFilters) {
         alert("Por favor, aplique filtros antes de exportar.");
 
@@ -365,7 +367,7 @@ export default function RelatoriosPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          ids: filteredAtendimentos.map((f) => f._id),
+          filters: appliedFilters
         }),
       });
 
@@ -399,7 +401,7 @@ export default function RelatoriosPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Erro ao exportar CSV:", error);
-      alert("Erro ao exportar relatório. Tente novamente.");
+      alert("⚠ Erro ao exportar relatório. Tente novamente.");
     } finally {
       setIsExporting(false);
     }

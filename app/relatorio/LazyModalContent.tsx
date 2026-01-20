@@ -1,3 +1,4 @@
+// page.tsx
 // app/relatorios/LazyModalContent.tsx
 import React, { useState, useCallback } from "react";
 import {
@@ -6,6 +7,9 @@ import {
   ModalFooter,
   Button,
   Spinner,
+  Modal,
+  ModalContent,
+  Checkbox,
 } from "@heroui/react";
 import { Eye, Trash, RefreshCw } from "lucide-react";
 
@@ -26,6 +30,7 @@ import {
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
+import SyncSocConfirmationModal from "./components/SyncSocConfirmationModal";
 
 interface LazyModalContentProps {
   atendimento: Scheduling;
@@ -33,6 +38,8 @@ interface LazyModalContentProps {
   onClose: () => void;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
+
+
 
 // ============================================
 // COMPONENTE PRINCIPAL: LazyModalContent
@@ -53,6 +60,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const [loadingDeleteScheduling, setLoadingDeleteScheduling] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
+  const [syncSocModalOpen, setSyncSocModalOpen] = useState(false);
 
   // ============================================
   // HANDLERS PARA ANEXOS
@@ -166,7 +174,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     }
   };
 
-  const handleSyncWithSOC = async () => {
+  const handleSyncWithSOC = async (manterExamesRealizados: boolean) => {
     try {
       setLoadingSyncSoc(true);
       const response = await fetch(NEST_SCHEDULINGS_SYNC_SOC, {
@@ -176,7 +184,11 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         },
         body: JSON.stringify({
           schedulingId: atendimento._id,
-          cpf: atendimento.CPFFUNCIONARIO,
+          codigoFicha: atendimento.SEQUENCIAFICHA,
+          empresa: atendimento.CODIGOEMPRESA,
+          codigoFuncionario: atendimento.CODIGO,
+          data: atendimento.DATAAGENDAMENTO,
+          manterExamesRealizados: manterExamesRealizados,
         }),
       });
 
@@ -191,6 +203,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       }
 
       alert("Sincronização realizada com sucesso!");
+      setSyncSocModalOpen(false);
     } catch (error) {
       console.error("Erro ao sincronizar:", error);
       alert("Erro ao sincronizar com SOC");
@@ -269,6 +282,13 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         onConfirm={handleDeleteScheduling}
       />
 
+      <SyncSocConfirmationModal
+        isOpen={syncSocModalOpen}
+        onClose={() => setSyncSocModalOpen(false)}
+        onConfirm={handleSyncWithSOC}
+        isLoading={loadingSyncSoc}
+      />
+
       <ModalHeader className="flex gap-2">
         <div className="flex items-center justify-between w-full">
           <div>
@@ -312,7 +332,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                 )
               }
               variant="light"
-              onPress={handleSyncWithSOC}
+              onPress={() => setSyncSocModalOpen(true)}
             >
               Sincronizar SOC
             </Button>

@@ -99,7 +99,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
 
   // Componente menor e focado (Single Responsibility)
   const ExamesTooltipContent = ({ exames }: { exames: ExamRegister[] }) => (
-    <div className="flex flex-col gap-2 bg-gray-200 p-2 rounded-md max-w-[560px]">
+    <div className="flex flex-col gap-2 shadow-gray-200 p-2 rounded-md max-w-[560px]">
       {exames.map((ex) => (
         <div 
           key={ex.codigoExame} 

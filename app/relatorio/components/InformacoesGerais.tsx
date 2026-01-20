@@ -88,42 +88,6 @@ const InformacoesGerais: React.FC<{
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-end mb-2">
-        {editMode.isEditing ? (
-          <div className="flex gap-2">
-            <Button
-              color="danger"
-              size="sm"
-              startContent={<X size={16} />}
-              variant="light"
-              onPress={handleCancel}
-            >
-              Cancelar
-            </Button>
-            <Button
-              color="primary"
-              isLoading={isSaving}
-              size="sm"
-              startContent={<Save size={16} />}
-              onPress={handleSave}
-            >
-              Salvar
-            </Button>
-          </div>
-        ) : (
-          <Button
-            size="sm"
-            startContent={<Pen size={16} />}
-            variant="light"
-            onPress={() =>
-              onEditModeChange({ isEditing: true, editedData: {} })
-            }
-          >
-            Editar Dados
-          </Button>
-        )}
-      </div>
-
       <div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-3">
@@ -245,7 +209,9 @@ const InformacoesGerais: React.FC<{
                 <span className="text-gray-900">
                   {atendimento.TICKET
                     ? new Date(atendimento.TICKET?.emissao).toLocaleString(
-                        "pt-BR",
+                        "pt-BR", {
+                          timeZone: "America/Sao_Paulo",
+                        }
                       )
                     : `${atendimento.DATAAGENDAMENTO}, ${atendimento.HORARIO}`}
                 </span>
