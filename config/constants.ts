@@ -188,6 +188,7 @@ export const CODIGOS_RISCO_ALTURA = new Set([
   "941", // Queda de pessoa com diferença de nível acima de dois metros (queda de altura)
   "978", // Trabalho em altura no acesso a partes superiores de tanques e instalações do Binder
   "1277", // Queda de altura em nivel dferente - ACID 1
+  "1302", // Trabalho com diferença de nível maior que dois metros
   "1379", // Queda - Altura - Diferença de nível maior que dois metros
 ]);
 
