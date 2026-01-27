@@ -89,6 +89,9 @@ interface PaginatedReportData {
   data: Scheduling[];
   total: number;
   page: number;
+  manha: number;
+  tarde: number;
+  indefinido: number;
   limit: number;
   totalPages: number;
 }
@@ -134,6 +137,10 @@ export default function RelatoriosPage() {
   const rowsPerPage = 50;
   const [totalRecords, setTotalRecords] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
+  const [totalManha, setTotalManha] = useState(0);
+  const [totalTarde, setTotalTarde] = useState(0);
+  const [totalIndefinido, setTotalIndefinido] = useState(0);
+
 
   // Modal de detalhes
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -309,6 +316,9 @@ export default function RelatoriosPage() {
         // Atualizar estados de paginação
         setTotalRecords(result.total);
         setTotalPages(result.totalPages);
+        setTotalManha(result.manha);
+        setTotalTarde(result.tarde);
+        setTotalIndefinido(result.indefinido);
         setPage(result.page);
         setFilteredAtendimentos(result.data);
 
@@ -848,7 +858,7 @@ export default function RelatoriosPage() {
                   Resultados
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {totalRecords} atendimento(s) encontrado(s)
+                  {totalRecords} atendimento(s): {totalManha} manhã, {totalTarde} tarde, {totalIndefinido} indefinido.
                 </p>
               </div>
               <div className="flex items-center gap-4">

@@ -35,5 +35,6 @@ export { getCurrentMessage };
 • Validação aprimorada ficha clínica: peso, altura e PA
 • Correção DUM em ficha clínica
 * Exclusão de tickets pela recepção
+* Inclusão de total de atendimentos (manhã, tarde e indefinido) no relatório
 
 */

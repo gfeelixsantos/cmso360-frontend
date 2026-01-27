@@ -74,14 +74,14 @@ type ConnectOptions = {
 };
 
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
-  // ✅ Se já existe socket conectado, reutiliza
+  // Se já existe socket conectado, reutiliza
   if (SINGLETON_SOCKET?.connected) {
     console.log("♻️ Reutilizando socket existente:", SINGLETON_SOCKET.id);
 
     return SINGLETON_SOCKET;
   }
 
-  // ✅ Se existe mas está desconectado, remove
+  // Se existe mas está desconectado, remove
   if (SINGLETON_SOCKET) {
     try {
       SINGLETON_SOCKET.removeAllListeners();
@@ -97,15 +97,13 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
   // Configurações socket
   const s = io(NEST_URL, {
     auth,
-    transports: ["websocket"], // Apenas WebSocket, sem polling
+    transports: ["websocket"], 
     reconnection: true,
     reconnectionAttempts: Infinity, // Tenta reconectar indefinidamente
-    reconnectionDelay: 1000, // ✅ Reduzido de 2000 para 1000ms
-    reconnectionDelayMax: 5000, // ✅ Reduzido de 10000 para 5000ms
+    reconnectionDelay: 1000, // 1000ms
+    reconnectionDelayMax: 5000, // 5000ms
     timeout: 20000,
-    // Forçar nova conexão ao reconectar
     forceNew: false, // Permite reusar conexão
-    // Upgrade automático desabilitado (já usa websocket)
     upgrade: false,
     // Manter conexão ativa
     rememberUpgrade: true,
@@ -115,17 +113,23 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 
   // Registrar handlers apenas uma vez
   if (!registeredOnce) {
-    let lastActivity = Date.now();
+    let heartbeatInterval: NodeJS.Timeout | null = null;
+    let lastHeartbeatAck = Date.now();
+    let missedHeartbeats = 0;
 
     s.on("connect", () => {
       console.log("✅ Socket conectado:", s.id);
+      startHeartbeat(s);
+
       onConnect?.(s);
     });
 
     s.on("disconnect", (reason: string) => {
       console.warn("⚠️ Socket desconectado:", reason);
 
-      // ✅ NOVO: Distinguir desconexões normais de erros
+      stopHeartbeat();
+
+      // Distinguir desconexões normais de erros
       if (reason === "io server disconnect") {
         // Servidor forçou desconexão - reconectar manualmente
         console.log("🔄 Servidor desconectou - tentando reconectar...");
@@ -162,12 +166,66 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 
     // Monitorar ping/pong para detectar problemas
     s.on("ping", () => {
-      console.debug("📡 Ping enviado ao servidor");
+      console.debug("Ping enviado ao servidor");
     });
 
     s.on("pong", (latency: number) => {
-      console.debug(`📡 Pong recebido (${latency}ms)`);
+      console.debug(`Pong recebido (${latency}ms)`);
     });
+
+        // ✅ NOVO: Função para iniciar heartbeat
+    const startHeartbeat = (socket: Socket) => {
+      // Para heartbeat anterior se existir
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      
+      // Reset contadores
+      lastHeartbeatAck = Date.now();
+      missedHeartbeats = 0;
+      
+      // Envia heartbeat a cada 30 segundos
+      heartbeatInterval = setInterval(() => {
+        const timeSinceLastAck = Date.now() - lastHeartbeatAck;
+        
+        // Se não recebeu ack há mais de 45s = problema
+        if (timeSinceLastAck > 45000) {
+          missedHeartbeats++;
+          console.warn(
+            `⚠️ Sem heartbeat_ack há ${Math.floor(timeSinceLastAck / 1000)}s (${missedHeartbeats} falhas)`
+          );
+          
+          // Após 3 falhas consecutivas, reconecta
+          if (missedHeartbeats >= 3) {
+            console.error("❌ 3 heartbeats perdidos - forçando reconexão");
+            socket.disconnect();
+            socket.connect();
+            return;
+          }
+        }
+        
+        // Envia heartbeat e aguarda resposta
+        const sentAt = Date.now();
+        
+        socket.emit('heartbeat', { timestamp: sentAt }, (response: any) => {
+          if (response && response.timestamp) {
+            const latency = Date.now() - sentAt;
+            lastHeartbeatAck = Date.now();
+            missedHeartbeats = 0; // Reset contador
+            
+            console.debug(`Conexão OK (${latency}ms)`);
+          }
+        });
+      }, 30000); // A cada 30 segundos
+    };
+    
+    // Parar heartbeat
+    const stopHeartbeat = () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        heartbeatInterval = null;
+      }
+    };
 
     registeredOnce = true;
   }
