@@ -173,7 +173,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       console.debug(`Pong recebido (${latency}ms)`);
     });
 
-        // ✅ NOVO: Função para iniciar heartbeat
+
     const startHeartbeat = (socket: Socket) => {
       // Para heartbeat anterior se existir
       if (heartbeatInterval) {
@@ -184,46 +184,71 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       lastHeartbeatAck = Date.now();
       missedHeartbeats = 0;
       
+      console.log("💓 Heartbeat iniciado");
+      
       // Envia heartbeat a cada 30 segundos
       heartbeatInterval = setInterval(() => {
         const timeSinceLastAck = Date.now() - lastHeartbeatAck;
         
-        // Se não recebeu ack há mais de 45s = problema
-        if (timeSinceLastAck > 45000) {
+        // ✅ CRÍTICO: Verifica se passou MUITO tempo sem ACK
+        if (timeSinceLastAck > 45000) { // 45 segundos
           missedHeartbeats++;
           console.warn(
             `⚠️ Sem heartbeat_ack há ${Math.floor(timeSinceLastAck / 1000)}s (${missedHeartbeats} falhas)`
           );
           
-          // Após 3 falhas consecutivas, reconecta
+          // ✅ NOVO: Após 3 falhas, reconecta
           if (missedHeartbeats >= 3) {
             console.error("❌ 3 heartbeats perdidos - forçando reconexão");
             socket.disconnect();
             socket.connect();
-            return;
+            return; // ✅ IMPORTANTE: Sai do loop
           }
         }
         
-        // Envia heartbeat e aguarda resposta
         const sentAt = Date.now();
         
-        socket.emit('heartbeat', { timestamp: sentAt }, (response: any) => {
+        // Adicionar timeout ao emit
+        let ackReceived = false;
+        
+        socket.timeout(5000).emit('heartbeat', { timestamp: sentAt }, (err: any, response: any) => {
+          ackReceived = true;
+          
+          if (err) {
+            console.error("❌ Heartbeat timeout:", err);
+            missedHeartbeats++;
+            return;
+          }
+          
           if (response && response.timestamp) {
             const latency = Date.now() - sentAt;
             lastHeartbeatAck = Date.now();
-            missedHeartbeats = 0; // Reset contador
+            missedHeartbeats = 0; // ✅ Reset contador
             
-            console.debug(`Conexão OK (${latency}ms)`);
+            console.debug(`💓 Heartbeat OK (${latency}ms)`);
+          } else {
+            console.warn("⚠️ Heartbeat sem resposta válida");
+            missedHeartbeats++;
           }
         });
+        
+        // Fallback se timeout não funcionar
+        setTimeout(() => {
+          if (!ackReceived) {
+            console.warn("⚠️ Heartbeat sem callback (5s)");
+            missedHeartbeats++;
+          }
+        }, 5000);
+        
       }, 30000); // A cada 30 segundos
     };
-    
-    // Parar heartbeat
+
+    // Parar heartbeat ao desconectar
     const stopHeartbeat = () => {
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
         heartbeatInterval = null;
+        console.log("💓 Heartbeat parado");
       }
     };
 

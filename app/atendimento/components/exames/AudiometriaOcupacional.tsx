@@ -1597,6 +1597,9 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                 ? "✅ Resultados calculados"
                 : "🔴 Preencha todos os campos da tabela antes de calcular"}
             </p>
+            <p className="mb-1">
+              Utilize "--" ou "---" para indicar ausência de resposta em uma frequência.
+            </p>
           </div>
           <div className="flex gap-2">
             {/* ATUALIZAÇÃO 3: Botão para ver audiometria anterior ao lado do calcular */}
