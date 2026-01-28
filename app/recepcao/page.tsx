@@ -406,24 +406,21 @@ const RecepcaoPage: React.FC = () => {
   // Carregamento de Dados (independente do socket)
   // ---------------------------------------------------------
   useEffect(() => {
-    // Verifica AMBOS: conectado E socketState pronto
-    if (!conectado || !socketState?.connected || !unidadeSelecionada) {
-      return;
+    if (conectado && unidadeSelecionada) {
+      setIsLoading(true);
+
+      Promise.all([
+        loadInitialTickets(unidadeSelecionada),
+        loadSocCompanies(),
+      ]).finally(() => {
+        setIsLoading(false);
+      });
+
+      if (salaSelecionada.includes("PREPARO")) {
+        subscribeNotification();
+      }
     }
-
-    setIsLoading(true);
-
-    Promise.all([
-      loadInitialTickets(unidadeSelecionada),
-      loadSocCompanies(),
-    ]).finally(() => {
-      setIsLoading(false);
-    });
-
-    if (salaSelecionada.includes("PREPARO")) {
-      subscribeNotification();
-    }
-  }, [conectado, socketState?.connected, unidadeSelecionada, salaSelecionada]);
+  }, [conectado, unidadeSelecionada, salaSelecionada]);
 
   // ---------------------------------------------------------
   // Gerenciamento de Socket com Singleton
@@ -658,61 +655,6 @@ const RecepcaoPage: React.FC = () => {
       // NÃO fecha socket aqui - deixa singleton gerenciar
     };
   }, [conectado, unidadeSelecionada, salaSelecionada]);
-
-
-
-
-
-  // Sistema de heartbeat 
-  useEffect(() => {
-    if (!socketState?.connected) return;
-
-    let heartbeatInterval: NodeJS.Timeout;
-    let missedHeartbeats = 0;
-    const MAX_MISSED = 3;
-
-    const sendHeartbeat = () => {
-      if (!socketState?.connected) return;
-
-      const startTime = Date.now();
-      
-      // ✅ Usa timeout do Socket.IO para garantir resposta
-      socketState.timeout(5000).emit(
-        'heartbeat', 
-        { timestamp: startTime }, 
-        (err: Error, response: any) => {
-          if (err) {
-            missedHeartbeats++;
-            console.warn(`⚠️ Heartbeat timeout (${missedHeartbeats}/${MAX_MISSED})`);
-            
-            if (missedHeartbeats >= MAX_MISSED) {
-              console.error('❌ 3 heartbeats perdidos - forçando reconexão');
-              socketState.disconnect();
-              socketState.connect();
-              missedHeartbeats = 0;
-            }
-            return;
-          }
-
-          if (response && response.timestamp) {
-            const latency = Date.now() - startTime;
-            missedHeartbeats = 0; // ✅ Reset contador
-            console.debug(`💓 Heartbeat OK (${latency}ms)`);
-          }
-        }
-      );
-    };
-
-    // ✅ Heartbeat a cada 30s (servidor timeout: 90s)
-    heartbeatInterval = setInterval(sendHeartbeat, 30000);
-    
-    // Envia primeiro heartbeat imediatamente
-    sendHeartbeat();
-
-    return () => {
-      clearInterval(heartbeatInterval);
-    };
-  }, [socketState?.connected]);
 
   // Cleanup ao desmontar componente
   useEffect(() => {

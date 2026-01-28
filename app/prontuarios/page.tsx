@@ -232,7 +232,9 @@ export default function UnifiedProntuarioPage() {
         title: "Erro ao carregar dados",
         description:
           "Não foi possível carregar empresas e médicos examinadores",
-        color: "danger",
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
       });
     } finally {
       setIsLoadingEmpresasMedicos(false);
@@ -325,7 +327,9 @@ export default function UnifiedProntuarioPage() {
         addToast({
           title: "Erro ao carregar dados",
           description: "Não foi possível carregar os prontuários",
-          color: "danger",
+          severity: "danger",
+          color: "foreground",
+          variant: "flat",
         });
 
         if (!loadMore) {
@@ -435,58 +439,6 @@ export default function UnifiedProntuarioPage() {
   }, [scrollContainerRef, hasMoreRecords, isLoadingMore, records]);
 
 
-
-  // Efeito para gerenciar heartbeat do WebSocket
-  useEffect(() => {
-    if (!socketState?.connected) return;
-
-    let heartbeatInterval: NodeJS.Timeout;
-    let missedHeartbeats = 0;
-    const MAX_MISSED = 3;
-
-    const sendHeartbeat = () => {
-      if (!socketState?.connected) return;
-
-      const startTime = Date.now();
-      
-      socketState.timeout(5000).emit(
-        'heartbeat', 
-        { timestamp: startTime }, 
-        (err: Error, response: any) => {
-          if (err) {
-            missedHeartbeats++;
-            console.warn(`⚠️ Heartbeat timeout (${missedHeartbeats}/${MAX_MISSED})`);
-            
-            if (missedHeartbeats >= MAX_MISSED) {
-              console.error('❌ 3 heartbeats perdidos - forçando reconexão');
-              socketState.disconnect();
-              socketState.connect();
-              missedHeartbeats = 0;
-            }
-            return;
-          }
-
-          if (response && response.timestamp) {
-            missedHeartbeats = 0;
-            console.debug(`💓 Heartbeat OK (${Date.now() - startTime}ms)`);
-          }
-        }
-      );
-    };
-
-    // Heartbeat a cada 30s
-    heartbeatInterval = setInterval(sendHeartbeat, 30000);
-    sendHeartbeat(); // Envia imediatamente
-
-    return () => {
-      clearInterval(heartbeatInterval);
-    };
-  }, [socketState?.connected]);
-
-
-
-
-
   // Registro handles de eventos WebSocket
   useEffect(() => {
     if (!socketState) return;
@@ -593,7 +545,9 @@ export default function UnifiedProntuarioPage() {
       addToast({
         title: "Conectado",
         description: "Conexão estabelecida com o servidor",
-        color: "success",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
       });
     });
 
@@ -605,7 +559,9 @@ export default function UnifiedProntuarioPage() {
         addToast({
           title: "Conexão perdida",
           description: "Tentando reconectar...",
-          color: "warning",
+          severity: "warning",
+          color: "foreground",
+          variant: "flat",
         });
       }
     });
@@ -616,7 +572,9 @@ export default function UnifiedProntuarioPage() {
       addToast({
         title: "Erro de conexão",
         description: "Não foi possível conectar ao servidor",
-        color: "danger",
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
       });
     });
 
