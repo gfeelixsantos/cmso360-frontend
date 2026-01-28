@@ -55,6 +55,9 @@ const TicketNumber: React.FC<{ ticket: Ticket }> = ({ ticket }) => {
           {ticket.numero.toString()}
         </span>
       </div>
+      {ticket.preferencialTipo && (
+        <span className="text-sm text-red-600 font-medium">{ticket.preferencialTipo}</span>
+      )}
     </div>
   );
 };

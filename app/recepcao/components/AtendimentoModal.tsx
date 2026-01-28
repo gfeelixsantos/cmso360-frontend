@@ -130,7 +130,9 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const [psicoPresencial, setPsicoPresencial] = useState<boolean>(false);
   const [laboratorialExames, setLaboratorioExames] = useState<string[]>();
   const [examesImagem, setExamesImagem] = useState<string[]>();
-  const [preferencialTipo, setPreferencialTipo] = useState<string>(""); // '' | 'gestante' | 'idoso' | 'pcd'
+  const [preferencialTipo, setPreferencialTipo] = useState<string>(
+    ticketSelecionado?.preferencialTipo || ""
+  );
   const [observacoes, setObservacoes] = useState<string>("");
   const [anotacoes, setAnotacoes] = useState<string>("");
   const [anexos, setAnexos] = useState<FileUpload[]>([]);
@@ -163,26 +165,26 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // Validation rules
   // ---------------------------------------------------------
   const validation = useMemo(() => {
-    return {
-      empresa: empresa.trim().length > 0,
-      codigo: codigoFuncionario.trim().length > 0,
-      nome: nome.trim().length > 0,
-      tipoExame: tipoExame.trim().length > 0,
-      exames: codigoExames.length > 0,
-      preferencial: ticketSelecionado?.preferencial
-        ? preferencialTipo.length > 0
-        : null,
-      all:
-        empresa.trim().length > 0 &&
-        codigoFuncionario.trim().length > 0 &&
-        nome.trim().length > 0 &&
-        tipoExame.trim().length > 0 &&
-        codigoExames.length > 0 &&
-        (ticketSelecionado?.preferencial
-          ? preferencialTipo.length > 0
-          : true) &&
-        funcionarioSelecionado?.ATENDIMENTOSTATUS ===
-          AtendimentoStatus.AGENDADO,
+  return {
+    empresa: empresa.trim().length > 0,
+    codigo: codigoFuncionario.trim().length > 0,
+    nome: nome.trim().length > 0,
+    tipoExame: tipoExame.trim().length > 0,
+    exames: codigoExames.length > 0,
+    preferencial: ticketSelecionado?.preferencialTipo
+      ? preferencialTipo.length > 0 || ticketSelecionado.preferencialTipo?.length > 0
+      : null,
+    all:
+      empresa.trim().length > 0 &&
+      codigoFuncionario.trim().length > 0 &&
+      nome.trim().length > 0 &&
+      tipoExame.trim().length > 0 &&
+      codigoExames.length > 0 &&
+      (ticketSelecionado?.preferencialTipo
+        ? preferencialTipo.length > 0 || ticketSelecionado.preferencialTipo?.length > 0
+        : true) &&
+      funcionarioSelecionado?.ATENDIMENTOSTATUS ===
+        AtendimentoStatus.AGENDADO,
     };
   }, [
     empresa,
@@ -191,6 +193,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     tipoExame,
     codigoExames,
     preferencialTipo,
+    ticketSelecionado?.preferencialTipo, // Adicionar dependência
   ]);
 
   // ---------------------------------------------------------
@@ -570,18 +573,35 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   };
 
   // ---------------------------------------------------------
-  // Atendimento preferencial (single select)
+  // Atendimento preferencial 
   // ---------------------------------------------------------
-  const togglePreferencial = useCallback(
+  // Sincronizar o tipo preferencial quando o ticket mudar
+    useEffect(() => {
+      if (ticketSelecionado?.preferencialTipo) {
+        setPreferencialTipo(ticketSelecionado.preferencialTipo);
+      } else if (!ticketSelecionado?.preferencial) {
+        // Se não for preferencial, limpa o tipo
+        setPreferencialTipo("");
+      }
+    }, [ticketSelecionado]);
+
+    const togglePreferencial = useCallback(
     (p: string) => {
-      setPreferencialTipo(p);
+      // Se já tem tipo definido e não é "Outros", só permite alterar para "Outros"
+      if (ticketSelecionado?.preferencialTipo && 
+          ticketSelecionado.preferencialTipo !== "Outros" && 
+          p !== "Outros") {
+        return;
+      }
+      
+      // Se está tentando desmarcar o mesmo tipo (toggle off)
+      if (preferencialTipo === p) {
+        setPreferencialTipo("");
+      } else {
+        setPreferencialTipo(p);
+      }
     },
-    [
-      ticketSelecionado,
-      funcionarioSelecionado,
-      salaSelecionada,
-      unidadeSelecionada,
-    ],
+    [preferencialTipo, ticketSelecionado?.preferencialTipo],
   );
 
   // ---------------------------------------------------------
@@ -664,71 +684,78 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   };
 
   const updateTicketFuncionarioSelecionado = useCallback(
-    async (ticket: Ticket) => {
-      if (ticket && funcionarioSelecionado) {
-        ticket.atendente = user.nome;
-        ticket.sala = salaSelecionada;
-        ticket.preferencialTipo = preferencialTipo;
-        ticket.status = TicketStatus.AGUARDANDO;
-        ticket.grupo = TicketGroups.EXAME;
+  async (ticket: Ticket) => {
+    if (ticket && funcionarioSelecionado) {
+      ticket.atendente = user.nome;
+      ticket.sala = salaSelecionada;
+      
+      // Mantém o tipo preferencial existente ou usa o novo
+      ticket.preferencialTipo = ticket.preferencialTipo || preferencialTipo;
+      
+      ticket.status = TicketStatus.AGUARDANDO;
+      ticket.grupo = TicketGroups.EXAME;
+      
+      funcionarioSelecionado.TICKET = ticket;
+    } else if (funcionarioSelecionado) {
+      // Se for lançado sem vínculo de ticket, realiza a "emissão"
+      // direto para o servidor como fosse o mesmo da recepção
 
-        funcionarioSelecionado.TICKET = ticket;
-      } else if (funcionarioSelecionado) {
-        // Se for lançado sem vinculo de ticket, realiza a "emissão"
-        // direto para o servidor como fosse o mesmo da recepção
+      const ticketPrefix = preferencialTipo === "" ? "" : "P";
+      
+      // Se já tem tipo preferencial do totem, usa ele
+      const tipoPreferencial = ticketSelecionado?.preferencialTipo || preferencialTipo;
 
-        const ticketPrefix = preferencialTipo === "" ? "" : "P"; // Caso não houver info preferencial padrão é normal
+      const ticket: TicketEmitedDto = {
+        emissao: new Date(),
+        numero: 0,
+        prefixo: ticketPrefix,
+        preferencial: ticketPrefix === "P",
+        preferencialTipo: tipoPreferencial || undefined, // Adicionar o tipo preferencial
+        status: TicketStatus.EM_ATENDIMENTO,
+        type: WebsocketType.TICKET,
+        unidade: unidadeSelecionada,
+        grupo: TicketGroups.EXAME,
+      };
 
-        const ticket: TicketEmitedDto = {
-          emissao: new Date(),
-          numero: 0,
-          prefixo: ticketPrefix,
-          preferencial: ticketPrefix === "P",
-          status: TicketStatus.EM_ATENDIMENTO,
-          type: WebsocketType.TICKET,
-          unidade: unidadeSelecionada,
-          grupo: TicketGroups.EXAME,
-        };
+      try {
+        const response = await fetch(NEST_TICKETS_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(ticket),
+        });
 
-        try {
-          const response = await fetch(NEST_TICKETS_URL, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-            },
-            body: JSON.stringify(ticket),
-          });
-
-          if (!response.ok) {
-            throw new Error("Erro ao emitir o ticket.");
-          }
-
-          const ticketResponse: Ticket = await response.json();
-
-          ticketResponse.atendente = user.nome;
-          ticketResponse.sala = salaSelecionada;
-          ticketResponse.preferencialTipo = preferencialTipo;
-          ticketResponse.status = TicketStatus.AGUARDANDO;
-          ticketResponse.grupo = TicketGroups.EXAME;
-
-          funcionarioSelecionado!.TICKET = ticketResponse;
-          ticketSelecionado = ticketResponse;
-        } catch (e) {
-          console.error(e);
-          alert(`Erro durante processamento do ticket`);
+        if (!response.ok) {
+          throw new Error("Erro ao emitir o ticket.");
         }
-      } else {
-        alert("Não foi possível criar vinculo ticket ao funcionário");
+
+        const ticketResponse: Ticket = await response.json();
+
+        ticketResponse.atendente = user.nome;
+        ticketResponse.sala = salaSelecionada;
+        ticketResponse.preferencialTipo = tipoPreferencial;
+        ticketResponse.status = TicketStatus.AGUARDANDO;
+        ticketResponse.grupo = TicketGroups.EXAME;
+
+        funcionarioSelecionado!.TICKET = ticketResponse;
+        ticketSelecionado = ticketResponse;
+      } catch (e) {
+        console.error(e);
+        alert(`Erro durante processamento do ticket`);
       }
-    },
-    [
-      ticketSelecionado,
-      preferencialTipo,
-      funcionarioSelecionado,
-      unidadeSelecionada,
-    ],
-  );
+    } else {
+      alert("Não foi possível criar vínculo ticket ao funcionário");
+    }
+  },
+  [
+    ticketSelecionado,
+    preferencialTipo,
+    funcionarioSelecionado,
+    unidadeSelecionada,
+  ],
+);
 
   const handlePreparationModal = () => {
     setIsOpenPreparationModal(true);
@@ -1606,15 +1633,25 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 </div>
               </div>
 
-              {/* Atendimento Preferencial */}
-              {ticketSelecionado?.preferencial || ticketSelecionado == null ? (
+              {/* Atendimento Preferencial - Modificado */}
+              {(ticketSelecionado?.preferencial || ticketSelecionado == null) && (
                 <div>
                   <label className="text-sm font-medium text-gray-700">
                     Atendimento Preferencial
+                    {ticketSelecionado?.preferencialTipo && (
+                      <span className="ml-2 text-xs text-green-600 font-semibold">
+                        (Tipo já definido: {ticketSelecionado.preferencialTipo})
+                      </span>
+                    )}
                   </label>
-                  <div className="mt-2 flex gap-2">
+                  
+                  <div className="mt-2 flex gap-2 flex-wrap">
                     {PREFERENCIAL_OPTIONS.map((pref) => {
                       const active = preferencialTipo === pref;
+                      const isDisabled = 
+                        ticketSelecionado?.preferencialTipo && 
+                        ticketSelecionado.preferencialTipo !== "Outros" && 
+                        pref !== "Outros";
 
                       return (
                         <Button
@@ -1623,22 +1660,40 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                             active
                               ? "bg-[#6AA84F] text-white border-[#6AA84F]"
                               : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          } ${isLoading || isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
                           disabled={isLoading}
                           type="button"
                           value={pref}
-                          onPress={(e: any) =>
-                            togglePreferencial(e.target.value)
-                          }
+                          onPress={(e: any) => {
+                            // Se já tem tipo definido, só permite alterar para "Outros"
+                            if (ticketSelecionado?.preferencialTipo && 
+                                ticketSelecionado.preferencialTipo !== "Outros" && 
+                                pref !== "Outros") {
+                              return;
+                            }
+                            togglePreferencial(e.target.value);
+                          }}
                         >
                           {pref}
+                          {pref === "Outros" && ticketSelecionado?.preferencialTipo && (
+                            <span className="ml-1 text-xs">(Alterar)</span>
+                          )}
                         </Button>
                       );
                     })}
                   </div>
+
+                  {ticketSelecionado?.preferencialTipo && 
+                  ticketSelecionado.preferencialTipo !== "Outros" && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                      <p className="text-xs text-blue-700">
+                        <Info className="h-3 w-3 inline mr-1" />
+                        O tipo preferencial <strong>{ticketSelecionado.preferencialTipo}</strong> foi definido no totem.
+                        Você pode alterar para "Outros" se necessário.
+                      </p>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                ""
               )}
             </div>
           </main>

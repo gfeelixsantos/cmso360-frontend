@@ -86,6 +86,20 @@ export const PREFERENCIAL_OPTIONS = [
   "PCD",
   "Outros",
 ];
+
+// Paleta de cores baseada no logo
+export const COLOR_PALETTE = {
+  primary: "#44735e", // Verde principal
+  secondary: "#b8d864", // Verde claro/amarelado
+  accent: "#5a8c7a", // Verde médio
+  light: "#e8f4e3", // Verde muito claro
+  dark: "#2a4a3a", // Verde escuro
+  background: "#f5f9f7", // Fundo claro
+  text: "#1a2a1f", // Texto escuro
+  gray: "#6b7f76", // Cinza esverdeado
+};
+
+
 export const UNIDADES_ATENDIMENTO = ["ARARAS", "CORDEIRÓPOLIS", "RIO CLARO"];
 export const SALAS_RECEPCAO = [
   "BALCÃO",

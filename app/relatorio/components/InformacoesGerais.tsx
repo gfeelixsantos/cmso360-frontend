@@ -241,6 +241,9 @@ const InformacoesGerais: React.FC<{
                     {`${atendimento.TICKET?.prefixo}${atendimento.TICKET?.numero}` ||
                       "Não informado"}
                   </span>
+                  <span className="text-gray-900">
+                    {atendimento.TICKET?.preferencialTipo}
+                  </span>
                 </div>
               )}
               {atendimento.TICKET?.atendente && (

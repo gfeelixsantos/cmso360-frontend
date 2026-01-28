@@ -434,30 +434,66 @@ export default function UnifiedProntuarioPage() {
     };
   }, [scrollContainerRef, hasMoreRecords, isLoadingMore, records]);
 
-  useEffect(() => {
-    if (!attendanceStatus || !getCurrentUser()) {
-      return;
-    }
 
-    const conectionType = WebsocketType.PRONTUARIO;
-    const user: IUserWebsocket = {
-      nome: getCurrentUser()?.nome!,
-      sala: "prontuario",
-      type: conectionType,
-      unidade: "",
+
+  // Efeito para gerenciar heartbeat do WebSocket
+  useEffect(() => {
+    if (!socketState?.connected) return;
+
+    let heartbeatInterval: NodeJS.Timeout;
+    let missedHeartbeats = 0;
+    const MAX_MISSED = 3;
+
+    const sendHeartbeat = () => {
+      if (!socketState?.connected) return;
+
+      const startTime = Date.now();
+      
+      socketState.timeout(5000).emit(
+        'heartbeat', 
+        { timestamp: startTime }, 
+        (err: Error, response: any) => {
+          if (err) {
+            missedHeartbeats++;
+            console.warn(`⚠️ Heartbeat timeout (${missedHeartbeats}/${MAX_MISSED})`);
+            
+            if (missedHeartbeats >= MAX_MISSED) {
+              console.error('❌ 3 heartbeats perdidos - forçando reconexão');
+              socketState.disconnect();
+              socketState.connect();
+              missedHeartbeats = 0;
+            }
+            return;
+          }
+
+          if (response && response.timestamp) {
+            missedHeartbeats = 0;
+            console.debug(`💓 Heartbeat OK (${Date.now() - startTime}ms)`);
+          }
+        }
+      );
     };
 
-    const s: Socket<CustomEventMap> = io(NEST_URL, {
-      auth: user,
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
-    });
+    // Heartbeat a cada 30s
+    heartbeatInterval = setInterval(sendHeartbeat, 30000);
+    sendHeartbeat(); // Envia imediatamente
 
-    setSocketState(s);
+    return () => {
+      clearInterval(heartbeatInterval);
+    };
+  }, [socketState?.connected]);
+
+
+
+
+
+  // Registro handles de eventos WebSocket
+  useEffect(() => {
+    if (!socketState) return;
 
     const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
+      console.log(`🔄 UPDATE_RECORD: ${operation}`, schedule.NOME);
+
       setRecords((prev) => {
         let updatedRecords = [...prev];
 
@@ -474,7 +510,6 @@ export default function UnifiedProntuarioPage() {
             updatedRecords.splice(index, 1);
           }
 
-          // 🔴 se o prontuário removido estiver selecionado
           if (selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO) {
             setSelectedRecord(null);
           }
@@ -488,7 +523,6 @@ export default function UnifiedProntuarioPage() {
             updatedRecords.splice(index, 1);
           }
 
-          // 🔴 remove também da UI se estiver selecionado
           if (selectedRecord?.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO) {
             setSelectedRecord(null);
           }
@@ -514,14 +548,59 @@ export default function UnifiedProntuarioPage() {
       });
     };
 
-    onEvent(s, EventType.UPDATE_RECORD, handleUpdateRecord);
+    // Registra handler
+    socketState.on(EventType.UPDATE_RECORD, handleUpdateRecord);
 
-    s.on("connect", async () => {
+    // Cleanup correto
+    return () => {
+      socketState.off(EventType.UPDATE_RECORD, handleUpdateRecord);
+    };
+  }, [socketState, attendanceStatus, selectedRecord]); 
+
+
+
+  // Efeito para configurar WebSocket
+  useEffect(() => {
+    if (!getCurrentUser()) return;
+
+    const conectionType = WebsocketType.PRONTUARIO;
+    const user: IUserWebsocket = {
+      nome: getCurrentUser()?.nome!,
+      sala: "prontuario",
+      type: conectionType,
+      unidade: "",
+    };
+
+    const s: Socket<CustomEventMap> = io(NEST_URL, {
+      auth: user,
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: Infinity, // Tenta indefinidamente
+      reconnectionDelay: 1000,        // 1 segundo
+      reconnectionDelayMax: 5000,     // Máximo 5 segundos
+      timeout: 20000,
+      forceNew: false,
+      upgrade: false,
+      rememberUpgrade: true,
+    });
+
+    setSocketState(s);
+
+    s.on("connect", () => {
+      console.log("✅ Prontuário conectado:", s.id);
       setConectado(true);
+      
+      addToast({
+        title: "Conectado",
+        description: "Conexão estabelecida com o servidor",
+        color: "success",
+      });
     });
 
     s.on("disconnect", (reason) => {
+      console.warn("⚠️ Prontuário desconectado:", reason);
       setConectado(false);
+      
       if (reason !== "io client disconnect") {
         addToast({
           title: "Conexão perdida",
@@ -532,7 +611,8 @@ export default function UnifiedProntuarioPage() {
     });
 
     s.on("connect_error", (err) => {
-      console.error("Erro ao conectar:", err);
+      console.error("❌ Erro ao conectar:", err);
+      
       addToast({
         title: "Erro de conexão",
         description: "Não foi possível conectar ao servidor",
@@ -540,15 +620,16 @@ export default function UnifiedProntuarioPage() {
       });
     });
 
+    // ✅ Cleanup apenas ao desmontar componente
     return () => {
+      console.log("🔌 Desmontando ProntuarioPage - fechando socket");
       s.off("connect");
       s.off("disconnect");
       s.off("connect_error");
-      s.off(EventType.UPDATE_SCHEDULE, handleUpdateRecord);
       s.disconnect();
       setSocketState(null);
     };
-  }, [attendanceStatus]);
+  }, []); 
 
   const filtered = useMemo(() => {
     return records.filter((r) => {

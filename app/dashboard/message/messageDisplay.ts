@@ -29,12 +29,13 @@ export { getCurrentMessage };
 
 /*
 • Melhoria na comunicação entre salas de atendimentos
-• Limpeza do banco de audios diariamente, garantindo chamada correta no painel
+• Limpeza do banco de audios diariamente (06:30 e 12:45) garantindo chamada correta no painel
 • Visualização da situação do exame no card compacto
 • Exportação do relatório em CSV
 • Validação aprimorada ficha clínica: peso, altura e PA
 • Correção DUM em ficha clínica
 * Exclusão de tickets pela recepção
 * Inclusão de total de atendimentos (manhã, tarde e indefinido) no relatório
+* Tipo preferencial no totem e visualização de salas/recepção
 
 */

@@ -61,6 +61,7 @@ export type TicketEmitedDto = {
   numero: 0;
   prefixo: string;
   preferencial: boolean;
+  preferencialTipo?: string;
   status: TicketStatus;
   type: WebsocketType.TICKET;
   unidade: string;

@@ -150,13 +150,17 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
   const ticketNumber = getTicketNumberForAvatar(atendimento.TICKET);
 
   return (
-    <div
-      className={`flex-shrink-0 w-10 h-10 ${avatarColor} rounded-full flex items-center justify-center font-semibold text-xs ${textColor}`}
-    >
-      <span className="text-lg">{ticketNumber}</span>
-      {atendimento.TICKET.preferencialTipo && (
-        <span className="text-sm">{atendimento.TICKET.preferencialTipo}</span>
-      )}
+    <div className="flex flex-col items-center">
+      <div
+        className={`flex-shrink-0 w-10 h-10 ${avatarColor} rounded-full flex items-center justify-center font-semibold text-xs ${textColor}`}
+      >
+        <span className="text-lg">{ticketNumber}</span>
+      </div>
+      <div>
+        {atendimento.TICKET.preferencialTipo && (
+          <div className={`text-xs text-red-600 font-bold`}>{atendimento.TICKET.preferencialTipo}</div>
+        )}
+      </div>
     </div>
   );
 };

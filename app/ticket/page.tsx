@@ -27,22 +27,12 @@ import {
 } from "@/lib/ticket/ticket";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import {
+  COLOR_PALETTE,
   NEST_TICKETS_URL,
   SERVICES_KEY,
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
-
-// Paleta de cores baseada no logo
-const COLOR_PALETTE = {
-  primary: "#44735e", // Verde principal
-  secondary: "#b8d864", // Verde claro/amarelado
-  accent: "#5a8c7a", // Verde médio
-  light: "#e8f4e3", // Verde muito claro
-  dark: "#2a4a3a", // Verde escuro
-  background: "#f5f9f7", // Fundo claro
-  text: "#1a2a1f", // Texto escuro
-  gray: "#6b7f76", // Cinza esverdeado
-};
+import PreferencialTipo from "./components/PreferencialTipo";
 
 // Interface para dados de autenticação salvos
 interface AuthData {
@@ -50,6 +40,13 @@ interface AuthData {
   unidade: string;
   timestamp: number;
 }
+
+const PREFERENCIAL_OPTIONS = [
+  "Idoso (60+)",
+  "PCD / Autismo",
+  "Gestante / Lactante",
+  "Criança de Colo",
+];
 
 // Hook para fullscreen
 const useFullscreen = () => {
@@ -573,6 +570,8 @@ const TicketOptionsScreen = ({
   unidadeSelecionada: string;
 }) => {
   const [subOptions, setSubOptions] = useState<TicketTypes[] | null>(null);
+  const [showPreferencialTypes, setShowPreferencialTypes] = useState(false);
+  const [selectedPreferencialType, setSelectedPreferencialType] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -604,7 +603,7 @@ const TicketOptionsScreen = ({
   };
 
   // Memoização da função de emissão de ticket para performance
-  const emitirTicket = async (tipo: TicketTypes) => {
+    const emitirTicket = async (tipo: TicketTypes, tipoPreferencial?: string) => {
     if (isLoading) return;
 
     setIsLoading(true);
@@ -615,15 +614,16 @@ const TicketOptionsScreen = ({
       numero: 0,
       prefixo: ticketPrefix,
       preferencial: [TicketTypes.PREFERENCIAL].includes(tipo),
+      preferencialTipo: tipoPreferencial || undefined, // Adiciona o tipo preferencial
       status: TicketStatus.AGUARDANDO,
       type: WebsocketType.TICKET,
       unidade: unidadeSelecionada,
       grupo: TicketGroups.RECEPCAO,
     };
-
+    
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
 
       const response = await fetch(NEST_TICKETS_URL, {
         method: "POST",
@@ -646,9 +646,12 @@ const TicketOptionsScreen = ({
 
       setFeedback({
         type: "success",
-        message: "Aguarde ser chamado.",
+        message: `Aguarde ser chamado.${tipoPreferencial ? ` (${tipoPreferencial})` : ''}`,
         ticketNumber: formattedTicket,
       });
+      
+      // Resetar estado após sucesso
+      setSelectedPreferencialType(null);
     } catch (error) {
       console.error("Erro na emissão do ticket:", error);
 
@@ -660,15 +663,28 @@ const TicketOptionsScreen = ({
     } finally {
       setIsLoading(false);
       setSubOptions(null);
+      setShowPreferencialTypes(false);
     }
   };
 
   const handleTicketOption = (tipo: TicketTypes) => {
     if (tipo === TicketTypes.ATENDIMENTO) {
       setSubOptions([TicketTypes.NORMAL, TicketTypes.WHIRLPOOL]);
+    } else if (tipo === TicketTypes.PREFERENCIAL) {
+      setShowPreferencialTypes(true);
     } else {
       emitirTicket(tipo);
     }
+  };
+
+  const handlePreferencialTypeSelect = (tipoPreferencial: string) => {
+    setSelectedPreferencialType(tipoPreferencial);
+    emitirTicket(TicketTypes.PREFERENCIAL, tipoPreferencial);
+  };
+
+  const handleBackFromPreferencial = () => {
+    setShowPreferencialTypes(false);
+    setSelectedPreferencialType(null);
   };
 
   const getIcon = (tipo: TicketTypes) => {
@@ -716,6 +732,18 @@ const TicketOptionsScreen = ({
   }));
 
   const buttonsToRender = subOptions ? subButtons : mainButtons;
+
+    // Renderizar condicionalmente
+  if (showPreferencialTypes) {
+    return (
+      <div className="w-full flex justify-center">
+        <PreferencialTipo
+          onSelect={handlePreferencialTypeSelect}
+          onBack={handleBackFromPreferencial}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl mx-2 relative">
@@ -820,6 +848,15 @@ const TicketOptionsScreen = ({
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {showPreferencialTypes && (
+          <PreferencialTipo
+            onSelect={handlePreferencialTypeSelect}
+            onBack={handleBackFromPreferencial}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
