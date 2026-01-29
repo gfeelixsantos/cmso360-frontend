@@ -85,6 +85,15 @@ const ExamesTable: React.FC<{
   }>({ isOpen: false, exam: null });
 
   const [reemitindoExams, setReemitindoExams] = useState<boolean>(false);
+  const [isCredenciada, setIsCredenciada] = useState<boolean>(false);
+
+  useEffect(() => {
+    const isCredenciada =
+      atendimento?.NOMECARGO?.includes("KIT CREDENCIADA") ||
+      atendimento?.NOMESETOR?.includes("KIT CREDENCIADA");
+
+    setIsCredenciada(isCredenciada);
+  }, [atendimento?.NOMECARGO, atendimento?.NOMESETOR]);
 
   // Função para buscar exames atualizados do backend
   const fetchUpdatedExames = async () => {
@@ -423,8 +432,9 @@ const ExamesTable: React.FC<{
                     <div className="flex gap-4">
                       <div className="flex flex-col gap-1">
                         <Button
-                          color="primary"
+                          color={isCredenciada ? "default" : "primary"}
                           size="sm"
+                          disabled={isCredenciada}
                           startContent={<Upload size={14} />}
                           variant="solid"
                           onPress={() =>

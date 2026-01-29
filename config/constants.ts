@@ -139,6 +139,7 @@ export const SALAS_EXAMES = [
   "SALA 11",
   "SALA 12",
   "SALA 13",
+  "UNIDADE MÓVEL",
 ];
 
 export const TIPOS_EXAME: Record<string, string> = {

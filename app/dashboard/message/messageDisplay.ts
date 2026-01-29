@@ -37,5 +37,7 @@ export { getCurrentMessage };
 * Exclusão de tickets pela recepção
 * Inclusão de total de atendimentos (manhã, tarde e indefinido) no relatório
 * Tipo preferencial no totem e visualização de salas/recepção
+* Atendimento credenciadas não será possível realizar upload de exames
+* Inclusão do campo "Unidade Móvel" na seleção de salas
 
 */

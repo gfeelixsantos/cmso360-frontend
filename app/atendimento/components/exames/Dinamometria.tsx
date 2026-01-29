@@ -43,10 +43,14 @@ interface DinamometriaData {
   classificacaoPalmar: string;
 
   // Dinamometria Escapular - Força de Membros Superiores
-  escapular1: string;
-  escapular2: string;
-  escapular3: string;
-  escapularMedia: string;
+  escapularDireita1: string;
+  escapularDireita2: string;
+  escapularDireita3: string;
+  escapularDireitaMedia: string;
+  escapularEsquerda1: string;
+  escapularEsquerda2: string;
+  escapularEsquerda3: string;
+  escapularEsquerdaMedia: string;
   classificacaoEscapular: string;
 
   // Dinamometria Dorsal - Força de Tronco
@@ -102,10 +106,14 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     classificacaoPalmar: "",
 
     // Dinamometria Escapular
-    escapular1: "",
-    escapular2: "",
-    escapular3: "",
-    escapularMedia: "",
+    escapularDireita1: "",
+    escapularDireita2: "",
+    escapularDireita3: "",
+    escapularDireitaMedia: "",
+    escapularEsquerda1: "",
+    escapularEsquerda2: "",
+    escapularEsquerda3: "",
+    escapularEsquerdaMedia: "",
     classificacaoEscapular: "",
 
     // Dinamometria Dorsal
@@ -159,9 +167,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       formData.palmarEsquerda3.trim() !== "";
 
     const escapularPreenchido =
-      formData.escapular1.trim() !== "" ||
-      formData.escapular2.trim() !== "" ||
-      formData.escapular3.trim() !== "";
+      formData.escapularDireita1.trim() !== "" ||
+      formData.escapularDireita2.trim() !== "" ||
+      formData.escapularDireita3.trim() !== "" ||
+      formData.escapularEsquerda1.trim() !== "" ||
+      formData.escapularEsquerda2.trim() !== "" ||
+      formData.escapularEsquerda3.trim() !== "";
 
     const dorsalPreenchido =
       formData.dorsal1.trim() !== "" ||
@@ -180,9 +191,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.palmarEsquerda1,
     formData.palmarEsquerda2,
     formData.palmarEsquerda3,
-    formData.escapular1,
-    formData.escapular2,
-    formData.escapular3,
+    formData.escapularDireita1,
+    formData.escapularDireita2,
+    formData.escapularDireita3,
+    formData.escapularEsquerda1,
+    formData.escapularEsquerda2,
+    formData.escapularEsquerda3,
     formData.dorsal1,
     formData.dorsal2,
     formData.dorsal3,
@@ -217,11 +231,18 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       formData.palmarEsquerda3,
     ]);
 
-    // Cálculo da média escapular
-    const mediaEscapular = calcularMedia([
-      formData.escapular1,
-      formData.escapular2,
-      formData.escapular3,
+    // Cálculo da média escapular direita
+    const mediaEscapularDireita = calcularMedia([
+      formData.escapularDireita1,
+      formData.escapularDireita2,
+      formData.escapularDireita3,
+    ]);
+
+    // Cálculo da média escapular esquerda
+    const mediaEscapularEsquerda = calcularMedia([
+      formData.escapularEsquerda1,
+      formData.escapularEsquerda2,
+      formData.escapularEsquerda3,
     ]);
 
     // Cálculo da média dorsal
@@ -235,7 +256,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       ...prev,
       ...(mediaPalmarDireita && { palmarDireitaMedia: mediaPalmarDireita }),
       ...(mediaPalmarEsquerda && { palmarEsquerdaMedia: mediaPalmarEsquerda }),
-      ...(mediaEscapular && { escapularMedia: mediaEscapular }),
+      ...(mediaEscapularDireita && { escapularDireitaMedia: mediaEscapularDireita }),
+      ...(mediaEscapularEsquerda && { escapularEsquerdaMedia: mediaEscapularEsquerda }),
       ...(mediaDorsal && { dorsalMedia: mediaDorsal }),
     }));
   }, [
@@ -245,9 +267,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     formData.palmarEsquerda1,
     formData.palmarEsquerda2,
     formData.palmarEsquerda3,
-    formData.escapular1,
-    formData.escapular2,
-    formData.escapular3,
+    formData.escapularDireita1,
+    formData.escapularDireita2,
+    formData.escapularDireita3,
+    formData.escapularEsquerda1,
+    formData.escapularEsquerda2,
+    formData.escapularEsquerda3,
     formData.dorsal1,
     formData.dorsal2,
     formData.dorsal3,
@@ -260,7 +285,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   }, [
     formData.palmarDireitaMedia,
     formData.palmarEsquerdaMedia,
-    formData.escapularMedia,
+    formData.escapularDireitaMedia,
+    formData.escapularEsquerdaMedia,
     formData.dorsalMedia,
     formData.ladoDominante,
     formData.sexo,
@@ -319,10 +345,13 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
   // Função para avaliar dinamometria escapular
   const avaliarDinamometriaEscapular = useCallback(
-    (media: number, sexo: string) => {
+    (mediaDireita: number, mediaEsquerda: number, sexo: string) => {
       const minimo = sexo === "Masculino" ? 20 : 10;
+      
+      const direitaAdequada = mediaDireita >= minimo;
+      const esquerdaAdequada = mediaEsquerda >= minimo;
 
-      return media >= minimo;
+      return direitaAdequada && esquerdaAdequada;
     },
     [],
   );
@@ -353,8 +382,10 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       parseFloat(formData.palmarDireitaMedia.replace(",", ".")) || 0;
     const mediaPalmarEsq =
       parseFloat(formData.palmarEsquerdaMedia.replace(",", ".")) || 0;
-    const mediaEscapular =
-      parseFloat(formData.escapularMedia.replace(",", ".")) || 0;
+    const mediaEscapularDir =
+      parseFloat(formData.escapularDireitaMedia.replace(",", ".")) || 0;
+    const mediaEscapularEsq =
+      parseFloat(formData.escapularEsquerdaMedia.replace(",", ".")) || 0;
     const mediaDorsal = parseFloat(formData.dorsalMedia.replace(",", ".")) || 0;
 
     // Lista para armazenar os resultados individuais
@@ -390,10 +421,11 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     }
 
     // Verificar e avaliar dinamometria escapular se preenchida
-    if (tiposPreenchidos.escapular && mediaEscapular > 0) {
+    if (tiposPreenchidos.escapular && mediaEscapularDir > 0 && mediaEscapularEsq > 0) {
       algumPreenchido = true;
       escapularNormal = avaliarDinamometriaEscapular(
-        mediaEscapular,
+        mediaEscapularDir,
+        mediaEscapularEsq,
         formData.sexo,
       );
       resultadosIndividuais.push(
@@ -446,7 +478,8 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   }, [
     formData.palmarDireitaMedia,
     formData.palmarEsquerdaMedia,
-    formData.escapularMedia,
+    formData.escapularDireitaMedia,
+    formData.escapularEsquerdaMedia,
     formData.dorsalMedia,
     formData.ladoDominante,
     formData.sexo,
@@ -672,96 +705,6 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     </div>
   );
 
-  const renderTabelaDinamometriaEscapular = (
-    titulo: string,
-    campos: { campo1: string; campo2: string; campo3: string; media: string },
-    unidade: string = "kgf",
-  ) => (
-    <div className=" p-4">
-      <h3 className="font-semibold text-gray-700 mb-4 text-center text-lg">
-        {titulo}
-      </h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
-                1ª Medida ({unidade})
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
-                2ª Medida ({unidade})
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
-                3ª Medida ({unidade})
-              </th>
-              <th className="border border-gray-300 px-4 py-3 text-center font-semibold text-gray-700">
-                Média ({unidade})
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td className="border border-gray-300 px-4 py-2">
-                <Input
-                  className="border-gray-300 text-center bg-white"
-                  placeholder="0,0"
-                  value={
-                    formData[campos.campo1 as keyof DinamometriaData] as string
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      campos.campo1 as keyof DinamometriaData,
-                      e.target.value,
-                    )
-                  }
-                />
-              </td>
-              <td className="border border-gray-300 px-4 py-2">
-                <Input
-                  className="border-gray-300 text-center bg-white"
-                  placeholder="0,0"
-                  value={
-                    formData[campos.campo2 as keyof DinamometriaData] as string
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      campos.campo2 as keyof DinamometriaData,
-                      e.target.value,
-                    )
-                  }
-                />
-              </td>
-              <td className="border border-gray-300 px-4 py-2">
-                <Input
-                  className="border-gray-300 text-center bg-white"
-                  placeholder="0,0"
-                  value={
-                    formData[campos.campo3 as keyof DinamometriaData] as string
-                  }
-                  onChange={(e) =>
-                    handleInputChange(
-                      campos.campo3 as keyof DinamometriaData,
-                      e.target.value,
-                    )
-                  }
-                />
-              </td>
-              <td className="border border-gray-300 px-4 py-2">
-                <Input
-                  isReadOnly
-                  className="border-gray-300 text-center bg-gray-100 font-semibold"
-                  value={
-                    formData[campos.media as keyof DinamometriaData] as string
-                  }
-                />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-
   // Adicionar indicador visual dos tipos preenchidos
   const renderIndicadorTiposPreenchidos = () => (
     <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -914,13 +857,19 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
         <SectionTitle number="3" title="Dinamometria Escapular" />
 
         <div className="space-y-6">
-          {renderTabelaDinamometriaEscapular(
+          {renderTabelaDinamometria(
             "Força de Membros Superiores (kgf)",
             {
-              campo1: "escapular1",
-              campo2: "escapular2",
-              campo3: "escapular3",
-              media: "escapularMedia",
+              campo1: "escapularDireita1",
+              campo2: "escapularDireita2",
+              campo3: "escapularDireita3",
+              media: "escapularDireitaMedia",
+            },
+            {
+              campo1: "escapularEsquerda1",
+              campo2: "escapularEsquerda2",
+              campo3: "escapularEsquerda3",
+              media: "escapularEsquerdaMedia",
             },
             "kgf",
           )}
