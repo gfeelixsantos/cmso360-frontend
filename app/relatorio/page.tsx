@@ -70,6 +70,7 @@ interface ReportParams {
   unidadesAtendimento: { code: string; name: string }[];
   grupo: { code: string; name: string }[];
   salas: { code: string; name: string }[];
+  atendentes: { code: string; name: string }[];
 }
 
 interface FilterParams {
@@ -81,6 +82,7 @@ interface FilterParams {
   status?: string;
   search?: string;
   profissional?: string;
+  atendente?: string;
   sala?: string;
   unidadeAtendimento?: string;
 }
@@ -118,6 +120,7 @@ export default function RelatoriosPage() {
     status: "",
     search: "",
     profissional: "",
+    atendente: "",
     sala: "",
     unidadeAtendimento: "",
   });
@@ -129,6 +132,7 @@ export default function RelatoriosPage() {
   const [gruposExames, setGruposExames] = useState<string[]>([]);
   const [tiposExame, setTiposExame] = useState<string[]>([]);
   const [profissionais, setProfissionais] = useState<string[]>([]);
+  const [atendentes, setAtendentes] = useState<string[]>([]);
   const [salas, setSalas] = useState<string[]>([]);
   const [unidadesAtendimento, setUnidadesAtendimento] = useState<string[]>([]);
 
@@ -208,6 +212,7 @@ export default function RelatoriosPage() {
       const params: ReportParams = await response.json();
 
       setProfissionais(params.profissionais.map((p) => p.name));
+      setAtendentes(params.atendentes.map((p) => p.name));
       setEmpresas(params.empresas.map((p) => p.name));
       setGruposExames(params.grupo.map((p) => p.name));
       setTiposExame(params.tiposExame.map((p) => p.name));
@@ -267,6 +272,8 @@ export default function RelatoriosPage() {
       if (currentFilters.search) backendFilters.search = currentFilters.search;
       if (currentFilters.profissional)
         backendFilters.profissional = currentFilters.profissional;
+      if (currentFilters.atendente)
+        backendFilters.atendente = currentFilters.atendente;
       if (currentFilters.sala) backendFilters.sala = currentFilters.sala;
       if (currentFilters.unidadeAtendimento)
         backendFilters.unidadeAtendimento = currentFilters.unidadeAtendimento;
@@ -453,6 +460,7 @@ export default function RelatoriosPage() {
       status: "",
       search: "",
       profissional: "",
+      atendente: "",
       sala: "",
       unidadeAtendimento: "",
     });
@@ -465,6 +473,7 @@ export default function RelatoriosPage() {
       status: "",
       search: "",
       profissional: "",
+      atendente: "",
       sala: "",
       unidadeAtendimento: "",
     });
@@ -841,6 +850,26 @@ export default function RelatoriosPage() {
               >
                 {unidadesAtendimento.map((unidade) => (
                   <SelectItem key={unidade}>{unidade}</SelectItem>
+                ))}
+              </Select>
+            </div>
+
+            {/* Atendente */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Atendente
+              </label>
+              <Select
+                aria-label="Selecionar atendente"
+                className="w-full"
+                selectedKeys={filters.atendente ? [filters.atendente] : []}
+                size="lg"
+                onSelectionChange={(keys) =>
+                  handleFilterChange("atendente", Array.from(keys)[0] || "")
+                }
+              >
+                {atendentes.map((atendente) => (
+                  <SelectItem key={atendente}>{atendente}</SelectItem>
                 ))}
               </Select>
             </div>

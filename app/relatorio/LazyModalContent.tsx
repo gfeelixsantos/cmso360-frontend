@@ -292,18 +292,19 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       <ModalHeader className="flex gap-2">
         <div className="flex items-center justify-between w-full">
           <div>
-            <h2 className="text-xl font-bold">
-              {atendimento.NOME.toUpperCase()}
-            </h2>
-            <div className="flex gap-4 text-sm text-gray-600 mt-1">
-              <span>{atendimento.TIPOEXAMENOME}</span>
-              <span>{atendimento.DATAAGENDAMENTO}</span>
+            <div className="flex items-baseline gap-4 text-sm text-gray-600 mt-1">
+              <h2 className="text-xl font-bold">
+                {atendimento.NOME.toUpperCase()}
+              </h2>
+                <span>{atendimento.TIPOEXAMENOME}</span>
+                <span>{atendimento.DATAAGENDAMENTO}</span>
+              </div>
+            <div>
+              <span className="flex gap-6 text-sm text-gray-600 mt-1">
+                {atendimento.NOMEEMPRESA}
+              </span>
             </div>
-            <span className="flex gap-6 text-sm text-gray-600 mt-1">
-              {atendimento.NOMEEMPRESA}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1">
             <Button
               color="default"
               disabled={loadingViewMedicalRecord}
@@ -346,6 +347,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
             >
               Excluir
             </Button>
+          </div>
           </div>
         </div>
       </ModalHeader>
