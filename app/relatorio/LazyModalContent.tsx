@@ -27,6 +27,7 @@ import {
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
+  NEST_SOC_PEDIDOEXAME,
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
@@ -177,26 +178,17 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const handleSyncWithSOC = async (manterExamesRealizados: boolean) => {
     try {
       setLoadingSyncSoc(true);
-      const response = await fetch(NEST_SCHEDULINGS_SYNC_SOC, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          schedulingId: atendimento._id,
-          codigoFicha: atendimento.SEQUENCIAFICHA,
-          empresa: atendimento.CODIGOEMPRESA,
-          codigoFuncionario: atendimento.CODIGO,
-          data: atendimento.DATAAGENDAMENTO,
-          manterExamesRealizados: manterExamesRealizados,
-        }),
-      });
+
+      const response = await fetch(
+        `${NEST_SOC_PEDIDOEXAME}codempresa=${atendimento.CODIGOEMPRESA}&codfuncionario=${atendimento.CODIGO}&data=${atendimento.DATAAGENDAMENTO}&manterExamesRealizados=${manterExamesRealizados}`,
+      );
 
       if (!response.ok) {
         throw new Error("Erro ao sincronizar com SOC");
       }
 
       const updatedScheduling = await response.json();
+      console.log("Scheduling atualizado após sync:", updatedScheduling);
 
       if (onUpdateScheduling) {
         onUpdateScheduling(updatedScheduling);

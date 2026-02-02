@@ -586,7 +586,7 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({
               <span className="font-medium block text-xs text-yellow-800 mb-1">
                 Anotações internas:
               </span>
-              <p className="text-xs">{atendimento.ANOTACOES}</p>
+              <p className="text-xs whitespace-pre-line">{atendimento.ANOTACOES}</p>
             </div>
           )}
 
@@ -595,7 +595,7 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({
               <span className="font-medium block text-xs text-yellow-800 mb-1">
                 Observações cliente:
               </span>
-              <p className="text-xs">{atendimento.OBSERVACOES}</p>
+              <p className="text-xs whitespace-pre-line">{atendimento.OBSERVACOES}</p>
             </div>
           )}
         </div>

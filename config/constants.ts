@@ -30,7 +30,6 @@ export const NEST_SCHEDULINGS_EXAM_REISSUE = `${NEST_URL}schedulings/exame/reiss
 export const NEST_SCHEDULINGS_FINISH = `${NEST_URL}schedulings/finish`;
 export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario/`; // adiciona id na query
 export const NEST_SCHEDULINGS_STATISTICS = `${NEST_URL}schedulings/statistics`;
-export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}schedulings/sync-soc`;
 export const NEST_SCHEDULINGS_TODAY = `${NEST_URL}schedulings/today`;
 export const NEST_SCHEDULINGS_UPDATE = `${NEST_URL}schedulings/update`;
 export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
@@ -50,6 +49,7 @@ export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
 export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
 export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
+export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}soc/sync-soc`;
 
 export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;
 

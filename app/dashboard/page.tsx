@@ -120,7 +120,7 @@ const MessageModal: React.FC<{
               variant="ghost"
               onPress={onClose}
             >
-              Entendi
+              Fechar
             </Button>
           </div>
         </div>
@@ -369,11 +369,11 @@ export default function DashboardPage() {
 
           // Mostrar modal apenas se ainda não foi vista
           if (!hasSeenMessage()) {
-            // setShowModal(true);
+            setShowModal(true);
           }
         } else {
           // Buscar nova mensagem
-          // await fetchAndSetMessage();
+          await fetchAndSetMessage();
         }
       } catch (err) {
         console.error("Erro ao carregar atendimentos:", err);
