@@ -47,6 +47,7 @@ export const NEST_SOC_AUDIOMETRIA_ANTERIOR = `${NEST_URL}soc/audiometria-anterio
 export const NEST_SOC_COMPANIES = `${NEST_URL}soc/empresas`;
 export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
 export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
+export const NEST_SOC_PEDIDOEXAME_VALIDADE = `${NEST_URL}soc/pedidoexame/validate?`;
 export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
 export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}soc/sync-soc`;

@@ -61,6 +61,7 @@ import {
   NEST_TICKETS_URL,
   PREFERENCIAL_OPTIONS,
   TIPOS_EXAME,
+  NEST_SOC_PEDIDOEXAME_VALIDADE,
 } from "@/config/constants";
 import {
   AsoStatus,
@@ -294,9 +295,26 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
         return;
       } else {
-        const response = await fetch(
-          `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`,
+        let updateSerivce: boolean = false;
+        const responseValidate = await fetch(
+          `${NEST_SOC_PEDIDOEXAME_VALIDADE}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`,
         );
+
+        const validate: Scheduling | null = await responseValidate.json();
+        console.log("responseValidate", validate);  
+
+        if(validate){
+          // const confirmResponse = confirm("Encontramos um atendimento válido para este funcionário. Deseja reutilizá-lo?");
+
+          // updateSerivce = confirmResponse;
+        }
+
+        const urlDinamica = updateSerivce ?
+          `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&data=${validate?.DATAAGENDAMENTO}&manterExamesRealizados=${updateSerivce}`
+        :  `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`
+
+
+        const response = await fetch(urlDinamica);
         const prontuario: Scheduling = await response.json();
 
         if (response.ok && prontuario?.CODIGOPRONTUARIO) {
