@@ -354,6 +354,7 @@ const AtendimentoPage: React.FC = () => {
 
     const meusAtendimentos = emAtendimento.filter(
       (atend) =>
+        atend.TICKET?.emissao != null &&
         Array.isArray(atend.EXAMES) &&
         atend.EXAMES.some(
           (exame) =>
