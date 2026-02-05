@@ -1,3 +1,4 @@
+// ticket.ts - VERSÃO CORRIGIDA PARA PREENCHER TELA
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -40,13 +41,6 @@ interface AuthData {
   unidade: string;
   timestamp: number;
 }
-
-const PREFERENCIAL_OPTIONS = [
-  "Idoso (60+)",
-  "PCD / Autismo",
-  "Gestante / Lactante",
-  "Criança de Colo",
-];
 
 // Hook para fullscreen
 const useFullscreen = () => {
@@ -207,22 +201,22 @@ const Header = ({ unidade }: { unidade?: string }) => {
 
   return (
     <header
-      className="w-full text-white p-2 md:p-4 lg:p-6 rounded-t-2xl shadow-lg"
+      className="w-full text-white p-3 md:p-4 rounded-t-2xl shadow-lg"
       style={{
         background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.dark} 100%)`,
       }}
     >
-      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-2 md:gap-3">
         <div className="flex items-center">
           <div className="text-center md:text-left">
             {unidade && (
               <div className="flex items-center justify-start">
                 <MapPinIcon
-                  className="h-4 w-4 md:h-5 md:w-5 mr-2"
+                  className="h-5 w-5 md:h-6 md:w-6 mr-2"
                   style={{ color: COLOR_PALETTE.secondary }}
                 />
                 <span
-                  className="font-semibold text-sm md:text-base lg:text-lg"
+                  className="font-bold text-base md:text-lg lg:text-xl"
                   style={{ color: COLOR_PALETTE.light }}
                 >
                   CMSO {unidade}
@@ -239,23 +233,21 @@ const Header = ({ unidade }: { unidade?: string }) => {
         </div>
 
         <div className="text-center md:text-right flex-1">
-          <div className="flex flex-col xs:flex-row items-end justify-end md:justify-end gap-1 md:gap-3 lg:gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-center md:justify-end gap-1 md:gap-3">
             <div className="flex items-center">
               <CalendarIcon
-                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2"
+                className="h-4 w-4 md:h-5 md:w-5 mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span className="text-xs md:text-sm lg:text-base">
-                {formatDate(currentTime)}
-              </span>
+              <span className="text-sm md:text-base">{formatDate(currentTime)}</span>
             </div>
 
             <div className="flex items-center">
               <ClockIcon
-                className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2"
+                className="h-4 w-4 md:h-5 md:w-5 mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span className="font-mono text-sm md:text-lg lg:text-xl">
+              <span className="font-mono text-lg md:text-xl lg:text-2xl font-bold">
                 {formatTime(currentTime)}
               </span>
             </div>
@@ -326,7 +318,7 @@ const InitialScreen = ({
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className="w-full max-w-xs sm:max-w-sm md:max-w-lg rounded-2xl shadow-xl overflow-hidden border mx-2"
+      className="w-full max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl rounded-2xl shadow-xl overflow-hidden border"
       initial={{ opacity: 0, y: 20 }}
       style={{
         backgroundColor: COLOR_PALETTE.background,
@@ -335,30 +327,30 @@ const InitialScreen = ({
       transition={{ duration: 0.5 }}
     >
       <div
-        className="p-4 md:p-6 text-center"
+        className="p-5 md:p-6 text-center"
         style={{
           background: `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`,
         }}
       >
-        <h2 className="text-lg md:text-xl lg:text-2xl font-bold text-white">
+        <h2 className="text-xl md:text-2xl font-bold text-white">
           Acesso ao Totem
         </h2>
         <p
-          className="mt-1 text-sm md:text-base"
+          className="mt-2 text-base md:text-lg"
           style={{ color: COLOR_PALETTE.light }}
         >
           Informe as credenciais para continuar
         </p>
       </div>
 
-      <div className="p-4 md:p-6 lg:p-8 space-y-4 md:space-y-6">
+      <div className="p-6 md:p-8 space-y-4 md:space-y-5">
         <div className="relative">
           <KeyIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
             style={{ color: COLOR_PALETTE.primary }}
           />
           <input
-            className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 rounded-xl border text-base md:text-lg placeholder-gray-500 focus:ring-2 focus:border-transparent transition-all"
+            className="w-full pl-12 pr-4 py-4 md:py-5 rounded-xl border text-lg placeholder-gray-500 focus:ring-2 focus:border-transparent transition-all"
             placeholder="Informe o código serial"
             style={{
               backgroundColor: "white",
@@ -374,11 +366,11 @@ const InitialScreen = ({
 
         <div className="relative">
           <MapPinIcon
-            className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 md:w-6 md:h-6"
             style={{ color: COLOR_PALETTE.primary }}
           />
           <select
-            className="w-full pl-10 md:pl-12 pr-4 py-3 md:py-4 rounded-xl border text-base md:text-lg appearance-none focus:ring-2 focus:border-transparent transition-all"
+            className="w-full pl-12 pr-4 py-4 md:py-5 rounded-xl border text-lg appearance-none focus:ring-2 focus:border-transparent transition-all"
             style={{
               backgroundColor: "white",
               borderColor: COLOR_PALETTE.gray,
@@ -402,7 +394,7 @@ const InitialScreen = ({
         {error && (
           <motion.p
             animate={{ opacity: 1 }}
-            className="text-center font-medium p-3 rounded-lg text-sm md:text-base"
+            className="text-center font-medium p-3 rounded-lg text-base"
             initial={{ opacity: 0 }}
             style={{
               backgroundColor: "#fed7d7",
@@ -414,9 +406,9 @@ const InitialScreen = ({
         )}
       </div>
 
-      <div className="px-4 md:px-6 lg:px-8 pb-4 md:pb-6 lg:pb-8">
+      <div className="px-6 md:px-8 pb-6 md:pb-8">
         <Button
-          className="w-full py-3 md:py-4 text-base md:text-lg font-bold text-white rounded-xl transition-all duration-300 flex items-center justify-center shadow-lg"
+          className="w-full py-4 md:py-5 text-lg font-bold text-white rounded-xl transition-all duration-300 flex items-center justify-center shadow-lg hover:shadow-xl"
           disabled={isLoading}
           style={{
             background: isLoading
@@ -427,7 +419,7 @@ const InitialScreen = ({
         >
           {isLoading ? (
             <>
-              <ArrowPathIcon className="w-5 h-5 md:w-6 md:h-6 animate-spin mr-2" />
+              <ArrowPathIcon className="w-5 h-5 md:w-6 md:h-6 animate-spin mr-3" />
               Conectando...
             </>
           ) : (
@@ -473,21 +465,21 @@ const FullScreenFeedback = ({
       }}
     >
       <div
-        className="relative w-full max-w-sm sm:max-w-md md:max-w-2xl lg:max-w-4xl p-4 md:p-6 lg:p-8 rounded-3xl shadow-2xl text-center text-white"
+        className="relative w-full max-w-lg sm:max-w-xl md:max-w-2xl lg:max-w-3xl p-6 md:p-8 rounded-3xl shadow-2xl text-center text-white"
         style={{
           background: type === "success" ? successGradient : errorGradient,
         }}
       >
         <button
-          className="absolute top-2 right-2 md:top-4 md:right-4 p-1 md:p-2 rounded-full hover:bg-white/20 transition-colors"
+          className="absolute top-4 right-4 p-2 rounded-full hover:bg-white/20 transition-colors"
           onClick={onClose}
         >
-          <XMarkIcon className="h-5 w-5 md:h-6 md:w-6 lg:h-8 lg:w-8" />
+          <XMarkIcon className="h-6 w-6 md:h-8 md:w-8" />
         </button>
 
         <motion.h2
           animate={{ y: 0, opacity: 1 }}
-          className="text-xl md:text-2xl lg:text-4xl font-bold mb-3 md:mb-4 lg:mb-6"
+          className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 md:mb-6"
           initial={{ y: 20, opacity: 0 }}
           transition={{ delay: 0.4 }}
         >
@@ -499,14 +491,12 @@ const FullScreenFeedback = ({
         {ticketNumber && (
           <motion.div
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white/20 p-3 md:p-4 lg:p-6 rounded-2xl mb-3 md:mb-4 lg:mb-6"
+            className="bg-white/20 p-4 md:p-6 rounded-2xl mb-4 md:mb-6"
             initial={{ scale: 0.8, opacity: 0 }}
             transition={{ delay: 0.6, type: "spring", stiffness: 100 }}
           >
-            <p className="text-base md:text-lg lg:text-2xl mb-1 md:mb-2">
-              Sua senha é:
-            </p>
-            <p className="text-2xl md:text-4xl lg:text-7xl font-bold tracking-wider">
+            <p className="text-lg md:text-xl mb-2">Sua senha é:</p>
+            <p className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-wider">
               {ticketNumber}
             </p>
           </motion.div>
@@ -514,7 +504,7 @@ const FullScreenFeedback = ({
 
         <motion.p
           animate={{ y: 0, opacity: 1 }}
-          className="text-base md:text-lg lg:text-xl mb-4 md:mb-6 lg:mb-8"
+          className="text-lg md:text-xl mb-6 md:mb-8"
           initial={{ y: 20, opacity: 0 }}
           transition={{ delay: 0.8 }}
         >
@@ -527,7 +517,7 @@ const FullScreenFeedback = ({
           transition={{ delay: 1 }}
         >
           <Button
-            className="px-4 py-2 md:px-6 md:py-3 lg:px-8 lg:py-4 text-base md:text-lg font-bold rounded-xl bg-white/20 hover:bg-white/30 border border-white/30"
+            className="px-6 py-3 md:px-8 md:py-4 text-lg font-bold rounded-xl bg-white/20 hover:bg-white/30 border border-white/30"
             onClick={onClose}
           >
             Fechar
@@ -537,7 +527,7 @@ const FullScreenFeedback = ({
         {/* Contador regressivo */}
         <motion.div
           animate={{ width: "100%" }}
-          className="absolute bottom-0 left-0 h-1 bg-white/30 rounded-b-3xl"
+          className="absolute bottom-0 left-0 h-2 bg-white/30 rounded-b-3xl"
           initial={{ width: 0 }}
           transition={{ duration: 3, ease: "linear" }}
         />
@@ -555,7 +545,7 @@ const FullscreenToggle = ({
   onToggle: () => void;
 }) => (
   <Button
-    className="fixed top-4 right-4 z-40 p-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 backdrop-blur-sm"
+    className="fixed top-4 right-4 z-40 p-2 rounded-full bg-white/20 hover:bg-white/30 border border-white/30 backdrop-blur-sm shadow-lg"
     size="sm"
     onClick={onToggle}
   >
@@ -563,7 +553,7 @@ const FullscreenToggle = ({
   </Button>
 );
 
-// Componente para a tela principal de opções de ticket
+// Componente para a tela principal de opções de ticket - OTIMIZADO PARA PREENCHER TELA
 const TicketOptionsScreen = ({
   unidadeSelecionada,
 }: {
@@ -584,7 +574,6 @@ const TicketOptionsScreen = ({
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!isFullscreen) {
-        // Apenas mostra o botão, não força o fullscreen
         console.log(
           "Modo tela cheia disponível - clique no botão no canto superior direito",
         );
@@ -603,7 +592,7 @@ const TicketOptionsScreen = ({
   };
 
   // Memoização da função de emissão de ticket para performance
-    const emitirTicket = async (tipo: TicketTypes, tipoPreferencial?: string) => {
+  const emitirTicket = async (tipo: TicketTypes, tipoPreferencial?: string) => {
     if (isLoading) return;
 
     setIsLoading(true);
@@ -614,7 +603,7 @@ const TicketOptionsScreen = ({
       numero: 0,
       prefixo: ticketPrefix,
       preferencial: [TicketTypes.PREFERENCIAL].includes(tipo),
-      preferencialTipo: tipoPreferencial || undefined, // Adiciona o tipo preferencial
+      preferencialTipo: tipoPreferencial || undefined,
       status: TicketStatus.AGUARDANDO,
       type: WebsocketType.TICKET,
       unidade: unidadeSelecionada,
@@ -650,7 +639,6 @@ const TicketOptionsScreen = ({
         ticketNumber: formattedTicket,
       });
       
-      // Resetar estado após sucesso
       setSelectedPreferencialType(null);
     } catch (error) {
       console.error("Erro na emissão do ticket:", error);
@@ -688,7 +676,7 @@ const TicketOptionsScreen = ({
   };
 
   const getIcon = (tipo: TicketTypes) => {
-    const iconClass = "w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12";
+    const iconClass = "w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14";
 
     switch (tipo) {
       case TicketTypes.ATENDIMENTO:
@@ -722,7 +710,7 @@ const TicketOptionsScreen = ({
     { type: TicketTypes.PREFERENCIAL, label: "PREFERENCIAL" },
     {
       type: TicketTypes.RETIRADA_EXAMES,
-      label: "REPETIÇÃO/RETIRADA DE EXAMES",
+      label: "REPETIÇÃO/RETIRADA EXAME",
     },
   ];
 
@@ -733,7 +721,6 @@ const TicketOptionsScreen = ({
 
   const buttonsToRender = subOptions ? subButtons : mainButtons;
 
-    // Renderizar condicionalmente
   if (showPreferencialTypes) {
     return (
       <div className="w-full flex justify-center">
@@ -746,7 +733,7 @@ const TicketOptionsScreen = ({
   }
 
   return (
-    <div className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl lg:max-w-6xl mx-2 relative">
+    <div className="w-full max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto px-2 sm:px-4 relative">
       {/* Botão de toggle para fullscreen */}
       <FullscreenToggle
         isFullscreen={isFullscreen}
@@ -756,7 +743,7 @@ const TicketOptionsScreen = ({
       <Header unidade={unidadeSelecionada} />
 
       <div
-        className="p-3 md:p-6 lg:p-8 rounded-b-2xl shadow-lg border"
+        className="p-4 md:p-6 lg:p-8 rounded-b-2xl shadow-lg border"
         style={{
           backgroundColor: COLOR_PALETTE.background,
           borderColor: COLOR_PALETTE.primary,
@@ -764,25 +751,25 @@ const TicketOptionsScreen = ({
       >
         <motion.div
           animate={{ opacity: 1 }}
-          className="text-center mb-4 md:mb-6 lg:mb-10"
+          className="text-center mb-6 md:mb-8 lg:mb-10"
           initial={{ opacity: 0 }}
           transition={{ delay: 0.2 }}
         >
           <h2
-            className="text-xl md:text-2xl lg:text-3xl font-bold mb-2"
+            className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3"
             style={{ color: COLOR_PALETTE.text }}
           >
             Selecione o tipo de atendimento
           </h2>
           <p
-            className="text-xs md:text-sm lg:text-base"
+            className="text-base md:text-lg"
             style={{ color: COLOR_PALETTE.gray }}
           >
             Escolha abaixo uma opção de atendimento
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-4 md:mb-6 lg:mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mb-6 md:mb-8 lg:mb-10">
           <AnimatePresence mode="wait">
             {buttonsToRender?.map(({ type, label }) => (
               <motion.div
@@ -792,23 +779,24 @@ const TicketOptionsScreen = ({
                 exit={{ opacity: 0, scale: 0.9 }}
                 initial={{ opacity: 0, scale: 0.9 }}
                 transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
               >
                 <Button
-                  className="flex flex-col items-center justify-center p-3 md:p-4 lg:p-6 h-32 sm:h-36 md:h-40 lg:h-48 w-full text-sm md:text-base lg:text-lg font-bold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  className="flex flex-col items-center justify-center p-4 md:p-5 lg:p-6 h-40 md:h-48 lg:h-56 w-full text-lg md:text-xl lg:text-2xl font-bold text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
                   disabled={isLoading}
                   style={{ background: getButtonColor(type as TicketTypes) }}
                   onClick={() => handleTicketOption(type as TicketTypes)}
                 >
                   <motion.div
                     animate={{ scale: 1 }}
+                    className="mb-3 md:mb-4"
                     initial={{ scale: 0.8 }}
                     transition={{ type: "spring", stiffness: 300 }}
                   >
                     {getIcon(type as TicketTypes)}
                   </motion.div>
-                  <span className="mt-2 md:mt-3 lg:mt-4 text-center leading-tight text-xs md:text-sm lg:text-base">
+                  <span className="text-center leading-tight px-2">
                     {label}
                   </span>
                 </Button>
@@ -824,7 +812,7 @@ const TicketOptionsScreen = ({
             initial={{ opacity: 0 }}
           >
             <Button
-              className="px-4 py-2 md:px-6 md:py-3 rounded-xl border text-sm md:text-base"
+              className="px-6 py-3 md:px-8 md:py-4 rounded-xl border text-lg md:text-xl"
               style={{
                 backgroundColor: COLOR_PALETTE.primary,
                 color: "white",
@@ -848,27 +836,17 @@ const TicketOptionsScreen = ({
           )}
         </AnimatePresence>
       </div>
-
-      <AnimatePresence>
-        {showPreferencialTypes && (
-          <PreferencialTipo
-            onSelect={handlePreferencialTypeSelect}
-            onBack={handleBackFromPreferencial}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };
 
-// Página Principal (Home)
+// Página Principal (Home) - PREENCHE TELA COMPLETA
 export default function Home() {
   const [unidadeSelecionada, setUnidadeSelecionada] = useState<string | null>(
     null,
   );
   const { getAuthData } = useAuthStorage();
 
-  // Verificar se há credenciais salvas ao carregar a página
   useEffect(() => {
     const savedAuth = getAuthData();
 
@@ -883,7 +861,7 @@ export default function Home() {
 
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8"
+      className="min-h-screen w-full flex flex-col items-center justify-center p-2 sm:p-4 md:p-6"
       style={{
         background: `linear-gradient(135deg, ${COLOR_PALETTE.background} 0%, #e8f4e3 100%)`,
       }}
@@ -893,7 +871,7 @@ export default function Home() {
           <motion.div
             key="ticket-screen"
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full flex justify-center"
+            className="w-full flex-1 flex items-center justify-center"
             exit={{ opacity: 0, scale: 0.9 }}
             initial={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
@@ -904,7 +882,7 @@ export default function Home() {
           <motion.div
             key="initial-screen"
             animate={{ opacity: 1, scale: 1 }}
-            className="w-full flex justify-center"
+            className="w-full flex-1 flex items-center justify-center"
             exit={{ opacity: 0, scale: 0.9 }}
             initial={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
@@ -917,7 +895,7 @@ export default function Home() {
       {/* Footer */}
       <motion.footer
         animate={{ opacity: 1 }}
-        className="mt-4 md:mt-6 lg:mt-8 text-center text-xs md:text-sm"
+        className="mt-4 md:mt-6 text-center text-sm md:text-base py-2"
         initial={{ opacity: 0 }}
         style={{ color: COLOR_PALETTE.gray }}
         transition={{ delay: 0.5 }}

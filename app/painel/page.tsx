@@ -930,7 +930,15 @@ export default function PainelPage() {
       transports: ["websocket"],
       reconnection: true,
       reconnectionDelay: 1000,
-      reconnectionDelayMax: 20000,
+      reconnectionDelayMax: 5000,
+
+      timeout: 20000,
+      // Forçar nova conexão ao reconectar
+      forceNew: false, 
+      // Upgrade automático desabilitado (já usa websocket)
+      upgrade: false,
+      // Manter conexão ativa
+      rememberUpgrade: true,
     });
 
     socket.on("connect", () => {
@@ -948,7 +956,7 @@ export default function PainelPage() {
     });
 
     socket.on("chamar funcionario", (call: PainelCall) => {
-      console.log("📞 Chamada recebida via WebSocket:", call);
+      console.log(`📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala}`);
 
       const jaExiste =
         ativasRef.current.some((c) => c.id === call.id) ||
@@ -961,16 +969,16 @@ export default function PainelPage() {
       }
 
       if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
-        console.log("➕ Adicionando chamada às ativas");
+        // console.log("➕ Adicionando chamada às ativas");
         setAtivasSync((prev) => [...prev, call]);
       } else {
-        console.log("⏳ Adicionando chamada à espera");
+        // console.log("⏳ Adicionando chamada à espera");
         setEsperaSync((prev) => [...prev, call]);
       }
     });
 
     socket.on("atendimento finalizado", (call: PainelCall) => {
-      console.log("✅ Atendimento finalizado:", call);
+      console.log(`Atendimento finalizado:  ${call.name} - ${call.sala}`);
       let liberouVaga = false;
 
       setAtivasSync((prev) => {

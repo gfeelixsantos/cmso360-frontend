@@ -100,11 +100,11 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     transports: ["websocket"], // Apenas WebSocket, sem polling
     reconnection: true,
     reconnectionAttempts: Infinity, // Tenta reconectar indefinidamente
-    reconnectionDelay: 1000, // ✅ Reduzido de 2000 para 1000ms
-    reconnectionDelayMax: 5000, // ✅ Reduzido de 10000 para 5000ms
+    reconnectionDelay: 1000, // Reduzido de 2000 para 1000ms
+    reconnectionDelayMax: 5000, // Reduzido de 10000 para 5000ms
     timeout: 20000,
     // Forçar nova conexão ao reconectar
-    forceNew: false, // Permite reusar conexão
+    forceNew: false, 
     // Upgrade automático desabilitado (já usa websocket)
     upgrade: false,
     // Manter conexão ativa
