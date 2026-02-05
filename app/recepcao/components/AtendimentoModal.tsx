@@ -295,26 +295,29 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
         return;
       } else {
-        let updateSerivce: boolean = false;
+        let updateSerivce = true;
+
         const responseValidate = await fetch(
           `${NEST_SOC_PEDIDOEXAME_VALIDADE}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`,
         );
 
-        const validate: Scheduling | null = await responseValidate.json();
-        console.log("responseValidate", validate);  
+        const { data }: { data: Scheduling | null } = await responseValidate.json();
 
-        if(validate){
-          // const confirmResponse = confirm("Encontramos um atendimento válido para este funcionário. Deseja reutilizá-lo?");
-
-          // updateSerivce = confirmResponse;
+        if (data) {
+          const confirmResponse = confirm(
+            "Encontramos um atendimento válido para este funcionário. Deseja reutilizá-lo?"
+          );
+          updateSerivce = confirmResponse;
         }
 
-        const urlDinamica = updateSerivce ?
-          `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&data=${validate?.DATAAGENDAMENTO}&manterExamesRealizados=${updateSerivce}`
-        :  `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`
+        if(!updateSerivce) return
+        
+        const url = 
+        `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&manterExamesRealizados=${updateSerivce}`
 
 
-        const response = await fetch(urlDinamica);
+        console.log("URL DINAMICA", url);
+        const response = await fetch(url);
         const prontuario: Scheduling = await response.json();
 
         if (response.ok && prontuario?.CODIGOPRONTUARIO) {

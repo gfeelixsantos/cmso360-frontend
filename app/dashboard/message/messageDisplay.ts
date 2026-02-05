@@ -14,6 +14,7 @@ const getCurrentMessage = async (): Promise<Message | null> => {
       title: "CMSO 360 - Atualizações Janeiro 2026",
       content: `ATUALIZAÇÕES IMPLEMENTADAS:
 
+• Aproveitamento de exames do mesmo ASO dentro de 30 dias.
 • Atendimento credenciadas não será possível realizar upload de exames
 • Correção DUM em ficha clínica
 • Dinamometria Escapular com lado direito e esquerdo
