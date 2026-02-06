@@ -516,13 +516,13 @@ const AtendimentoPage: React.FC = () => {
       },
     });
 
-    // ✅ CORREÇÃO: Handlers de eventos otimizados
+    // Handlers de eventos otimizados
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
         console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
 
         setAgendamentosGeral((prev) => {
-          // ✅ Usa Map para merge eficiente
+          // Usa Map para merge eficiente
           const map = new Map(prev.map((s) => [s._id, s]));
 
           schedules.forEach((schedule) => map.set(schedule._id, schedule));
@@ -576,6 +576,7 @@ const AtendimentoPage: React.FC = () => {
           break;
 
         case MongoOperationTypes.DELETE:
+          console.log("delete recebido", schedule.NOME)
           setAgendamentosGeral((prev) =>
             prev.filter(
               (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,

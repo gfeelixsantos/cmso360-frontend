@@ -157,6 +157,12 @@ const ExamesTable: React.FC<{
 
   // Handle para reemitir exame
   const handleReemitirExame = async (exame: ExamRegister) => {
+
+    if(!exame.formulario || !exame.profissional || !exame.codigoProfissional){
+      alert('Dados incompletos para reemissão de exame')
+      return
+    }
+    
     setReemitindoExams(true);
 
     try {
@@ -480,7 +486,9 @@ const ExamesTable: React.FC<{
                             <MoreVertical size={14} />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Ações do exame">
+                        <DropdownMenu 
+                          aria-label="Ações do exame"
+                        >
                           <DropdownItem
                             key="reemitir"
                             color="default"

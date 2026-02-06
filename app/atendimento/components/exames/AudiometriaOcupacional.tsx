@@ -25,6 +25,7 @@ import {
   NEST_URL,
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
+import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -1045,10 +1046,10 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     try {
       // ATUALIZAÇÃO 3: Requisição para o backend buscar audiometria anterior
       const empresa = atendimento?.CODIGOEMPRESA;
-      const cpf = atendimento?.CPFFUNCIONARIO;
+      const codigoFuncionario = atendimento?.CODIGO;
 
       // Verificar se temos os dados necessários
-      if (!empresa || !cpf) {
+      if (!empresa || !codigoFuncionario) {
         alert(
           "Dados insuficientes para buscar audiometria anterior. Verifique se o paciente e empresa estão cadastrados.",
         );
@@ -1060,7 +1061,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
 
       url.searchParams.append("empresa", empresa);
-      url.searchParams.append("cpf", cpf);
+      url.searchParams.append("codigoFuncionario", codigoFuncionario);
 
       const response = await fetch(url.toString(), {
         method: "GET",
@@ -1070,22 +1071,22 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       });
 
       if (response.ok) {
-        const data = await response.json();
-
+        const data: AudiometriaExportaDados[] = await response.json();
+        console.log(data)
         // Verificar se a resposta contém uma URL válida
-        if (data && data.url && typeof data.url === "string") {
-          // Abrir a URL do PDF em uma nova aba
-          window.open(
-            `${NEST_URL}${data.url}`,
-            "_blank",
-            "noopener,noreferrer",
-          );
-        } else {
-          console.warn("Resposta da API não contém URL válida:", data);
-          alert(
-            "Audiometria anterior encontrada, mas não foi possível abrir o PDF.",
-          );
-        }
+        // if (data && data.url && typeof data.url === "string") {
+        //   // Abrir a URL do PDF em uma nova aba
+        //   window.open(
+        //     `${NEST_URL}${data.url}`,
+        //     "_blank",
+        //     "noopener,noreferrer",
+        //   );
+        // } else {
+        //   console.warn("Resposta da API não contém URL válida:", data);
+        //   alert(
+        //     "Audiometria anterior encontrada, mas não foi possível abrir o PDF.",
+        //   );
+        // }
       } else if (response.status === 400) {
         alert("Não foi encontrada audiometria anterior para este paciente.");
       } else {
@@ -1598,7 +1599,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                 : "🔴 Preencha todos os campos da tabela antes de calcular"}
             </p>
             <p className="mb-1">
-              Utilize "--" ou "---" para indicar ausência de resposta em uma frequência.
+              Utilize "--" ou "---" para indicar ausência de resposta.
             </p>
           </div>
           <div className="flex gap-2">
