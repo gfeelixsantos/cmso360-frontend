@@ -24,6 +24,7 @@ import {
   Pen,
   Trash,
   Printer,
+  Check,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -32,7 +33,7 @@ import ExamUploadModal from "./ExamUploadModal";
 import DeleteAttachmentModal from "./DeleteAttachmentModal";
 import { SelectedFile } from "./SelectedFilesList";
 
-import { adjustForBrazilTime } from "@/lib/utils";
+import { adjustForBrazilTime, getCurrentUser } from "@/lib/utils";
 import {
   ExamRegister,
   Scheduling,
@@ -41,6 +42,7 @@ import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {
   NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_EXAM_REISSUE,
+  NEST_SCHEDULINGS_EXAM_UPDATE,
 } from "@/config/constants";
 import { IUserInfo } from "@/hooks/useUser";
 
@@ -86,6 +88,7 @@ const ExamesTable: React.FC<{
 
   const [reemitindoExams, setReemitindoExams] = useState<boolean>(false);
   const [isCredenciada, setIsCredenciada] = useState<boolean>(false);
+  const currentUser = getCurrentUser();
 
   useEffect(() => {
     const isCredenciada =
@@ -198,6 +201,45 @@ const ExamesTable: React.FC<{
       setReemitindoExams(false);
     }
   };
+
+  const handleFinalizarExame = async (exame: ExamRegister) => {
+    
+    if(exame.grupo != "Ultrassom"){
+      return alert("Exame não identificado como Ultrassom para finalização.")
+    }
+    else {
+        const confirmResponse = confirm('Finalizar Ultrassom como NORMAL ?')
+        try {
+          const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              funcionarioId: atendimento._id,
+              codigoExame: [exame.codigoExame],
+              formulario: {
+                normal: confirmResponse ? "Sim" : "Não",
+                observacoes: ""
+              },
+              sala: "Emitido via relatório",
+              profissional: currentUser ?? "Desconhecido",
+              isEditing: true,
+              dataExame: new Date()
+            }),
+          });
+
+          const result: Scheduling = await response.json();
+
+          if(result){
+            alert('Exame atualizado, atualize a página para ver o resultado.')
+          }
+      } catch(err){
+        alert(`Erro ao finalizar exame ${err}`)
+      }
+    }
+}
 
   // Handler para quando o modal de edição é fechado
   const handleEditModalClose = () => {
@@ -500,6 +542,21 @@ const ExamesTable: React.FC<{
                           >
                             {reemitindoExams ? "Reemitindo..." : "Reemitir"}
                           </DropdownItem>
+                          {
+                            exame.grupo.includes("Ultrassom") ? (
+                              <DropdownItem
+                                key="finalizar"
+                                color="default"
+                                startContent={
+                                  !reemitindoExams && <Check size={14} />
+                                }
+                                variant="light"
+                                onPress={() => handleFinalizarExame(exame)}
+                              >
+                                {reemitindoExams ? "Finalizando.." : "Finalizar"}
+                              </DropdownItem>
+                            ) : null
+                          }
                           {userApp?.codigo == exame.codigoProfissional ? (
                             <DropdownItem
                               key="edit"

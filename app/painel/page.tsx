@@ -928,13 +928,14 @@ export default function PainelPage() {
         unidade: unidadeSelecionada,
       },
       transports: ["websocket"],
+      reconnectionAttempts: Infinity,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
 
       timeout: 20000,
       // Forçar nova conexão ao reconectar
-      forceNew: false, 
+      forceNew: true, 
       // Upgrade automático desabilitado (já usa websocket)
       upgrade: false,
       // Manter conexão ativa
@@ -950,6 +951,12 @@ export default function PainelPage() {
     socket.on("disconnect", (reason) => {
       console.log("❌ Desconectado do WebSocket:", reason);
     });
+
+    socket.on("reconnect", () => {
+      console.log("🔁 Reconectado, reentrando na sala");
+      socket?.emit("painel disponível", socket.id);
+    });
+
 
     socket.on("connect_error", (error) => {
       console.error("❌ Erro de conexão WebSocket:", error);
