@@ -26,6 +26,7 @@ import {
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
+import { openHistoricoHTML } from "./OpenHistoricoHTML";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -266,7 +267,7 @@ const OPCOES_SIM_NAO = ["Sim", "Não"] as const;
 // ATUALIZAÇÃO 1: Inicializar toda tabela de audiometria em branco
 const VALOR_INICIAL: AudiometriaData = {
   tipoAudiometro: "AVS 500",
-  dataCalibracao: "09/01/2025",
+  dataCalibracao: "06/11/2025",
   repousoAuditivo: "Sim",
   horasRepouso: 14,
   queixaAuditiva: "Não",
@@ -608,7 +609,7 @@ const SectionTitle: React.FC<{
 // - Textos padronizados para laudo ocupacional (NR-7).
 // - Quando "Audição dentro dos padrões de normalidade", o tipo/grau aparecem como '-'.
 // - Configuração da curva refinada: compara médias de baixas vs altas frequências.
-class AudiometriaCalculator {
+export class AudiometriaCalculator {
   static parseValor(v: string | null | undefined): number | null {
     if (
       v === null ||
@@ -1042,63 +1043,46 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     [],
   );
 
-  const verAudiometriaAnterior = useCallback(async () => {
-    try {
-      // ATUALIZAÇÃO 3: Requisição para o backend buscar audiometria anterior
-      const empresa = atendimento?.CODIGOEMPRESA;
-      const codigoFuncionario = atendimento?.CODIGO;
+// No seu componente principal
+const verAudiometriaAnterior = useCallback(async () => {
+  try {
+    const empresa = atendimento?.CODIGOEMPRESA;
+    const codigoFuncionario = atendimento?.CODIGO;
 
-      // Verificar se temos os dados necessários
-      if (!empresa || !codigoFuncionario) {
-        alert(
-          "Dados insuficientes para buscar audiometria anterior. Verifique se o paciente e empresa estão cadastrados.",
-        );
-
-        return;
-      }
-
-      // Construir URL com query parameters
-      const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
-
-      url.searchParams.append("empresa", empresa);
-      url.searchParams.append("codigoFuncionario", codigoFuncionario);
-
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data: AudiometriaExportaDados[] = await response.json();
-        console.log(data)
-        // Verificar se a resposta contém uma URL válida
-        // if (data && data.url && typeof data.url === "string") {
-        //   // Abrir a URL do PDF em uma nova aba
-        //   window.open(
-        //     `${NEST_URL}${data.url}`,
-        //     "_blank",
-        //     "noopener,noreferrer",
-        //   );
-        // } else {
-        //   console.warn("Resposta da API não contém URL válida:", data);
-        //   alert(
-        //     "Audiometria anterior encontrada, mas não foi possível abrir o PDF.",
-        //   );
-        // }
-      } else if (response.status === 400) {
-        alert("Não foi encontrada audiometria anterior para este paciente.");
-      } else {
-        const errorText = await response.text();
-
-        console.error("Erro na resposta:", response.status, errorText);
-        alert(`Erro ao buscar audiometria anterior: ${response.status}`);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar audiometria anterior:", error);
+    if (!empresa || !codigoFuncionario) {
+      alert("Dados insuficientes para buscar audiometria anterior.");
+      return;
     }
-  }, [atendimento]);
+
+    const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
+    url.searchParams.append("empresa", empresa);
+    url.searchParams.append("codigoFuncionario", codigoFuncionario);
+
+    const response = await fetch(url.toString(), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (response.ok) {
+      const data: AudiometriaExportaDados[] = await response.json();
+      console.log(data)
+      if (data && data.length > 0) {
+        // Abrir janela com histórico de audiometrias
+        openHistoricoHTML(data, atendimento);
+      } else {
+        alert("Nenhuma audiometria anterior encontrada para este paciente.");
+      }
+    } else if (response.status === 400) {
+      alert("Não foi encontrada audiometria anterior para este paciente.");
+    } else {
+      console.error("Erro na resposta:", response.status);
+      alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("Erro ao buscar audiometria anterior:", error);
+    alert("Erro ao buscar audiometria anterior. Tente novamente.");
+  }
+}, [atendimento]);
 
   // Função para calcular resultados com validação
   const calcularResultados = useCallback(async () => {
@@ -1607,7 +1591,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             {formData.audiometriaAnterior === "Sim" && (
               <Button
                 className="bg-blue-600 text-white"
-                isDisabled={carregandoAudiometriaAnterior}
+                isDisabled={carregandoAudiometriaAnterior || true}
                 startContent={
                   carregandoAudiometriaAnterior ? (
                     <Spinner size="sm" />

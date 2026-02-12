@@ -17,6 +17,12 @@ import {
   EyeOff,
   Layers,
   Users as UsersIcon,
+  Clock,
+  Stethoscope,
+  FlaskConical,
+  BadgeCheck,
+  Building2,
+  BarChart3,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
@@ -27,86 +33,145 @@ import {
   useStatistics,
 } from "@/hooks/useStatictics";
 
-// Componente de badge de status por unidade
-const UnitExamStatusBadge = ({
-  status,
-  count,
-}: {
-  status: string;
-  count: number;
-}) => {
-  const getStatusConfig = (status: string) => {
-    const normalized = status.toUpperCase();
-
-    switch (normalized) {
-      case "PENDENTE":
-      case "PENDENTE_LABORATORIO":
-        return {
-          color: "text-yellow-700",
-          bg: "bg-yellow-50",
-          border: "border-yellow-200",
-        };
-      case "AGUARDANDO_RESULTADO":
-      case "EM_ANALISE":
-        return {
-          color: "text-blue-700",
-          bg: "bg-blue-50",
-          border: "border-blue-200",
-        };
-      case "FINALIZADO":
-      case "CONCLUIDO":
-        return {
-          color: "text-green-700",
-          bg: "bg-green-50",
-          border: "border-green-200",
-        };
-      default:
-        return {
-          color: "text-gray-700",
-          bg: "bg-gray-50",
-          border: "border-gray-200",
-        };
-    }
-  };
-
-  const config = getStatusConfig(status);
-
-  return (
-    <div
-      className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${config.bg} ${config.border}`}
-    >
-      <span className={`font-bold ${config.color}`}>{count}</span>
-    </div>
-  );
+// 🎨 Constantes de design
+const COLORS = {
+  primary: "#44735E",
+  primaryLight: "#5a8a74",
+  primaryDark: "#2a4d3d",
+  success: "#10b981",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+  info: "#3b82f6",
+  purple: "#8b5cf6",
 };
 
-// Barra de progresso horizontal
-const HorizontalProgressBar = ({
+// 🏷️ Mapeamento de status para exibição amigável
+const STATUS_LABELS: Record<string, string> = {
+  AGUARDANDO_RESULTADOS: "Aguardando Resultados",
+  AGUARDANDO_AVALIACAO_MEDICA: "Avaliação Médica",
+  AGUARDANDO_RESULTADO: "Aguardando Resultado",
+  PENDENTE: "Pendente",
+  PENDENTE_LABORATORIO: "Pendente Lab",
+  FINALIZADO: "Finalizado",
+  CONCLUIDO: "Concluído",
+  AGENDADO: "Agendado",
+  EM_ANALISE: "Em Análise",
+};
+
+// 🎯 Card de KPI principal
+const KpiCard = ({ 
+  title, 
+  value, 
+  subtitle, 
+  icon: Icon, 
+  gradient = false,
+  delay = 0,
+}: { 
+  title: string; 
+  value: number | string; 
+  subtitle?: string; 
+  icon: any; 
+  gradient?: boolean;
+  delay?: number;
+}) => (
+  <motion.div
+    animate={{ opacity: 1, scale: 1 }}
+    className={`rounded-xl shadow-lg p-5 ${
+      gradient 
+        ? "bg-gradient-to-br from-[#44735E] to-[#2a4d3d] text-white" 
+        : "bg-white border border-gray-200"
+    }`}
+    initial={{ opacity: 0, scale: 0.95 }}
+    transition={{ delay }}
+  >
+    <div className="flex items-center justify-between">
+      <div className="flex-1">
+        <div className="flex items-center gap-2 mb-2">
+          <Icon className={`h-5 w-5 ${gradient ? "text-white/90" : "text-[#44735E]"}`} />
+          <p className={`text-sm font-medium ${gradient ? "text-white/90" : "text-gray-700"}`}>
+            {title}
+          </p>
+        </div>
+        <p className={`text-3xl font-bold ${gradient ? "text-white" : "text-gray-900"}`}>
+          {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
+        </p>
+        {subtitle && (
+          <p className={`text-xs mt-2 ${gradient ? "text-white/70" : "text-gray-600"}`}>
+            {subtitle}
+          </p>
+        )}
+      </div>
+      {gradient && (
+        <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
+          <Icon className="h-6 w-6 text-white" />
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
+// 🏥 Card de métrica secundária (estilo dashboard antigo)
+const MetricCard = ({ 
+  title, 
+  value, 
+  icon: Icon, 
+  description,
+  color = COLORS.primary
+}: { 
+  title: string; 
+  value: number; 
+  icon: any; 
+  description?: string;
+  color?: string;
+}) => (
+  <article className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+    <div className="p-6">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <p className="text-sm font-medium text-gray-600 mb-1">
+            {title}
+          </p>
+          <p className="text-2xl font-bold text-gray-900">
+            {value.toLocaleString("pt-BR")}
+          </p>
+          {description && (
+            <p className="text-xs text-gray-500 mt-1">{description}</p>
+          )}
+        </div>
+        <div 
+          className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
+          style={{ backgroundColor: color }}
+        >
+          <Icon className="h-6 w-6" />
+        </div>
+      </div>
+    </div>
+  </article>
+);
+
+// 📊 Barra de progresso horizontal
+const ProgressBar = ({
   value,
   max,
-  color = "bg-[#44735E]",
-  showLabel = true,
+  color = COLORS.primary,
+  size = "md"
 }: {
   value: number;
   max: number;
   color?: string;
-  showLabel?: boolean;
+  size?: "sm" | "md" | "lg";
 }) => {
   const percentage = max > 0 ? (value / max) * 100 : 0;
+  const heights = { sm: "h-1.5", md: "h-2", lg: "h-2.5" };
 
   return (
     <div className="w-full">
-      {showLabel && (
-        <div className="flex justify-between text-xs text-gray-600 mb-1">
-          <span>{value.toLocaleString("pt-BR")}</span>
-          <span className="font-medium">{percentage.toFixed(1)}%</span>
-        </div>
-      )}
-      <div className="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
+      <div className={`w-full bg-gray-200 rounded-full ${heights[size]} overflow-hidden`}>
         <motion.div
           animate={{ width: `${percentage}%` }}
-          className={`h-1.5 rounded-full ${color}`}
+          className={`${heights[size]} rounded-full transition-all duration-700 ease-out`}
           initial={{ width: 0 }}
+          style={{ backgroundColor: color }}
           transition={{ duration: 0.8 }}
         />
       </div>
@@ -114,6 +179,153 @@ const HorizontalProgressBar = ({
   );
 };
 
+// 🏷️ Badge de status
+const StatusBadge = ({ 
+  status, 
+  count,
+}: { 
+  status: string; 
+  count: number;
+}) => {
+  const getStatusConfig = (status: string) => {
+    const normalized = status.toUpperCase();
+    
+    if (normalized.includes("PENDENTE")) {
+      return { color: COLORS.warning, bg: "bg-yellow-50", label: "Pendente" };
+    }
+    if (normalized.includes("AGUARDANDO") || normalized.includes("EM_ANALISE")) {
+      return { color: COLORS.info, bg: "bg-blue-50", label: "Em Andamento" };
+    }
+    if (normalized.includes("FINALIZADO") || normalized.includes("CONCLUIDO")) {
+      return { color: COLORS.success, bg: "bg-green-50", label: "Finalizado" };
+    }
+    return { color: COLORS.primary, bg: "bg-gray-50", label: status };
+  };
+
+  const config = getStatusConfig(status);
+
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded-full ${config.bg} border`}
+         style={{ borderColor: `${config.color}20` }}>
+      <span className="font-bold" style={{ color: config.color }}>{count}</span>
+      <span className="text-gray-600">{config.label}</span>
+    </div>
+  );
+};
+
+// 🎫 Card de ticket
+const TicketCard = ({ ticket }: { ticket: any }) => {
+  const preferencialPercent = ticket.total > 0 ? (ticket.preferencial / ticket.total) * 100 : 0;
+  
+  if (ticket.status !== TicketStatus.AGUARDANDO) return null;
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:border-purple-200 transition-colors">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Ticket className="h-4 w-4 text-purple-600" />
+          <span className="font-medium text-gray-900">{ticket.status}</span>
+        </div>
+        <span className="text-xl font-bold text-gray-900">{ticket.total}</span>
+      </div>
+      <div className="space-y-2">
+        <div className="flex justify-between text-xs">
+          <span className="text-gray-600">Preferenciais</span>
+          <span className="font-medium text-gray-900">
+            {ticket.preferencial} ({preferencialPercent.toFixed(0)}%)
+          </span>
+        </div>
+        <ProgressBar 
+          value={ticket.preferencial}
+          max={ticket.total}
+          color={COLORS.purple}
+          size="sm"
+        />
+      </div>
+    </div>
+  );
+};
+
+// 📋 Card de exame
+const ExamCard = ({ 
+  exame, 
+  expanded = false 
+}: { 
+  exame: ExameStatisticsDto; 
+  expanded?: boolean;
+}) => {
+  const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
+  const finalizados = (exame.porStatus.FINALIZADO || 0) + 
+                     (exame.porStatus.CONCLUIDO || 0) + 
+                     (exame.porStatus.AGUARDANDO_RESULTADO || 0);
+  const total = exame.total;
+  const percentFinalizado = total > 0 ? (finalizados / total) * 100 : 0;
+
+  return (
+    <div className="bg-white rounded-lg p-4 hover:shadow-md transition-all border border-gray-200">
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <FlaskConical className="h-4 w-4 text-[#44735E]" />
+            <h4 className="font-semibold text-gray-900 truncate">
+              {exame.nomeExame}
+            </h4>
+          </div>
+          <p className="text-xs text-gray-500 font-mono">{exame.codigoExame}</p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-gray-900">{total}</div>
+          <div className="text-xs text-gray-500">total</div>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          {pendentes > 0 && <StatusBadge status="PENDENTE" count={pendentes} />}
+          {finalizados > 0 && <StatusBadge status="FINALIZADO" count={finalizados} />}
+        </div>
+
+        <div>
+          <div className="flex justify-between text-xs text-gray-600 mb-1">
+            <span>Progresso</span>
+            <span className="font-medium" style={{ 
+              color: percentFinalizado >= 70 ? COLORS.success : COLORS.warning 
+            }}>
+              {percentFinalizado.toFixed(1)}%
+            </span>
+          </div>
+          <ProgressBar 
+            value={finalizados}
+            max={total}
+            color={percentFinalizado >= 70 ? COLORS.success : COLORS.warning}
+            size="sm"
+          />
+        </div>
+
+        {expanded && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="pt-3 border-t border-gray-200"
+          >
+            <div className="text-xs space-y-1">
+              {Object.entries(exame.porStatus)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .map(([status, count]) => (
+                  <div key={status} className="flex justify-between">
+                    <span className="text-gray-600">{STATUS_LABELS[status] || status}:</span>
+                    <span className="font-medium text-gray-900">{count as number}</span>
+                  </div>
+                ))}
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 🚀 Componente principal
 export function StatisticsSection() {
   const { data, loading, error, refetch } = useStatistics({
     autoRefresh: true,
@@ -121,149 +333,60 @@ export function StatisticsSection() {
   });
 
   const [expandedUnit, setExpandedUnit] = useState<string | null>(null);
-  const [expandedExameUnit, setExpandedExameUnit] = useState<string | null>(
-    null,
-  );
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [expandedExamUnit, setExpandedExamUnit] = useState<string | null>(null);
   const [showAllExams, setShowAllExams] = useState<Record<string, boolean>>({});
   const [lastUpdate, setLastUpdate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  // Cast data para o novo tipo
   const statisticsData = data as unknown as StatisticsResponseDto;
 
-  // Calcular resumos por unidade
+  // 📊 Processar dados das unidades
   const unitSummaries = useMemo(() => {
     if (!statisticsData?.porUnidade) return {};
 
-    const summaries: Record<
-      string,
-      {
-        totalExames: number;
-        totalExamesFinalizados: number;
-        totalExamesPendentes: number;
-        percentualFinalizados: number;
-        examesMaisRealizados: ExameStatisticsDto[];
-      }
-    > = {};
-
-    statisticsData.porUnidade.forEach((unidade) => {
+    return statisticsData.porUnidade.reduce((acc, unidade) => {
       let totalExames = 0;
       let totalExamesFinalizados = 0;
       let totalExamesPendentes = 0;
 
       unidade.exames.forEach((exame) => {
         totalExames += exame.total;
-
-        const pendentes =
-          exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-        const finalizados =
-          (exame.porStatus.FINALIZADO || 0) +
-          (exame.porStatus.CONCLUIDO || 0) +
-          (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-
+        
+        const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
+        const finalizados = (exame.porStatus.FINALIZADO || 0) + 
+                           (exame.porStatus.CONCLUIDO || 0) + 
+                           (exame.porStatus.AGUARDANDO_RESULTADO || 0);
+        
         totalExamesPendentes += pendentes;
         totalExamesFinalizados += finalizados;
       });
 
-      const examesOrdenados = [...unidade.exames]
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10);
-
-      summaries[unidade.unidade] = {
+      acc[unidade.unidade] = {
         totalExames,
         totalExamesFinalizados,
         totalExamesPendentes,
-        percentualFinalizados:
-          totalExames > 0 ? (totalExamesFinalizados / totalExames) * 100 : 0,
-        examesMaisRealizados: examesOrdenados,
+        percentualFinalizados: totalExames > 0 ? (totalExamesFinalizados / totalExames) * 100 : 0,
       };
-    });
 
-    return summaries;
+      return acc;
+    }, {} as Record<string, any>);
   }, [statisticsData]);
 
-  // Consolidar exames gerais para comparação
-  // Corrigir a definição de consolidatedExames no useMemo
-  const consolidatedExames = useMemo(() => {
-    if (!statisticsData?.porUnidade) return [];
-
-    const examesMap = new Map<
-      string,
-      {
-        nomeExame: string;
-        codigoExame: string;
-        total: number;
-        porUnidade: Record<
-          string,
-          {
-            total: number;
-            finalizados: number;
-            pendentes: number;
-          }
-        >;
-      }
-    >();
-
-    statisticsData.porUnidade.forEach((unidade) => {
-      unidade.exames.forEach((exame) => {
-        const key = `${exame.codigoExame}-${exame.nomeExame}`;
-
-        if (!examesMap.has(key)) {
-          examesMap.set(key, {
-            nomeExame: exame.nomeExame,
-            codigoExame: exame.codigoExame,
-            total: 0,
-            porUnidade: {},
-          });
-        }
-
-        const consolidado = examesMap.get(key)!;
-
-        consolidado.total += exame.total;
-
-        const pendentes =
-          exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-        const finalizados =
-          (exame.porStatus.FINALIZADO || 0) +
-          (exame.porStatus.CONCLUIDO || 0) +
-          (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-
-        consolidado.porUnidade[unidade.unidade] = {
-          total: exame.total,
-          finalizados,
-          pendentes,
-        };
-      });
-    });
-
-    // Converter Map para Array
-    return Array.from(examesMap.values()).sort((a, b) => b.total - a.total);
-  }, [statisticsData]);
-
-  // Unidades padrão
-  const defaultUnits = ["RIO CLARO", "CORDEIRÓPOLIS", "ARARAS"];
-  const activeUnits = useMemo(() => {
-    if (!statisticsData?.porUnidade) return defaultUnits;
-    const units = statisticsData.porUnidade.map((u) => u.unidade);
-
-    return [...new Set([...defaultUnits, ...units])];
-  }, [statisticsData]);
-
+  // 🎯 Atualizar timestamp
   useEffect(() => {
     if (statisticsData?.generatedAt) {
-      const date = new Date(statisticsData.generatedAt);
-
-      setLastUpdate(date.toLocaleTimeString("pt-BR"));
+      setLastUpdate(new Date(statisticsData.generatedAt).toLocaleTimeString("pt-BR"));
     }
   }, [statisticsData]);
 
+  // 🔄 Refresh handler
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
+  // 🎨 Toggle para ver todos os exames
   const toggleShowAllExams = (unitName: string) => {
     setShowAllExams((prev) => ({
       ...prev,
@@ -271,13 +394,7 @@ export function StatisticsSection() {
     }));
   };
 
-  const getStatusColor = (percentage: number) => {
-    if (percentage >= 40) return "text-green-600";
-    if (percentage >= 20) return "text-yellow-600";
-
-    return "text-red-600";
-  };
-
+  // 🎨 Estados de loading e erro
   if (error) {
     return (
       <motion.div
@@ -293,12 +410,13 @@ export function StatisticsSection() {
             <h3 className="text-lg font-semibold text-red-800 mb-1">
               Erro ao carregar estatísticas
             </h3>
-            <button
-              className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors text-sm"
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              size="sm"
               onClick={handleRefresh}
             >
               Tentar novamente
-            </button>
+            </Button>
           </div>
         </div>
       </motion.div>
@@ -307,138 +425,136 @@ export function StatisticsSection() {
 
   if (loading && !statisticsData) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200/80 p-6">
-        <div className="animate-pulse space-y-6">
-          <div className="flex justify-between">
-            <div className="h-6 bg-gray-200 rounded w-1/4" />
-            <div className="h-8 w-8 bg-gray-200 rounded-full" />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-40 bg-gray-200 rounded-xl" />
-            ))}
-          </div>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white rounded-xl shadow-sm p-5 animate-pulse">
+              <div className="h-12 bg-gray-200 rounded w-3/4 mb-3" />
+              <div className="h-8 bg-gray-200 rounded w-1/2" />
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
+  const totais = statisticsData?.totaisGerais;
+
   return (
     <AnimatePresence>
       <motion.section
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-4"
+        className="space-y-8"
         exit={{ opacity: 0, y: -20 }}
         initial={{ opacity: 0, y: 20 }}
         transition={{ duration: 0.4 }}
       >
-        {/* KPI GERAIS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-8">
-          {/* Atendimentos Totais */}
-          <motion.div
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-[#44735E] to-[#2a4d3d] rounded-xl shadow-lg p-5 text-white"
-            initial={{ opacity: 0, scale: 0.95 }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Users className="h-5 w-5 text-white/90" />
-                  <p className="text-white/90 text-sm font-medium">
-                    Total de Atendimentos
-                  </p>
-                </div>
-                <p className="text-3xl font-bold">
-                  {statisticsData?.totaisGerais?.totalAgendamentos || 0}
-                </p>
-                <p className="text-white/70 text-xs mt-2">
-                  {statisticsData?.porUnidade?.length || 0} unidades ativas
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                <TrendingUp className="h-6 w-6" />
-              </div>
-            </div>
-          </motion.div>
+        {/* 📊 HEADER - Dashboard de Estatísticas */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
 
-          {/* Exames Realizados */}
-          <motion.div
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
-            initial={{ opacity: 0, scale: 0.95 }}
-            transition={{ delay: 0.1 }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-gray-700 text-sm font-medium">Exames</p>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {statisticsData?.totaisGerais?.totalExamesRealizados || 0}
-                </p>
-                {statisticsData?.porUnidade && (
-                  <p className="text-gray-600 text-xs mt-2">
-                    {Object.values(unitSummaries).reduce(
-                      (sum, s) => sum + s.totalExamesFinalizados,
-                      0,
-                    )}{" "}
-                    finalizados*
-                  </p>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Dashboard de Estatísticas</h1>
+              <p className="text-sm text-gray-600 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                {statisticsData?.dataReferencia 
+                  ? new Date(statisticsData.dataReferencia).toLocaleDateString("pt-BR", {
+                      day: "2-digit",
+                      month: "long",
+                      year: "numeric"
+                    })
+                  : "Carregando..."}
+                {lastUpdate && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <Clock className="h-4 w-4" />
+                    Atualizado às {lastUpdate}
+                    {statisticsData?.source === "cache" && " (cache)"}
+                  </>
                 )}
-              </div>
+              </p>
             </div>
-          </motion.div>
-
-          {/* Tickets Emitidos */}
-          <motion.div
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow"
-            initial={{ opacity: 0, scale: 0.95 }}
-            transition={{ delay: 0.2 }}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <p className="text-gray-700 text-sm font-medium">
-                    Tickets Emitidos
-                  </p>
-                </div>
-                <p className="text-3xl font-bold text-gray-900">
-                  {statisticsData?.totaisGerais?.totalTicketsEmitidos || 0}
-                </p>
-                {statisticsData?.porUnidade && (
-                  <p className="text-gray-600 text-xs mt-2">
-                    {statisticsData.porUnidade.reduce(
-                      (sum, u) =>
-                        sum +
-                        u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0),
-                      0,
-                    )}{" "}
-                    preferenciais
-                  </p>
-                )}
-              </div>
-            </div>
-          </motion.div>
-
-          {/* Cabeçalho */}
-          <div className="flex lg:flex-row items-start lg:items-center justify-center">
-            <Button
-              className="flex items-center gap-2 px-4 py-2.5 text-white rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium shadow-sm"
-              color="success"
-              disabled={loading || isRefreshing}
-              onClick={handleRefresh}
-            >
-              <RefreshCw
-                className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`}
-              />
-              <span>{isRefreshing ? "Atualizando..." : "Atualizar Dados"}</span>
-            </Button>
           </div>
+          
+          <Button
+            className="flex items-center gap-2 px-6 py-6 bg-[#44735E] hover:bg-[#356349] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            disabled={loading || isRefreshing}
+            onClick={handleRefresh}
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? "animate-spin" : ""}`} />
+            <span className="font-medium">
+              {isRefreshing ? "Atualizando..." : "Atualizar Dados"}
+            </span>
+          </Button>
         </div>
 
-        {/* STATUS GERAIS E TIPOS DE EXAME */}
-        {statisticsData?.totaisGerais && (
+        {/* 📈 KPIs PRINCIPAIS - Dados do totaisGerais */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <KpiCard
+            title="Atendimentos Totais"
+            value={totais?.totalAgendamentos || 0}
+            subtitle={`${statisticsData?.porUnidade?.length || 0} unidades ativas`}
+            icon={Users}
+            gradient
+            delay={0}
+          />
+          
+          <KpiCard
+            title="Atendimentos Previstos"
+            value={totais?.atendimentosPrevistos || 0}
+            subtitle="Agendamentos para hoje"
+            icon={Calendar}
+            delay={0.1}
+          />
+          
+          <KpiCard
+            title="Total de Prontuários"
+            value={totais?.totalProntuarios || 0}
+            subtitle="Registros no sistema"
+            icon={FileText}
+            delay={0.2}
+          />
+          
+          <KpiCard
+            title="Exames Realizados"
+            value={totais?.totalExamesRealizados || 0}
+            subtitle="Total de exames processados"
+            icon={FlaskConical}
+            delay={0.3}
+          />
+        </div>
+
+        {/* 🏥 MÉTRICAS DE FLUXO - Dados históricos do backend */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <MetricCard
+            title="Aguardando Resultados"
+            value={totais?.aguardandoResultados || 0}
+            description="Histórico desde agosto/2025"
+            icon={Clock}
+            color={COLORS.info}
+          />
+          
+          <MetricCard
+            title="Aguardando Avaliação Médica"
+            value={totais?.aguardandoAvaliacaoMedica || 0}
+            description="Histórico desde janeiro/2026"
+            icon={Stethoscope}
+            color={COLORS.warning}
+          />
+          
+          <MetricCard
+            title="Senhas Preferenciais"
+            value={totais?.totalTicketsEmitidos || 0}
+            description={`${statisticsData?.porUnidade?.reduce((sum, u) => 
+              sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0), 0
+            )} preferenciais`}
+            icon={Ticket}
+            color={COLORS.purple}
+          />
+        </div>
+
+        {/* 📊 STATUS E TIPOS DE EXAME */}
+        {totais && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Status Consolidados */}
             <motion.div
@@ -446,56 +562,48 @@ export function StatisticsSection() {
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
             >
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+              <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Activity className="h-5 w-5 text-blue-600" />
+                  </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
-                      Status Atendimentos
+                      Status dos Atendimentos
                     </h3>
-                    <p className="text-gray-600 text-sm">
-                      {statisticsData.totaisGerais.totalAgendamentos}{" "}
-                      atendimentos
+                    <p className="text-sm text-gray-600">
+                      {totais.totalAgendamentos} atendimentos hoje
                     </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4">
-                <div className="space-y-3">
-                  {Object.entries(
-                    statisticsData.totaisGerais.atendimentosPorStatus,
-                  )
-                    .sort(([, a], [, b]) => b - a)
+              <div className="p-5">
+                <div className="space-y-4">
+                  {Object.entries(totais.atendimentosPorStatus)
+                    .sort(([, a], [, b]) => (b as number) - (a as number))
                     .map(([status, count]) => {
-                      const percentage =
-                        (count /
-                          statisticsData.totaisGerais.totalAgendamentos) *
-                        100;
-
+                      const percentage = (count as number / totais.totalAgendamentos) * 100;
                       return (
-                        <div key={status} className="group">
+                        <div key={status}>
                           <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900">
-                                {status}
-                              </span>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900">
+                              {STATUS_LABELS[status] || status}
+                            </span>
                             <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600">
-                                {count}
+                              <span className="text-sm text-gray-900 font-bold">
+                                {count as number}
                               </span>
-                              <span
-                                className={`text-sm font-medium ${getStatusColor(percentage)}`}
-                              >
-                                {percentage.toFixed(1)}%
+                              <span className="text-xs text-gray-500">
+                                ({percentage.toFixed(1)}%)
                               </span>
                             </div>
                           </div>
-                          <HorizontalProgressBar
-                            color="bg-blue-500"
-                            max={statisticsData.totaisGerais.totalAgendamentos}
-                            showLabel={false}
-                            value={count}
+                          <ProgressBar 
+                            value={count as number}
+                            max={totais.totalAgendamentos}
+                            color={status.includes("FINALIZADO") || status.includes("CONCLUIDO") ? COLORS.success : COLORS.info}
+                            size="sm"
                           />
                         </div>
                       );
@@ -504,61 +612,56 @@ export function StatisticsSection() {
               </div>
             </motion.div>
 
-            {/* Tipos de Exame Consolidados */}
+            {/* Tipos de Exame */}
             <motion.div
               animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
               initial={{ opacity: 0, y: 20 }}
               transition={{ delay: 0.1 }}
             >
-              <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        Tipos de Exame Solicitados
-                      </h3>
-                    </div>
+              <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Layers className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Tipos de Exame
+                    </h3>
+                    <p className="text-sm text-gray-600">
+                      {Object.keys(totais.atendimentosPorTipoExame).length} tipos solicitados
+                    </p>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4">
-                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                  {Object.entries(
-                    statisticsData.totaisGerais.atendimentosPorTipoExame,
-                  )
-                    .sort(([, a], [, b]) => b - a)
+              <div className="p-5">
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                  {Object.entries(totais.atendimentosPorTipoExame)
+                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                    .slice(0, 10)
                     .map(([tipo, count]) => {
-                      const percentage =
-                        (count /
-                          statisticsData.totaisGerais.totalAgendamentos) *
-                        100;
-
+                      const percentage = (count as number / totais.totalAgendamentos) * 100;
                       return (
-                        <div key={tipo} className="group">
+                        <div key={tipo}>
                           <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">
-                                {tipo}
-                              </span>
-                            </div>
+                            <span className="text-sm font-medium text-gray-900 truncate">
+                              {tipo}
+                            </span>
                             <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-600">
-                                {count}
+                              <span className="text-sm text-gray-900 font-bold">
+                                {count as number}
                               </span>
-                              <span
-                                className={`text-sm font-medium ${getStatusColor(percentage)}`}
-                              >
-                                {percentage.toFixed(1)}%
+                              <span className="text-xs text-gray-500">
+                                ({percentage.toFixed(1)}%)
                               </span>
                             </div>
                           </div>
-                          <HorizontalProgressBar
-                            color="bg-green-500"
-                            max={statisticsData.totaisGerais.totalAgendamentos}
-                            showLabel={false}
-                            value={count}
+                          <ProgressBar 
+                            value={count as number}
+                            max={totais.totalAgendamentos}
+                            color={COLORS.primary}
+                            size="sm"
                           />
                         </div>
                       );
@@ -569,542 +672,290 @@ export function StatisticsSection() {
           </div>
         )}
 
-        {/* EXAMES POR UNIDADE (SEPARADO PARA CADA GESTOR) */}
+        {/* 🏥 UNIDADES - Detalhamento por gestor */}
         <div className="space-y-6">
-          {activeUnits.map((unitName) => {
-            const unitData = statisticsData?.porUnidade?.find(
-              (u) => u.unidade === unitName,
-            );
-            const hasData = !!unitData;
-            const isExpanded = expandedUnit === unitName;
-            const unitSummary = unitSummaries[unitName];
-            const isExameUnitExpanded = expandedExameUnit === unitName;
-            const showAllForUnit = showAllExams[unitName] || false;
+          {statisticsData?.porUnidade?.map((unidade) => {
+            const isExpanded = expandedUnit === unidade.unidade;
+            const isExamExpanded = expandedExamUnit === unidade.unidade;
+            const showAllForUnit = showAllExams[unidade.unidade] || false;
+            const unitSummary = unitSummaries[unidade.unidade];
 
             return (
               <motion.div
-                key={unitName}
+                key={unidade.unidade}
                 animate={{ opacity: 1, y: 0 }}
                 className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
                 initial={{ opacity: 0, y: 20 }}
               >
                 {/* Cabeçalho da Unidade */}
-                <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                <div 
+                  className="p-5 border-b border-gray-200 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                  onClick={() => setExpandedUnit(isExpanded ? null : unidade.unidade)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="p-3 bg-[#44735E]/10 rounded-xl">
+                        <Building2 className="h-6 w-6 text-[#44735E]" />
+                      </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
-                          {unitName}
+                          {unidade.unidade}
                         </h2>
                         <div className="flex items-center gap-4 mt-1">
                           <div className="flex items-center gap-2">
-                            <UsersIcon className="h-4 w-4 text-gray-500" />
+                            <Users className="h-4 w-4 text-gray-500" />
                             <span className="text-lg font-bold text-[#44735E]">
-                              {hasData ? unitData.totalAgendamentos : 0}
+                              {unidade.totalAgendamentos}
                             </span>
-                            <span className="text-gray-600 text-sm">
-                              atendimentos
-                            </span>
+                            <span className="text-sm text-gray-600">atendimentos</span>
                           </div>
-                          {hasData && unitSummary && (
-                            <div className="flex items-center gap-2">
-                              <FileText className="h-4 w-4 text-gray-500" />
-                              <span className="text-lg font-bold text-blue-600">
-                                {unitSummary.totalExames}
-                              </span>
-                              <span className="text-gray-600 text-sm">
-                                exames
+                          
+                          {/* Métricas do dia por unidade */}
+                          <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3.5 w-3.5 text-blue-500" />
+                              <span className="text-sm text-gray-600">
+                                {unidade.aguardandoResultados} Aguardando Resultados
                               </span>
                             </div>
-                          )}
+                            <div className="flex items-center gap-1">
+                              <Stethoscope className="h-3.5 w-3.5 text-yellow-500" />
+                              <span className="text-sm text-gray-600">
+                                {unidade.aguardandoAvaliacaoMedica} Avaliação Médica
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    {hasData && (
-                      <div className="flex items-center gap-3">
-                        {unitSummary && (
-                          <div className="text-right">
-                            <div
-                              className={`text-lg font-bold ${getStatusColor(unitSummary.percentualFinalizados)}`}
-                            >
+                    <div className="flex items-center gap-6">
+                      {unitSummary && (
+                        <div className="text-right">
+                          <div className="flex items-center gap-2">
+                            <BadgeCheck className="h-5 w-5 text-green-500" />
+                            <span className="text-xl font-bold text-green-600">
                               {unitSummary.percentualFinalizados.toFixed(1)}%
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              conclusão
-                            </div>
+                            </span>
                           </div>
+                          <span className="text-xs text-gray-500">conclusão</span>
+                        </div>
+                      )}
+                      
+                      <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                        {isExpanded ? (
+                          <ChevronUp className="h-5 w-5 text-gray-500" />
+                        ) : (
+                          <ChevronDown className="h-5 w-5 text-gray-500" />
                         )}
-                        <button
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                          onClick={() =>
-                            setExpandedUnit(isExpanded ? null : unitName)
-                          }
-                        >
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5 text-gray-500" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5 text-gray-500" />
-                          )}
-                        </button>
-                      </div>
-                    )}
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Prévia rápida */}
+                  {!isExpanded && unitSummary && (
+                    <div className="mt-3 flex items-center gap-4 text-sm text-gray-600">
+                      <span>{unidade.exames.length} Exames</span>
+                      <span>{unidade.tickets.reduce((sum, t) => sum + t.total, 0)} Senhas</span>
+                      <span>{unidade.atendimentosPrevistos} Previstos</span>
+                    </div>
+                  )}
                 </div>
 
-                {/* Detalhes da Unidade (Expandido) */}
-                {hasData && isExpanded && (
+                {/* Conteúdo Expandido */}
+                {isExpanded && (
                   <motion.div
                     animate={{ opacity: 1, height: "auto" }}
-                    className="p-5 space-y-6"
+                    className="p-6 space-y-8"
                     exit={{ opacity: 0, height: 0 }}
                     initial={{ opacity: 0, height: 0 }}
                   >
-                    {/* Status e Tipos de Exame da Unidade */}
+                    {/* Status do Dia */}
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      {/* Status dos Atendimentos */}
                       <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           <Activity className="h-4 w-4 text-blue-600" />
-                          Status dos Atendimentos
+                          Status do Dia
                         </h4>
-                        <div className="space-y-2">
-                          {Object.entries(unitData.atendimentosPorStatus)
-                            .sort(([, a], [, b]) => b - a)
+                        <div className="space-y-3">
+                          {Object.entries(unidade.atendimentosPorStatus)
+                            .sort(([, a], [, b]) => (b as number) - (a as number))
                             .map(([status, count]) => (
-                              <div
-                                key={status}
-                                className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded"
-                              >
-                                <span className="text-gray-600">{status}</span>
-                                <div className="flex items-center gap-3">
-                                  <span className="font-bold text-gray-900">
-                                    {count}
-                                  </span>
-                                  <span className="text-xs text-gray-500">
-                                    (
-                                    {(
-                                      (count / unitData.totalAgendamentos) *
-                                      100
-                                    ).toFixed(1)}
-                                    %)
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                        </div>
-                      </div>
-
-                      {/* Tipos de Exame da Unidade */}
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                          <Layers className="h-4 w-4 text-green-600" />
-                          Tipos de Exame (
-                          {
-                            Object.keys(unitData.atendimentosPorTipoExame)
-                              .length
-                          }
-                          )
-                        </h4>
-                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2">
-                          {Object.entries(unitData.atendimentosPorTipoExame)
-                            .sort(([, a], [, b]) => b - a)
-                            .map(([tipo, count]) => (
-                              <div
-                                key={tipo}
-                                className="flex items-center justify-between text-sm p-2 hover:bg-gray-50 rounded"
-                              >
-                                <span className="text-gray-600 truncate">
-                                  {tipo}
+                              <div key={status} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                                <span className="text-sm text-gray-700">
+                                  {STATUS_LABELS[status] || status}
                                 </span>
                                 <div className="flex items-center gap-3">
-                                  <span className="font-bold text-gray-900">
-                                    {count}
-                                  </span>
+                                  <span className="font-bold text-gray-900">{count as number}</span>
                                   <span className="text-xs text-gray-500">
-                                    (
-                                    {(
-                                      (count / unitData.totalAgendamentos) *
-                                      100
-                                    ).toFixed(1)}
-                                    %)
+                                    ({((count as number) / unidade.totalAgendamentos * 100).toFixed(1)}%)
                                   </span>
                                 </div>
                               </div>
                             ))}
                         </div>
                       </div>
-                    </div>
 
-                    {/* Tickets da Unidade */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Ticket className="h-4 w-4 text-purple-600" />
-                        Tickets da Unidade
-                      </h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {unitData.tickets.map((ticket, idx) => {
-                          const preferencialPercent =
-                            ticket.total > 0
-                              ? (ticket.preferencial / ticket.total) * 100
-                              : 0;
-
-                          if (ticket.status != TicketStatus.AGUARDANDO) {
-                            return (
-                              <div
-                                key={idx}
-                                className="bg-gray-50 rounded-lg p-3"
-                              >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="font-medium text-gray-900">
-                                    {ticket.status}
-                                  </span>
-                                  <span className="text-lg font-bold text-gray-900">
-                                    {ticket.total}
-                                  </span>
-                                </div>
-                                <div className="text-xs text-gray-600 mb-2">
-                                  {ticket.preferencial} preferenciais (
-                                  {preferencialPercent.toFixed(0)}%)
-                                </div>
-                                <HorizontalProgressBar
-                                  color="bg-purple-500"
-                                  max={ticket.total}
-                                  showLabel={false}
-                                  value={ticket.preferencial}
-                                />
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Layers className="h-4 w-4 text-green-600" />
+                          Exames do Dia
+                        </h4>
+                        <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                          {Object.entries(unidade.atendimentosPorTipoExame)
+                            .sort(([, a], [, b]) => (b as number) - (a as number))
+                            .slice(0, 8)
+                            .map(([tipo, count]) => (
+                              <div key={tipo} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
+                                <span className="text-sm text-gray-700 truncate">{tipo}</span>
+                                <span className="font-bold text-gray-900">{count as number}</span>
                               </div>
-                            );
-                          }
-                        })}
+                            ))}
+                        </div>
                       </div>
                     </div>
 
-                    {/* EXAMES DA UNIDADE (SEPARADO POR GESTOR) */}
+                    {/* Tickets */}
+                    {unidade.tickets.length > 0 && (
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          <Ticket className="h-4 w-4 text-purple-600" />
+                          Tickets do Dia
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {unidade.tickets.map((ticket, idx) => (
+                            <TicketCard key={idx} ticket={ticket} />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Exames Detalhados */}
                     <div className="border-t border-gray-200 pt-6">
-                      <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
+                          <div className="p-2 bg-blue-100 rounded-lg">
+                            <FlaskConical className="h-5 w-5 text-blue-600" />
+                          </div>
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">
-                              Exames de {unitName}
+                              Detalhamento de Exames
                             </h3>
-                            <p className="text-gray-600 text-sm">
-                              {unitData.exames.length} exames •{" "}
-                              {unitSummary?.totalExamesFinalizados} finalizados
+                            <p className="text-sm text-gray-600">
+                              {unidade.exames.length} tipos • {unitSummary?.totalExamesFinalizados} finalizados
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900"
-                            onClick={() =>
-                              setExpandedExameUnit(
-                                isExameUnitExpanded ? null : unitName,
-                              )
-                            }
+                        <div className="flex items-center gap-3">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedExamUnit(isExamExpanded ? null : unidade.unidade);
+                            }}
                           >
-                            {isExameUnitExpanded ? (
-                              <>
-                                <ChevronUp className="h-4 w-4" />
-                                Recolher
-                              </>
+                            {isExamExpanded ? (
+                              <><ChevronUp className="h-4 w-4 mr-1" /> Recolher</>
                             ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4" />
-                                Expandir
-                              </>
+                              <><ChevronDown className="h-4 w-4 mr-1" /> Expandir</>
                             )}
-                          </button>
-                          {unitData.exames.length > 8 && (
-                            <button
-                              className="flex items-center gap-1 text-sm text-[#44735E] hover:text-[#356349]"
-                              onClick={() => toggleShowAllExams(unitName)}
+                          </Button>
+                          
+                          {unidade.exames.length > 8 && (
+                            <Button
+                              size="sm"
+                              variant="light"
+                              className="text-[#44735E]"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleShowAllExams(unidade.unidade);
+                              }}
                             >
                               {showAllForUnit ? (
-                                <>
-                                  <EyeOff className="h-4 w-4" />
-                                  Ver menos
-                                </>
+                                <><EyeOff className="h-4 w-4 mr-1" /> Ver menos</>
                               ) : (
-                                <>
-                                  <Eye className="h-4 w-4" />
-                                  Ver todos
-                                </>
+                                <><Eye className="h-4 w-4 mr-1" /> Ver todos</>
                               )}
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </div>
 
-                      {/* Grid de Exames da Unidade */}
-                      <div
-                        className={`grid grid-cols-1 ${showAllForUnit ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}
-                      >
-                        {(showAllForUnit
-                          ? unitData.exames
-                          : unitData.exames.slice(0, 8)
-                        )
+                      {/* Grid de Exames */}
+                      <div className={`grid grid-cols-1 ${showAllForUnit ? "lg:grid-cols-3" : "lg:grid-cols-4"} gap-4`}>
+                        {(showAllForUnit ? unidade.exames : unidade.exames.slice(0, 8))
                           .sort((a, b) => b.total - a.total)
-                          .map((exame) => {
-                            const pendentes =
-                              exame.porStatus.PENDENTE ||
-                              exame.porStatus.PENDENTE_LABORATORIO ||
-                              0;
-                            const finalizados =
-                              (exame.porStatus.FINALIZADO || 0) +
-                              (exame.porStatus.CONCLUIDO || 0) +
-                              (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-                            const total = exame.total;
-                            const percentFinalizado =
-                              total > 0 ? (finalizados / total) * 100 : 0;
-
-                            return (
-                              <div
-                                key={`${unitName}-${exame.nomeExame}`}
-                                className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
-                              >
-                                <div className="flex items-start justify-between mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <div className="font-semibold text-gray-900 truncate">
-                                      {exame.nomeExame}
-                                    </div>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="text-xl font-bold text-gray-900">
-                                      {total}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      total
-                                    </div>
-                                  </div>
-                                </div>
-
-                                {/* Status */}
-                                <div className="flex gap-2 mb-3">
-                                  {pendentes > 0 && (
-                                    <div className="flex items-center">
-                                      <UnitExamStatusBadge
-                                        count={pendentes}
-                                        status="PENDENTE"
-                                      />
-                                      <span className="text-xs">Pendentes</span>
-                                    </div>
-                                  )}
-                                  {finalizados > 0 && (
-                                    <div className="flex items-center">
-                                      <UnitExamStatusBadge
-                                        count={finalizados}
-                                        status="FINALIZADO"
-                                      />
-                                      <span className="text-xs">
-                                        Finalizados
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Progresso */}
-                                <div className="space-y-2">
-                                  <div>
-                                    <div className="flex justify-between text-xs text-gray-600 mb-1">
-                                      <span>Conclusão</span>
-                                      <span className="font-medium">
-                                        {percentFinalizado.toFixed(1)}%
-                                      </span>
-                                    </div>
-                                    <HorizontalProgressBar
-                                      color={
-                                        percentFinalizado >= 70
-                                          ? "bg-green-500"
-                                          : "bg-yellow-500"
-                                      }
-                                      max={total}
-                                      showLabel={false}
-                                      value={finalizados}
-                                    />
-                                  </div>
-
-                                  {isExameUnitExpanded && (
-                                    <div className="pt-2 border-t border-gray-200">
-                                      <div className="text-xs text-gray-600">
-                                        {Object.entries(exame.porStatus)
-                                          .sort(([, a], [, b]) => b - a)
-                                          .map(([status, count]) => (
-                                            <div
-                                              key={status}
-                                              className="flex justify-between"
-                                            >
-                                              <span>
-                                                {status.replace(/_/g, " ")}:
-                                              </span>
-                                              <span className="font-medium">
-                                                {count}
-                                              </span>
-                                            </div>
-                                          ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
+                          .map((exame) => (
+                            <ExamCard 
+                              key={`${unidade.unidade}-${exame.codigoExame}`}
+                              exame={exame}
+                              expanded={isExamExpanded}
+                            />
+                          ))}
                       </div>
 
-                      {!showAllForUnit && unitData.exames.length > 8 && (
-                        <div className="mt-4 text-center">
-                          <button
-                            className="text-sm text-[#44735E] hover:text-[#356349] font-medium flex items-center justify-center gap-2 mx-auto"
-                            onClick={() => toggleShowAllExams(unitName)}
+                      {/* Ver mais */}
+                      {!showAllForUnit && unidade.exames.length > 8 && (
+                        <div className="mt-6 text-center">
+                          <Button
+                            size="sm"
+                            variant="light"
+                            className="text-[#44735E] font-medium"
+                            onClick={() => toggleShowAllExams(unidade.unidade)}
                           >
-                            <Eye className="h-4 w-4" />
-                            Ver mais {unitData.exames.length - 8} exames desta
-                            unidade
-                          </button>
+                            <Eye className="h-4 w-4 mr-2" />
+                            Ver mais {unidade.exames.length - 8} exames
+                          </Button>
                         </div>
                       )}
 
-                      {/* Resumo dos Exames da Unidade */}
+                      {/* Resumo */}
                       {unitSummary && (
-                        <div className="mt-6 pt-6 border-t border-gray-200">
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="mt-8 p-5 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-green-600">
+                              <div className="text-3xl font-bold text-green-600">
                                 {unitSummary.totalExamesFinalizados}
                               </div>
-                              <div className="text-sm text-gray-600">
-                                Exames finalizados*
+                              <div className="text-sm text-gray-600 mt-1">
+                                Finalizados
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-yellow-600">
+                              <div className="text-3xl font-bold text-yellow-600">
                                 {unitSummary.totalExamesPendentes}
                               </div>
-                              <div className="text-sm text-gray-600">
-                                Exames pendentes
+                              <div className="text-sm text-gray-600 mt-1">
+                                Pendentes
                               </div>
                             </div>
                             <div className="text-center">
-                              <div className="text-2xl font-bold text-blue-600">
+                              <div className="text-3xl font-bold text-blue-600">
                                 {unitSummary.percentualFinalizados.toFixed(1)}%
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-gray-600 mt-1">
                                 Taxa de conclusão
                               </div>
                             </div>
-                          </div>
-                          <div className="text-xs text-gray-500 text-center mt-2">
-                            *Inclui exames finalizados e aguardando resultado
                           </div>
                         </div>
                       )}
                     </div>
                   </motion.div>
                 )}
-
-                {/* Sem Dados */}
-                {!hasData && (
-                  <div className="p-8 text-center">
-                    <div className="inline-flex flex-col items-center gap-3">
-                      <Calendar className="h-12 w-12 text-gray-300" />
-                      <div>
-                        <p className="text-gray-400 font-medium">
-                          Unidade {unitName}
-                        </p>
-                        <p className="text-gray-400 text-sm mt-1">
-                          Sem atendimentos registrados no período
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </motion.div>
             );
           })}
         </div>
 
-        {/* VISÃO COMPARATIVA DE EXAMES ENTRE UNIDADES */}
-        {consolidatedExames.length > 0 && (
-          <motion.div
-            animate={{ opacity: 1 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden"
-            initial={{ opacity: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            {/* <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-purple-600 to-pink-600 rounded-lg">
-                  <ChartPie className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    Visão Comparativa de Exames
-                  </h3>
-                  <p className="text-gray-600 text-sm">
-                    Comparativo entre unidades para os principais exames
-                  </p>
-                </div>
-              </div>
-            </div> */}
-
-            <div className="p-5">
-              <div className="space-y-4">
-                {/* {consolidatedExames.slice(0, 6).map((exame, idx) => (
-                  <div key={idx} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="font-semibold text-gray-900">{exame.nomeExame}</div>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Hash className="h-3 w-3 text-gray-400" />
-                          <span className="text-xs text-gray-500 font-mono">{exame.codigoExame}</span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-gray-900">{exame.total}</div>
-                        <div className="text-xs text-gray-500">total geral</div>
-                      </div>
-                    </div> */}
-
-                {/* Distribuição por Unidade */}
-                {/* <div className="space-y-2">
-                      {Object.entries(exame.porUnidade)
-                        .sort(([,a], [,b]) => b.total - a.total)
-                        .map(([unidade, dados]) => {
-                          const percentUnit = dados.total > 0 ? (dados.finalizados / dados.total) * 100 : 0;
-                          return (
-                            <div key={unidade} className="text-sm">
-                              <div className="flex items-center justify-between mb-1">
-                                <div className="flex items-center gap-2">
-                                  <Building className="h-3 w-3 text-gray-400" />
-                                  <span className="font-medium text-gray-900">{unidade}</span>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                  <span className="text-gray-600">{dados.total}</span>
-                                  <span className={`text-xs font-medium ${getStatusColor(percentUnit)}`}>
-                                    {percentUnit.toFixed(0)}%
-                                  </span>
-                                </div>
-                              </div>
-                              <HorizontalProgressBar 
-                                value={dados.finalizados}
-                                max={dados.total}
-                                color="bg-gradient-to-r from-blue-500 to-purple-500"
-                                showLabel={false}
-                              />
-                              <div className="flex justify-between text-xs text-gray-500 mt-1">
-                                <span>{dados.finalizados} finalizados</span>
-                                <span>{dados.pendentes} pendentes</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                    </div> */}
-                {/* </div>
-                ))} */}
-              </div>
-            </div>
-          </motion.div>
+        {/* ℹ️ Informações de performance */}
+        {statisticsData?.processingTimeMs && (
+          <div className="text-xs text-gray-500 text-right">
+            Tempo: {statisticsData.processingTimeMs}ms • 
+            Fonte: {statisticsData.source === "cache" ? "Cache" : "Banco"}
+          </div>
         )}
       </motion.section>
     </AnimatePresence>
