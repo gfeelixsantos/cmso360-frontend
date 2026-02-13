@@ -543,7 +543,7 @@ const ExamesTable: React.FC<{
                             {reemitindoExams ? "Reemitindo..." : "Reemitir"}
                           </DropdownItem>
                           {
-                            exame.grupo.includes("Ultrassom") ? (
+                            exame.grupo?.includes("Ultrassom") ? (
                               <DropdownItem
                                 key="finalizar"
                                 color="default"

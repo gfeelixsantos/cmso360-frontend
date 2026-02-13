@@ -271,7 +271,7 @@ const ExamCard = ({
               {exame.nomeExame}
             </h4>
           </div>
-          <p className="text-xs text-gray-500 font-mono">{exame.codigoExame}</p>
+          {/* <p className="text-xs text-gray-500 font-mono">{exame.codigoExame}</p> */}
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-gray-900">{total}</div>
@@ -458,7 +458,7 @@ export function StatisticsSection() {
               <p className="text-sm text-gray-600 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 {statisticsData?.dataReferencia 
-                  ? new Date(statisticsData.dataReferencia).toLocaleDateString("pt-BR", {
+                  ? new Date().toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "long",
                       year: "numeric"
@@ -543,7 +543,7 @@ export function StatisticsSection() {
           />
           
           <MetricCard
-            title="Senhas Preferenciais"
+            title="Senhas"
             value={totais?.totalTicketsEmitidos || 0}
             description={`${statisticsData?.porUnidade?.reduce((sum, u) => 
               sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0), 0
@@ -694,9 +694,6 @@ export function StatisticsSection() {
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-[#44735E]/10 rounded-xl">
-                        <Building2 className="h-6 w-6 text-[#44735E]" />
-                      </div>
                       <div>
                         <h2 className="text-xl font-bold text-gray-900">
                           {unidade.unidade}
@@ -774,7 +771,6 @@ export function StatisticsSection() {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Activity className="h-4 w-4 text-blue-600" />
                           Status do Dia
                         </h4>
                         <div className="space-y-3">
@@ -798,7 +794,6 @@ export function StatisticsSection() {
 
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Layers className="h-4 w-4 text-green-600" />
                           Exames do Dia
                         </h4>
                         <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
@@ -815,27 +810,12 @@ export function StatisticsSection() {
                       </div>
                     </div>
 
-                    {/* Tickets */}
-                    {unidade.tickets.length > 0 && (
-                      <div>
-                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                          <Ticket className="h-4 w-4 text-purple-600" />
-                          Tickets do Dia
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {unidade.tickets.map((ticket, idx) => (
-                            <TicketCard key={idx} ticket={ticket} />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
                     {/* Exames Detalhados */}
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
                           <div className="p-2 bg-blue-100 rounded-lg">
-                            <FlaskConical className="h-5 w-5 text-blue-600" />
+                            <FlaskConical className="h-5 w-5 text-green-600" />
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">

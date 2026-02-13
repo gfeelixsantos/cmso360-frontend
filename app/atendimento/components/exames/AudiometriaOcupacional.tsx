@@ -1591,7 +1591,7 @@ const verAudiometriaAnterior = useCallback(async () => {
             {formData.audiometriaAnterior === "Sim" && (
               <Button
                 className="bg-blue-600 text-white"
-                isDisabled={carregandoAudiometriaAnterior || true}
+                isDisabled={carregandoAudiometriaAnterior}
                 startContent={
                   carregandoAudiometriaAnterior ? (
                     <Spinner size="sm" />
