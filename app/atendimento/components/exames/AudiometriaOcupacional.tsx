@@ -628,12 +628,12 @@ export class AudiometriaCalculator {
   }
 
   // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
-  static calcularMediaTonal(freqs: string[]): number {
+  static calcularMediaTonal(freqs: string[]): number | null {
     const valores = freqs
       .map((v) => this.parseValor(v))
       .filter((v): v is number => v !== null);
 
-    if (valores.length === 0) return 0;
+    if (valores.length === 0) return null;
 
     return Math.round(valores.reduce((acc, v) => acc + v, 0) / valores.length);
   }
@@ -647,7 +647,6 @@ export class AudiometriaCalculator {
     // Se qualquer frequência crítica estiver ausente => PROFUNDA
     for (const f of freqCriticas) {
       const v = this.parseValor(limiares[f]);
-
       if (v === null) return "Perda Auditiva Profunda";
     }
 
@@ -658,6 +657,10 @@ export class AudiometriaCalculator {
       limiares[2000],
       limiares[4000],
     ]);
+
+    // Se mesmo após passar pelas frequências críticas a média for null
+    // (ex: apenas 500Hz ausente), trata como profunda por segurança
+    if (media === null) return "Perda Auditiva Profunda";
 
     if (media >= 91) return "Perda Auditiva Profunda";
     if (media >= 71) return "Perda Auditiva Severa";
@@ -675,8 +678,10 @@ export class AudiometriaCalculator {
     const alteradas = Object.keys(vaLimiares)
       .map(Number)
       .filter((freq) => {
-        const valor = this.parseValor(vaLimiares[freq]);
-
+        const raw = vaLimiares[freq];
+        // Ausência de resposta ("--", "---") também é alteração significativa
+        if (raw === "--" || raw === "---") return true;
+        const valor = this.parseValor(raw);
         return valor !== null && valor > 25;
       })
       .sort((a, b) => a - b)
@@ -688,9 +693,12 @@ export class AudiometriaCalculator {
   }
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
-  static verificarCriterioPCD(mediaOD: number, mediaOE: number): string {
-    const melhorOrelha = Math.min(mediaOD, mediaOE);
-    const piorOrelha = Math.max(mediaOD, mediaOE);
+  static verificarCriterioPCD(mediaOD: number | null, mediaOE: number | null): string {
+    const AUSENCIA = 999; // ausência de resposta = perda máxima para fins de critério legal
+    const valorOD = mediaOD ?? AUSENCIA;
+    const valorOE = mediaOE ?? AUSENCIA;
+    const melhorOrelha = Math.min(valorOD, valorOE);
+    const piorOrelha = Math.max(valorOD, valorOE);
 
     if (melhorOrelha >= 41) {
       return `Atende aos critérios legais de deficiência auditiva (perda bilateral; média tonal na melhor orelha ≥ 41 dB NA), conforme Decreto 5.296/2004.`;
@@ -714,6 +722,8 @@ export class AudiometriaCalculator {
     const altas = [3000, 4000, 6000]
       .map(get)
       .filter((v): v is number => v !== null);
+      
+    if (baixas.length === 0 && altas.length === 0) return "Sem resposta";
 
     if (baixas.length === 0 || altas.length === 0) {
       const v500 = get(500) ?? 0;
@@ -754,7 +764,10 @@ export class AudiometriaCalculator {
   }
 
   // CÁLCULO DETERMINAR TIPO DE PERDA
-  static determinarTipoPerda(mediaVA: number, mediaVO: number | null): string {
+  static determinarTipoPerda(mediaVA: number | null, mediaVO: number | null): string {
+    // Para ausência de resposta
+    if (mediaVA === null) return "Neurossensorial";
+
     // 1. Se audição é normal (<= 25), não há tipo de perda
     if (mediaVA <= 25) return "-";
 
@@ -846,11 +859,16 @@ export class AudiometriaCalculator {
     const configuracaoOE = this.calcularConfiguracao(vaLimiaresOE);
 
     // Tipo/grau: '-' quando dentro da normalidade (profissionais pediram esse comportamento)
-    const isNormalOD = classificacaoOD.includes("normalidade");
-    const isNormalOE = classificacaoOE.includes("normalidade");
+    // isNormal: null nunca é normal
+    const isNormalOD = mediaTonalOD !== null && classificacaoOD === "Normal";
+    const isNormalOE = mediaTonalOE !== null && classificacaoOE === "Normal";
 
     const tipoPerdaOD = this.determinarTipoPerda(mediaTonalOD, mediaOsseaOD);
     const tipoPerdaOE = this.determinarTipoPerda(mediaTonalOE, mediaOsseaOE);
+
+    // Para exibição: null → "SR" (Sem Resposta)
+    const perdaAuditivaOD = mediaTonalOD !== null ? `${mediaTonalOD} dB` : "SR";
+    const perdaAuditivaOE = mediaTonalOE !== null ? `${mediaTonalOE} dB` : "SR";
 
     const grauPerdaOD = isNormalOD ? "-" : classificacaoOD;
     const grauPerdaOE = isNormalOE ? "-" : classificacaoOE;
@@ -858,11 +876,16 @@ export class AudiometriaCalculator {
     // Resultados textuais:
     const resultadoOD = isNormalOD
       ? "Limiares auditivos dentro dos padrões de normalidade."
-      : `${grauPerdaOD} ${tipoPerdaOD} ${configuracaoOD} nas frequências ${frequenciasAlteradasOD}.`;
+      : configuracaoOD === "Sem resposta"
+        ? `${grauPerdaOD} ${tipoPerdaOD} — Ausência de resposta em todas as frequências testadas.`
+        : `${grauPerdaOD} ${tipoPerdaOD} ${configuracaoOD} nas frequências ${frequenciasAlteradasOD}.`;
 
     const resultadoOE = isNormalOE
       ? "Limiares auditivos dentro dos padrões de normalidade."
-      : `${grauPerdaOE} ${tipoPerdaOE} ${configuracaoOE} nas frequências ${frequenciasAlteradasOE}.`;
+      : configuracaoOE === "Sem resposta"
+        ? `${grauPerdaOE} ${tipoPerdaOE} — Ausência de resposta em todas as frequências testadas.`
+        : `${grauPerdaOE} ${tipoPerdaOE} ${configuracaoOE} nas frequências ${frequenciasAlteradasOE}.`;
+
 
     const conclusaoGeral =
       isNormalOD && isNormalOE
@@ -886,10 +909,13 @@ export class AudiometriaCalculator {
 
     return {
       // === Dados numéricos ===
-      mediaTonalOD,
-      mediaTonalOE,
-      perdaAuditivaOD: `${mediaTonalOD} dB`,
-      perdaAuditivaOE: `${mediaTonalOE} dB`,
+
+      // Converte null → undefined para respeitar Partial<AudiometriaData>
+      // onde mediaTonalOD é number (não number | null)
+      mediaTonalOD: mediaTonalOD ?? undefined,
+      mediaTonalOE: mediaTonalOE ?? undefined,
+      perdaAuditivaOD,
+      perdaAuditivaOE,
 
       // === Classificação / Tipo ===
       classificacaoOD: isNormalOD ? "Normal" : classificacaoOD,
@@ -1925,7 +1951,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         Média Tonal (4f)
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.mediaTonalOD} dB
+                        {formData.mediaTonalOD ? `${formData.mediaTonalOD} dB` : "-"}
                       </div>
                     </div>
                     <div className="text-center">
@@ -1988,7 +2014,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         Média Tonal (4f)
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.mediaTonalOE} dB
+                        {formData.mediaTonalOE ? `${formData.mediaTonalOE} dB` : '-' }
                       </div>
                     </div>
                     <div className="text-center">
