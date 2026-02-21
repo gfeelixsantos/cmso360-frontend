@@ -316,9 +316,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&manterExamesRealizados=${updateSerivce}`
 
 
-        console.log("URL DINAMICA", url);
+        
         const response = await fetch(url);
         const prontuario: Scheduling = await response.json();
+     
 
         if (response.ok && prontuario?.CODIGOPRONTUARIO) {
           // Seleciona o paciente normalmente

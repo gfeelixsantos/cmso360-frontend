@@ -257,8 +257,9 @@ const ExamesTable: React.FC<{
 
     return localExames.filter(
       (exame) =>
-        exame.nomeExame.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        exame.codigoExame.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exame.nomeExame?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        exame.codigoExame?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        // Adicione o "?" aqui também para evitar erros de busca
         exame.grupo?.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [localExames, searchTerm]);
