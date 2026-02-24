@@ -216,9 +216,6 @@ const RecepcaoPage: React.FC = () => {
 
   // Dados
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
-  const [agendamentosAtivos, setAgendamentosAtivos] = useState<Scheduling[]>(
-    [],
-  );
   const [empreparacao, setEmPreparacao] = useState<PreparationRequest[]>([]);
   const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<
     PreparationRequest[]
@@ -269,7 +266,7 @@ const RecepcaoPage: React.FC = () => {
     }
   }, [router]);
 
-  const handleExameSelecionado = () => {};
+  const handleExameSelecionado = () => { };
 
   // ---------------------------------------------------------
   // Carrega tickets
@@ -548,19 +545,19 @@ const RecepcaoPage: React.FC = () => {
       console.error("❌ Ticket error:", JSON.parse(message));
     };
 
-  const handleDeleteTicket = (id: number) => {
-    // Atualiza a lista de tickets removendo o excluído
-    remove(id);
-    
-    
-    // Opcional: Feedback visual
-    addToast({
-      title: "Ticket Removido",
-      severity: "success",
-      color: "foreground",
-      size: "sm",
-    });
-  };
+    const handleDeleteTicket = (id: number) => {
+      // Atualiza a lista de tickets removendo o excluído
+      remove(id);
+
+
+      // Opcional: Feedback visual
+      addToast({
+        title: "Ticket Removido",
+        severity: "success",
+        color: "foreground",
+        size: "sm",
+      });
+    };
 
     const handleUpdateSchedule = ({
       operation,
@@ -667,9 +664,8 @@ const RecepcaoPage: React.FC = () => {
   }, []);
 
   const handleModal = useCallback(() => {
-    setAgendamentosAtivos(agendamentos);
-    setModalAtendimentoAberto(!modalAtendimentoAberto);
-  }, [modalAtendimentoAberto]);
+    setModalAtendimentoAberto((prev) => !prev);
+  }, []);
 
   const calcularEstatisticas = useCallback(() => {
     const senhasFiltradas = getAll();
@@ -791,7 +787,7 @@ const RecepcaoPage: React.FC = () => {
       </div>
 
       <AtendimentoModal
-        agendamentos={agendamentosAtivos}
+        agendamentos={agendamentos}
         isOpen={modalAtendimentoAberto}
         salaSelecionada={salaSelecionada}
         socCompanies={socCompanies}
