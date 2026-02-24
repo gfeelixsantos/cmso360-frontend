@@ -361,7 +361,7 @@ export default function RelatoriosPage() {
   // Função para exportar CSV com os IDs dos atendimentos filtrados
   const handleExportCSV = useCallback(async () => {
     try {
-            
+
 
       if (!hasActiveFilters) {
         alert("Por favor, aplique filtros antes de exportar.");
@@ -560,6 +560,13 @@ export default function RelatoriosPage() {
 
   // Atualizar atendimento após upload
   const handleUpdateSchedulingFromModal = useCallback((updated: Scheduling) => {
+    setSelectedAtendimento((current) => {
+      if (current && current._id === updated._id) {
+        return updated;
+      }
+      return current;
+    });
+
     setFilteredAtendimentos((prev) => {
       const foundIndex = prev.findIndex((p) => p._id === updated._id);
 

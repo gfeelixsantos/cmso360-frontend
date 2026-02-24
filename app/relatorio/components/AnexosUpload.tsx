@@ -1,7 +1,15 @@
-// app/relatorios/components/AnexosUpload.tsx
-import React, { useState, useRef, useCallback } from "react";
-import { Button, Spinner } from "@heroui/react";
-import { Paperclip, X, ExternalLink } from "lucide-react";
+import React, { useState, useRef, useCallback, DragEvent } from "react";
+import { Button, Spinner, Tooltip } from "@heroui/react";
+import {
+  ExternalLink,
+  UploadCloud,
+  FileText,
+  FileImage,
+  CheckCircle2,
+  Trash2,
+  File as FileIconLucide,
+  Paperclip
+} from "lucide-react";
 
 import { FileUpload } from "@/lib/scheduling/interface/scheduling";
 
@@ -23,90 +31,94 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
   allowedTypes = [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"],
 }) => {
   const [uploading, setUploading] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const selectedFiles = event.target.files;
-
-      if (!selectedFiles) return;
-
-      const newFiles: File[] = [];
-      const newErrors: Record<string, string> = {};
+  const processFiles = useCallback(
+    async (selectedFiles: FileList | File[]) => {
+      const validFiles: File[] = [];
+      const newErrors: string[] = [];
 
       Array.from(selectedFiles).forEach((file) => {
         if (file.size > maxFileSize * 1024 * 1024) {
-          newErrors[file.name] =
-            `Arquivo muito grande (máximo: ${maxFileSize}MB)`;
-
+          newErrors.push(`- ${file.name}: Muito grande (máx ${maxFileSize}MB)`);
           return;
         }
 
         const fileExtension = `.${file.name.split(".").pop()?.toLowerCase()}`;
 
         if (!allowedTypes.includes(fileExtension)) {
-          newErrors[file.name] = `Tipo não permitido`;
-
+          newErrors.push(`- ${file.name}: Tipo não permitido`);
           return;
         }
 
-        if (
-          files.some((f) => f.name === file.name) ||
-          anexos.some((a) => a.Name === file.name)
-        ) {
-          newErrors[file.name] = "Arquivo já adicionado";
-
+        if (anexos.some((a) => a.Name === file.name)) {
+          newErrors.push(`- ${file.name}: Já anexado`);
           return;
         }
 
-        newFiles.push(file);
+        validFiles.push(file);
       });
 
-      setFiles((prev) => [...prev, ...newFiles]);
-      setErrors(newErrors);
+      if (newErrors.length > 0) {
+        alert("Atenção - Erro em alguns arquivos:\n\n" + newErrors.join("\n"));
+      }
+
+      if (validFiles.length > 0) {
+        setUploading(true);
+        try {
+          await onUpload(validFiles);
+        } catch (error) {
+          console.error("Erro ao fazer upload:", error);
+          alert("Ocorreu um erro ao tentar enviar os arquivos.");
+        } finally {
+          setUploading(false);
+        }
+      }
 
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     },
-    [files, anexos, maxFileSize, allowedTypes],
+    [maxFileSize, allowedTypes, anexos, onUpload],
   );
 
-  const handleRemoveFile = useCallback(
-    (fileName: string) => {
-      setFiles((prev) => prev.filter((f) => f.name !== fileName));
-      delete errors[fileName];
+  const handleFileSelect = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (event.target.files) {
+        processFiles(event.target.files);
+      }
     },
-    [errors],
+    [processFiles],
   );
 
-  const handleUploadFiles = useCallback(async () => {
-    if (files.length === 0) return;
-
-    setUploading(true);
-    try {
-      await onUpload(files);
-      setFiles([]);
-      setErrors({});
-    } catch (error) {
-      console.error("Erro ao fazer upload:", error);
-    } finally {
-      setUploading(false);
-    }
-  }, [files, onUpload]);
-
-  const handleTriggerFileInput = useCallback(() => {
-    fileInputRef.current?.click();
+  const handleDragOver = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(true);
   }, []);
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+  const handleDragLeave = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  }, []);
 
-    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-  };
+  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processFiles(e.dataTransfer.files);
+    }
+  }, [processFiles]);
+
+  const handleTriggerFileInput = useCallback(() => {
+    if (!isLoading && !uploading) {
+      fileInputRef.current?.click();
+    }
+  }, [isLoading, uploading]);
 
   const handleOpenAttachment = useCallback((anexo: FileUpload) => {
     if (anexo.StoragePath) {
@@ -114,174 +126,169 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
     }
   }, []);
 
-  return (
-    <div className="mt-6 p-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-bold text-gray-700">Anexos</h2>
-        </div>
+  const getFileIcon = (fileName: string, className?: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
 
-        <div className="flex items-center gap-2">
-          <input
-            ref={fileInputRef}
-            multiple
-            accept={allowedTypes.join(",")}
-            className="hidden"
-            disabled={isLoading || uploading}
-            type="file"
-            onChange={handleFileSelect}
-          />
-          <Button
-            color="primary"
-            disabled={isLoading || uploading}
-            isLoading={uploading}
-            size="sm"
-            startContent={<Paperclip size={16} />}
-            variant="ghost"
-            onPress={handleTriggerFileInput}
-          >
-            Adicionar Anexos
-          </Button>
+    if (['jpg', 'jpeg', 'png', 'svg', 'gif'].includes(ext || '')) {
+      return <FileImage className={className || "text-green-500"} size={16} />;
+    }
+
+    if (['pdf'].includes(ext || '')) {
+      return <FileText className={className || "text-green-600"} size={16} />;
+    }
+
+    return <FileIconLucide className={className || "text-gray-500"} size={16} />;
+  }
+
+  const isBusy = isLoading || uploading;
+
+  return (
+    <div className="mt-4 flex flex-col gap-3 w-full pb-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-base font-bold text-gray-800">Anexos do Prontuário</h2>
+          <p className="text-xs text-gray-500">Gerencie documentos e exames.</p>
         </div>
       </div>
 
-      {/* Arquivos para upload */}
-      {files.length > 0 && (
-        <div className="mb-4">
-          <div className="text-xs font-medium text-gray-600 mb-2">
-            Arquivos para enviar ({files.length})
-          </div>
-          <div className="space-y-2">
-            {files.map((file) => (
-              <div
-                key={file.name}
-                className={`flex items-center justify-between p-2 rounded-lg border ${
-                  errors[file.name]
-                    ? "border-red-200 bg-red-50"
-                    : "border-blue-200 bg-blue-50"
-                }`}
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Paperclip
-                    className="text-gray-500 flex-shrink-0"
-                    size={14}
-                  />
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {file.name}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      {formatFileSize(file.size)}
-                    </div>
-                  </div>
-                </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+        {/* ZONA DE ARRASTAR E SOLTAR */}
+        <div className="md:col-span-1">
+          <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleTriggerFileInput}
+            className={`
+              h-full min-h-[140px] relative overflow-hidden transition-all duration-300 ease-in-out border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer group text-center
+              ${isDragging
+                ? "border-green-500 bg-green-50 scale-[1.01]"
+                : "border-gray-300 hover:border-green-500/50 hover:bg-green-50/50 bg-gray-50/50"
+              }
+              ${isBusy ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}
+            `}
+          >
+            <div className={`
+              p-2.5 rounded-full mb-2 transition-colors duration-300 shadow-sm border border-gray-100 bg-white
+              ${isDragging ? "text-green-600 bg-green-100 border-green-200" : "text-gray-400 group-hover:text-green-600 group-hover:bg-green-50 group-hover:border-green-100"}
+            `}>
+              {isBusy ? (
+                <Spinner size="sm" color="success" />
+              ) : (
+                <UploadCloud size={24} strokeWidth={2} />
+              )}
+            </div>
 
-                <div className="flex items-center gap-2">
-                  {errors[file.name] && (
-                    <div
-                      className="text-xs text-red-600"
-                      title={errors[file.name]}
-                    >
-                      Erro
-                    </div>
-                  )}
-                  <Button
-                    isIconOnly
-                    color="danger"
-                    disabled={uploading}
-                    size="sm"
-                    variant="light"
-                    onPress={() => handleRemoveFile(file.name)}
-                  >
-                    <X size={14} />
-                  </Button>
-                </div>
-              </div>
-            ))}
+            <h3 className={`text-xs font-semibold mb-1 transition-colors ${isDragging ? "text-green-600" : "text-gray-700 group-hover:text-green-600"}`}>
+              {isBusy ? "Enviando..." : (isDragging ? "Solte arquivos aqui" : "Clique ou arraste")}
+            </h3>
 
-            {!uploading && (
-              <div className="flex justify-end pt-2">
-                <Button
-                  color="primary"
-                  disabled={Object.keys(errors).length > 0}
-                  size="sm"
-                  onPress={handleUploadFiles}
-                >
-                  Enviar Arquivos
-                </Button>
-              </div>
-            )}
+            <div className="flex flex-col gap-0.5 text-[10px] text-gray-400">
+              <span>PDF, JPG, PNG, DOCX</span>
+              <span>Máx {maxFileSize}MB</span>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              multiple
+              accept={allowedTypes.join(",")}
+              className="hidden"
+              disabled={isBusy}
+              type="file"
+              onChange={handleFileSelect}
+            />
           </div>
         </div>
-      )}
 
-      {/* Anexos já enviados */}
-      {anexos.length > 0 && (
-        <div>
-          <div className="space-y-2">
-            {anexos.map((anexo, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
-              >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <Paperclip
-                    className="text-gray-500 flex-shrink-0"
-                    size={14}
-                  />
-                  <div className="min-w-0">
-                    {/* Link quando tem StoragePath, texto normal quando não tem */}
-                    {anexo.StoragePath ? (
-                      <Button
-                        className="text-sm font-medium truncate text-blue-600 hover:text-blue-800 hover:underline text-left flex items-center gap-1"
-                        title="Clique para abrir"
-                        onClick={() => handleOpenAttachment(anexo)}
-                      >
-                        {anexo.Name}
-                        <ExternalLink className="inline" size={12} />
-                      </Button>
-                    ) : (
-                      <div className="text-sm font-medium truncate text-gray-700">
-                        {anexo.Name}
+        {/* LISTA DE DOCUMENTOS SALVOS */}
+        <div className="md:col-span-2 flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm h-full min-h-[140px] max-h-[220px]">
+          <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2 bg-gray-50/80 rounded-t-xl sticky top-0 z-10">
+            <h4 className="text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              Documentos Salvos ({anexos.length})
+            </h4>
+            {isBusy && <span className="text-[10px] text-green-600 font-semibold animate-pulse">Sincronizando...</span>}
+          </div>
+
+          {anexos.length === 0 ? (
+            <div className="flex flex-col items-center justify-center flex-1 py-6 text-center">
+              <Paperclip className="text-gray-300 mb-2" size={20} />
+              <p className="text-xs text-gray-400 font-medium tracking-tight">Atendimento sem anexos</p>
+              <p className="text-[10px] text-gray-300 mt-1">Os documentos enviados aparecerão aqui</p>
+            </div>
+          ) : (
+            <div className="flex flex-col overflow-y-auto custom-scrollbar p-1">
+              {anexos.map((anexo, index) => (
+                <div
+                  key={`${anexo.Name}-${index}`}
+                  className="group flex flex-col p-1.5 rounded-lg border border-transparent hover:border-gray-100 hover:bg-gray-50 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <div className="flex-shrink-0 opacity-80">
+                        {getFileIcon(anexo.Name, "text-green-600")}
                       </div>
-                    )}
-                    <div className="text-xs text-gray-500">
-                      {anexo.StoragePath
-                        ? "Clique para visualizar"
-                        : "Arquivo armazenado internamente"}
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[11px] font-semibold text-gray-700 truncate leading-tight" title={anexo.Name}>
+                          {anexo.Name}
+                        </p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <span className="flex items-center gap-0.5 text-[8px] leading-none text-green-700 font-bold bg-green-100 px-1 py-0.5 rounded uppercase">
+                            <CheckCircle2 size={8} />
+                            Salvo
+                          </span>
+                          {anexo.StoragePath && (
+                            <span className="text-[9px] text-gray-400 truncate flex items-center gap-0.5">
+                              • Nuvem
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {anexo.StoragePath && (
+                        <Tooltip content="Abrir arquivo" placement="top" size="sm">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="light"
+                            className="w-6 h-6 min-w-min text-blue-600"
+                            onClick={() => handleOpenAttachment(anexo)}
+                          >
+                            <ExternalLink size={13} />
+                          </Button>
+                        </Tooltip>
+                      )}
+
+                      <Tooltip content="Excluir" color="danger" placement="top" size="sm">
+                        <Button
+                          isIconOnly
+                          color="danger"
+                          size="sm"
+                          variant="light"
+                          className="w-6 h-6 min-w-min"
+                          onPress={() => onRemove(anexo.Name)}
+                        >
+                          <Trash2 size={13} />
+                        </Button>
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
-
-                <Button
-                  isIconOnly
-                  color="danger"
-                  disabled={true}
-                  size="sm"
-                  variant="light"
-                  onPress={() => onRemove(anexo.Name)}
-                >
-                  <X size={14} />
-                </Button>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Sem anexos */}
-      {files.length === 0 && anexos.length === 0 && (
-        <div className="text-left py-4 text-gray-500 text-sm">
-          Nenhum anexo ao prontuário.
-        </div>
-      )}
-
-      {/* Loading state */}
-      {(uploading || isLoading) && (
-        <div className="flex justify-center py-2">
-          <Spinner size="sm" />
-        </div>
-      )}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+      `}} />
     </div>
   );
 };
