@@ -722,7 +722,7 @@ export class AudiometriaCalculator {
     const altas = [3000, 4000, 6000]
       .map(get)
       .filter((v): v is number => v !== null);
-      
+
     if (baixas.length === 0 && altas.length === 0) return "Sem resposta";
 
     if (baixas.length === 0 || altas.length === 0) {
@@ -1069,46 +1069,46 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     [],
   );
 
-// No seu componente principal
-const verAudiometriaAnterior = useCallback(async () => {
-  try {
-    const empresa = atendimento?.CODIGOEMPRESA;
-    const codigoFuncionario = atendimento?.CODIGO;
+  // No seu componente principal
+  const verAudiometriaAnterior = useCallback(async () => {
+    try {
+      const empresa = atendimento?.CODIGOEMPRESA;
+      const codigoFuncionario = atendimento?.CODIGO;
 
-    if (!empresa || !codigoFuncionario) {
-      alert("Dados insuficientes para buscar audiometria anterior.");
-      return;
-    }
-
-    const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
-    url.searchParams.append("empresa", empresa);
-    url.searchParams.append("codigoFuncionario", codigoFuncionario);
-
-    const response = await fetch(url.toString(), {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (response.ok) {
-      const data: AudiometriaExportaDados[] = await response.json();
-      console.log(data)
-      if (data && data.length > 0) {
-        // Abrir janela com histórico de audiometrias
-        openHistoricoHTML(data, atendimento);
-      } else {
-        alert("Nenhuma audiometria anterior encontrada para este paciente.");
+      if (!empresa || !codigoFuncionario) {
+        alert("Dados insuficientes para buscar audiometria anterior.");
+        return;
       }
-    } else if (response.status === 400) {
-      alert("Não foi encontrada audiometria anterior para este paciente.");
-    } else {
-      console.error("Erro na resposta:", response.status);
-      alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+
+      const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
+      url.searchParams.append("empresa", empresa);
+      url.searchParams.append("codigoFuncionario", codigoFuncionario);
+
+      const response = await fetch(url.toString(), {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.ok) {
+        const data: AudiometriaExportaDados[] = await response.json();
+        console.log(data.length)
+        if (data && data.length > 0) {
+          // Abrir janela com histórico de audiometrias
+          openHistoricoHTML(data, atendimento);
+        } else {
+          alert("Nenhuma audiometria anterior encontrada para este paciente.");
+        }
+      } else if (response.status === 400) {
+        alert("Não foi encontrada audiometria anterior para este paciente.");
+      } else {
+        console.error("Erro na resposta:", response.status);
+        alert(`Erro ao buscar audiometria anterior: ${response.status}`);
+      }
+    } catch (error) {
+      console.error("Erro ao buscar audiometria anterior:", error);
+      alert("Erro ao buscar audiometria anterior. Tente novamente.");
     }
-  } catch (error) {
-    console.error("Erro ao buscar audiometria anterior:", error);
-    alert("Erro ao buscar audiometria anterior. Tente novamente.");
-  }
-}, [atendimento]);
+  }, [atendimento]);
 
   // Função para calcular resultados com validação
   const calcularResultados = useCallback(async () => {
@@ -1704,7 +1704,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOD as keyof AudiometriaData
+                        freq.fieldVAOD as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1751,7 +1751,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOD as keyof AudiometriaData
+                          freq.fieldVOOD as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1814,7 +1814,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOE as keyof AudiometriaData
+                        freq.fieldVAOE as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1861,7 +1861,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOE as keyof AudiometriaData
+                          freq.fieldVOOE as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1928,16 +1928,15 @@ const verAudiometriaAnterior = useCallback(async () => {
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOD.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOD.includes("normalidade") ||
                         formData.classificacaoOD === "-"
-                          ? "bg-green-100 text-green-800"
-                          : formData.classificacaoOD.includes("Leve")
-                            ? "bg-amber-100 text-amber-800"
-                            : formData.classificacaoOD.includes("Moderada")
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
-                      }`}
+                        ? "bg-green-100 text-green-800"
+                        : formData.classificacaoOD.includes("Leve")
+                          ? "bg-amber-100 text-amber-800"
+                          : formData.classificacaoOD.includes("Moderada")
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {formData.classificacaoOD === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -1991,16 +1990,15 @@ const verAudiometriaAnterior = useCallback(async () => {
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOE.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOE.includes("normalidade") ||
                         formData.classificacaoOE === "-"
-                          ? "bg-green-100 text-green-800"
-                          : formData.classificacaoOE.includes("Leve")
-                            ? "bg-amber-100 text-amber-800"
-                            : formData.classificacaoOE.includes("Moderada")
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
-                      }`}
+                        ? "bg-green-100 text-green-800"
+                        : formData.classificacaoOE.includes("Leve")
+                          ? "bg-amber-100 text-amber-800"
+                          : formData.classificacaoOE.includes("Moderada")
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {formData.classificacaoOE === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -2014,7 +2012,7 @@ const verAudiometriaAnterior = useCallback(async () => {
                         Média Tonal (4f)
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.mediaTonalOE ? `${formData.mediaTonalOE} dB` : '-' }
+                        {formData.mediaTonalOE ? `${formData.mediaTonalOE} dB` : '-'}
                       </div>
                     </div>
                     <div className="text-center">

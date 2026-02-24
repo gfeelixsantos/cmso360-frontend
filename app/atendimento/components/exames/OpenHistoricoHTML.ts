@@ -4,13 +4,12 @@ import { adaptExportaDadosToAudiometriaData } from "./audiometriaAdapter";
 import { generateAudiogramSVG } from "./AudiometriaGraphics";
 import { AudiometriaCalculator } from "./AudiometriaOcupacional";
 
-
 export function openHistoricoHTML(
-  audiometrias: AudiometriaExportaDados[], 
+  audiometrias: AudiometriaExportaDados[],
   atendimento: any
 ) {
-  const windowWidth = 1400;
-  const windowHeight = 900;
+  const windowWidth = 800;
+  const windowHeight = 600;
   const left = (window.screen.width - windowWidth) / 2;
   const top = (window.screen.height - windowHeight) / 2;
 
@@ -32,200 +31,212 @@ export function openHistoricoHTML(
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
-  // Gerar HTML para cada audiometria
+  // O usuário solicitou que a audiometria mais recente (a atual) seja desconsiderada.
+  if (audiometriasOrdenadas.length > 0) {
+    audiometriasOrdenadas.shift();
+  }
+
+  // Gerar HTML para cada audiometria restante
   const audiometriasHTML = audiometriasOrdenadas.map(audiometria => {
     // Adaptar os dados para o formato do componente
     const audiometriaData = adaptExportaDadosToAudiometriaData(audiometria, atendimento);
-    
+
     // CALCULAR OS RESULTADOS USANDO O MESMO CALCULATOR DO COMPONENTE
     const resultados = AudiometriaCalculator.calcularTodosResultados(audiometriaData);
-    
+
     // Merge dos dados originais com os resultados calculados
     const dadosCompletos = {
       ...audiometriaData,
       ...resultados
     };
-    
+
     const graficos = generateAudiogramSVG(dadosCompletos);
-    
+
     return `
       <div class="audiometria-card">
         <!-- HEADER DO EXAME -->
         <div class="card-header">
           <div class="card-title">
             <span class="data-exame">${formatDateBR(audiometria.DATA_REALIZACAO)}</span>
-            <span class="numero-guia">Guia: ${audiometria.NUMERO_GUIA || 'Não informado'}</span>
+            <span class="numero-guia">Guia: <span class="badge badge-light">${audiometria.NUMERO_GUIA || 'N/A'}</span></span>
           </div>
-          <span class="resultado-badge resultado-${getResultadoClass(dadosCompletos.resultadoOD)}">
+          <span class="badge badge-${getResultadoStyle(dadosCompletos.resultadoOD)}">
             ${formatResultado(dadosCompletos.resultadoOD)}
           </span>
         </div>
 
-        <!-- DADOS DO FUNCIONÁRIO E UNIDADE -->
-        <div class="info-grid">
-          ${createInfoItem('Unidade', audiometria.NOME_UNIDADE)}
-          ${createInfoItem('Setor', audiometria.SETOR)}
-          ${createInfoItem('Cargo', audiometria.CARGO)}
-          ${createInfoItem('Função', audiometria.FUNCAO)}
-          ${createInfoItem('Data Nascimento', formatDateBR(atendimento?.DATANASCIMENTO))}
-          ${createInfoItem('Tipo Exame', atendimento?.TIPOEXAMENOME)}
-          ${createInfoItem('Repouso Auditivo', dadosCompletos.repousoAuditivo === 'Sim' ? `${dadosCompletos.horasRepouso}h` : 'Não')}
-          ${createInfoItem('Aparelho', dadosCompletos.tipoAudiometro)}
-          ${createInfoItem('Otoscopia OD', formatOtoscopia(dadosCompletos.meatoscopiaOD))}
-          ${createInfoItem('Otoscopia OE', formatOtoscopia(dadosCompletos.meatoscopiaOE))}
+        <!-- DADOS DO EXAME -->
+        <div class="info-section">
+          <h4 class="section-title">Informações do Exame</h4>
+          <div class="info-grid">
+            ${createInfoItem('Unidade', audiometria.NOME_UNIDADE)}
+            ${createInfoItem('Setor', audiometria.SETOR)}
+            ${createInfoItem('Cargo', audiometria.CARGO)}
+            ${createInfoItem('Função', audiometria.FUNCAO)}
+            ${createInfoItem('Repouso Auditivo', dadosCompletos.repousoAuditivo === 'Sim' ? `${dadosCompletos.horasRepouso}h` : 'Não')}
+            ${createInfoItem('Audiômetro', dadosCompletos.tipoAudiometro)}
+            ${createInfoItem('Otoscopia OD', formatOtoscopia(dadosCompletos.meatoscopiaOD))}
+            ${createInfoItem('Otoscopia OE', formatOtoscopia(dadosCompletos.meatoscopiaOE))}
+          </div>
         </div>
 
         <!-- GRÁFICOS -->
         <div class="graficos-container">
           <div class="grafico-item">
-            <div style="text-align: center; margin-bottom: 5px; color: #B71C1C; font-weight: bold;">OD</div>
+            <div class="grafico-title text-red">Ouvido Direito (OD)</div>
             ${graficos.od}
           </div>
           <div class="grafico-item">
-            <div style="text-align: center; margin-bottom: 5px; color: #0D47A1; font-weight: bold;">OE</div>
+            <div class="grafico-title text-blue">Ouvido Esquerdo (OE)</div>
             ${graficos.oe}
           </div>
         </div>
 
-        <!-- RESULTADOS - MESMO PADRÃO DO COMPONENTE -->
+        <!-- RESULTADOS DETALHADOS -->
         <div class="resultados-container">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <!-- Resultado OD -->
-            <div class="bg-red-50 p-4 rounded-lg border border-red-200">
-              <h3 class="font-bold text-red-800 mb-4 text-center">OD - Ouvido Direito</h3>
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-sm font-semibold text-red-700 mb-1">
-                    Classificação (Grau Lloyd & Kaplan)
-                  </label>
-                  <div class="${getClassificationClass(dadosCompletos.classificacaoOD)}">
-                    ${formatClassification(dadosCompletos.classificacaoOD)}
-                  </div>
+          <h4 class="section-title">Análise dos Limiares</h4>
+          <div class="grid grid-cols-2 gap-6">
+            <!-- OD -->
+            <div class="resultado-box border-red">
+              <h5 class="box-title text-red">Ouvido Direito (OD)</h5>
+              
+              <div class="mb-3">
+                <div class="label">Classificação (Lloyd & Kaplan)</div>
+                <div class="classification-badge ${getClassificationStyle(dadosCompletos.classificacaoOD)}">
+                  ${formatClassification(dadosCompletos.classificacaoOD)}
                 </div>
-                
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                  <div class="text-center">
-                    <div class="font-semibold text-red-700">Média Tonal (4f)</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.mediaTonalOD} dB</div>
-                  </div>
-                  <div class="text-center">
-                    <div class="font-semibold text-red-700">Tipo de Perda</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.tipoPerdaOD || '-'}</div>
-                  </div>
-                  <div class="text-center">
-                    <div class="font-semibold text-red-700">Configuração</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.configuracaoOD || '-'}</div>
-                  </div>
-                </div>
-                
-                <div class="text-xs text-gray-600 mt-2">
-                  <span class="font-semibold">Frequências Alteradas:</span> 
-                  ${dadosCompletos.frequenciasAlteradasOD || 'Nenhuma'}
-                </div>
-                
-                ${dadosCompletos.entalhe4000HzOD ? `
-                  <div class="mt-2 p-2 bg-orange-100 text-orange-800 rounded text-xs font-semibold">
-                    ⚠ Entalhe em 4000Hz detectado
-                  </div>
-                ` : ''}
               </div>
+              
+              <div class="metrics-grid">
+                <div class="metric">
+                  <div class="metric-label">Média Tonal</div>
+                  <div class="metric-value-sm">${dadosCompletos.mediaTonalOD} dB</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Tipo</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOD || '-'}</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Configuração</div>
+                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOD || '-'}</div>
+                </div>
+              </div>
+              
+              <div class="mt-3 text-xs">
+                <span class="label">Frequências Alteradas:</span> 
+                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOD || 'Nenhuma'}</span>
+              </div>
+              
+              ${dadosCompletos.entalhe4000HzOD ? `
+                <div class="alert alert-warning mt-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Entalhe em 4000Hz detectado
+                </div>
+              ` : ''}
             </div>
 
-            <!-- Resultado OE -->
-            <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
-              <h3 class="font-bold text-blue-800 mb-4 text-center">OE - Ouvido Esquerdo</h3>
-              <div class="space-y-3">
-                <div>
-                  <label class="block text-sm font-semibold text-blue-700 mb-1">
-                    Classificação (Grau Lloyd & Kaplan)
-                  </label>
-                  <div class="${getClassificationClass(dadosCompletos.classificacaoOE)}">
-                    ${formatClassification(dadosCompletos.classificacaoOE)}
-                  </div>
+            <!-- OE -->
+            <div class="resultado-box border-blue">
+              <h5 class="box-title text-blue">Ouvido Esquerdo (OE)</h5>
+              
+              <div class="mb-3">
+                <div class="label">Classificação (Lloyd & Kaplan)</div>
+                <div class="classification-badge ${getClassificationStyle(dadosCompletos.classificacaoOE)}">
+                  ${formatClassification(dadosCompletos.classificacaoOE)}
                 </div>
-                
-                <div class="grid grid-cols-3 gap-2 text-xs">
-                  <div class="text-center">
-                    <div class="font-semibold text-blue-700">Média Tonal (4f)</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.mediaTonalOE} dB</div>
-                  </div>
-                  <div class="text-center">
-                    <div class="font-semibold text-blue-700">Tipo de Perda</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.tipoPerdaOE || '-'}</div>
-                  </div>
-                  <div class="text-center">
-                    <div class="font-semibold text-blue-700">Configuração</div>
-                    <div class="font-bold text-gray-800">${dadosCompletos.configuracaoOE || '-'}</div>
-                  </div>
-                </div>
-                
-                <div class="text-xs text-gray-600 mt-2">
-                  <span class="font-semibold">Frequências Alteradas:</span> 
-                  ${dadosCompletos.frequenciasAlteradasOE || 'Nenhuma'}
-                </div>
-                
-                ${dadosCompletos.entalhe4000HzOE ? `
-                  <div class="mt-2 p-2 bg-orange-100 text-orange-800 rounded text-xs font-semibold">
-                    ⚠ Entalhe em 4000Hz detectado
-                  </div>
-                ` : ''}
               </div>
+              
+              <div class="metrics-grid">
+                <div class="metric">
+                  <div class="metric-label">Média Tonal</div>
+                  <div class="metric-value-sm">${dadosCompletos.mediaTonalOE} dB</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Tipo</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOE || '-'}</div>
+                </div>
+                <div class="metric">
+                  <div class="metric-label">Configuração</div>
+                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOE || '-'}</div>
+                </div>
+              </div>
+              
+              <div class="mt-3 text-xs">
+                <span class="label">Frequências Alteradas:</span> 
+                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOE || 'Nenhuma'}</span>
+              </div>
+              
+              ${dadosCompletos.entalhe4000HzOE ? `
+                <div class="alert alert-warning mt-2">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Entalhe em 4000Hz detectado
+                </div>
+              ` : ''}
             </div>
           </div>
 
           <!-- Classificação NR-7 -->
-          <div class="mt-4 grid grid-cols-2 gap-4 p-3 bg-gray-50 rounded-lg">
-            <div class="text-center">
-              <span class="text-xs font-semibold text-gray-700">NR-7 OD:</span>
-              <span class="text-xs ml-2 ${getNR7Class(dadosCompletos.classificacaoNR7OD)}">
-                ${dadosCompletos.classificacaoNR7OD || 'Não classificado'}
-              </span>
-            </div>
-            <div class="text-center">
-              <span class="text-xs font-semibold text-gray-700">NR-7 OE:</span>
-              <span class="text-xs ml-2 ${getNR7Class(dadosCompletos.classificacaoNR7OE)}">
-                ${dadosCompletos.classificacaoNR7OE || 'Não classificado'}
-              </span>
+          <div class="nr7-container mt-4">
+            <h5 class="nr7-title">Classificação NR-7 (Referência)</h5>
+            <div class="grid grid-cols-2 gap-4 mt-2">
+              <div class="nr7-box">
+                <span class="label">OD:</span>
+                <span class="font-medium ${getNR7Style(dadosCompletos.classificacaoNR7OD)}">
+                  ${dadosCompletos.classificacaoNR7OD || 'Não classificado'}
+                </span>
+              </div>
+              <div class="nr7-box">
+                <span class="label">OE:</span>
+                <span class="font-medium ${getNR7Style(dadosCompletos.classificacaoNR7OE)}">
+                  ${dadosCompletos.classificacaoNR7OE || 'Não classificado'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        <!-- TABELA DE VALORES (USANDO DADOS ADAPTADOS) -->
-        ${createTabelaValores(dadosCompletos)}
-        
-        <!-- IRF E SRT -->
-        ${createIRFSRT(dadosCompletos)}
-        
-        <!-- OBSERVAÇÕES -->
-        ${dadosCompletos.observacoes ? createObservacao('Geral', dadosCompletos.observacoes) : ''}
-        
-        <!-- PARECER E CONCLUSÃO -->
-        <div class="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
-          <h4 class="text-sm font-semibold text-gray-700 mb-2">Conclusão</h4>
-          <p class="text-sm text-gray-600">${dadosCompletos.conclusao || 'Não informado'}</p>
-          
-          <div class="mt-3 p-3 bg-white rounded-lg border ${dadosCompletos.criterioPCD?.includes('Atende') ? 'border-green-300 bg-green-50' : 'border-gray-300'}">
-            <h4 class="text-xs font-semibold ${dadosCompletos.criterioPCD?.includes('Atende') ? 'text-green-700' : 'text-gray-700'} mb-1">
-              Critério PCD
-            </h4>
-            <p class="text-xs ${dadosCompletos.criterioPCD?.includes('Atende') ? 'text-green-600' : 'text-gray-600'}">
-              ${dadosCompletos.criterioPCD || 'Não avaliado'}
-            </p>
+        <!-- TABELA E OUTROS TESTES EM 2 COLUNAS SE POSSÍVEL -->
+        <div class="grid grid-cols-1 md-grid-cols-layout gap-6 mt-6">
+          <div class="table-section">
+            ${createTabelaValores(dadosCompletos)}
+          </div>
+          <div class="other-tests-section">
+            ${createIRFSRT(dadosCompletos)}
+            ${dadosCompletos.observacoes ? createObservacao('Observações', dadosCompletos.observacoes) : ''}
           </div>
         </div>
         
-        <!-- RODAPÉ -->
+        <!-- CONCLUSÃO E PARECER -->
+        <div class="conclusao-section bg-status-${getResultadoStyle(dadosCompletos.resultadoOD)} mt-4">
+          <div class="conclusao-header text-status-${getResultadoStyle(dadosCompletos.resultadoOD)}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            Parecer e Conclusão Geral
+          </div>
+          <div class="conclusao-body">
+            <p class="conclusao-text">${dadosCompletos.conclusao || 'Não informado'}</p>
+            <div class="pcd-box">
+              <div class="pcd-label">Critério PCD (Lei 14.768/2023)</div>
+              <div class="pcd-value">${dadosCompletos.criterioPCD || 'Não avaliado'}</div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- RODAPÉ - ASSINATURAS -->
         <div class="rodape">
-          <span>
-            <strong>Examinador(es):</strong> 
-            ${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ''} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ''}
-            ${audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `, ${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ''}` : ''}
-          </span>
-          <span>
-            <strong>CPF(s):</strong> 
-            ${formatCPF(audiometria.CPF_FONO) || ''} 
-            ${audiometria.CPF_FONO2 ? `/ ${formatCPF(audiometria.CPF_FONO2)}` : ''}
-          </span>
+          <div class="assinatura-box">
+            <div class="assinatura-label">Examinador(es)</div>
+            <div class="assinatura-value">
+              ${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ''} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ''}
+              ${audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `<br/>${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ''}` : ''}
+            </div>
+          </div>
+          <div class="assinatura-box">
+            <div class="assinatura-label">CPF(s) do Profissional</div>
+            <div class="assinatura-value">
+              ${formatCPF(audiometria.CPF_FONO) || ''} 
+              ${audiometria.CPF_FONO2 ? `<br/>${formatCPF(audiometria.CPF_FONO2)}` : ''}
+            </div>
+          </div>
         </div>
       </div>
     `;
@@ -238,371 +249,552 @@ export function openHistoricoHTML(
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>Histórico de Audiometrias - ${atendimento?.NOME || 'Paciente'}</title>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
+        :root {
+          --primary: #2563eb;
+          --primary-light: #eff6ff;
+          --success: #16a34a;
+          --success-light: #f0fdf4;
+          --warning: #ca8a04;
+          --warning-light: #fefce8;
+          --danger: #dc2626;
+          --danger-light: #fef2f2;
+          --gray-50: #f9fafb;
+          --gray-100: #f3f4f6;
+          --gray-200: #e5e7eb;
+          --gray-300: #d1d5db;
+          --gray-500: #6b7280;
+          --gray-700: #374151;
+          --gray-800: #1f2937;
+          --gray-900: #111827;
+          --red: #B71C1C;
+          --blue: #0D47A1;
+        }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-          background-color: #f5f5f5;
-          padding: 20px;
+          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+          background-color: var(--gray-100);
+          color: var(--gray-800);
+          padding: 24px;
+          line-height: 1.5;
         }
         
         .container {
-          max-width: 1400px;
+          max-width: 1100px;
           margin: 0 auto;
         }
         
-        .header {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-          color: white;
-          padding: 25px;
-          border-radius: 10px;
-          margin-bottom: 30px;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        /* App-like Header */
+        .page-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          background: white;
+          padding: 24px 32px;
+          border-radius: 16px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+          margin-bottom: 24px;
         }
         
-        .header h1 { font-size: 24px; margin-bottom: 10px; }
-        .header p { font-size: 16px; opacity: 0.95; margin-bottom: 5px; }
-        .total-exames { margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.3); font-weight: 500; }
+        .header-title {
+          font-size: 24px;
+          font-weight: 700;
+          color: var(--gray-900);
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .header-title svg { color: var(--primary); }
         
+        .patient-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: 16px;
+          row-gap: 8px;
+        }
+        
+        .patient-info .label {
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--gray-500);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        
+        .patient-info .value {
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--gray-900);
+        }
+
+        .header-actions {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          gap: 12px;
+        }
+        
+        .exam-count {
+          background: var(--primary-light);
+          color: var(--primary);
+          padding: 6px 12px;
+          border-radius: 20px;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        
+        .btn-print {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: var(--gray-900);
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.2s;
+          text-decoration: none;
+        }
+        
+        .btn-print:hover {
+          background: var(--gray-800);
+          transform: translateY(-1px);
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* Card de Audiometria */
         .audiometria-card {
           background: white;
-          border-radius: 12px;
-          padding: 25px;
-          margin-bottom: 30px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          border: 1px solid #e0e0e0;
+          border-radius: 16px;
+          padding: 32px;
+          margin-bottom: 24px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+          border: 1px solid var(--gray-200);
         }
         
         .card-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 20px;
-          padding-bottom: 15px;
-          border-bottom: 2px solid #f0f0f0;
+          margin-bottom: 24px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid var(--gray-200);
         }
         
-        .card-title { display: flex; flex-direction: column; }
-        .data-exame { font-size: 20px; font-weight: bold; color: #2c3e50; }
-        .numero-guia { font-size: 14px; color: #7f8c8d; margin-top: 5px; }
+        .data-exame {
+          font-size: 20px;
+          font-weight: 700;
+          color: var(--gray-900);
+        }
         
-        .resultado-badge {
-          padding: 8px 16px;
-          border-radius: 20px;
+        .numero-guia {
+          font-size: 13px;
+          color: var(--gray-500);
+          margin-left: 12px;
+        }
+
+        /* Badges */
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          padding: 4px 10px;
+          border-radius: 6px;
+          font-size: 12px;
           font-weight: 600;
-          font-size: 14px;
           text-transform: uppercase;
+          letter-spacing: 0.025em;
         }
         
-        .resultado-normal { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .resultado-alerta { background: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        .resultado-pair { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        .resultado-outros { background: #e2e3e5; color: #383d41; border: 1px solid #d6d8db; }
-        
+        .badge-light { background: var(--gray-100); color: var(--gray-700); }
+        .badge-normal { background: var(--success-light); color: var(--success); }
+        .badge-alerta { background: var(--warning-light); color: var(--warning); }
+        .badge-danger { background: var(--danger-light); color: var(--danger); }
+        .badge-gray { background: var(--gray-100); color: var(--gray-700); }
+
+        .section-title {
+          font-size: 13px;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          color: var(--gray-500);
+          margin-bottom: 12px;
+        }
+
+        /* Info Grid */
+        .info-section {
+          background: var(--gray-50);
+          border-radius: 12px;
+          padding: 16px 24px;
+          margin-bottom: 24px;
+          border: 1px solid var(--gray-200);
+        }
+
         .info-grid {
           display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-          gap: 15px;
-          margin-bottom: 25px;
-          background: #f8f9fa;
-          padding: 20px;
-          border-radius: 8px;
+          grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+          gap: 16px;
         }
         
-        .info-item {
+        .info-item .label {
+          font-size: 11px;
+          color: var(--gray-500);
+          text-transform: uppercase;
+          margin-bottom: 2px;
+          font-weight: 500;
+        }
+        
+        .info-item .value {
+          font-size: 14px;
+          font-weight: 500;
+          color: var(--gray-900);
+        }
+
+        /* Gráficos */
+        .graficos-container {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 24px;
+          margin-bottom: 24px;
+          background: white;
+          padding: 24px;
+          border-radius: 12px;
+          border: 1px solid var(--gray-200);
+        }
+        
+        .grafico-item {
           display: flex;
           flex-direction: column;
+          align-items: center;
         }
+
+        .grafico-title {
+          font-size: 14px;
+          font-weight: 600;
+          margin-bottom: 12px;
+        }
+
+        .grafico-item svg {
+          border: 1px solid var(--gray-200);
+          border-radius: 8px;
+          background: #fafafa;
+        }
+
+        /* Resultados Detalhados */
+        .resultados-container { padding: 8px 0; }
         
-        .info-label {
-          font-size: 12px;
-          color: #6c757d;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
+        .resultado-box {
+          background: white;
+          border-radius: 12px;
+          padding: 20px;
+          border-left-width: 4px;
+          border-left-style: solid;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+          border-top: 1px solid var(--gray-200);
+          border-right: 1px solid var(--gray-200);
+          border-bottom: 1px solid var(--gray-200);
+        }
+
+        .border-red { border-left-color: var(--red); background-color: #fffafb; }
+        .border-blue { border-left-color: var(--blue); background-color: #f8fbff; }
+        .text-red { color: var(--red); }
+        .text-blue { color: var(--blue); }
+
+        .box-title {
+          font-size: 14px;
+          font-weight: 700;
+          margin-bottom: 12px;
+        }
+
+        .label {
+          font-size: 11px;
+          font-weight: 500;
+          color: var(--gray-500);
           margin-bottom: 4px;
         }
-        
-        .info-value {
-          font-size: 15px;
-          font-weight: 500;
-          color: #2c3e50;
+
+        .classification-badge {
+          display: inline-block;
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 600;
         }
-        
-        .graficos-container {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 30px;
-          justify-content: center;
-          margin: 25px 0;
-          padding: 20px;
-          background: white;
-          border-radius: 8px;
-        }
-        
-        .grafico-item svg {
-          border: 1px solid #e0e0e0;
-          border-radius: 8px;
-          background: white;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        
-        .resultados-container {
-          margin: 20px 0;
-          padding: 20px;
-          background: white;
-          border-radius: 8px;
-          border: 1px solid #e0e0e0;
-        }
-        
-        .grid {
+
+        .classificacao-normal { background: var(--success-light); color: var(--success); }
+        .classificacao-leve { background: var(--warning-light); color: var(--warning); }
+        .classificacao-moderada { background: #ffedd5; color: #c2410c; }
+        .classificacao-severa { background: var(--danger-light); color: var(--danger); }
+        .classificacao-profunda { background: #be123c; color: white; }
+        .classificacao-outros { background: var(--gray-100); color: var(--gray-700); }
+
+        .metrics-grid {
           display: grid;
+          grid-template-columns: 1fr 1fr 1.5fr;
+          gap: 8px;
+          margin-top: 12px;
+          padding-top: 12px;
+          border-top: 1px solid var(--gray-200);
         }
+
+        .metric-label { font-size: 10px; color: var(--gray-500); text-transform: uppercase; font-weight: 600;}
+        .metric-value { font-size: 14px; font-weight: 600; color: var(--gray-900); }
+        .metric-value-sm { font-size: 13px; font-weight: 600; color: var(--gray-900); }
+        .whitespace-nowrap { white-space: nowrap; }
+        .text-xs { font-size: 11px; }
+        .truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; display: block; }
+
+        /* Alertas */
+        .alert {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 500;
+        }
+        .alert-warning { background: var(--warning-light); color: var(--warning); border: 1px solid #fef08a; }
+
+        /* NR-7 */
+        .nr7-container {
+          background: var(--gray-50);
+          padding: 16px;
+          border-radius: 8px;
+          border: 1px solid var(--gray-200);
+          text-align: center;
+        }
+        .nr7-title { font-size: 12px; color: var(--gray-500); text-transform: uppercase; font-weight: 600; }
+        .nr7-box { display: flex; justify-content: center; align-items: center; gap: 8px; }
+
+        .nr7-normal { color: var(--success); }
+        .nr7-alterado { color: var(--danger); }
+        .nr7-nao-ocupacional { color: var(--warning); }
         
-        .grid-cols-1 { grid-template-columns: repeat(1, 1fr); }
+        .font-medium { font-weight: 500; }
+        .text-dark { color: var(--gray-900); font-weight: 500; }
+
+        /* Tabelas e Disposição */
+        .grid { display: grid; }
+        .grid-cols-1 { grid-template-columns: 1fr; }
         .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-        .grid-cols-3 { grid-template-columns: repeat(3, 1fr); }
-        .gap-2 { gap: 0.5rem; }
-        .gap-4 { gap: 1rem; }
-        .gap-6 { gap: 1.5rem; }
-        
-        .bg-red-50 { background-color: #fef2f2; }
-        .bg-blue-50 { background-color: #eff6ff; }
-        .bg-green-50 { background-color: #f0fdf4; }
-        .bg-orange-100 { background-color: #fff3cd; }
-        .bg-gray-50 { background-color: #f9fafb; }
-        .bg-white { background-color: white; }
-        
-        .border-red-200 { border-color: #fecaca; }
-        .border-blue-200 { border-color: #bfdbfe; }
-        .border-green-300 { border-color: #86efac; }
-        .border-gray-200 { border-color: #e5e7eb; }
-        .border-gray-300 { border-color: #d1d5db; }
-        
-        .text-red-800 { color: #991b1b; }
-        .text-blue-800 { color: #1e40af; }
-        .text-red-700 { color: #b91c1c; }
-        .text-blue-700 { color: #1d4ed8; }
-        .text-green-700 { color: #15803d; }
-        .text-green-600 { color: #16a34a; }
-        .text-orange-800 { color: #9a3412; }
-        .text-gray-600 { color: #4b5563; }
-        .text-gray-700 { color: #374151; }
-        .text-gray-800 { color: #1f2937; }
-        
-        .font-bold { font-weight: 700; }
-        .font-semibold { font-weight: 600; }
-        
-        .text-center { text-align: center; }
-        .text-xs { font-size: 0.75rem; }
-        .text-sm { font-size: 0.875rem; }
-        
-        .p-2 { padding: 0.5rem; }
-        .p-3 { padding: 0.75rem; }
-        .p-4 { padding: 1rem; }
-        
-        .mt-2 { margin-top: 0.5rem; }
-        .mt-3 { margin-top: 0.75rem; }
-        .mt-4 { margin-top: 1rem; }
-        .mb-1 { margin-bottom: 0.25rem; }
-        .mb-2 { margin-bottom: 0.5rem; }
-        .mb-4 { margin-bottom: 1rem; }
-        
-        .rounded { border-radius: 0.25rem; }
-        .rounded-lg { border-radius: 0.5rem; }
-        
-        .border { border-width: 1px; border-style: solid; }
-        
-        .classificacao-normal {
-          background-color: #d4edda;
-          color: #155724;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
+        .gap-4 { gap: 16px; }
+        .gap-6 { gap: 24px; }
+        .mt-2 { margin-top: 8px; }
+        .mt-3 { margin-top: 12px; }
+        .mt-4 { margin-top: 16px; }
+        .mt-6 { margin-top: 24px; }
+        .mb-3 { margin-bottom: 12px; }
+
+        .table-section { overflow-x: auto; }
+        .md-grid-cols-layout {
+          grid-template-columns: 1fr;
         }
         
-        .classificacao-leve {
-          background-color: #fff3cd;
-          color: #856404;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
+        @media (min-width: 1024px) {
+          .md-grid-cols-layout {
+            grid-template-columns: 3fr 1fr;
+          }
         }
-        
-        .classificacao-moderada {
-          background-color: #fed7aa;
-          color: #9a3412;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
-        }
-        
-        .classificacao-severa {
-          background-color: #fecaca;
-          color: #991b1b;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
-        }
-        
-        .classificacao-profunda {
-          background-color: #e11d48;
-          color: white;
-          padding: 0.5rem;
-          border-radius: 0.25rem;
-          font-weight: 600;
-          font-size: 0.875rem;
-          text-align: center;
-        }
-        
+
         .tabela-valores {
           width: 100%;
           border-collapse: collapse;
-          font-size: 13px;
-          margin-top: 20px;
+          font-size: 12px;
           background: white;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid var(--gray-200);
         }
         
         .tabela-valores th {
-          background: #343a40;
-          color: white;
-          padding: 10px;
+          background: var(--gray-50);
+          color: var(--gray-700);
+          padding: 8px;
           text-align: center;
-          font-size: 12px;
+          font-weight: 600;
+          border-bottom: 1px solid var(--gray-200);
+          border-right: 1px solid var(--gray-200);
         }
         
         .tabela-valores td {
-          padding: 8px;
+          padding: 6px 4px;
           text-align: center;
-          border: 1px solid #dee2e6;
+          border-right: 1px solid var(--gray-200);
+          border-bottom: 1px solid var(--gray-200);
+          color: var(--gray-800);
         }
         
-        .tabela-valores tr:nth-child(even) { background: #f8f9fa; }
-        .tabela-valores .subcabecalho { background: #e9ecef; font-weight: 600; }
-        
-        .irf-srt-container {
+        .tabela-valores .subcabecalho { 
+          background: var(--gray-100); 
+          font-weight: 600; 
+          text-transform: uppercase;
+          font-size: 11px;
+          color: var(--gray-600);
+        }
+
+        .table-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--gray-700);
+          margin-bottom: 8px;
+          display: flex;
+          align-items: center;
+        }
+
+        /* IRF / SRT */
+        .other-tests-section {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .irf-box {
+          background: white;
+          border: 1px solid var(--gray-200);
+          border-radius: 8px;
+          padding: 16px;
+        }
+
+        .irf-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 20px;
-          margin-top: 20px;
+          gap: 16px;
+          margin-top: 12px;
+        }
+
+        /* Conclusão */
+        .conclusao-section {
+          border-radius: 12px;
+          border: 1px solid transparent; /* default */
+          overflow: hidden;
+          margin-bottom: 24px;
+        }
+
+        .bg-status-normal { background: var(--success-light); border-color: #bbf7d0; }
+        .bg-status-alerta { background: var(--warning-light); border-color: #fef08a; }
+        .bg-status-danger { background: var(--danger-light); border-color: #fecaca; }
+        .bg-status-gray   { background: var(--gray-50); border-color: var(--gray-200); }
+
+        .conclusao-header {
+          padding: 14px 20px;
+          font-weight: 700;
+          font-size: 15px;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .text-status-normal { color: var(--success); background: #bbf7d022; }
+        .text-status-alerta { color: var(--warning); background: #fef08a22; }
+        .text-status-danger { color: var(--danger); background: #fecaca22; }
+        .text-status-gray   { color: var(--gray-700); background: var(--gray-100); }
+
+        .conclusao-body {
           padding: 20px;
-          background: #e8f4f8;
+        }
+        .conclusao-text {
+          font-size: 16px;
+          font-weight: 600;
+          color: var(--gray-900);
+          margin-bottom: 16px;
+          line-height: 1.4;
+        }
+        .pcd-box {
+          background: rgba(255,255,255,0.6);
+          padding: 12px 16px;
           border-radius: 8px;
+          border: 1px dashed rgba(0,0,0,0.1);
         }
-        
-        .observacao {
-          margin-top: 20px;
-          padding: 15px;
-          background: #fff3cd;
-          border-left: 4px solid #ffc107;
-          border-radius: 4px;
-        }
-        
-        .observacao h4 { 
-          color: #856404; 
-          margin-bottom: 8px;
-          font-size: 14px;
-        }
-        .observacao p { 
-          color: #856404; 
-          line-height: 1.5;
-          font-size: 14px;
-        }
-        
+        .pcd-label { font-size: 11px; font-weight: 600; margin-bottom: 4px; text-transform: uppercase; color: var(--gray-600); }
+        .pcd-value { font-size: 14px; color: var(--gray-900); font-weight: 500; }
+
+        /* Rodapé */
         .rodape {
-          margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid #e0e0e0;
+          margin-top: 32px;
+          padding-top: 24px;
+          border-top: 1px dashed var(--gray-300);
           display: flex;
           justify-content: space-between;
-          color: #6c757d;
-          font-size: 13px;
         }
-        
+
+        .assinatura-box { text-align: left; }
+        .assinatura-label { font-size: 12px; color: var(--gray-500); text-transform: uppercase; margin-bottom: 4px; }
+        .assinatura-value { font-size: 14px; font-weight: 500; color: var(--gray-800); }
+
         .sem-resultados {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 80px 20px;
+          background: white;
+          border-radius: 16px;
+          border: 1px solid var(--gray-200);
           text-align: center;
-          padding: 60px 20px;
-          background: white;
-          border-radius: 12px;
-          color: #6c757d;
         }
         
-        .btn-print {
-          margin-top: 15px;
-          padding: 10px 20px;
-          background: white;
-          color: #667eea;
-          border: none;
-          border-radius: 5px;
-          cursor: pointer;
-          font-weight: bold;
-          font-size: 14px;
-          transition: all 0.3s;
-        }
-        
-        .btn-print:hover {
-          background: #f8f9fa;
-          transform: translateY(-1px);
-          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        
-        .legenda-entalhe {
-          display: inline-block;
-          padding: 2px 8px;
-          background: #ff9800;
-          color: white;
-          border-radius: 12px;
-          font-size: 11px;
-          margin-left: 8px;
-        }
-        
-        .nr7-normal { color: #155724; font-weight: 600; }
-        .nr7-leve { color: #856404; font-weight: 600; }
-        .nr7-moderado { color: #9a3412; font-weight: 600; }
-        .nr7-severo { color: #991b1b; font-weight: 600; }
-        .nr7-profundo { color: #831843; font-weight: 600; }
-        
-        @media (min-width: 768px) {
-          .md\\:grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
-        }
-        
+        .sem-resultados h2 { color: var(--gray-900); margin-bottom: 8px; }
+        .sem-resultados p { color: var(--gray-500); }
+
+        /* Impressão */
         @media print {
-          body { background: white; padding: 10px; }
-          .header { background: #f8f9fa; color: black; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .audiometria-card { break-inside: avoid; box-shadow: none; border: 1px solid #ddd; }
+          body { background: white; padding: 0; }
+          .page-header { box-shadow: none; border: 1px solid var(--gray-200); }
           .btn-print { display: none; }
-          .resultado-badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .bg-red-50, .bg-blue-50, .bg-green-50, .bg-orange-100 { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .audiometria-card { box-shadow: none; break-inside: avoid; margin-bottom: 30px; }
+          .graficos-container { break-inside: avoid; }
+          .conclusao-section { break-inside: avoid; }
+          /* Forçar cores de background */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="header">
-          <h1>Histórico de Audiometrias</h1>
-          <p><strong>Paciente:</strong> ${atendimento?.NOME || 'Não informado'}</p>
-          <p><strong>CPF:</strong> ${formatCPF(atendimento?.CPFFUNCIONARIO)}</p>
-          <p><strong>Matrícula:</strong> ${atendimento?.MATRICULAFUNCIONARIO || 'Não informado'}</p>
-          <p><strong>Empresa:</strong> ${atendimento?.NOMEEMPRESA || 'Não informado'}</p>
-          <p><strong>CNPJ:</strong> ${formatCNPJ(atendimento?.CNPJEMPRESA)}</p>
-          <p class="total-exames">Total de exames encontrados: ${audiometrias.length}</p>
-          <button class="btn-print" onclick="window.print()">
-            🖨️ Imprimir Histórico
-          </button>
+        <!-- Header Estilo App -->
+        <div class="page-header">
+          <div>
+            <h1 class="header-title">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              Histórico de Audiometrias
+            </h1>
+            <div class="patient-grid">
+              <div class="patient-info"><div class="label">Paciente</div><div class="value">${atendimento?.NOME || 'Não informado'}</div></div>
+              <div class="patient-info"><div class="label">CPF</div><div class="value">${formatCPF(atendimento?.CPFFUNCIONARIO)}</div></div>
+              <div class="patient-info"><div class="label">Empresa</div><div class="value">${atendimento?.NOMEEMPRESA || 'Não informado'}</div></div>
+              <div class="patient-info"><div class="label">Matrícula</div><div class="value">${atendimento?.MATRICULAFUNCIONARIO || '-'}</div></div>
+            </div>
+          </div>
+          <div class="header-actions">
+            <div class="exam-count">${audiometriasOrdenadas.length} exame(s) anterior(es)</div>
+            <button class="btn-print" onclick="window.print()">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              Imprimir Histórico
+            </button>
+          </div>
         </div>
         
-        ${audiometrias.length === 0 
-          ? '<div class="sem-resultados"><h2>Nenhuma audiometria encontrada</h2><p>Não há exames anteriores registrados para este paciente.</p></div>'
-          : audiometriasHTML
-        }
+        ${audiometriasOrdenadas.length === 0
+      ? `
+            <div class="sem-resultados">
+              <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5" style="margin-bottom: 16px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+              <h2>Nenhum exame anterior</h2>
+              <p>Não há histórico de audiometrias (removendo a audiometria atual).</p>
+            </div>
+            `
+      : audiometriasHTML
+    }
       </div>
     </body>
     </html>
@@ -612,13 +804,13 @@ export function openHistoricoHTML(
   newWindow.document.close();
 }
 
-// ============= FUNÇÕES AUXILIARES ATUALIZADAS =============
+// ============= FUNÇÕES AUXILIARES =============
 
-function getResultadoClass(resultado: string): string {
+function getResultadoStyle(resultado: string): string {
   if (resultado.includes('NORMAL')) return 'normal';
   if (resultado.includes('SUGESTIVO')) return 'alerta';
-  if (resultado.includes('PAIR') || resultado.includes('INDUZIDA')) return 'pair';
-  return 'outros';
+  if (resultado.includes('PAIR') || resultado.includes('INDUZIDA')) return 'danger';
+  return 'gray';
 }
 
 function formatResultado(resultado: string): string {
@@ -628,11 +820,9 @@ function formatResultado(resultado: string): string {
 function formatDateBR(date?: string): string {
   if (!date) return 'Não informado';
   try {
-    // Se já estiver no formato DD/MM/AAAA
-    if (date.includes('/')) {
-      return date;
-    }
-    // Se for ISO ou outro formato
+    if (date.includes('/')) return date;
+    const parts = date.split('-');
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
     return new Date(date).toLocaleDateString('pt-BR');
   } catch {
     return date;
@@ -651,12 +841,12 @@ function formatOtoscopia(otoscopia: string): string {
 function formatClassification(classification: string): string {
   if (!classification) return 'Não classificado';
   if (classification.includes('normalidade') || classification === 'Normal' || classification === '-') {
-    return 'Dentro dos padrões da normalidade';
+    return 'Padrões de normalidade';
   }
   return classification;
 }
 
-function getClassificationClass(classification: string): string {
+function getClassificationStyle(classification: string): string {
   if (!classification) return 'classificacao-outros';
   if (classification.includes('normalidade') || classification === 'Normal' || classification === '-') {
     return 'classificacao-normal';
@@ -668,92 +858,84 @@ function getClassificationClass(classification: string): string {
   return 'classificacao-outros';
 }
 
-function getNR7Class(nr7: string): string {
+function getNR7Style(nr7: string): string {
   if (!nr7) return '';
   if (nr7.includes('Normal')) return 'nr7-normal';
-  if (nr7.includes('Leve')) return 'nr7-leve';
-  if (nr7.includes('Moderado')) return 'nr7-moderado';
-  if (nr7.includes('Severo')) return 'nr7-severo';
-  if (nr7.includes('Profundo')) return 'nr7-profundo';
+  if (nr7.includes('Alterada')) return 'nr7-alterado';
+  if (nr7.includes('Não Ocupacional')) return 'nr7-nao-ocupacional';
   return '';
 }
 
 function createInfoItem(label: string, value: string | undefined): string {
   return `
     <div class="info-item">
-      <span class="info-label">${label}</span>
-      <span class="info-value">${value || 'Não informado'}</span>
+      <div class="label">${label}</div>
+      <div class="value">${value || '-'}</div>
     </div>
   `;
 }
 
 function createTabelaValores(data: any): string {
   return `
-    <div class="valores-audiometria">
-      <h4 style="margin-bottom: 10px; color: #495057; display: flex; align-items: center;">
-        Tabela de Valores (dB)
-        ${data.entalhe4000HzOD || data.entalhe4000HzOE ? '<span class="legenda-entalhe">Entalhe em 4000Hz</span>' : ''}
-      </h4>
-      <table class="tabela-valores">
-        <thead>
-          <tr>
-            <th>Freq (Hz)</th>
-            <th colspan="2">250</th>
-            <th colspan="2">500</th>
-            <th colspan="2">1000</th>
-            <th colspan="2">2000</th>
-            <th colspan="2">3000</th>
-            <th colspan="2">4000</th>
-            <th colspan="2">6000</th>
-            <th colspan="2">8000</th>
-          </tr>
-          <tr>
-            <th></th>
-            <th>OD</th><th>OE</th><th>OD</th><th>OE</th><th>OD</th><th>OE</th>
-            <th>OD</th><th>OE</th><th>OD</th><th>OE</th><th>OD</th><th>OE</th>
-            <th>OD</th><th>OE</th><th>OD</th><th>OE</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="subcabecalho"><td colspan="17">Via Aérea</td></tr>
-          <tr>
-            <td>dB</td>
-            <td>${data.viaAereaOD250 || '-'}</td>
-            <td>${data.viaAereaOE250 || '-'}</td>
-            <td>${data.viaAereaOD500 || '-'}</td>
-            <td>${data.viaAereaOE500 || '-'}</td>
-            <td>${data.viaAereaOD1000 || '-'}</td>
-            <td>${data.viaAereaOE1000 || '-'}</td>
-            <td>${data.viaAereaOD2000 || '-'}</td>
-            <td>${data.viaAereaOE2000 || '-'}</td>
-            <td>${data.viaAereaOD3000 || '-'}</td>
-            <td>${data.viaAereaOE3000 || '-'}</td>
-            <td>${data.viaAereaOD4000 || '-'}</td>
-            <td>${data.viaAereaOE4000 || '-'}</td>
-            <td>${data.viaAereaOD6000 || '-'}</td>
-            <td>${data.viaAereaOE6000 || '-'}</td>
-            <td>${data.viaAereaOD8000 || '-'}</td>
-            <td>${data.viaAereaOE8000 || '-'}</td>
-          </tr>
-          <tr class="subcabecalho"><td colspan="17">Via Óssea</td></tr>
-          <tr>
-            <td>dB</td>
-            <td>-</td><td>-</td>
-            <td>${data.viaOsseaOD500 || '-'}</td>
-            <td>${data.viaOsseaOE500 || '-'}</td>
-            <td>${data.viaOsseaOD1000 || '-'}</td>
-            <td>${data.viaOsseaOE1000 || '-'}</td>
-            <td>${data.viaOsseaOD2000 || '-'}</td>
-            <td>${data.viaOsseaOE2000 || '-'}</td>
-            <td>${data.viaOsseaOD3000 || '-'}</td>
-            <td>${data.viaOsseaOE3000 || '-'}</td>
-            <td>${data.viaOsseaOD4000 || '-'}</td>
-            <td>${data.viaOsseaOE4000 || '-'}</td>
-            <td>-</td><td>-</td><td>-</td><td>-</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+    <div class="table-title">Tabela de Limiares Auditivos (dB)</div>
+    <table class="tabela-valores">
+      <thead>
+        <tr>
+          <th rowspan="2">Via</th>
+          <th colspan="2">250</th>
+          <th colspan="2">500</th>
+          <th colspan="2">1000</th>
+          <th colspan="2">2000</th>
+          <th colspan="2">3000</th>
+          <th colspan="2">4000</th>
+          <th colspan="2">6000</th>
+          <th colspan="2">8000</th>
+        </tr>
+        <tr>
+          <th>OD</th><th>OE</th><th>OD</th><th>OE</th><th>OD</th><th>OE</th>
+          <th>OD</th><th>OE</th><th>OD</th><th>OE</th><th>OD</th><th>OE</th>
+          <th>OD</th><th>OE</th><th>OD</th><th>OE</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="subcabecalho"><td colspan="17">Via Aérea</td></tr>
+        <tr>
+          <td>dB</td>
+          <td>${data.viaAereaOD250 || '-'}</td>
+          <td>${data.viaAereaOE250 || '-'}</td>
+          <td>${data.viaAereaOD500 || '-'}</td>
+          <td>${data.viaAereaOE500 || '-'}</td>
+          <td>${data.viaAereaOD1000 || '-'}</td>
+          <td>${data.viaAereaOE1000 || '-'}</td>
+          <td>${data.viaAereaOD2000 || '-'}</td>
+          <td>${data.viaAereaOE2000 || '-'}</td>
+          <td>${data.viaAereaOD3000 || '-'}</td>
+          <td>${data.viaAereaOE3000 || '-'}</td>
+          <td>${data.viaAereaOD4000 || '-'}</td>
+          <td>${data.viaAereaOE4000 || '-'}</td>
+          <td>${data.viaAereaOD6000 || '-'}</td>
+          <td>${data.viaAereaOE6000 || '-'}</td>
+          <td>${data.viaAereaOD8000 || '-'}</td>
+          <td>${data.viaAereaOE8000 || '-'}</td>
+        </tr>
+        <tr class="subcabecalho"><td colspan="17">Via Óssea</td></tr>
+        <tr>
+          <td>dB</td>
+          <td>-</td><td>-</td>
+          <td>${data.viaOsseaOD500 || '-'}</td>
+          <td>${data.viaOsseaOE500 || '-'}</td>
+          <td>${data.viaOsseaOD1000 || '-'}</td>
+          <td>${data.viaOsseaOE1000 || '-'}</td>
+          <td>${data.viaOsseaOD2000 || '-'}</td>
+          <td>${data.viaOsseaOE2000 || '-'}</td>
+          <td>${data.viaOsseaOD3000 || '-'}</td>
+          <td>${data.viaOsseaOE3000 || '-'}</td>
+          <td>${data.viaOsseaOD4000 || '-'}</td>
+          <td>${data.viaOsseaOE4000 || '-'}</td>
+          <td>-</td><td>-</td><td>-</td><td>-</td>
+        </tr>
+      </tbody>
+    </table>
   `;
 }
 
@@ -761,18 +943,21 @@ function createIRFSRT(data: any): string {
   if (!data.srtOD && !data.srtOE && !data.irfOD && !data.irfOE) {
     return '';
   }
-  
+
   return `
-    <div class="irf-srt-container">
-      <div>
-        <h4 style="color: #B71C1C; margin-bottom: 8px;">IRF/SRT - OD</h4>
-        <p><strong>SRT:</strong> ${data.srtOD || 'Não realizado'}</p>
-        <p><strong>IRF:</strong> ${data.irfOD || 'Não realizado'}</p>
-      </div>
-      <div>
-        <h4 style="color: #0D47A1; margin-bottom: 8px;">IRF/SRT - OE</h4>
-        <p><strong>SRT:</strong> ${data.srtOE || 'Não realizado'}</p>
-        <p><strong>IRF:</strong> ${data.irfOE || 'Não realizado'}</p>
+    <div class="irf-box">
+      <h5 class="section-title" style="margin-bottom: 0">Testes de Fala (Logoaudiometria)</h5>
+      <div class="irf-grid">
+        <div>
+          <div class="label font-semibold text-red">OD</div>
+          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOD || '-'}</div>
+          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOD || '-'}</div>
+        </div>
+        <div>
+          <div class="label font-semibold text-blue">OE</div>
+          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOE || '-'}</div>
+          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOE || '-'}</div>
+        </div>
       </div>
     </div>
   `;
@@ -780,27 +965,28 @@ function createIRFSRT(data: any): string {
 
 function createObservacao(titulo: string, texto: string): string {
   return `
-    <div class="observacao">
-      <h4>${titulo}</h4>
-      <p>${texto}</p>
+    <div class="alert alert-warning">
+      <div>
+        <strong>${titulo}:</strong> <span style="font-weight: normal">${texto}</span>
+      </div>
     </div>
   `;
 }
 
 function formatCPF(cpf?: string): string {
   if (!cpf) return 'Não informado';
-  const cleaned = cpf.replace(/\D/g, '');
+  const cleaned = cpf.replace(/\\D/g, '');
   if (cleaned.length === 11) {
-    return cleaned.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+    return cleaned.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, '$1.$2.$3-$4');
   }
   return cpf;
 }
 
 function formatCNPJ(cnpj?: string): string {
   if (!cnpj) return 'Não informado';
-  const cleaned = cnpj.replace(/\D/g, '');
+  const cleaned = cnpj.replace(/\\D/g, '');
   if (cleaned.length === 14) {
-    return cleaned.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
+    return cleaned.replace(/(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/, '$1.$2.$3/$4-$5');
   }
   return cnpj;
 }
