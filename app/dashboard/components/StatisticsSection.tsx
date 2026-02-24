@@ -77,8 +77,8 @@ const KpiCard = ({
   <motion.div
     animate={{ opacity: 1, scale: 1 }}
     className={`rounded-xl shadow-lg p-5 ${gradient
-        ? "bg-gradient-to-br from-[#44735E] to-[#2a4d3d] text-white"
-        : "bg-white border border-gray-200"
+      ? "bg-gradient-to-br from-[#44735E] to-[#2a4d3d] text-white"
+      : "bg-white border border-gray-200"
       }`}
     initial={{ opacity: 0, scale: 0.95 }}
     transition={{ delay }}
@@ -312,7 +312,7 @@ const ExamCard = ({
                 .sort(([, a], [, b]) => (b as number) - (a as number))
                 .map(([status, count]) => (
                   <div key={status} className="flex justify-between">
-                    <span className="text-gray-600">{STATUS_LABELS[status] || status}:</span>
+                    <span className="text-gray-600">{(STATUS_LABELS[status] || status).toUpperCase().replace(/_/g, " ")}:</span>
                     <span className="font-medium text-gray-900">{count as number}</span>
                   </div>
                 ))}
@@ -586,7 +586,7 @@ export function StatisticsSection() {
                         <div key={status}>
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium text-gray-900">
-                              {STATUS_LABELS[status] || status}
+                              {(STATUS_LABELS[status] || status).toUpperCase().replace(/_/g, " ")}
                             </span>
                             <div className="flex items-center gap-3">
                               <span className="text-sm text-gray-900 font-bold">
@@ -777,7 +777,7 @@ export function StatisticsSection() {
                             .map(([status, count]) => (
                               <div key={status} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg">
                                 <span className="text-sm text-gray-700">
-                                  {STATUS_LABELS[status] || status}
+                                  {(STATUS_LABELS[status] || status).toUpperCase().replace(/_/g, " ")}
                                 </span>
                                 <div className="flex items-center gap-3">
                                   <span className="font-bold text-gray-900">{count as number}</span>
