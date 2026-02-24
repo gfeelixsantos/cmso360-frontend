@@ -342,9 +342,8 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
-              index === itemAtual ? "bg-white scale-125" : "bg-white/50"
-            }`}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${index === itemAtual ? "bg-white scale-125" : "bg-white/50"
+              }`}
           />
         ))}
       </div>
@@ -532,17 +531,15 @@ const ConfigModal = ({
               Áudio
             </span>
             <button
-              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
-                audioHabilitado ? "bg-green-500" : "bg-gray-300"
-              }`}
+              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${audioHabilitado ? "bg-green-500" : "bg-gray-300"
+                }`}
               onClick={() => setAudioHabilitado(!audioHabilitado)}
             >
               <span
-                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
-                  audioHabilitado
+                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${audioHabilitado
                     ? "translate-x-5 sm:translate-x-6"
                     : "translate-x-0.5 sm:translate-x-1"
-                }`}
+                  }`}
               />
             </button>
           </div>
@@ -805,10 +802,22 @@ export default function PainelPage() {
             await audio.play();
 
             await new Promise<void>((res) => {
+              let settled = false;
+              let timeout: NodeJS.Timeout;
+
               const onEnd = () => {
-                audio.removeEventListener("ended", onEnd);
-                res();
+                if (!settled) {
+                  settled = true;
+                  clearTimeout(timeout);
+                  audio.removeEventListener("ended", onEnd);
+                  res();
+                }
               };
+
+              timeout = setTimeout(() => {
+                console.warn("Timeout de fallback na reprodução do áudio acionado");
+                onEnd();
+              }, 10000);
 
               audio.addEventListener("ended", onEnd);
             });
@@ -935,7 +944,7 @@ export default function PainelPage() {
 
       timeout: 20000,
       // Forçar nova conexão ao reconectar
-      forceNew: true, 
+      forceNew: true,
       // Upgrade automático desabilitado (já usa websocket)
       upgrade: false,
       // Manter conexão ativa
