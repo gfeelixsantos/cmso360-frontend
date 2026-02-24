@@ -38,6 +38,19 @@ export async function POST(
       maxAge: 60 * 60, // 1 hora
     });
 
+    const refreshToken = await JWT.signJwt(
+      userInfo as unknown as Omit<IUserInfo, "iat" | "exp">,
+      "7d",
+    );
+
+    ck.set("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60, // 7 dias
+    });
+
     return NextResponse.json(
       new ApiResponse(
         HttpCodes.OK,

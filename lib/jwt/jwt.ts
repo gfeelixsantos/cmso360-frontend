@@ -47,11 +47,14 @@ export class JWT {
   }
 
   // Assina um JWT com payload informado
-  static async signJwt(payload: Omit<JwtPayload, "iat" | "exp">) {
+  static async signJwt(
+    payload: Omit<JwtPayload, "iat" | "exp">,
+    expiresIn: string | number = "1h",
+  ) {
     return await new SignJWT(payload)
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
-      .setExpirationTime("1h")
+      .setExpirationTime(expiresIn)
       .sign(secret);
   }
 
