@@ -59,28 +59,27 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 // 🎯 Card de KPI principal
-const KpiCard = ({ 
-  title, 
-  value, 
-  subtitle, 
-  icon: Icon, 
+const KpiCard = ({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
   gradient = false,
   delay = 0,
-}: { 
-  title: string; 
-  value: number | string; 
-  subtitle?: string; 
-  icon: any; 
+}: {
+  title: string;
+  value: number | string;
+  subtitle?: string;
+  icon: any;
   gradient?: boolean;
   delay?: number;
 }) => (
   <motion.div
     animate={{ opacity: 1, scale: 1 }}
-    className={`rounded-xl shadow-lg p-5 ${
-      gradient 
-        ? "bg-gradient-to-br from-[#44735E] to-[#2a4d3d] text-white" 
+    className={`rounded-xl shadow-lg p-5 ${gradient
+        ? "bg-gradient-to-br from-[#44735E] to-[#2a4d3d] text-white"
         : "bg-white border border-gray-200"
-    }`}
+      }`}
     initial={{ opacity: 0, scale: 0.95 }}
     transition={{ delay }}
   >
@@ -111,16 +110,16 @@ const KpiCard = ({
 );
 
 // 🏥 Card de métrica secundária (estilo dashboard antigo)
-const MetricCard = ({ 
-  title, 
-  value, 
-  icon: Icon, 
+const MetricCard = ({
+  title,
+  value,
+  icon: Icon,
   description,
   color = COLORS.primary
-}: { 
-  title: string; 
-  value: number; 
-  icon: any; 
+}: {
+  title: string;
+  value: number;
+  icon: any;
   description?: string;
   color?: string;
 }) => (
@@ -138,7 +137,7 @@ const MetricCard = ({
             <p className="text-xs text-gray-500 mt-1">{description}</p>
           )}
         </div>
-        <div 
+        <div
           className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
           style={{ backgroundColor: color }}
         >
@@ -180,16 +179,16 @@ const ProgressBar = ({
 };
 
 // 🏷️ Badge de status
-const StatusBadge = ({ 
-  status, 
+const StatusBadge = ({
+  status,
   count,
-}: { 
-  status: string; 
+}: {
+  status: string;
   count: number;
 }) => {
   const getStatusConfig = (status: string) => {
     const normalized = status.toUpperCase();
-    
+
     if (normalized.includes("PENDENTE")) {
       return { color: COLORS.warning, bg: "bg-yellow-50", label: "Pendente" };
     }
@@ -206,7 +205,7 @@ const StatusBadge = ({
 
   return (
     <div className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded-full ${config.bg} border`}
-         style={{ borderColor: `${config.color}20` }}>
+      style={{ borderColor: `${config.color}20` }}>
       <span className="font-bold" style={{ color: config.color }}>{count}</span>
       <span className="text-gray-600">{config.label}</span>
     </div>
@@ -216,7 +215,7 @@ const StatusBadge = ({
 // 🎫 Card de ticket
 const TicketCard = ({ ticket }: { ticket: any }) => {
   const preferencialPercent = ticket.total > 0 ? (ticket.preferencial / ticket.total) * 100 : 0;
-  
+
   if (ticket.status !== TicketStatus.AGUARDANDO) return null;
 
   return (
@@ -235,7 +234,7 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
             {ticket.preferencial} ({preferencialPercent.toFixed(0)}%)
           </span>
         </div>
-        <ProgressBar 
+        <ProgressBar
           value={ticket.preferencial}
           max={ticket.total}
           color={COLORS.purple}
@@ -247,17 +246,17 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
 };
 
 // 📋 Card de exame
-const ExamCard = ({ 
-  exame, 
-  expanded = false 
-}: { 
-  exame: ExameStatisticsDto; 
+const ExamCard = ({
+  exame,
+  expanded = false
+}: {
+  exame: ExameStatisticsDto;
   expanded?: boolean;
 }) => {
   const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-  const finalizados = (exame.porStatus.FINALIZADO || 0) + 
-                     (exame.porStatus.CONCLUIDO || 0) + 
-                     (exame.porStatus.AGUARDANDO_RESULTADO || 0);
+  const finalizados = (exame.porStatus.FINALIZADO || 0) +
+    (exame.porStatus.CONCLUIDO || 0) +
+    (exame.porStatus.AGUARDANDO_RESULTADO || 0);
   const total = exame.total;
   const percentFinalizado = total > 0 ? (finalizados / total) * 100 : 0;
 
@@ -288,13 +287,13 @@ const ExamCard = ({
         <div>
           <div className="flex justify-between text-xs text-gray-600 mb-1">
             <span>Progresso</span>
-            <span className="font-medium" style={{ 
-              color: percentFinalizado >= 70 ? COLORS.success : COLORS.warning 
+            <span className="font-medium" style={{
+              color: percentFinalizado >= 70 ? COLORS.success : COLORS.warning
             }}>
               {percentFinalizado.toFixed(1)}%
             </span>
           </div>
-          <ProgressBar 
+          <ProgressBar
             value={finalizados}
             max={total}
             color={percentFinalizado >= 70 ? COLORS.success : COLORS.warning}
@@ -303,7 +302,7 @@ const ExamCard = ({
         </div>
 
         {expanded && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="pt-3 border-t border-gray-200"
@@ -351,12 +350,12 @@ export function StatisticsSection() {
 
       unidade.exames.forEach((exame) => {
         totalExames += exame.total;
-        
+
         const pendentes = exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
-        const finalizados = (exame.porStatus.FINALIZADO || 0) + 
-                           (exame.porStatus.CONCLUIDO || 0) + 
-                           (exame.porStatus.AGUARDANDO_RESULTADO || 0);
-        
+        const finalizados = (exame.porStatus.FINALIZADO || 0) +
+          (exame.porStatus.CONCLUIDO || 0) +
+          (exame.porStatus.AGUARDANDO_RESULTADO || 0);
+
         totalExamesPendentes += pendentes;
         totalExamesFinalizados += finalizados;
       });
@@ -457,13 +456,12 @@ export function StatisticsSection() {
               <h1 className="text-2xl font-bold text-gray-900">Dashboard de Estatísticas</h1>
               <p className="text-sm text-gray-600 flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
-                {statisticsData?.dataReferencia 
-                  ? new Date().toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "long",
-                      year: "numeric"
-                    })
-                  : "Carregando..."}
+                <span>{
+                  new Date().toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric"
+                  })}</span>
                 {lastUpdate && (
                   <>
                     <span className="text-gray-300">•</span>
@@ -475,7 +473,7 @@ export function StatisticsSection() {
               </p>
             </div>
           </div>
-          
+
           <Button
             className="flex items-center gap-2 px-6 py-6 bg-[#44735E] hover:bg-[#356349] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
             disabled={loading || isRefreshing}
@@ -498,7 +496,7 @@ export function StatisticsSection() {
             gradient
             delay={0}
           />
-          
+
           <KpiCard
             title="Atendimentos Previstos"
             value={totais?.atendimentosPrevistos || 0}
@@ -506,7 +504,7 @@ export function StatisticsSection() {
             icon={Calendar}
             delay={0.1}
           />
-          
+
           <KpiCard
             title="Total de Prontuários"
             value={totais?.totalProntuarios || 0}
@@ -514,7 +512,7 @@ export function StatisticsSection() {
             icon={FileText}
             delay={0.2}
           />
-          
+
           <KpiCard
             title="Exames Realizados"
             value={totais?.totalExamesRealizados || 0}
@@ -533,7 +531,7 @@ export function StatisticsSection() {
             icon={Clock}
             color={COLORS.info}
           />
-          
+
           <MetricCard
             title="Aguardando Avaliação Médica"
             value={totais?.aguardandoAvaliacaoMedica || 0}
@@ -541,11 +539,11 @@ export function StatisticsSection() {
             icon={Stethoscope}
             color={COLORS.warning}
           />
-          
+
           <MetricCard
             title="Senhas"
             value={totais?.totalTicketsEmitidos || 0}
-            description={`${statisticsData?.porUnidade?.reduce((sum, u) => 
+            description={`${statisticsData?.porUnidade?.reduce((sum, u) =>
               sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0), 0
             )} preferenciais`}
             icon={Ticket}
@@ -599,7 +597,7 @@ export function StatisticsSection() {
                               </span>
                             </div>
                           </div>
-                          <ProgressBar 
+                          <ProgressBar
                             value={count as number}
                             max={totais.totalAgendamentos}
                             color={status.includes("FINALIZADO") || status.includes("CONCLUIDO") ? COLORS.success : COLORS.info}
@@ -657,7 +655,7 @@ export function StatisticsSection() {
                               </span>
                             </div>
                           </div>
-                          <ProgressBar 
+                          <ProgressBar
                             value={count as number}
                             max={totais.totalAgendamentos}
                             color={COLORS.primary}
@@ -688,7 +686,7 @@ export function StatisticsSection() {
                 initial={{ opacity: 0, y: 20 }}
               >
                 {/* Cabeçalho da Unidade */}
-                <div 
+                <div
                   className="p-5 border-b border-gray-200 cursor-pointer hover:bg-gray-50/50 transition-colors"
                   onClick={() => setExpandedUnit(isExpanded ? null : unidade.unidade)}
                 >
@@ -706,7 +704,7 @@ export function StatisticsSection() {
                             </span>
                             <span className="text-sm text-gray-600">atendimentos</span>
                           </div>
-                          
+
                           {/* Métricas do dia por unidade */}
                           <div className="flex items-center gap-3">
                             <div className="flex items-center gap-1">
@@ -738,7 +736,7 @@ export function StatisticsSection() {
                           <span className="text-xs text-gray-500">conclusão</span>
                         </div>
                       )}
-                      
+
                       <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                         {isExpanded ? (
                           <ChevronUp className="h-5 w-5 text-gray-500" />
@@ -842,7 +840,7 @@ export function StatisticsSection() {
                               <><ChevronDown className="h-4 w-4 mr-1" /> Expandir</>
                             )}
                           </Button>
-                          
+
                           {unidade.exames.length > 8 && (
                             <Button
                               size="sm"
@@ -868,7 +866,7 @@ export function StatisticsSection() {
                         {(showAllForUnit ? unidade.exames : unidade.exames.slice(0, 8))
                           .sort((a, b) => b.total - a.total)
                           .map((exame) => (
-                            <ExamCard 
+                            <ExamCard
                               key={`${unidade.unidade}-${exame.codigoExame}`}
                               exame={exame}
                               expanded={isExamExpanded}
@@ -933,7 +931,7 @@ export function StatisticsSection() {
         {/* ℹ️ Informações de performance */}
         {statisticsData?.processingTimeMs && (
           <div className="text-xs text-gray-500 text-right">
-            Tempo: {statisticsData.processingTimeMs}ms • 
+            Tempo: {statisticsData.processingTimeMs}ms •
             Fonte: {statisticsData.source === "cache" ? "Cache" : "Banco"}
           </div>
         )}

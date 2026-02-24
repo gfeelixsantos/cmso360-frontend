@@ -16,7 +16,16 @@ export const metadata: Metadata = {
   description: siteConfig.description,
   icons: {
     icon: "/images/favicon.ico",
-    shortcut: "favicon.ico",
+    shortcut: "/images/favicon-16x16.png",
+    apple: "/images/apple-touch-icon.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: siteConfig.name,
+  },
+  formatDetection: {
+    telephone: false,
   },
 };
 
@@ -25,6 +34,10 @@ export const viewport: Viewport = {
     { media: "(prefers-color-scheme: light)", color: "white" },
     { media: "(prefers-color-scheme: dark)", color: "black" },
   ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({
