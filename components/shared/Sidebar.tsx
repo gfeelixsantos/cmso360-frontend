@@ -174,7 +174,7 @@ export function SidebarRecepcao({
   return (
     <aside
       aria-label="Painel lateral de filtros e controles"
-      className="w-68 bg-gradient-to-b from-white via-gray-50 to-green-50 border-r border-gray-200 shadow-lg h-screen overflow-y-auto transition-all relative"
+      className="w-68 bg-gradient-to-b from-white via-gray-50 to-green-50 border-r border-gray-200 shadow-lg h-full overflow-y-auto transition-all relative"
       role="complementary"
     >
       <main className="p-5 pt-6">

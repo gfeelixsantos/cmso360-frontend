@@ -537,8 +537,8 @@ const ConfigModal = ({
             >
               <span
                 className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${audioHabilitado
-                    ? "translate-x-5 sm:translate-x-6"
-                    : "translate-x-0.5 sm:translate-x-1"
+                  ? "translate-x-5 sm:translate-x-6"
+                  : "translate-x-0.5 sm:translate-x-1"
                   }`}
               />
             </button>
@@ -634,6 +634,7 @@ export default function PainelPage() {
 
   // Estados para controle do idle
   const [isIdle, setIsIdle] = useState(false);
+  const isIdleRef = useRef(false);
   const [showPainel, setShowPainel] = useState(true);
   const ultimaChamadaRef = useRef<number>(Date.now());
   const idleTimeoutRef = useRef<NodeJS.Timeout>();
@@ -663,32 +664,36 @@ export default function PainelPage() {
 
   // Sistema Idle
   const iniciarIdle = useCallback(() => {
-    if (isIdle) return;
+    if (isIdleRef.current) return;
     setShowPainel(false);
 
     setTimeout(() => {
       setIsIdle(true);
+      isIdleRef.current = true;
     }, 800);
 
     returnTimeoutRef.current = setTimeout(() => {
       retornarAoPainel();
     }, IDLE_CONFIG.duracaoIdleSegundos * 1000);
-  }, [isIdle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const retornarAoPainel = useCallback(() => {
-    if (!isIdle) return;
+    if (!isIdleRef.current) return;
 
     if (returnTimeoutRef.current) {
       clearTimeout(returnTimeoutRef.current);
     }
 
     setIsIdle(false);
+    isIdleRef.current = false;
 
     setTimeout(() => {
       setShowPainel(true);
       resetarIdleTimer();
     }, 800);
-  }, [isIdle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const resetarIdleTimer = useCallback(() => {
     ultimaChamadaRef.current = Date.now();
@@ -702,23 +707,25 @@ export default function PainelPage() {
         const tempoInativo = Date.now() - ultimaChamadaRef.current;
         const tempoMinimo = IDLE_CONFIG.tempoInatividadeMinutos * 60 * 1000;
 
-        if (tempoInativo >= tempoMinimo && !ativas.length && !espera.length) {
+        if (tempoInativo >= tempoMinimo && !ativasRef.current.length && !esperaRef.current.length) {
           iniciarIdle();
         } else {
           resetarIdleTimer();
         }
       }, 60000);
     }
-  }, [isLiberado, ativas.length, espera.length, iniciarIdle]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLiberado]);
 
   const atualizarUltimaChamada = useCallback(() => {
     ultimaChamadaRef.current = Date.now();
-    if (isIdle) {
+    if (isIdleRef.current) {
       retornarAoPainel();
     } else {
       resetarIdleTimer();
     }
-  }, [isIdle, retornarAoPainel, resetarIdleTimer]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const setAtivasSync = useCallback(
     (updater: (prev: PainelCall[]) => PainelCall[]) => {
