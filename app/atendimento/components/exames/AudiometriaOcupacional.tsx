@@ -702,11 +702,11 @@ export class AudiometriaCalculator {
 
     if (melhorOrelha >= 41) {
       return `Atende aos critérios legais de deficiência auditiva (perda bilateral; média tonal na melhor orelha ≥ 41 dB NA), conforme Decreto 5.296/2004.`;
-    } else if (piorOrelha >= 95 && melhorOrelha < 41) {
-      return `Atende aos critérios legais de deficiência auditiva unilateral (pior orelha ≥ 95 dB NA e melhor orelha < 41 dB NA), conforme Lei 14.768/2023.`;
+    } else if (piorOrelha >= 41 && melhorOrelha < 41) {
+      return `Atende aos critérios legais de deficiência auditiva unilateral (pior orelha ≥ 41 dB NA e melhor orelha < 41 dB NA), conforme Lei 14.768/2023.`;
     }
 
-    return `Não atende aos critérios legais de deficiência auditiva (média tonal na melhor orelha < 41 dB NA).`;
+    return `Não atende aos critérios legais de deficiência auditiva (média tonal em ambas as orelhas < 41 dB NA).`;
   }
 
   // === CONFIGURAÇÃO DA CURVA (refinada) ===
