@@ -80,6 +80,7 @@ export async function middleware(request: NextRequest) {
     return response;
   } catch (error) {
     console.error("Middleware Auth Error:", error);
+
     return redirectToLogin(request);
   }
 }

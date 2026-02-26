@@ -1,14 +1,11 @@
-import { Button, Chip, Divider, Input } from "@heroui/react";
+import { Chip, Divider, Input } from "@heroui/react";
 import {
   Building,
   Calendar,
   FileCheck,
-  Pen,
-  Save,
   Stethoscope,
   User,
   UserCheck,
-  X,
 } from "lucide-react";
 import React, { useState } from "react";
 
@@ -209,9 +206,10 @@ const InformacoesGerais: React.FC<{
                 <span className="text-gray-900">
                   {atendimento.TICKET
                     ? new Date(atendimento.TICKET?.emissao).toLocaleString(
-                        "pt-BR", {
+                        "pt-BR",
+                        {
                           timeZone: "America/Sao_Paulo",
-                        }
+                        },
                       )
                     : `${atendimento.DATAAGENDAMENTO}, ${atendimento.HORARIO}`}
                 </span>

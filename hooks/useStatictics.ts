@@ -28,7 +28,7 @@ export type StatisticsResponseDto = {
   totaisGerais: TotaisGeraisDto;
   dataReferencia: Date;
   generatedAt: Date;
-  source: 'cache' | 'database';
+  source: "cache" | "database";
   processingTimeMs?: number;
 };
 
@@ -38,9 +38,9 @@ export type StatisticsResponseDto = {
 export type UnidadeStatisticsDto = {
   unidade: string;
   totalAgendamentos: number;
-  atendimentosPrevistos: number;           // ✨ Nova Propriedade
-  aguardandoResultados: number;            // ✨ Nova Propriedade
-  aguardandoAvaliacaoMedica: number;       // ✨ Nova Propriedade
+  atendimentosPrevistos: number; // ✨ Nova Propriedade
+  aguardandoResultados: number; // ✨ Nova Propriedade
+  aguardandoAvaliacaoMedica: number; // ✨ Nova Propriedade
   atendimentosPorStatus: Record<string, number>;
   atendimentosPorTipoExame: Record<string, number>;
   exames: ExameStatisticsDto[];
@@ -71,10 +71,10 @@ export type TicketStatisticsDto = {
 // ===============================
 export type TotaisGeraisDto = {
   totalAgendamentos: number;
-  atendimentosPrevistos: number;           // ✨ Nova Propriedade
-  aguardandoResultados: number;            // ✨ Nova Propriedade
-  aguardandoAvaliacaoMedica: number;       // ✨ Nova Propriedade
-  totalProntuarios: number;               // ✨ Nova Propriedade
+  atendimentosPrevistos: number; // ✨ Nova Propriedade
+  aguardandoResultados: number; // ✨ Nova Propriedade
+  aguardandoAvaliacaoMedica: number; // ✨ Nova Propriedade
+  totalProntuarios: number; // ✨ Nova Propriedade
   atendimentosPorStatus: Record<string, number>;
   atendimentosPorTipoExame: Record<string, number>;
   totalExamesRealizados: number;

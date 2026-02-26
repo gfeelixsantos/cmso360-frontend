@@ -1,9 +1,10 @@
 // PreferencialTipo.tsx
-import { COLOR_PALETTE, PREFERENCIAL_OPTIONS } from "@/config/constants";
 import { Button } from "@heroui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { UserPlusIcon, ArrowLeft } from "lucide-react";
 import React, { useState } from "react";
+
+import { COLOR_PALETTE, PREFERENCIAL_OPTIONS } from "@/config/constants";
 
 // Componente para seleção do tipo preferencial
 const PreferencialTipo = ({
@@ -19,7 +20,7 @@ const PreferencialTipo = ({
   const handleOptionClick = (option: string) => {
     setSelectedOption(option);
     setIsSubmitting(true);
-    
+
     // Pequeno delay para mostrar feedback visual
     setTimeout(() => {
       onSelect(option);
@@ -31,6 +32,7 @@ const PreferencialTipo = ({
     if (selectedOption === option) {
       return "text-white";
     }
+
     return "text-white/90";
   };
 
@@ -38,36 +40,37 @@ const PreferencialTipo = ({
     if (selectedOption === option) {
       return `linear-gradient(135deg, ${COLOR_PALETTE.dark} 0%, ${COLOR_PALETTE.primary} 100%)`;
     }
+
     return `linear-gradient(135deg, ${COLOR_PALETTE.accent} 0%, #7a9c8a 100%)`;
   };
 
   return (
     <motion.div
-      animate={{ 
-        opacity: 1, 
+      animate={{
+        opacity: 1,
         scale: 1,
         transition: {
           duration: 0.5,
-          ease: [0.43, 0.13, 0.23, 0.96] // Curva easing mais suave
-        }
+          ease: [0.43, 0.13, 0.23, 0.96], // Curva easing mais suave
+        },
       }}
       className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl mx-2"
-      exit={{ 
-        opacity: 0, 
+      exit={{
+        opacity: 0,
         scale: 0.95,
         transition: {
           duration: 0.4,
-          ease: "easeInOut"
-        }
+          ease: "easeInOut",
+        },
       }}
-      initial={{ 
-        opacity: 0, 
+      initial={{
+        opacity: 0,
         scale: 0.95,
-        y: 20
+        y: 20,
       }}
       transition={{
         duration: 0.5,
-        ease: [0.43, 0.13, 0.23, 0.96]
+        ease: [0.43, 0.13, 0.23, 0.96],
       }}
     >
       <div
@@ -78,27 +81,27 @@ const PreferencialTipo = ({
         }}
       >
         {/* Background decorativo sutil */}
-        <div 
+        <div
           className="absolute inset-0 opacity-5"
           style={{
-            background: `radial-gradient(circle at 30% 20%, ${COLOR_PALETTE.primary} 0%, transparent 50%)`
+            background: `radial-gradient(circle at 30% 20%, ${COLOR_PALETTE.primary} 0%, transparent 50%)`,
           }}
         />
 
         <motion.div
-          animate={{ 
+          animate={{
             opacity: 1,
-            y: 0
+            y: 0,
           }}
           className="text-center mb-6 md:mb-8 lg:mb-10 relative z-10"
-          initial={{ 
+          initial={{
             opacity: 0,
-            y: -20
+            y: -20,
           }}
-          transition={{ 
+          transition={{
             delay: 0.1,
             duration: 0.4,
-            ease: "easeOut"
+            ease: "easeOut",
           }}
         >
           <h2
@@ -120,41 +123,41 @@ const PreferencialTipo = ({
             {PREFERENCIAL_OPTIONS.map((option, index) => (
               <motion.div
                 key={option}
-                animate={{ 
-                  opacity: 1, 
+                animate={{
+                  opacity: 1,
                   scale: 1,
-                  y: 0
+                  y: 0,
                 }}
                 className="flex"
-                exit={{ 
+                exit={{
                   opacity: 0,
                   scale: 0.9,
                   transition: {
-                    duration: 0.2
-                  }
+                    duration: 0.2,
+                  },
                 }}
-                initial={{ 
-                  opacity: 0, 
+                initial={{
+                  opacity: 0,
                   scale: 0.9,
-                  y: 20
+                  y: 20,
                 }}
-                transition={{ 
+                transition={{
                   duration: 0.4,
                   delay: index * 0.05,
-                  ease: "backOut"
+                  ease: "backOut",
                 }}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.03,
                   transition: {
                     duration: 0.2,
-                    ease: "easeOut"
-                  }
+                    ease: "easeOut",
+                  },
                 }}
-                whileTap={{ 
+                whileTap={{
                   scale: 0.97,
                   transition: {
-                    duration: 0.1
-                  }
+                    duration: 0.1,
+                  },
                 }}
               >
                 <Button
@@ -167,60 +170,63 @@ const PreferencialTipo = ({
                 >
                   {/* Efeito de overlay no hover */}
                   <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all duration-300" />
-                  
+
                   {/* Efeito de brilho na seleção */}
                   {selectedOption === option && (
                     <motion.div
                       animate={{
                         scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.1, 0]
+                        opacity: [0.3, 0.1, 0],
                       }}
                       className="absolute inset-0 bg-white/30 rounded-2xl"
                       initial={false}
                       transition={{
                         duration: 0.6,
-                        ease: "easeOut"
+                        ease: "easeOut",
                       }}
                     />
                   )}
 
                   <motion.div
-                    animate={{ 
+                    animate={{
                       scale: selectedOption === option ? 1.1 : 1,
-                      rotate: selectedOption === option ? [0, 5, -5, 0] : 0
+                      rotate: selectedOption === option ? [0, 5, -5, 0] : 0,
                     }}
                     className="mb-3 relative"
                     transition={{
                       duration: 0.3,
-                      ease: "easeOut"
+                      ease: "easeOut",
                     }}
                   >
-                    <UserPlusIcon 
+                    <UserPlusIcon
                       className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-all duration-300 ${getIconColor(option)}`}
                     />
-                    
+
                     {/* Indicador de seleção */}
                     {selectedOption === option && (
                       <motion.div
                         animate={{
                           scale: [0, 1],
-                          opacity: [0, 1]
+                          opacity: [0, 1],
                         }}
                         className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white flex items-center justify-center"
                         initial={false}
                         transition={{
                           duration: 0.3,
-                          ease: "easeOut"
+                          ease: "easeOut",
                         }}
                       >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLOR_PALETTE.primary }} />
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: COLOR_PALETTE.primary }}
+                        />
                       </motion.div>
                     )}
                   </motion.div>
-                  
+
                   <motion.span
                     animate={{
-                      scale: selectedOption === option ? 1.05 : 1
+                      scale: selectedOption === option ? 1.05 : 1,
                     }}
                     className="text-center leading-tight text-xs md:text-sm lg:text-base relative z-10 transition-all duration-300"
                   >
@@ -231,13 +237,13 @@ const PreferencialTipo = ({
                   {selectedOption === option && isSubmitting && (
                     <motion.div
                       animate={{
-                        rotate: 360
+                        rotate: 360,
                       }}
                       className="absolute bottom-4 right-4 w-6 h-6 rounded-full border-2 border-white/30 border-t-white"
                       transition={{
                         duration: 1,
                         repeat: Infinity,
-                        ease: "linear"
+                        ease: "linear",
                       }}
                     />
                   )}
@@ -248,19 +254,19 @@ const PreferencialTipo = ({
         </div>
 
         <motion.div
-          animate={{ 
+          animate={{
             opacity: 1,
-            y: 0
+            y: 0,
           }}
           className="flex justify-center relative z-10"
-          initial={{ 
+          initial={{
             opacity: 0,
-            y: 20
+            y: 20,
           }}
-          transition={{ 
+          transition={{
             delay: 0.3,
             duration: 0.4,
-            ease: "easeOut"
+            ease: "easeOut",
           }}
         >
           <Button
@@ -275,13 +281,13 @@ const PreferencialTipo = ({
           >
             <motion.div
               animate={{
-                x: [0, -3, 0]
+                x: [0, -3, 0],
               }}
               className="flex items-center"
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                repeatType: "reverse"
+                repeatType: "reverse",
               }}
             >
               <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
@@ -294,39 +300,39 @@ const PreferencialTipo = ({
         <AnimatePresence>
           {isSubmitting && selectedOption && (
             <motion.div
-              animate={{ 
+              animate={{
                 opacity: 1,
-                scale: 1
+                scale: 1,
               }}
               className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-2xl"
-              exit={{ 
+              exit={{
                 opacity: 0,
-                scale: 0.9
+                scale: 0.9,
               }}
-              initial={{ 
+              initial={{
                 opacity: 0,
-                scale: 0.9
+                scale: 0.9,
               }}
               transition={{
-                duration: 0.3
+                duration: 0.3,
               }}
             >
               <motion.div
                 animate={{
                   scale: [1, 1.1, 1],
-                  opacity: [0.7, 1, 0.7]
+                  opacity: [0.7, 1, 0.7],
                 }}
                 className="text-center p-4"
                 transition={{
                   duration: 1.5,
                   repeat: Infinity,
-                  ease: "easeInOut"
+                  ease: "easeInOut",
                 }}
               >
                 <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white mx-auto mb-2" />
-                <p 
+                <p
                   className="text-white font-semibold"
-                  style={{ textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}
+                  style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
                 >
                   Processando...
                 </p>

@@ -7,9 +7,6 @@ import {
   ModalFooter,
   Button,
   Spinner,
-  Modal,
-  ModalContent,
-  Checkbox,
 } from "@heroui/react";
 import { Eye, Trash, RefreshCw } from "lucide-react";
 
@@ -19,10 +16,10 @@ import InformacoesGerais, {
 } from "./components/InformacoesGerais";
 import ExamesTable from "./components/ExamesTable";
 import AnexosUpload from "./components/AnexosUpload"; // Importe o novo componente
+import SyncSocConfirmationModal from "./components/SyncSocConfirmationModal";
 
 import {
   NEST_SCHEDULINGS_UPDATE,
-  NEST_SCHEDULINGS_SYNC_SOC,
   NEST_SCHEDULINGS_DELETE,
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
@@ -31,7 +28,6 @@ import {
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
-import SyncSocConfirmationModal from "./components/SyncSocConfirmationModal";
 
 interface LazyModalContentProps {
   atendimento: Scheduling;
@@ -39,8 +35,6 @@ interface LazyModalContentProps {
   onClose: () => void;
   onUpdateScheduling?: (updated: Scheduling) => void;
 }
-
-
 
 // ============================================
 // COMPONENTE PRINCIPAL: LazyModalContent
@@ -188,6 +182,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       }
 
       const updatedScheduling = await response.json();
+
       console.log("Scheduling atualizado após sync:", updatedScheduling);
 
       if (onUpdateScheduling) {
@@ -275,10 +270,10 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       />
 
       <SyncSocConfirmationModal
+        isLoading={loadingSyncSoc}
         isOpen={syncSocModalOpen}
         onClose={() => setSyncSocModalOpen(false)}
         onConfirm={handleSyncWithSOC}
-        isLoading={loadingSyncSoc}
       />
 
       <ModalHeader className="flex gap-2">
@@ -288,58 +283,58 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
               <h2 className="text-xl font-bold">
                 {atendimento.NOME.toUpperCase()}
               </h2>
-                <span>{atendimento.TIPOEXAMENOME}</span>
-                <span>{atendimento.DATAAGENDAMENTO}</span>
-              </div>
+              <span>{atendimento.TIPOEXAMENOME}</span>
+              <span>{atendimento.DATAAGENDAMENTO}</span>
+            </div>
             <div>
               <span className="flex gap-6 text-sm text-gray-600 mt-1">
                 {atendimento.NOMEEMPRESA}
               </span>
             </div>
-                      <div className="flex items-center gap-1">
-            <Button
-              color="default"
-              disabled={loadingViewMedicalRecord}
-              size="sm"
-              startContent={
-                loadingViewMedicalRecord ? (
-                  <Spinner color="current" size={"sm"} />
-                ) : (
-                  <Eye size={16} />
-                )
-              }
-              variant="light"
-              onPress={handleViewMedicalRecord}
-            >
-              {loadingViewMedicalRecord ? "Carregando" : "Ver Prontuário"}
-            </Button>
-            <Button
-              color="default"
-              disabled={loadingSyncSoc}
-              size="sm"
-              startContent={
-                loadingSyncSoc ? (
-                  <Spinner size={"sm"} />
-                ) : (
-                  <RefreshCw size={16} />
-                )
-              }
-              variant="light"
-              onPress={() => setSyncSocModalOpen(true)}
-            >
-              Sincronizar SOC
-            </Button>
-            <Button
-              color="danger"
-              disabled={loadingDeleteScheduling}
-              size="sm"
-              startContent={<Trash size={16} />}
-              variant="light"
-              onPress={() => setDeleteModalOpen(true)}
-            >
-              Excluir
-            </Button>
-          </div>
+            <div className="flex items-center gap-1">
+              <Button
+                color="default"
+                disabled={loadingViewMedicalRecord}
+                size="sm"
+                startContent={
+                  loadingViewMedicalRecord ? (
+                    <Spinner color="current" size={"sm"} />
+                  ) : (
+                    <Eye size={16} />
+                  )
+                }
+                variant="light"
+                onPress={handleViewMedicalRecord}
+              >
+                {loadingViewMedicalRecord ? "Carregando" : "Ver Prontuário"}
+              </Button>
+              <Button
+                color="default"
+                disabled={loadingSyncSoc}
+                size="sm"
+                startContent={
+                  loadingSyncSoc ? (
+                    <Spinner size={"sm"} />
+                  ) : (
+                    <RefreshCw size={16} />
+                  )
+                }
+                variant="light"
+                onPress={() => setSyncSocModalOpen(true)}
+              >
+                Sincronizar SOC
+              </Button>
+              <Button
+                color="danger"
+                disabled={loadingDeleteScheduling}
+                size="sm"
+                startContent={<Trash size={16} />}
+                variant="light"
+                onPress={() => setDeleteModalOpen(true)}
+              >
+                Excluir
+              </Button>
+            </div>
           </div>
         </div>
       </ModalHeader>

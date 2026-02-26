@@ -266,7 +266,7 @@ const RecepcaoPage: React.FC = () => {
     }
   }, [router]);
 
-  const handleExameSelecionado = () => { };
+  const handleExameSelecionado = () => {};
 
   // ---------------------------------------------------------
   // Carrega tickets
@@ -548,7 +548,6 @@ const RecepcaoPage: React.FC = () => {
     const handleDeleteTicket = (id: number) => {
       // Atualiza a lista de tickets removendo o excluído
       remove(id);
-
 
       // Opcional: Feedback visual
       addToast({

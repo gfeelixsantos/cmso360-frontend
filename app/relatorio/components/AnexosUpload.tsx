@@ -8,7 +8,7 @@ import {
   CheckCircle2,
   Trash2,
   File as FileIconLucide,
-  Paperclip
+  Paperclip,
 } from "lucide-react";
 
 import { FileUpload } from "@/lib/scheduling/interface/scheduling";
@@ -42,6 +42,7 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
       Array.from(selectedFiles).forEach((file) => {
         if (file.size > maxFileSize * 1024 * 1024) {
           newErrors.push(`- ${file.name}: Muito grande (máx ${maxFileSize}MB)`);
+
           return;
         }
 
@@ -49,11 +50,13 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
 
         if (!allowedTypes.includes(fileExtension)) {
           newErrors.push(`- ${file.name}: Tipo não permitido`);
+
           return;
         }
 
         if (anexos.some((a) => a.Name === file.name)) {
           newErrors.push(`- ${file.name}: Já anexado`);
+
           return;
         }
 
@@ -104,15 +107,18 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
     setIsDragging(false);
   }, []);
 
-  const handleDrop = useCallback((e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragging(false);
+  const handleDrop = useCallback(
+    (e: DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragging(false);
 
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files);
-    }
-  }, [processFiles]);
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        processFiles(e.dataTransfer.files);
+      }
+    },
+    [processFiles],
+  );
 
   const handleTriggerFileInput = useCallback(() => {
     if (!isLoading && !uploading) {
@@ -127,18 +133,20 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
   }, []);
 
   const getFileIcon = (fileName: string, className?: string) => {
-    const ext = fileName.split('.').pop()?.toLowerCase();
+    const ext = fileName.split(".").pop()?.toLowerCase();
 
-    if (['jpg', 'jpeg', 'png', 'svg', 'gif'].includes(ext || '')) {
+    if (["jpg", "jpeg", "png", "svg", "gif"].includes(ext || "")) {
       return <FileImage className={className || "text-green-500"} size={16} />;
     }
 
-    if (['pdf'].includes(ext || '')) {
+    if (["pdf"].includes(ext || "")) {
       return <FileText className={className || "text-green-600"} size={16} />;
     }
 
-    return <FileIconLucide className={className || "text-gray-500"} size={16} />;
-  }
+    return (
+      <FileIconLucide className={className || "text-gray-500"} size={16} />
+    );
+  };
 
   const isBusy = isLoading || uploading;
 
@@ -146,7 +154,9 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
     <div className="mt-4 flex flex-col gap-3 w-full pb-2">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-bold text-gray-800">Anexos do Prontuário</h2>
+          <h2 className="text-base font-bold text-gray-800">
+            Anexos do Prontuário
+          </h2>
           <p className="text-xs text-gray-500">Gerencie documentos e exames.</p>
         </div>
       </div>
@@ -155,32 +165,41 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
         {/* ZONA DE ARRASTAR E SOLTAR */}
         <div className="md:col-span-1">
           <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            onClick={handleTriggerFileInput}
             className={`
               h-full min-h-[140px] relative overflow-hidden transition-all duration-300 ease-in-out border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center cursor-pointer group text-center
-              ${isDragging
-                ? "border-green-500 bg-green-50 scale-[1.01]"
-                : "border-gray-300 hover:border-green-500/50 hover:bg-green-50/50 bg-gray-50/50"
+              ${
+                isDragging
+                  ? "border-green-500 bg-green-50 scale-[1.01]"
+                  : "border-gray-300 hover:border-green-500/50 hover:bg-green-50/50 bg-gray-50/50"
               }
               ${isBusy ? "opacity-50 cursor-not-allowed pointer-events-none" : ""}
             `}
+            onClick={handleTriggerFileInput}
+            onDragLeave={handleDragLeave}
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
           >
-            <div className={`
+            <div
+              className={`
               p-2.5 rounded-full mb-2 transition-colors duration-300 shadow-sm border border-gray-100 bg-white
               ${isDragging ? "text-green-600 bg-green-100 border-green-200" : "text-gray-400 group-hover:text-green-600 group-hover:bg-green-50 group-hover:border-green-100"}
-            `}>
+            `}
+            >
               {isBusy ? (
-                <Spinner size="sm" color="success" />
+                <Spinner color="success" size="sm" />
               ) : (
                 <UploadCloud size={24} strokeWidth={2} />
               )}
             </div>
 
-            <h3 className={`text-xs font-semibold mb-1 transition-colors ${isDragging ? "text-green-600" : "text-gray-700 group-hover:text-green-600"}`}>
-              {isBusy ? "Enviando..." : (isDragging ? "Solte arquivos aqui" : "Clique ou arraste")}
+            <h3
+              className={`text-xs font-semibold mb-1 transition-colors ${isDragging ? "text-green-600" : "text-gray-700 group-hover:text-green-600"}`}
+            >
+              {isBusy
+                ? "Enviando..."
+                : isDragging
+                  ? "Solte arquivos aqui"
+                  : "Clique ou arraste"}
             </h3>
 
             <div className="flex flex-col gap-0.5 text-[10px] text-gray-400">
@@ -204,17 +223,25 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
         <div className="md:col-span-2 flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm h-full min-h-[140px] max-h-[220px]">
           <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2 bg-gray-50/80 rounded-t-xl sticky top-0 z-10">
             <h4 className="text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
               Documentos Salvos ({anexos.length})
             </h4>
-            {isBusy && <span className="text-[10px] text-green-600 font-semibold animate-pulse">Sincronizando...</span>}
+            {isBusy && (
+              <span className="text-[10px] text-green-600 font-semibold animate-pulse">
+                Sincronizando...
+              </span>
+            )}
           </div>
 
           {anexos.length === 0 ? (
             <div className="flex flex-col items-center justify-center flex-1 py-6 text-center">
               <Paperclip className="text-gray-300 mb-2" size={20} />
-              <p className="text-xs text-gray-400 font-medium tracking-tight">Atendimento sem anexos</p>
-              <p className="text-[10px] text-gray-300 mt-1">Os documentos enviados aparecerão aqui</p>
+              <p className="text-xs text-gray-400 font-medium tracking-tight">
+                Atendimento sem anexos
+              </p>
+              <p className="text-[10px] text-gray-300 mt-1">
+                Os documentos enviados aparecerão aqui
+              </p>
             </div>
           ) : (
             <div className="flex flex-col overflow-y-auto custom-scrollbar p-1">
@@ -229,7 +256,10 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                         {getFileIcon(anexo.Name, "text-green-600")}
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <p className="text-[11px] font-semibold text-gray-700 truncate leading-tight" title={anexo.Name}>
+                        <p
+                          className="text-[11px] font-semibold text-gray-700 truncate leading-tight"
+                          title={anexo.Name}
+                        >
                           {anexo.Name}
                         </p>
                         <div className="flex items-center gap-1 mt-0.5">
@@ -248,12 +278,16 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
 
                     <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
                       {anexo.StoragePath && (
-                        <Tooltip content="Abrir arquivo" placement="top" size="sm">
+                        <Tooltip
+                          content="Abrir arquivo"
+                          placement="top"
+                          size="sm"
+                        >
                           <Button
                             isIconOnly
+                            className="w-6 h-6 min-w-min text-blue-600"
                             size="sm"
                             variant="light"
-                            className="w-6 h-6 min-w-min text-blue-600"
                             onClick={() => handleOpenAttachment(anexo)}
                           >
                             <ExternalLink size={13} />
@@ -261,13 +295,18 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                         </Tooltip>
                       )}
 
-                      <Tooltip content="Excluir" color="danger" placement="top" size="sm">
+                      <Tooltip
+                        color="danger"
+                        content="Excluir"
+                        placement="top"
+                        size="sm"
+                      >
                         <Button
                           isIconOnly
+                          className="w-6 h-6 min-w-min"
                           color="danger"
                           size="sm"
                           variant="light"
-                          className="w-6 h-6 min-w-min"
                           onPress={() => onRemove(anexo.Name)}
                         >
                           <Trash2 size={13} />
@@ -282,13 +321,16 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
         </div>
       </div>
 
-      <style dangerouslySetInnerHTML={{
-        __html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .custom-scrollbar::-webkit-scrollbar { width: 3px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-      `}} />
+      `,
+        }}
+      />
     </div>
   );
 };

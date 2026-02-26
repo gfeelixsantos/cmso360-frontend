@@ -24,7 +24,6 @@ import {
 } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IndexDb } from "@/lib/indexDb/indexdb";
-import { NEST_TICKET_DELETE } from "@/config/constants";
 
 // Interface para tipagem robusta
 interface SenhaCardProps {
@@ -56,7 +55,9 @@ const TicketNumber: React.FC<{ ticket: Ticket }> = ({ ticket }) => {
         </span>
       </div>
       {ticket.preferencialTipo && (
-        <span className="text-sm text-red-600 font-medium">{ticket.preferencialTipo}</span>
+        <span className="text-sm text-red-600 font-medium">
+          {ticket.preferencialTipo}
+        </span>
       )}
     </div>
   );
@@ -424,7 +425,6 @@ const SenhaCard: React.FC<SenhaCardProps> = ({
     }
   };
 
-
   useEffect(() => {
     handlePreparation();
   }, [onPreparationRequests, ticket]);
@@ -439,10 +439,10 @@ const SenhaCard: React.FC<SenhaCardProps> = ({
       <div className="flex flex-col items-center flex-1 w-full">
         {/* Botão de Exclusão */}
         <Button
-          size="sm"
-          radius="full"
-          onPress={() => onDeleteTicketNumber(ticket.id)}
           className="absolute top-1 right-1 min-w-6 h-6 w-6 p-0 text-[10px] bg-gray-200 hover:bg-red-200 hover:text-red-700 transition-all"
+          radius="full"
+          size="sm"
+          onPress={() => onDeleteTicketNumber(ticket.id)}
         >
           X
         </Button>

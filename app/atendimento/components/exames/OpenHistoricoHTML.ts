@@ -1,12 +1,13 @@
 // utils/openHistoricoHTML.ts
-import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
 import { adaptExportaDadosToAudiometriaData } from "./audiometriaAdapter";
 import { generateAudiogramSVG } from "./AudiometriaGraphics";
 import { AudiometriaCalculator } from "./AudiometriaOcupacional";
 
+import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
+
 export function openHistoricoHTML(
   audiometrias: AudiometriaExportaDados[],
-  atendimento: any
+  atendimento: any,
 ) {
   const windowWidth = 800;
   const windowHeight = 600;
@@ -14,20 +15,24 @@ export function openHistoricoHTML(
   const top = (window.screen.height - windowHeight) / 2;
 
   const newWindow = window.open(
-    '',
-    '_blank',
-    `width=${windowWidth},height=${windowHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`
+    "",
+    "_blank",
+    `width=${windowWidth},height=${windowHeight},left=${left},top=${top},scrollbars=yes,resizable=yes`,
   );
 
   if (!newWindow) {
-    alert('Não foi possível abrir a janela. Verifique as configurações do seu navegador.');
+    alert(
+      "Não foi possível abrir a janela. Verifique as configurações do seu navegador.",
+    );
+
     return;
   }
 
   // Ordenar por data (mais recente primeiro)
   const audiometriasOrdenadas = [...audiometrias].sort((a, b) => {
-    const dateA = a.DATA_REALIZACAO?.split('/').reverse().join('-');
-    const dateB = b.DATA_REALIZACAO?.split('/').reverse().join('-');
+    const dateA = a.DATA_REALIZACAO?.split("/").reverse().join("-");
+    const dateB = b.DATA_REALIZACAO?.split("/").reverse().join("-");
+
     return new Date(dateB).getTime() - new Date(dateA).getTime();
   });
 
@@ -37,28 +42,33 @@ export function openHistoricoHTML(
   }
 
   // Gerar HTML para cada audiometria restante
-  const audiometriasHTML = audiometriasOrdenadas.map(audiometria => {
-    // Adaptar os dados para o formato do componente
-    const audiometriaData = adaptExportaDadosToAudiometriaData(audiometria, atendimento);
+  const audiometriasHTML = audiometriasOrdenadas
+    .map((audiometria) => {
+      // Adaptar os dados para o formato do componente
+      const audiometriaData = adaptExportaDadosToAudiometriaData(
+        audiometria,
+        atendimento,
+      );
 
-    // CALCULAR OS RESULTADOS USANDO O MESMO CALCULATOR DO COMPONENTE
-    const resultados = AudiometriaCalculator.calcularTodosResultados(audiometriaData);
+      // CALCULAR OS RESULTADOS USANDO O MESMO CALCULATOR DO COMPONENTE
+      const resultados =
+        AudiometriaCalculator.calcularTodosResultados(audiometriaData);
 
-    // Merge dos dados originais com os resultados calculados
-    const dadosCompletos = {
-      ...audiometriaData,
-      ...resultados
-    };
+      // Merge dos dados originais com os resultados calculados
+      const dadosCompletos = {
+        ...audiometriaData,
+        ...resultados,
+      };
 
-    const graficos = generateAudiogramSVG(dadosCompletos);
+      const graficos = generateAudiogramSVG(dadosCompletos);
 
-    return `
+      return `
       <div class="audiometria-card">
         <!-- HEADER DO EXAME -->
         <div class="card-header">
           <div class="card-title">
             <span class="data-exame">${formatDateBR(audiometria.DATA_REALIZACAO)}</span>
-            <span class="numero-guia">Guia: <span class="badge badge-light">${audiometria.NUMERO_GUIA || 'N/A'}</span></span>
+            <span class="numero-guia">Guia: <span class="badge badge-light">${audiometria.NUMERO_GUIA || "N/A"}</span></span>
           </div>
           <span class="badge badge-${getResultadoStyle(dadosCompletos.resultadoOD)}">
             ${formatResultado(dadosCompletos.resultadoOD)}
@@ -69,14 +79,14 @@ export function openHistoricoHTML(
         <div class="info-section">
           <h4 class="section-title">Informações do Exame</h4>
           <div class="info-grid">
-            ${createInfoItem('Unidade', audiometria.NOME_UNIDADE)}
-            ${createInfoItem('Setor', audiometria.SETOR)}
-            ${createInfoItem('Cargo', audiometria.CARGO)}
-            ${createInfoItem('Função', audiometria.FUNCAO)}
-            ${createInfoItem('Repouso Auditivo', dadosCompletos.repousoAuditivo === 'Sim' ? `${dadosCompletos.horasRepouso}h` : 'Não')}
-            ${createInfoItem('Audiômetro', dadosCompletos.tipoAudiometro)}
-            ${createInfoItem('Otoscopia OD', formatOtoscopia(dadosCompletos.meatoscopiaOD))}
-            ${createInfoItem('Otoscopia OE', formatOtoscopia(dadosCompletos.meatoscopiaOE))}
+            ${createInfoItem("Unidade", audiometria.NOME_UNIDADE)}
+            ${createInfoItem("Setor", audiometria.SETOR)}
+            ${createInfoItem("Cargo", audiometria.CARGO)}
+            ${createInfoItem("Função", audiometria.FUNCAO)}
+            ${createInfoItem("Repouso Auditivo", dadosCompletos.repousoAuditivo === "Sim" ? `${dadosCompletos.horasRepouso}h` : "Não")}
+            ${createInfoItem("Audiômetro", dadosCompletos.tipoAudiometro)}
+            ${createInfoItem("Otoscopia OD", formatOtoscopia(dadosCompletos.meatoscopiaOD))}
+            ${createInfoItem("Otoscopia OE", formatOtoscopia(dadosCompletos.meatoscopiaOE))}
           </div>
         </div>
 
@@ -114,25 +124,29 @@ export function openHistoricoHTML(
                 </div>
                 <div class="metric">
                   <div class="metric-label">Tipo</div>
-                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOD || '-'}</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOD || "-"}</div>
                 </div>
                 <div class="metric">
                   <div class="metric-label">Configuração</div>
-                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOD || '-'}</div>
+                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOD || "-"}</div>
                 </div>
               </div>
               
               <div class="mt-3 text-xs">
                 <span class="label">Frequências Alteradas:</span> 
-                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOD || 'Nenhuma'}</span>
+                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOD || "Nenhuma"}</span>
               </div>
               
-              ${dadosCompletos.entalhe4000HzOD ? `
+              ${
+                dadosCompletos.entalhe4000HzOD
+                  ? `
                 <div class="alert alert-warning mt-2">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                   Entalhe em 4000Hz detectado
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
 
             <!-- OE -->
@@ -153,25 +167,29 @@ export function openHistoricoHTML(
                 </div>
                 <div class="metric">
                   <div class="metric-label">Tipo</div>
-                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOE || '-'}</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOE || "-"}</div>
                 </div>
                 <div class="metric">
                   <div class="metric-label">Configuração</div>
-                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOE || '-'}</div>
+                  <div class="metric-value-sm text-xs truncate">${dadosCompletos.configuracaoOE || "-"}</div>
                 </div>
               </div>
               
               <div class="mt-3 text-xs">
                 <span class="label">Frequências Alteradas:</span> 
-                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOE || 'Nenhuma'}</span>
+                <span class="text-dark">${dadosCompletos.frequenciasAlteradasOE || "Nenhuma"}</span>
               </div>
               
-              ${dadosCompletos.entalhe4000HzOE ? `
+              ${
+                dadosCompletos.entalhe4000HzOE
+                  ? `
                 <div class="alert alert-warning mt-2">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
                   Entalhe em 4000Hz detectado
                 </div>
-              ` : ''}
+              `
+                  : ""
+              }
             </div>
           </div>
 
@@ -182,13 +200,13 @@ export function openHistoricoHTML(
               <div class="nr7-box">
                 <span class="label">OD:</span>
                 <span class="font-medium ${getNR7Style(dadosCompletos.classificacaoNR7OD)}">
-                  ${dadosCompletos.classificacaoNR7OD || 'Não classificado'}
+                  ${dadosCompletos.classificacaoNR7OD || "Não classificado"}
                 </span>
               </div>
               <div class="nr7-box">
                 <span class="label">OE:</span>
                 <span class="font-medium ${getNR7Style(dadosCompletos.classificacaoNR7OE)}">
-                  ${dadosCompletos.classificacaoNR7OE || 'Não classificado'}
+                  ${dadosCompletos.classificacaoNR7OE || "Não classificado"}
                 </span>
               </div>
             </div>
@@ -202,7 +220,7 @@ export function openHistoricoHTML(
           </div>
           <div class="other-tests-section">
             ${createIRFSRT(dadosCompletos)}
-            ${dadosCompletos.observacoes ? createObservacao('Observações', dadosCompletos.observacoes) : ''}
+            ${dadosCompletos.observacoes ? createObservacao("Observações", dadosCompletos.observacoes) : ""}
           </div>
         </div>
         
@@ -213,10 +231,10 @@ export function openHistoricoHTML(
             Parecer e Conclusão Geral
           </div>
           <div class="conclusao-body">
-            <p class="conclusao-text">${dadosCompletos.conclusao || 'Não informado'}</p>
+            <p class="conclusao-text">${dadosCompletos.conclusao || "Não informado"}</p>
             <div class="pcd-box">
               <div class="pcd-label">Critério PCD (Lei 14.768/2023)</div>
-              <div class="pcd-value">${dadosCompletos.criterioPCD || 'Não avaliado'}</div>
+              <div class="pcd-value">${dadosCompletos.criterioPCD || "Não avaliado"}</div>
             </div>
           </div>
         </div>
@@ -226,21 +244,22 @@ export function openHistoricoHTML(
           <div class="assinatura-box">
             <div class="assinatura-label">Examinador(es)</div>
             <div class="assinatura-value">
-              ${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ''} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ''}
-              ${audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `<br/>${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ''}` : ''}
+              ${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ""} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ""}
+              ${audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `<br/>${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ""}` : ""}
             </div>
           </div>
           <div class="assinatura-box">
             <div class="assinatura-label">CPF(s) do Profissional</div>
             <div class="assinatura-value">
-              ${formatCPF(audiometria.CPF_FONO) || ''} 
-              ${audiometria.CPF_FONO2 ? `<br/>${formatCPF(audiometria.CPF_FONO2)}` : ''}
+              ${formatCPF(audiometria.CPF_FONO) || ""} 
+              ${audiometria.CPF_FONO2 ? `<br/>${formatCPF(audiometria.CPF_FONO2)}` : ""}
             </div>
           </div>
         </div>
       </div>
     `;
-  }).join('');
+    })
+    .join("");
 
   const htmlContent = `
     <!DOCTYPE html>
@@ -248,7 +267,7 @@ export function openHistoricoHTML(
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Histórico de Audiometrias - ${atendimento?.NOME || 'Paciente'}</title>
+      <title>Histórico de Audiometrias - ${atendimento?.NOME || "Paciente"}</title>
       <link rel="preconnect" href="https://fonts.googleapis.com">
       <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
       <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -770,10 +789,10 @@ export function openHistoricoHTML(
               Histórico de Audiometrias
             </h1>
             <div class="patient-grid">
-              <div class="patient-info"><div class="label">Paciente</div><div class="value">${atendimento?.NOME || 'Não informado'}</div></div>
+              <div class="patient-info"><div class="label">Paciente</div><div class="value">${atendimento?.NOME || "Não informado"}</div></div>
               <div class="patient-info"><div class="label">CPF</div><div class="value">${formatCPF(atendimento?.CPFFUNCIONARIO)}</div></div>
-              <div class="patient-info"><div class="label">Empresa</div><div class="value">${atendimento?.NOMEEMPRESA || 'Não informado'}</div></div>
-              <div class="patient-info"><div class="label">Matrícula</div><div class="value">${atendimento?.MATRICULAFUNCIONARIO || '-'}</div></div>
+              <div class="patient-info"><div class="label">Empresa</div><div class="value">${atendimento?.NOMEEMPRESA || "Não informado"}</div></div>
+              <div class="patient-info"><div class="label">Matrícula</div><div class="value">${atendimento?.MATRICULAFUNCIONARIO || "-"}</div></div>
             </div>
           </div>
           <div class="header-actions">
@@ -785,16 +804,17 @@ export function openHistoricoHTML(
           </div>
         </div>
         
-        ${audiometriasOrdenadas.length === 0
-      ? `
+        ${
+          audiometriasOrdenadas.length === 0
+            ? `
             <div class="sem-resultados">
               <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--gray-300)" stroke-width="1.5" style="margin-bottom: 16px"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
               <h2>Nenhum exame anterior</h2>
               <p>Não há histórico de audiometrias (removendo a audiometria atual).</p>
             </div>
             `
-      : audiometriasHTML
-    }
+            : audiometriasHTML
+        }
       </div>
     </body>
     </html>
@@ -807,23 +827,27 @@ export function openHistoricoHTML(
 // ============= FUNÇÕES AUXILIARES =============
 
 function getResultadoStyle(resultado: string): string {
-  if (resultado.includes('NORMAL')) return 'normal';
-  if (resultado.includes('SUGESTIVO')) return 'alerta';
-  if (resultado.includes('PAIR') || resultado.includes('INDUZIDA')) return 'danger';
-  return 'gray';
+  if (resultado.includes("NORMAL")) return "normal";
+  if (resultado.includes("SUGESTIVO")) return "alerta";
+  if (resultado.includes("PAIR") || resultado.includes("INDUZIDA"))
+    return "danger";
+
+  return "gray";
 }
 
 function formatResultado(resultado: string): string {
-  return resultado?.replace(/_/g, ' ') || 'Não informado';
+  return resultado?.replace(/_/g, " ") || "Não informado";
 }
 
 function formatDateBR(date?: string): string {
-  if (!date) return 'Não informado';
+  if (!date) return "Não informado";
   try {
-    if (date.includes('/')) return date;
-    const parts = date.split('-');
+    if (date.includes("/")) return date;
+    const parts = date.split("-");
+
     if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return new Date(date).toLocaleDateString('pt-BR');
+
+    return new Date(date).toLocaleDateString("pt-BR");
   } catch {
     return date;
   }
@@ -831,46 +855,61 @@ function formatDateBR(date?: string): string {
 
 function formatOtoscopia(otoscopia: string): string {
   switch (otoscopia) {
-    case 'SEM_OBSTRUCAO': return 'Sem obstrução';
-    case 'COM_OBSTRUCAO_PARCIAL': return 'Obstrução parcial';
-    case 'COM_OBSTRUCAO_TOTAL': return 'Obstrução total';
-    default: return otoscopia || 'Não informado';
+    case "SEM_OBSTRUCAO":
+      return "Sem obstrução";
+    case "COM_OBSTRUCAO_PARCIAL":
+      return "Obstrução parcial";
+    case "COM_OBSTRUCAO_TOTAL":
+      return "Obstrução total";
+    default:
+      return otoscopia || "Não informado";
   }
 }
 
 function formatClassification(classification: string): string {
-  if (!classification) return 'Não classificado';
-  if (classification.includes('normalidade') || classification === 'Normal' || classification === '-') {
-    return 'Padrões de normalidade';
+  if (!classification) return "Não classificado";
+  if (
+    classification.includes("normalidade") ||
+    classification === "Normal" ||
+    classification === "-"
+  ) {
+    return "Padrões de normalidade";
   }
+
   return classification;
 }
 
 function getClassificationStyle(classification: string): string {
-  if (!classification) return 'classificacao-outros';
-  if (classification.includes('normalidade') || classification === 'Normal' || classification === '-') {
-    return 'classificacao-normal';
+  if (!classification) return "classificacao-outros";
+  if (
+    classification.includes("normalidade") ||
+    classification === "Normal" ||
+    classification === "-"
+  ) {
+    return "classificacao-normal";
   }
-  if (classification.includes('Leve')) return 'classificacao-leve';
-  if (classification.includes('Moderada')) return 'classificacao-moderada';
-  if (classification.includes('Severa')) return 'classificacao-severa';
-  if (classification.includes('Profunda')) return 'classificacao-profunda';
-  return 'classificacao-outros';
+  if (classification.includes("Leve")) return "classificacao-leve";
+  if (classification.includes("Moderada")) return "classificacao-moderada";
+  if (classification.includes("Severa")) return "classificacao-severa";
+  if (classification.includes("Profunda")) return "classificacao-profunda";
+
+  return "classificacao-outros";
 }
 
 function getNR7Style(nr7: string): string {
-  if (!nr7) return '';
-  if (nr7.includes('Normal')) return 'nr7-normal';
-  if (nr7.includes('Alterada')) return 'nr7-alterado';
-  if (nr7.includes('Não Ocupacional')) return 'nr7-nao-ocupacional';
-  return '';
+  if (!nr7) return "";
+  if (nr7.includes("Normal")) return "nr7-normal";
+  if (nr7.includes("Alterada")) return "nr7-alterado";
+  if (nr7.includes("Não Ocupacional")) return "nr7-nao-ocupacional";
+
+  return "";
 }
 
 function createInfoItem(label: string, value: string | undefined): string {
   return `
     <div class="info-item">
       <div class="label">${label}</div>
-      <div class="value">${value || '-'}</div>
+      <div class="value">${value || "-"}</div>
     </div>
   `;
 }
@@ -901,37 +940,37 @@ function createTabelaValores(data: any): string {
         <tr class="subcabecalho"><td colspan="17">Via Aérea</td></tr>
         <tr>
           <td>dB</td>
-          <td>${data.viaAereaOD250 || '-'}</td>
-          <td>${data.viaAereaOE250 || '-'}</td>
-          <td>${data.viaAereaOD500 || '-'}</td>
-          <td>${data.viaAereaOE500 || '-'}</td>
-          <td>${data.viaAereaOD1000 || '-'}</td>
-          <td>${data.viaAereaOE1000 || '-'}</td>
-          <td>${data.viaAereaOD2000 || '-'}</td>
-          <td>${data.viaAereaOE2000 || '-'}</td>
-          <td>${data.viaAereaOD3000 || '-'}</td>
-          <td>${data.viaAereaOE3000 || '-'}</td>
-          <td>${data.viaAereaOD4000 || '-'}</td>
-          <td>${data.viaAereaOE4000 || '-'}</td>
-          <td>${data.viaAereaOD6000 || '-'}</td>
-          <td>${data.viaAereaOE6000 || '-'}</td>
-          <td>${data.viaAereaOD8000 || '-'}</td>
-          <td>${data.viaAereaOE8000 || '-'}</td>
+          <td>${data.viaAereaOD250 || "-"}</td>
+          <td>${data.viaAereaOE250 || "-"}</td>
+          <td>${data.viaAereaOD500 || "-"}</td>
+          <td>${data.viaAereaOE500 || "-"}</td>
+          <td>${data.viaAereaOD1000 || "-"}</td>
+          <td>${data.viaAereaOE1000 || "-"}</td>
+          <td>${data.viaAereaOD2000 || "-"}</td>
+          <td>${data.viaAereaOE2000 || "-"}</td>
+          <td>${data.viaAereaOD3000 || "-"}</td>
+          <td>${data.viaAereaOE3000 || "-"}</td>
+          <td>${data.viaAereaOD4000 || "-"}</td>
+          <td>${data.viaAereaOE4000 || "-"}</td>
+          <td>${data.viaAereaOD6000 || "-"}</td>
+          <td>${data.viaAereaOE6000 || "-"}</td>
+          <td>${data.viaAereaOD8000 || "-"}</td>
+          <td>${data.viaAereaOE8000 || "-"}</td>
         </tr>
         <tr class="subcabecalho"><td colspan="17">Via Óssea</td></tr>
         <tr>
           <td>dB</td>
           <td>-</td><td>-</td>
-          <td>${data.viaOsseaOD500 || '-'}</td>
-          <td>${data.viaOsseaOE500 || '-'}</td>
-          <td>${data.viaOsseaOD1000 || '-'}</td>
-          <td>${data.viaOsseaOE1000 || '-'}</td>
-          <td>${data.viaOsseaOD2000 || '-'}</td>
-          <td>${data.viaOsseaOE2000 || '-'}</td>
-          <td>${data.viaOsseaOD3000 || '-'}</td>
-          <td>${data.viaOsseaOE3000 || '-'}</td>
-          <td>${data.viaOsseaOD4000 || '-'}</td>
-          <td>${data.viaOsseaOE4000 || '-'}</td>
+          <td>${data.viaOsseaOD500 || "-"}</td>
+          <td>${data.viaOsseaOE500 || "-"}</td>
+          <td>${data.viaOsseaOD1000 || "-"}</td>
+          <td>${data.viaOsseaOE1000 || "-"}</td>
+          <td>${data.viaOsseaOD2000 || "-"}</td>
+          <td>${data.viaOsseaOE2000 || "-"}</td>
+          <td>${data.viaOsseaOD3000 || "-"}</td>
+          <td>${data.viaOsseaOE3000 || "-"}</td>
+          <td>${data.viaOsseaOD4000 || "-"}</td>
+          <td>${data.viaOsseaOE4000 || "-"}</td>
           <td>-</td><td>-</td><td>-</td><td>-</td>
         </tr>
       </tbody>
@@ -941,7 +980,7 @@ function createTabelaValores(data: any): string {
 
 function createIRFSRT(data: any): string {
   if (!data.srtOD && !data.srtOE && !data.irfOD && !data.irfOE) {
-    return '';
+    return "";
   }
 
   return `
@@ -950,13 +989,13 @@ function createIRFSRT(data: any): string {
       <div class="irf-grid">
         <div>
           <div class="label font-semibold text-red">OD</div>
-          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOD || '-'}</div>
-          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOD || '-'}</div>
+          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOD || "-"}</div>
+          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOD || "-"}</div>
         </div>
         <div>
           <div class="label font-semibold text-blue">OE</div>
-          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOE || '-'}</div>
-          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOE || '-'}</div>
+          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOE || "-"}</div>
+          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOE || "-"}</div>
         </div>
       </div>
     </div>
@@ -974,19 +1013,26 @@ function createObservacao(titulo: string, texto: string): string {
 }
 
 function formatCPF(cpf?: string): string {
-  if (!cpf) return 'Não informado';
-  const cleaned = cpf.replace(/\\D/g, '');
+  if (!cpf) return "Não informado";
+  const cleaned = cpf.replace(/\\D/g, "");
+
   if (cleaned.length === 11) {
-    return cleaned.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, '$1.$2.$3-$4');
+    return cleaned.replace(/(\\d{3})(\\d{3})(\\d{3})(\\d{2})/, "$1.$2.$3-$4");
   }
+
   return cpf;
 }
 
 function formatCNPJ(cnpj?: string): string {
-  if (!cnpj) return 'Não informado';
-  const cleaned = cnpj.replace(/\\D/g, '');
+  if (!cnpj) return "Não informado";
+  const cleaned = cnpj.replace(/\\D/g, "");
+
   if (cleaned.length === 14) {
-    return cleaned.replace(/(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/, '$1.$2.$3/$4-$5');
+    return cleaned.replace(
+      /(\\d{2})(\\d{3})(\\d{3})(\\d{4})(\\d{2})/,
+      "$1.$2.$3/$4-$5",
+    );
   }
+
   return cnpj;
 }

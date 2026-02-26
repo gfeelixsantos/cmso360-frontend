@@ -158,7 +158,9 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
       </div>
       <div>
         {atendimento.TICKET.preferencialTipo && (
-          <div className={`text-xs text-red-600 font-bold`}>{atendimento.TICKET.preferencialTipo}</div>
+          <div className={`text-xs text-red-600 font-bold`}>
+            {atendimento.TICKET.preferencialTipo}
+          </div>
         )}
       </div>
     </div>
@@ -586,7 +588,9 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({
               <span className="font-medium block text-xs text-yellow-800 mb-1">
                 Anotações internas:
               </span>
-              <p className="text-xs whitespace-pre-line">{atendimento.ANOTACOES}</p>
+              <p className="text-xs whitespace-pre-line">
+                {atendimento.ANOTACOES}
+              </p>
             </div>
           )}
 
@@ -595,7 +599,9 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({
               <span className="font-medium block text-xs text-yellow-800 mb-1">
                 Observações cliente:
               </span>
-              <p className="text-xs whitespace-pre-line">{atendimento.OBSERVACOES}</p>
+              <p className="text-xs whitespace-pre-line">
+                {atendimento.OBSERVACOES}
+              </p>
             </div>
           )}
         </div>

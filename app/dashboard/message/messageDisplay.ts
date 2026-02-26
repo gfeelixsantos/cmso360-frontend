@@ -38,8 +38,16 @@ Agradecemos o feedback contínuo para aprimorar nossos serviços.
     };
   } catch (error) {
     console.error("Erro ao buscar mensagem:", error);
+
     return null;
   }
 };
 
 export { getCurrentMessage };
+
+// ATUALIZAÇÕES IMPLEMENTADAS:
+
+// • Aproveitamento de exames do mesmo ASO dentro de 30 dias.
+// • Atendimento credenciadas não será possível realizar upload de exames
+// • Visualização das audiomerias anteriores do funcionário
+// • Envio de anexos no relatório

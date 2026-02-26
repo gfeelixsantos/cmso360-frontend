@@ -18,15 +18,14 @@ import { AtendimentoRules } from "../AtendimentoRules";
 import HeaderExame from "./HeaderExame";
 import { generateAudiogramSVG } from "./AudiometriaGraphics";
 import { AudiogramDisplay } from "./AudiometriaDisplay";
+import { openHistoricoHTML } from "./OpenHistoricoHTML";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import {
   NEST_SOC_AUDIOMETRIA_ANTERIOR,
-  NEST_URL,
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
-import { openHistoricoHTML } from "./OpenHistoricoHTML";
 
 interface AudiometriaProps {
   atendimento: Scheduling;
@@ -647,6 +646,7 @@ export class AudiometriaCalculator {
     // Se qualquer frequência crítica estiver ausente => PROFUNDA
     for (const f of freqCriticas) {
       const v = this.parseValor(limiares[f]);
+
       if (v === null) return "Perda Auditiva Profunda";
     }
 
@@ -679,9 +679,11 @@ export class AudiometriaCalculator {
       .map(Number)
       .filter((freq) => {
         const raw = vaLimiares[freq];
+
         // Ausência de resposta ("--", "---") também é alteração significativa
         if (raw === "--" || raw === "---") return true;
         const valor = this.parseValor(raw);
+
         return valor !== null && valor > 25;
       })
       .sort((a, b) => a - b)
@@ -693,7 +695,10 @@ export class AudiometriaCalculator {
   }
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
-  static verificarCriterioPCD(mediaOD: number | null, mediaOE: number | null): string {
+  static verificarCriterioPCD(
+    mediaOD: number | null,
+    mediaOE: number | null,
+  ): string {
     const AUSENCIA = 999; // ausência de resposta = perda máxima para fins de critério legal
     const valorOD = mediaOD ?? AUSENCIA;
     const valorOE = mediaOE ?? AUSENCIA;
@@ -764,7 +769,10 @@ export class AudiometriaCalculator {
   }
 
   // CÁLCULO DETERMINAR TIPO DE PERDA
-  static determinarTipoPerda(mediaVA: number | null, mediaVO: number | null): string {
+  static determinarTipoPerda(
+    mediaVA: number | null,
+    mediaVO: number | null,
+  ): string {
     // Para ausência de resposta
     if (mediaVA === null) return "Neurossensorial";
 
@@ -885,7 +893,6 @@ export class AudiometriaCalculator {
       : configuracaoOE === "Sem resposta"
         ? `${grauPerdaOE} ${tipoPerdaOE} — Ausência de resposta em todas as frequências testadas.`
         : `${grauPerdaOE} ${tipoPerdaOE} ${configuracaoOE} nas frequências ${frequenciasAlteradasOE}.`;
-
 
     const conclusaoGeral =
       isNormalOD && isNormalOE
@@ -1077,10 +1084,12 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
       if (!empresa || !codigoFuncionario) {
         alert("Dados insuficientes para buscar audiometria anterior.");
+
         return;
       }
 
       const url = new URL(NEST_SOC_AUDIOMETRIA_ANTERIOR);
+
       url.searchParams.append("empresa", empresa);
       url.searchParams.append("codigoFuncionario", codigoFuncionario);
 
@@ -1091,7 +1100,8 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
       if (response.ok) {
         const data: AudiometriaExportaDados[] = await response.json();
-        console.log(data.length)
+
+        console.log(data.length);
         if (data && data.length > 0) {
           // Abrir janela com histórico de audiometrias
           openHistoricoHTML(data, atendimento);
@@ -1704,7 +1714,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                        freq.fieldVAOD as keyof AudiometriaData
+                          freq.fieldVAOD as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1751,7 +1761,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                          freq.fieldVOOD as keyof AudiometriaData
+                            freq.fieldVOOD as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1814,7 +1824,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                        freq.fieldVAOE as keyof AudiometriaData
+                          freq.fieldVAOE as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1861,7 +1871,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                          freq.fieldVOOE as keyof AudiometriaData
+                            freq.fieldVOOE as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1928,15 +1938,16 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOD.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${
+                        formData.classificacaoOD.includes("normalidade") ||
                         formData.classificacaoOD === "-"
-                        ? "bg-green-100 text-green-800"
-                        : formData.classificacaoOD.includes("Leve")
-                          ? "bg-amber-100 text-amber-800"
-                          : formData.classificacaoOD.includes("Moderada")
-                            ? "bg-orange-100 text-orange-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                          ? "bg-green-100 text-green-800"
+                          : formData.classificacaoOD.includes("Leve")
+                            ? "bg-amber-100 text-amber-800"
+                            : formData.classificacaoOD.includes("Moderada")
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-red-100 text-red-800"
+                      }`}
                     >
                       {formData.classificacaoOD === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -1950,7 +1961,9 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         Média Tonal (4f)
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.mediaTonalOD ? `${formData.mediaTonalOD} dB` : "-"}
+                        {formData.mediaTonalOD
+                          ? `${formData.mediaTonalOD} dB`
+                          : "-"}
                       </div>
                     </div>
                     <div className="text-center">
@@ -1990,15 +2003,16 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOE.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${
+                        formData.classificacaoOE.includes("normalidade") ||
                         formData.classificacaoOE === "-"
-                        ? "bg-green-100 text-green-800"
-                        : formData.classificacaoOE.includes("Leve")
-                          ? "bg-amber-100 text-amber-800"
-                          : formData.classificacaoOE.includes("Moderada")
-                            ? "bg-orange-100 text-orange-800"
-                            : "bg-red-100 text-red-800"
-                        }`}
+                          ? "bg-green-100 text-green-800"
+                          : formData.classificacaoOE.includes("Leve")
+                            ? "bg-amber-100 text-amber-800"
+                            : formData.classificacaoOE.includes("Moderada")
+                              ? "bg-orange-100 text-orange-800"
+                              : "bg-red-100 text-red-800"
+                      }`}
                     >
                       {formData.classificacaoOE === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -2012,7 +2026,9 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         Média Tonal (4f)
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.mediaTonalOE ? `${formData.mediaTonalOE} dB` : '-'}
+                        {formData.mediaTonalOE
+                          ? `${formData.mediaTonalOE} dB`
+                          : "-"}
                       </div>
                     </div>
                     <div className="text-center">

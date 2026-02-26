@@ -160,12 +160,12 @@ const ExamesTable: React.FC<{
 
   // Handle para reemitir exame
   const handleReemitirExame = async (exame: ExamRegister) => {
+    if (!exame.formulario || !exame.profissional || !exame.codigoProfissional) {
+      alert("Dados incompletos para reemissão de exame");
 
-    if(!exame.formulario || !exame.profissional || !exame.codigoProfissional){
-      alert('Dados incompletos para reemissão de exame')
-      return
+      return;
     }
-    
+
     setReemitindoExams(true);
 
     try {
@@ -203,43 +203,42 @@ const ExamesTable: React.FC<{
   };
 
   const handleFinalizarExame = async (exame: ExamRegister) => {
-    
-    if(exame.grupo != "Ultrassom"){
-      return alert("Exame não identificado como Ultrassom para finalização.")
-    }
-    else {
-        const confirmResponse = confirm('Finalizar Ultrassom como NORMAL ?')
-        try {
-          const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
+    if (exame.grupo != "Ultrassom") {
+      return alert("Exame não identificado como Ultrassom para finalização.");
+    } else {
+      const confirmResponse = confirm("Finalizar Ultrassom como NORMAL ?");
+
+      try {
+        const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+
+          body: JSON.stringify({
+            funcionarioId: atendimento._id,
+            codigoExame: [exame.codigoExame],
+            formulario: {
+              normal: confirmResponse ? "Sim" : "Não",
+              observacoes: "",
             },
+            sala: "Emitido via relatório",
+            profissional: currentUser ?? "Desconhecido",
+            isEditing: true,
+            dataExame: new Date(),
+          }),
+        });
 
-            body: JSON.stringify({
-              funcionarioId: atendimento._id,
-              codigoExame: [exame.codigoExame],
-              formulario: {
-                normal: confirmResponse ? "Sim" : "Não",
-                observacoes: ""
-              },
-              sala: "Emitido via relatório",
-              profissional: currentUser ?? "Desconhecido",
-              isEditing: true,
-              dataExame: new Date()
-            }),
-          });
+        const result: Scheduling = await response.json();
 
-          const result: Scheduling = await response.json();
-
-          if(result){
-            alert('Exame atualizado, atualize a página para ver o resultado.')
-          }
-      } catch(err){
-        alert(`Erro ao finalizar exame ${err}`)
+        if (result) {
+          alert("Exame atualizado, atualize a página para ver o resultado.");
+        }
+      } catch (err) {
+        alert(`Erro ao finalizar exame ${err}`);
       }
     }
-}
+  };
 
   // Handler para quando o modal de edição é fechado
   const handleEditModalClose = () => {
@@ -456,8 +455,10 @@ const ExamesTable: React.FC<{
                       </div>
                       <div className="flex flex-col text-xs text-gray-500">
                         <div>{formatDate(exame.dataExame)}</div>
-                        <div>{exame.sala} - {exame.profissional}</div>
-                        <div></div>
+                        <div>
+                          {exame.sala} - {exame.profissional}
+                        </div>
+                        <div />
                       </div>
                       {waitTime && (
                         <div className="flex items-center text-xs text-gray-500">
@@ -482,8 +483,8 @@ const ExamesTable: React.FC<{
                       <div className="flex flex-col gap-1">
                         <Button
                           color={isCredenciada ? "default" : "primary"}
-                          size="sm"
                           disabled={isCredenciada}
+                          size="sm"
                           startContent={<Upload size={14} />}
                           variant="solid"
                           onPress={() =>
@@ -529,9 +530,7 @@ const ExamesTable: React.FC<{
                             <MoreVertical size={14} />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu 
-                          aria-label="Ações do exame"
-                        >
+                        <DropdownMenu aria-label="Ações do exame">
                           <DropdownItem
                             key="reemitir"
                             color="default"
@@ -543,21 +542,19 @@ const ExamesTable: React.FC<{
                           >
                             {reemitindoExams ? "Reemitindo..." : "Reemitir"}
                           </DropdownItem>
-                          {
-                            exame.grupo?.includes("Ultrassom") ? (
-                              <DropdownItem
-                                key="finalizar"
-                                color="default"
-                                startContent={
-                                  !reemitindoExams && <Check size={14} />
-                                }
-                                variant="light"
-                                onPress={() => handleFinalizarExame(exame)}
-                              >
-                                {reemitindoExams ? "Finalizando.." : "Finalizar"}
-                              </DropdownItem>
-                            ) : null
-                          }
+                          {exame.grupo?.includes("Ultrassom") ? (
+                            <DropdownItem
+                              key="finalizar"
+                              color="default"
+                              startContent={
+                                !reemitindoExams && <Check size={14} />
+                              }
+                              variant="light"
+                              onPress={() => handleFinalizarExame(exame)}
+                            >
+                              {reemitindoExams ? "Finalizando.." : "Finalizar"}
+                            </DropdownItem>
+                          ) : null}
                           {userApp?.codigo == exame.codigoProfissional ? (
                             <DropdownItem
                               key="edit"

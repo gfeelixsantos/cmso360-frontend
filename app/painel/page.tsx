@@ -342,8 +342,9 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${index === itemAtual ? "bg-white scale-125" : "bg-white/50"
-              }`}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+              index === itemAtual ? "bg-white scale-125" : "bg-white/50"
+            }`}
           />
         ))}
       </div>
@@ -531,15 +532,17 @@ const ConfigModal = ({
               Áudio
             </span>
             <button
-              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${audioHabilitado ? "bg-green-500" : "bg-gray-300"
-                }`}
+              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
+                audioHabilitado ? "bg-green-500" : "bg-gray-300"
+              }`}
               onClick={() => setAudioHabilitado(!audioHabilitado)}
             >
               <span
-                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${audioHabilitado
-                  ? "translate-x-5 sm:translate-x-6"
-                  : "translate-x-0.5 sm:translate-x-1"
-                  }`}
+                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
+                  audioHabilitado
+                    ? "translate-x-5 sm:translate-x-6"
+                    : "translate-x-0.5 sm:translate-x-1"
+                }`}
               />
             </button>
           </div>
@@ -675,7 +678,6 @@ export default function PainelPage() {
     returnTimeoutRef.current = setTimeout(() => {
       retornarAoPainel();
     }, IDLE_CONFIG.duracaoIdleSegundos * 1000);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const retornarAoPainel = useCallback(() => {
@@ -692,7 +694,6 @@ export default function PainelPage() {
       setShowPainel(true);
       resetarIdleTimer();
     }, 800);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const resetarIdleTimer = useCallback(() => {
@@ -707,14 +708,17 @@ export default function PainelPage() {
         const tempoInativo = Date.now() - ultimaChamadaRef.current;
         const tempoMinimo = IDLE_CONFIG.tempoInatividadeMinutos * 60 * 1000;
 
-        if (tempoInativo >= tempoMinimo && !ativasRef.current.length && !esperaRef.current.length) {
+        if (
+          tempoInativo >= tempoMinimo &&
+          !ativasRef.current.length &&
+          !esperaRef.current.length
+        ) {
           iniciarIdle();
         } else {
           resetarIdleTimer();
         }
       }, 60000);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLiberado]);
 
   const atualizarUltimaChamada = useCallback(() => {
@@ -724,7 +728,6 @@ export default function PainelPage() {
     } else {
       resetarIdleTimer();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const setAtivasSync = useCallback(
@@ -822,7 +825,9 @@ export default function PainelPage() {
               };
 
               timeout = setTimeout(() => {
-                console.warn("Timeout de fallback na reprodução do áudio acionado");
+                console.warn(
+                  "Timeout de fallback na reprodução do áudio acionado",
+                );
                 onEnd();
               }, 10000);
 
@@ -973,13 +978,14 @@ export default function PainelPage() {
       socket?.emit("painel disponível", socket.id);
     });
 
-
     socket.on("connect_error", (error) => {
       console.error("❌ Erro de conexão WebSocket:", error);
     });
 
     socket.on("chamar funcionario", (call: PainelCall) => {
-      console.log(`📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala}`);
+      console.log(
+        `📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala}`,
+      );
 
       const jaExiste =
         ativasRef.current.some((c) => c.id === call.id) ||

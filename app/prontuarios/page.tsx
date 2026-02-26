@@ -34,11 +34,7 @@ import {
   AtendimentoStatus,
   MongoOperationTypes,
 } from "@/lib/scheduling/enum/scheduling.enum";
-import {
-  CustomEventMap,
-  EventType,
-  onEvent,
-} from "@/lib/websocket/events/events";
+import { CustomEventMap, EventType } from "@/lib/websocket/events/events";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
 import {
@@ -438,7 +434,6 @@ export default function UnifiedProntuarioPage() {
     };
   }, [scrollContainerRef, hasMoreRecords, isLoadingMore, records]);
 
-
   // Registro handles de eventos WebSocket
   useEffect(() => {
     if (!socketState) return;
@@ -507,9 +502,7 @@ export default function UnifiedProntuarioPage() {
     return () => {
       socketState.off(EventType.UPDATE_RECORD, handleUpdateRecord);
     };
-  }, [socketState, attendanceStatus, selectedRecord]); 
-
-
+  }, [socketState, attendanceStatus, selectedRecord]);
 
   // Efeito para configurar WebSocket
   useEffect(() => {
@@ -528,8 +521,8 @@ export default function UnifiedProntuarioPage() {
       transports: ["websocket"],
       reconnection: true,
       reconnectionAttempts: Infinity, // Tenta indefinidamente
-      reconnectionDelay: 1000,        // 1 segundo
-      reconnectionDelayMax: 5000,     // Máximo 5 segundos
+      reconnectionDelay: 1000, // 1 segundo
+      reconnectionDelayMax: 5000, // Máximo 5 segundos
       timeout: 20000,
       forceNew: false,
       upgrade: false,
@@ -541,7 +534,7 @@ export default function UnifiedProntuarioPage() {
     s.on("connect", () => {
       console.log("✅ Prontuário conectado:", s.id);
       setConectado(true);
-      
+
       addToast({
         title: "Conectado",
         description: "Conexão estabelecida com o servidor",
@@ -554,7 +547,7 @@ export default function UnifiedProntuarioPage() {
     s.on("disconnect", (reason) => {
       console.warn("⚠️ Prontuário desconectado:", reason);
       setConectado(false);
-      
+
       if (reason !== "io client disconnect") {
         addToast({
           title: "Conexão perdida",
@@ -568,7 +561,7 @@ export default function UnifiedProntuarioPage() {
 
     s.on("connect_error", (err) => {
       console.error("❌ Erro ao conectar:", err);
-      
+
       addToast({
         title: "Erro de conexão",
         description: "Não foi possível conectar ao servidor",
@@ -587,7 +580,7 @@ export default function UnifiedProntuarioPage() {
       s.disconnect();
       setSocketState(null);
     };
-  }, []); 
+  }, []);
 
   const filtered = useMemo(() => {
     return records.filter((r) => {

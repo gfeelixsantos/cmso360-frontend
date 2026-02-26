@@ -100,7 +100,6 @@ export const COLOR_PALETTE = {
   gray: "#6b7f76", // Cinza esverdeado
 };
 
-
 export const UNIDADES_ATENDIMENTO = ["ARARAS", "CORDEIRÓPOLIS", "RIO CLARO"];
 export const SALAS_RECEPCAO = [
   "BALCÃO",

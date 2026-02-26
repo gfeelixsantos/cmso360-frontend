@@ -2,7 +2,14 @@
 // MODAL DE CONFIRMAÇÃO SYNC SOC
 
 import { Button } from "@heroui/button";
-import { Modal, ModalContent, ModalHeader, ModalBody, Checkbox, ModalFooter } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  Checkbox,
+  ModalFooter,
+} from "@heroui/react";
 import React from "react";
 import { useState } from "react";
 
@@ -27,9 +34,7 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
   };
 
   return (
-    <Modal 
-      isOpen={isOpen} 
-      onClose={onClose}       
+    <Modal
       aria-describedby="delete-confirmation-description"
       aria-labelledby="sync-confirmation-title"
       backdrop="blur"
@@ -38,6 +43,7 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
         wrapper: "z-[1000]",
         backdrop: "z-[1000] bg-black/50 backdrop-blur-sm",
       }}
+      isOpen={isOpen}
       motionProps={{
         variants: {
           enter: {
@@ -62,7 +68,9 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
       size="md"
       style={{
         position: "fixed",
-      }}>
+      }}
+      onClose={onClose}
+    >
       <ModalContent>
         {(onCloseModal) => (
           <>
@@ -86,16 +94,16 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
             <ModalFooter>
               <Button
                 color="default"
+                disabled={isLoading}
                 variant="light"
                 onPress={onCloseModal}
-                disabled={isLoading}
               >
                 Cancelar
               </Button>
               <Button
                 color="primary"
-                onPress={handleConfirm}
                 isLoading={isLoading}
+                onPress={handleConfirm}
               >
                 {isLoading ? "Sincronizando..." : "Confirmar Sincronização"}
               </Button>

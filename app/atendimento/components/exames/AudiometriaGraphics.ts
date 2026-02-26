@@ -6,8 +6,8 @@ export function generateAudiogramSVG(form: AudiometriaData): {
   od: string;
   oe: string;
 } {
-  const COR_OD = '#B71C1C'; // Vermelho
-  const COR_OE = '#0D47A1'; // Azul
+  const COR_OD = "#B71C1C"; // Vermelho
+  const COR_OE = "#0D47A1"; // Azul
   const WIDTH = 220;
   const HEIGHT = 190;
   const MARGIN_LEFT = 30;
@@ -27,10 +27,12 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     MARGIN_TOP + ((dB + 10) / DB_RANGE) * GRAPH_HEIGHT;
 
   const getDbValue = (value: string | undefined): number | null => {
-    if (!value || value === '-') return null;
+    if (!value || value === "-") return null;
     // Trata ausência de resposta ("--" ou "---") como ND (Não Detectável)
-    if (value === '--' || value === '---' || value.toUpperCase() === 'ND') return 120;
+    if (value === "--" || value === "---" || value.toUpperCase() === "ND")
+      return 120;
     if (isNaN(Number(value))) return null;
+
     return Math.max(-10, Math.min(110, Number(value)));
   };
 
@@ -142,6 +144,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     /** GRADE Y (Intensidade dB) */
     INTENSITIES.forEach((db) => {
       const y = getY(db);
+
       svg += `<line x1="${MARGIN_LEFT}" y1="${y}" x2="${WIDTH - 10}" y2="${y}" stroke="#ccc" stroke-width="0.5"/>`;
       svg += `<text x="${MARGIN_LEFT - 5}" y="${y + 3}" font-size="8" text-anchor="end" fill="#555">${db}</text>`;
     });
@@ -150,14 +153,17 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     svg += `<rect x="${MARGIN_LEFT}" y="${getY(25)}" width="${GRAPH_WIDTH}" height="${getY(-10) - getY(25)}" fill="#F0F8FF" opacity="0.6"/>`;
 
     /** LINHAS VA (CONECTA SÍMBOLOS) */
-    let pathVA = '';
+    let pathVA = "";
+
     vaData.forEach((v, i) => {
       const db = getDbValue(v);
+
       // Conecta apenas se o ponto for válido (não nulo, não ausência de resposta)
       if (db === null || db === 120) return;
       const x = FREQUENCY_POSITIONS[i];
       const y = getY(db);
-      pathVA += pathVA === '' ? `M ${x} ${y}` : ` L ${x} ${y}`;
+
+      pathVA += pathVA === "" ? `M ${x} ${y}` : ` L ${x} ${y}`;
     });
     // Linha VA não mascarada (A linha só é desenhada na condição VA)
     if (pathVA)
@@ -166,6 +172,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     /** DESENHO DOS SÍMBOLOS VIA AÉREA (VA) */
     vaData.forEach((v, i) => {
       const db = getDbValue(v);
+
       if (db === null) return;
       const x = FREQUENCY_POSITIONS[i];
       const y = getY(db);
@@ -176,7 +183,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
         // Ausência de Resposta (-- ou --- ou ND) → seta para baixo
         // Posiciona a seta na parte inferior do gráfico (110 dB)
         const arrowY = getY(110);
-        
+
         if (isRightEar) {
           // OD: Bolinha com seta (○↓)
           if (masked) {
@@ -196,9 +203,10 @@ export function generateAudiogramSVG(form: AudiometriaData): {
             svg += `<path d="M ${x - size} ${arrowY - size - 8} L ${x + size} ${arrowY - size + 8} M ${x + size} ${arrowY - size - 8} L ${x - size} ${arrowY - size + 8}" stroke="${color}" stroke-width="1.5" />`;
           }
         }
-        
+
         // Adiciona a seta para baixo (flecha)
         svg += `<path d="M ${x} ${arrowY - size} V ${arrowY + 6} M ${x - 3} ${arrowY + 3} L ${x} ${arrowY + 6} L ${x + 3} ${arrowY + 3}" stroke="${color}" fill="none" stroke-width="1.5" />`;
+
         return;
       }
 
@@ -224,6 +232,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     voData.forEach((v, i) => {
       if (!v) return;
       const db = getDbValue(v);
+
       if (db === null) return;
       const x = FREQUENCY_POSITIONS[i];
       const y = getY(db);
@@ -234,13 +243,14 @@ export function generateAudiogramSVG(form: AudiometriaData): {
       if (db === 120) {
         // Ausência de Resposta para via óssea
         const arrowY = getY(110);
-        
+
         if (isRightEar) {
           // VO OD com ausência de resposta
           if (masked) {
             // [ com seta (OD Mascarada)
             const x_vertical = x - size - offset;
             const x_horizontal_end = x - offset;
+
             svg += `<path 
                       d="M ${x_vertical} ${arrowY - size - 8} 
                          V ${arrowY - size} 
@@ -257,6 +267,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
             // ] com seta (OE Mascarada)
             const x_vertical = x + size + offset;
             const x_horizontal_end = x + offset;
+
             svg += `<path 
                       d="M ${x_vertical} ${arrowY - size - 8} 
                          V ${arrowY - size} 
@@ -268,9 +279,10 @@ export function generateAudiogramSVG(form: AudiometriaData): {
             svg += `<path d="M ${x - offset} ${arrowY - size - 4} L ${x - size - offset} ${arrowY - size - 12} M ${x - offset} ${arrowY - size - 4} L ${x - size - offset} ${arrowY - size + 4}" stroke="${color}" fill="none" stroke-width="1.5" />`;
           }
         }
-        
+
         // Adiciona a seta para baixo (flecha)
         svg += `<path d="M ${x} ${arrowY - size} V ${arrowY + 6} M ${x - 3} ${arrowY + 3} L ${x} ${arrowY + 6} L ${x + 3} ${arrowY + 3}" stroke="${color}" fill="none" stroke-width="1.5" />`;
+
         return;
       }
 
@@ -281,6 +293,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
           // [ Colchete (OD Mascarada)
           const x_vertical = x - size - offset;
           const x_horizontal_end = x - offset;
+
           svg += `<path 
                     d="M ${x_vertical} ${y - size} 
                        V ${y + size} 
@@ -297,6 +310,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
           // ] Colchete (OE Mascarada)
           const x_vertical = x + size + offset;
           const x_horizontal_end = x + offset;
+
           svg += `<path 
                     d="M ${x_vertical} ${y - size} 
                        V ${y + size} 
@@ -311,6 +325,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
     });
 
     svg += `</svg>`;
+
     return svg;
   };
 
@@ -321,7 +336,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
       maskVAOD,
       maskVOOD,
       COR_OD,
-      'Ouvido Direito (OD)',
+      "Ouvido Direito (OD)",
       true,
     ),
     oe: createSingle(
@@ -330,7 +345,7 @@ export function generateAudiogramSVG(form: AudiometriaData): {
       maskVAOE,
       maskVOOE,
       COR_OE,
-      'Ouvido Esquerdo (OE)',
+      "Ouvido Esquerdo (OE)",
       false,
     ),
   };

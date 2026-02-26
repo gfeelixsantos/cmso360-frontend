@@ -19,6 +19,8 @@ import {
   ArrowsPointingOutIcon,
 } from "@heroicons/react/24/outline";
 
+import PreferencialTipo from "./components/PreferencialTipo";
+
 import {
   Ticket,
   TicketEmitedDto,
@@ -33,7 +35,6 @@ import {
   SERVICES_KEY,
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
-import PreferencialTipo from "./components/PreferencialTipo";
 
 // Interface para dados de autenticação salvos
 interface AuthData {
@@ -239,7 +240,9 @@ const Header = ({ unidade }: { unidade?: string }) => {
                 className="h-4 w-4 md:h-5 md:w-5 mr-2"
                 style={{ color: COLOR_PALETTE.secondary }}
               />
-              <span className="text-sm md:text-base">{formatDate(currentTime)}</span>
+              <span className="text-sm md:text-base">
+                {formatDate(currentTime)}
+              </span>
             </div>
 
             <div className="flex items-center">
@@ -561,7 +564,9 @@ const TicketOptionsScreen = ({
 }) => {
   const [subOptions, setSubOptions] = useState<TicketTypes[] | null>(null);
   const [showPreferencialTypes, setShowPreferencialTypes] = useState(false);
-  const [selectedPreferencialType, setSelectedPreferencialType] = useState<string | null>(null);
+  const [selectedPreferencialType, setSelectedPreferencialType] = useState<
+    string | null
+  >(null);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -609,7 +614,7 @@ const TicketOptionsScreen = ({
       unidade: unidadeSelecionada,
       grupo: TicketGroups.RECEPCAO,
     };
-    
+
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -635,10 +640,10 @@ const TicketOptionsScreen = ({
 
       setFeedback({
         type: "success",
-        message: `Aguarde ser chamado.${tipoPreferencial ? ` (${tipoPreferencial})` : ''}`,
+        message: `Aguarde ser chamado.${tipoPreferencial ? ` (${tipoPreferencial})` : ""}`,
         ticketNumber: formattedTicket,
       });
-      
+
       setSelectedPreferencialType(null);
     } catch (error) {
       console.error("Erro na emissão do ticket:", error);
@@ -725,8 +730,8 @@ const TicketOptionsScreen = ({
     return (
       <div className="w-full flex justify-center">
         <PreferencialTipo
-          onSelect={handlePreferencialTypeSelect}
           onBack={handleBackFromPreferencial}
+          onSelect={handlePreferencialTypeSelect}
         />
       </div>
     );

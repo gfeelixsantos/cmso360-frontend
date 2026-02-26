@@ -145,7 +145,6 @@ export default function RelatoriosPage() {
   const [totalTarde, setTotalTarde] = useState(0);
   const [totalIndefinido, setTotalIndefinido] = useState(0);
 
-
   // Modal de detalhes
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [selectedAtendimento, setSelectedAtendimento] =
@@ -361,8 +360,6 @@ export default function RelatoriosPage() {
   // Função para exportar CSV com os IDs dos atendimentos filtrados
   const handleExportCSV = useCallback(async () => {
     try {
-
-
       if (!hasActiveFilters) {
         alert("Por favor, aplique filtros antes de exportar.");
 
@@ -384,7 +381,7 @@ export default function RelatoriosPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          filters: appliedFilters
+          filters: appliedFilters,
         }),
       });
 
@@ -564,6 +561,7 @@ export default function RelatoriosPage() {
       if (current && current._id === updated._id) {
         return updated;
       }
+
       return current;
     });
 
@@ -894,7 +892,8 @@ export default function RelatoriosPage() {
                   Resultados
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  {totalRecords} atendimento(s): {totalManha} manhã, {totalTarde} tarde, {totalIndefinido} indefinido.
+                  {totalRecords} atendimento(s): {totalManha} manhã,{" "}
+                  {totalTarde} tarde, {totalIndefinido} indefinido.
                 </p>
               </div>
               <div className="flex items-center gap-4">

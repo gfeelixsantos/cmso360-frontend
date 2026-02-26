@@ -256,8 +256,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
       ...prev,
       ...(mediaPalmarDireita && { palmarDireitaMedia: mediaPalmarDireita }),
       ...(mediaPalmarEsquerda && { palmarEsquerdaMedia: mediaPalmarEsquerda }),
-      ...(mediaEscapularDireita && { escapularDireitaMedia: mediaEscapularDireita }),
-      ...(mediaEscapularEsquerda && { escapularEsquerdaMedia: mediaEscapularEsquerda }),
+      ...(mediaEscapularDireita && {
+        escapularDireitaMedia: mediaEscapularDireita,
+      }),
+      ...(mediaEscapularEsquerda && {
+        escapularEsquerdaMedia: mediaEscapularEsquerda,
+      }),
       ...(mediaDorsal && { dorsalMedia: mediaDorsal }),
     }));
   }, [
@@ -347,7 +351,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   const avaliarDinamometriaEscapular = useCallback(
     (mediaDireita: number, mediaEsquerda: number, sexo: string) => {
       const minimo = sexo === "Masculino" ? 20 : 10;
-      
+
       const direitaAdequada = mediaDireita >= minimo;
       const esquerdaAdequada = mediaEsquerda >= minimo;
 
@@ -421,7 +425,11 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     }
 
     // Verificar e avaliar dinamometria escapular se preenchida
-    if (tiposPreenchidos.escapular && mediaEscapularDir > 0 && mediaEscapularEsq > 0) {
+    if (
+      tiposPreenchidos.escapular &&
+      mediaEscapularDir > 0 &&
+      mediaEscapularEsq > 0
+    ) {
       algumPreenchido = true;
       escapularNormal = avaliarDinamometriaEscapular(
         mediaEscapularDir,

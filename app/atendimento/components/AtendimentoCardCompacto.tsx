@@ -101,8 +101,8 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
   const ExamesTooltipContent = ({ exames }: { exames: ExamRegister[] }) => (
     <div className="flex flex-col gap-2 shadow-gray-200 p-2 rounded-md max-w-[560px]">
       {exames.map((ex) => (
-        <div 
-          key={ex.codigoExame} 
+        <div
+          key={ex.codigoExame}
           className="grid grid-cols-2 gap-4 text-xs min-w-[150px]"
         >
           <span className="font-medium">{ex.nomeExame}</span>
@@ -151,7 +151,7 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
                 content={<ExamesTooltipContent exames={atendimento.EXAMES} />}
                 placement="bottom"
                 size="sm"
-                >
+              >
                 <span>
                   Exames {completed} / {total}
                 </span>
@@ -171,7 +171,6 @@ const AtendimentoCardCompacto: React.FC<AtendimentoCardProps> = ({
             />
           </div>
         )}
-        
 
         {/* Footer com informações do ticket */}
         <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-200">

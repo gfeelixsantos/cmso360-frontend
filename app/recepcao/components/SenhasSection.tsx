@@ -6,7 +6,6 @@ import SenhaCard from "./SenhaCard";
 
 import { PreparationRequest, Ticket } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { NEST_TICKET_DELETE } from "@/config/constants";
 import { EventType } from "@/lib/websocket/events/events";
 
 // Interface para tipagem robusta
@@ -74,16 +73,16 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
   onPreparationRequests,
   preparacoesFinalizadas,
 }) => {
-  const onDeleteTicketNumber = async(id: number) => {
+  const onDeleteTicketNumber = async (id: number) => {
     const confirmResponse = confirm("Deseja excluir o ticket?");
-    
+
     if (confirmResponse) {
       socket.emit(EventType.TICKET_DELETE, {
         ticketId: id,
         unidade: unidadeSelecionada,
-      });  
+      });
     }
-  }
+  };
 
   if (senhas.length === 0) {
     return <EmptySection emptyMessage={emptyMessage} title={title} />;
@@ -110,8 +109,8 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
             setTicketSelecionado={setTicketSelecionado}
             socket={socket}
             ticket={senha}
-            onDeleteTicketNumber={onDeleteTicketNumber}
             unidadeSelecionada={unidadeSelecionada}
+            onDeleteTicketNumber={onDeleteTicketNumber}
             onHandleModal={onHandleModal}
             onPreparationRequests={onPreparationRequests}
           />

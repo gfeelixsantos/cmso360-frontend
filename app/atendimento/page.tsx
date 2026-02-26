@@ -104,7 +104,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     reconnectionDelayMax: 5000, // Reduzido de 10000 para 5000ms
     timeout: 20000,
     // Forçar nova conexão ao reconectar
-    forceNew: false, 
+    forceNew: false,
     // Upgrade automático desabilitado (já usa websocket)
     upgrade: false,
     // Manter conexão ativa
@@ -576,7 +576,7 @@ const AtendimentoPage: React.FC = () => {
           break;
 
         case MongoOperationTypes.DELETE:
-          console.log("delete recebido", schedule.NOME)
+          console.log("delete recebido", schedule.NOME);
           setAgendamentosGeral((prev) =>
             prev.filter(
               (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
