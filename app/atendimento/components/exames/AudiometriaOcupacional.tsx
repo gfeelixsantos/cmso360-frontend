@@ -699,19 +699,29 @@ export class AudiometriaCalculator {
     mediaOD: number | null,
     mediaOE: number | null,
   ): string {
-    const AUSENCIA = 999; // ausência de resposta = perda máxima para fins de critério legal
-    const valorOD = mediaOD ?? AUSENCIA;
-    const valorOE = mediaOE ?? AUSENCIA;
-    const melhorOrelha = Math.min(valorOD, valorOE);
-    const piorOrelha = Math.max(valorOD, valorOE);
 
-    if (melhorOrelha >= 41) {
-      return `Atende aos critérios legais de deficiência auditiva (perda bilateral; média tonal na melhor orelha ≥ 41 dB NA), conforme Decreto 5.296/2004.`;
-    } else if (piorOrelha >= 41 && melhorOrelha < 41) {
-      return `Atende aos critérios legais de deficiência auditiva unilateral (pior orelha ≥ 41 dB NA e melhor orelha < 41 dB NA), conforme Lei 14.768/2023.`;
+    // Se não houver média tonal completa nas frequências obrigatórias,
+    // o critério legal não pode ser determinado.
+    if (mediaOD === null || mediaOE === null) {
+      return `Critério legal de deficiência auditiva não pôde ser determinado devido à ausência de resposta nas frequências obrigatórias (500, 1000, 2000 e 3000 Hz). Recomenda-se reavaliação audiológica para fins legais.`;
     }
 
-    return `Não atende aos critérios legais de deficiência auditiva (média tonal em ambas as orelhas < 41 dB NA).`;
+    const melhorOrelha = Math.min(mediaOD, mediaOE);
+    const piorOrelha = Math.max(mediaOD, mediaOE);
+
+    // === Critério bilateral ≥ 41 dB NA ===
+    // Conforme Decreto 5.296/2004
+    if (melhorOrelha >= 41) {
+      return `Atende aos critérios legais de deficiência auditiva bilateral (média tonal ≥ 41 dB NA em ambas as orelhas), conforme Decreto 5.296/2004.`;
+    }
+
+    // === Critério unilateral profunda ≥ 91 dB NA ===
+    // Aplicação técnica conservadora compatível com Lei 14.768/2023
+    if (piorOrelha >= 91 && melhorOrelha < 41) {
+      return `Atende aos critérios legais de deficiência auditiva unilateral profunda (≥ 91 dB NA em uma orelha), conforme parâmetros técnicos compatíveis com a Lei 14.768/2023.`;
+    }
+
+    return `Não atende aos critérios legais de deficiência auditiva conforme parâmetros técnicos vigentes.`;
   }
 
   // === CONFIGURAÇÃO DA CURVA (refinada) ===
