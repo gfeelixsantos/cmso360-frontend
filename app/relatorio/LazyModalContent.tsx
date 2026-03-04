@@ -8,7 +8,7 @@ import {
   Button,
   Spinner,
 } from "@heroui/react";
-import { Eye, Trash, RefreshCw } from "lucide-react";
+import { Eye, Trash, RefreshCw, FileText } from "lucide-react"; // ícone para relatório
 
 import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
 import InformacoesGerais, {
@@ -25,7 +25,10 @@ import {
   NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
   NEST_SOC_PEDIDOEXAME,
+  NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
+
+import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // função de geração de relatório
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
 
@@ -51,6 +54,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   });
   const [loadingViewMedicalRecord, setLoadingViewMedicalRecord] =
     useState(false);
+  const [loadingViewReport, setLoadingViewReport] = useState(false);
   const [loadingSyncSoc, setLoadingSyncSoc] = useState(false);
   const [loadingDeleteScheduling, setLoadingDeleteScheduling] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
@@ -166,6 +170,34 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       alert("Não foi possível carregar o prontuário");
     } finally {
       setLoadingViewMedicalRecord(false);
+    }
+  };
+
+  // handler para carregar relatório do Mongo e abrir em nova aba
+  const handleViewReport = async () => {
+    if (!atendimento?._id) return;
+    try {
+      setLoadingViewReport(true);
+      const response = await fetch(`${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`);
+      if (!response.ok) {
+        throw new Error("Erro ao carregar relatório");
+      }
+      const data: Scheduling = await response.json();
+      const html = reportInternal(data);
+      const newWin = window.open("", "_blank");
+      if (newWin) {
+        newWin.document.open();
+        newWin.document.write(html);
+        newWin.document.close();
+        newWin.onload = () => newWin.focus();
+      } else {
+        alert("Não foi possível abrir o relatório em nova aba");
+      }
+    } catch (error) {
+      console.error("Erro ao buscar relatório:", error);
+      alert("Não foi possível carregar o relatório");
+    } finally {
+      setLoadingViewReport(false);
     }
   };
 
@@ -294,7 +326,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
             <div className="flex items-center gap-1">
               <Button
                 color="default"
-                disabled={loadingViewMedicalRecord}
+                disabled={loadingViewMedicalRecord || loadingViewReport}
                 size="sm"
                 startContent={
                   loadingViewMedicalRecord ? (
@@ -308,9 +340,27 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
               >
                 {loadingViewMedicalRecord ? "Carregando" : "Ver Prontuário"}
               </Button>
+
               <Button
                 color="default"
-                disabled={loadingSyncSoc}
+                disabled={loadingViewReport}
+                size="sm"
+                startContent={
+                  loadingViewReport ? (
+                    <Spinner color="current" size={"sm"} />
+                  ) : (
+                    <FileText size={16} />
+                  )
+                }
+                variant="light"
+                onPress={handleViewReport}
+              >
+                {loadingViewReport ? "Carregando" : "Relatório"}
+              </Button>
+
+              <Button
+                color="default"
+
                 size="sm"
                 startContent={
                   loadingSyncSoc ? (
@@ -320,6 +370,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                   )
                 }
                 variant="light"
+                disabled={true}
+                // disabled={loadingSyncSoc}
                 onPress={() => setSyncSocModalOpen(true)}
               >
                 Sincronizar SOC
