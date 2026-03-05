@@ -388,7 +388,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 
               return (
                 <TableRow
-                  key={exame.codigoExame || index}
+                  key={exame.id || `${exame.codigoExame}_${index}`}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <TableCell>
@@ -470,7 +470,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 
           return (
             <div
-              key={exame.codigoExame || index}
+              key={exame.id || `${exame.codigoExame}_${index}`}
               className="p-3 bg-gray-50 rounded-lg border border-gray-200"
             >
               <div className="grid grid-cols-2 gap-2 text-sm">
@@ -694,8 +694,8 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     <div className={`${pillBg} ${pillClass} flex items-center justify-center`}>
       {(status === TicketStatus.EM_PREPARACAO ||
         status === TicketStatus.ENCAMINHADO_RX) && (
-        <Spinner className="mr-2" color="white" size="sm" variant="simple" />
-      )}
+          <Spinner className="mr-2" color="white" size="sm" variant="simple" />
+        )}
       {status === TicketStatus.EM_CHAMADA && (
         <Spinner className="mr-2" color="white" size="sm" variant="simple" />
       )}
@@ -729,41 +729,19 @@ const TicketActions: React.FC<{
   setFuncionarioSelecionado,
   exameSelecionado,
 }) => {
-  const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
-  // 🔹 Armazena IDs que já tiveram o primeiro clique
-  const [firstClickMap, setFirstClickMap] = useState<Record<string, boolean>>(
-    {},
-  );
-
-  // Utilizado para chamar e nas demais ações
-  const handleExecutarAcao = (
-    atendimento: Scheduling,
-    action: TicketActionType,
-  ) => {
-    const currentUser = getCurrentUser();
-
-    executarAtendimentoAcao(
-      atendimento._id,
-      ticket.id,
-      action,
-      unidadeSelecionada,
-      socket,
-      salaSelecionada,
-      exameSelecionado,
-      currentUser?.nome,
-      atendimento.NOME,
+    const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
+    // 🔹 Armazena IDs que já tiveram o primeiro clique
+    const [firstClickMap, setFirstClickMap] = useState<Record<string, boolean>>(
+      {},
     );
-  };
 
-  const handleAtender = (
-    ticket: Ticket,
-    action: TicketActionType,
-    funcionario: Scheduling,
-  ) => {
-    const currentUser = getCurrentUser();
+    // Utilizado para chamar e nas demais ações
+    const handleExecutarAcao = (
+      atendimento: Scheduling,
+      action: TicketActionType,
+    ) => {
+      const currentUser = getCurrentUser();
 
-    if (!firstClickMap[ticket.id]) {
-      // Primeiro clique: executa ação, mas não abre o modal
       executarAtendimentoAcao(
         atendimento._id,
         ticket.id,
@@ -773,13 +751,50 @@ const TicketActions: React.FC<{
         salaSelecionada,
         exameSelecionado,
         currentUser?.nome,
+        atendimento.NOME,
       );
-      setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
-    } else {
-      // Segundo clique: abre o modal de atendimento
-      setFuncionarioSelecionado(funcionario);
-      onHandleModal(true);
+    };
 
+    const handleAtender = (
+      ticket: Ticket,
+      action: TicketActionType,
+      funcionario: Scheduling,
+    ) => {
+      const currentUser = getCurrentUser();
+
+      if (!firstClickMap[ticket.id]) {
+        // Primeiro clique: executa ação, mas não abre o modal
+        executarAtendimentoAcao(
+          atendimento._id,
+          ticket.id,
+          action,
+          unidadeSelecionada,
+          socket,
+          salaSelecionada,
+          exameSelecionado,
+          currentUser?.nome,
+        );
+        setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
+      } else {
+        // Segundo clique: abre o modal de atendimento
+        setFuncionarioSelecionado(funcionario);
+        onHandleModal(true);
+
+        // Reseta o clique para permitir novo ciclo
+        setFirstClickMap((prev) => {
+          const updated = { ...prev };
+
+          delete updated[ticket.id];
+
+          return updated;
+        });
+      }
+    };
+
+    const handleRetornar = (
+      atendimento: Scheduling,
+      action: TicketActionType,
+    ) => {
       // Reseta o clique para permitir novo ciclo
       setFirstClickMap((prev) => {
         const updated = { ...prev };
@@ -788,100 +803,85 @@ const TicketActions: React.FC<{
 
         return updated;
       });
-    }
-  };
 
-  const handleRetornar = (
-    atendimento: Scheduling,
-    action: TicketActionType,
-  ) => {
-    // Reseta o clique para permitir novo ciclo
-    setFirstClickMap((prev) => {
-      const updated = { ...prev };
+      return executarAtendimentoAcao(
+        atendimento._id,
+        ticket.id,
+        action,
+        unidadeSelecionada,
+        socket,
+      );
+    };
 
-      delete updated[ticket.id];
+    const handleDisabledStatus = (ticket: Ticket) => {
+      const currentUser = getCurrentUser();
 
-      return updated;
-    });
+      // // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
+      // if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
+      //   && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
+      // ) {
+      //   return true;
+      // }
 
-    return executarAtendimentoAcao(
-      atendimento._id,
-      ticket.id,
-      action,
-      unidadeSelecionada,
-      socket,
+      // 5. Para qualquer outra situação, o botão deve estar habilitado.
+      return false;
+    };
+
+    const isDisabled = handleDisabledStatus(ticket);
+
+    return (
+      <div
+        aria-label="Ações do ticket"
+        className="flex items-center gap-2"
+        role="group"
+      >
+        {/* Botão Chamar */}
+        <Tooltip content="Chamar" placement="bottom">
+          <Button
+            isIconOnly
+            aria-label="Chamar paciente"
+            className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
+            disabled={isDisabled}
+            size="md"
+            onPress={() =>
+              handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
+            }
+          >
+            <Phone className="h-4 w-4" />
+          </Button>
+        </Tooltip>
+
+        {/* Botão Atender */}
+        <Tooltip content="Atender" placement="bottom">
+          <Button
+            isIconOnly
+            aria-label="Atender paciente"
+            className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
+            disabled={isDisabled}
+            size="md"
+            onPress={() =>
+              handleAtender(ticket, TicketActionType.ATENDER, atendimento)
+            }
+          >
+            <FilePlus className="h-4 w-4" />
+          </Button>
+        </Tooltip>
+
+        {/* Botão Retornar */}
+        <Tooltip content="Retornar" placement="bottom">
+          <Button
+            isIconOnly
+            aria-label="Retornar paciente à fila"
+            className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
+            size="md"
+            onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+        </Tooltip>
+      </div>
     );
   };
-
-  const handleDisabledStatus = (ticket: Ticket) => {
-    const currentUser = getCurrentUser();
-
-    // // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
-    // if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
-    //   && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
-    // ) {
-    //   return true;
-    // }
-
-    // 5. Para qualquer outra situação, o botão deve estar habilitado.
-    return false;
-  };
-
-  const isDisabled = handleDisabledStatus(ticket);
-
-  return (
-    <div
-      aria-label="Ações do ticket"
-      className="flex items-center gap-2"
-      role="group"
-    >
-      {/* Botão Chamar */}
-      <Tooltip content="Chamar" placement="bottom">
-        <Button
-          isIconOnly
-          aria-label="Chamar paciente"
-          className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isDisabled}
-          size="md"
-          onPress={() =>
-            handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
-          }
-        >
-          <Phone className="h-4 w-4" />
-        </Button>
-      </Tooltip>
-
-      {/* Botão Atender */}
-      <Tooltip content="Atender" placement="bottom">
-        <Button
-          isIconOnly
-          aria-label="Atender paciente"
-          className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isDisabled}
-          size="md"
-          onPress={() =>
-            handleAtender(ticket, TicketActionType.ATENDER, atendimento)
-          }
-        >
-          <FilePlus className="h-4 w-4" />
-        </Button>
-      </Tooltip>
-
-      {/* Botão Retornar */}
-      <Tooltip content="Retornar" placement="bottom">
-        <Button
-          isIconOnly
-          aria-label="Retornar paciente à fila"
-          className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          size="md"
-          onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-      </Tooltip>
-    </div>
-  );
-};
 
 // Componente principal - CORRIGIDO
 const AtendimentoCard: React.FC<AtendimentoCardProps> = ({

@@ -17,7 +17,7 @@ import { useState } from "react";
 interface SyncSocConfirmationModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (manterExamesRealizados: boolean) => void;
+  onConfirm: () => void;
   isLoading: boolean;
 }
 
@@ -27,10 +27,8 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
   onConfirm,
   isLoading,
 }) => {
-  const [manterExamesRealizados, setManterExamesRealizados] = useState(true);
-
   const handleConfirm = () => {
-    onConfirm(manterExamesRealizados);
+    onConfirm();
   };
 
   return (
@@ -78,16 +76,12 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
               Confirmar Sincronização SOC
             </ModalHeader>
             <ModalBody>
-              <div className="mt-2">
-                <Checkbox
-                  isSelected={manterExamesRealizados}
-                  onValueChange={setManterExamesRealizados}
-                >
-                  Manter exames realizados
-                </Checkbox>
-                <p className="text-xs text-gray-500 ml-6 mt-1">
-                  Quando marcado, os exames já realizados e com resultados não
-                  serão substituídos durante a sincronização.
+              <div className="mt-2 text-sm text-gray-700">
+                <p>
+                  A sincronização inteligente atualizará <strong>seus dados cadastrais</strong> e executará um Merge dinâmico nos seus Exames em relação ao cruzamento de base com o SOC.
+                </p>
+                <p className="text-xs text-black mt-2 bg-yellow-100 p-2 rounded">
+                  <strong>IMPORTANTE: </strong> Seu histórico clínico atual não será afetado. Exames Finalizados serão sempre mantidos e exames repetentes serão adicionados.
                 </p>
               </div>
             </ModalBody>

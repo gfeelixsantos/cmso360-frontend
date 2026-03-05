@@ -33,3 +33,5 @@ const getCurrentMessage = async (): Promise<Message | null> => {
 
 export { getCurrentMessage };
 
+// Sincronizacao SOC página de relatorio (beta)
+
