@@ -171,7 +171,7 @@ const AtendimentoModalExames = ({
             codigoExame: exameParaAtualizar.map((e) => e.codigoExame),
             formulario: data,
             sala: sala,
-            profissional: user ?? "Desconhecido",
+            profissional: user || { nome: "Desconhecido", codigo: "" },
           }),
         });
 

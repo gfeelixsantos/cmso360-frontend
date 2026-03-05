@@ -783,33 +783,35 @@ export class AudiometriaCalculator {
     mediaVA: number | null,
     mediaVO: number | null,
   ): string {
-    // Para ausência de resposta
+    // 1. Ausência de resposta
     if (mediaVA === null) return "Neurossensorial";
 
-    // 1. Se audição é normal (<= 25), não há tipo de perda
+    // 2. Audição normal
     if (mediaVA <= 25) return "-";
 
-    // 2. Se não tem Via Óssea registrada, assume Neurossensorial (padrão conservador/ocupacional)
-    // ou você pode retornar "A esclarecer" se preferir forçar a VO.
+    // 3. Se não tem VO registrada, assume Neurossensorial (conservador)
     if (mediaVO === null) return "Neurossensorial";
 
-    // 3. Cálculo do GAP Aéreo-Ósseo
+    // 4. AGORA SIM: Calcular GAP
     const gap = mediaVA - mediaVO;
 
-    // Lógica Clássica de Classificação:
-
-    // CONDUTIVA: VO Normal (<=25) e VA Alterada (>25) com GAP >= 15 (ou simplesmente existente)
-    if (mediaVO <= 25) {
+    // 5. CONDUTIVA: VO normal (≤25) E VA alterada (>25)
+    if (mediaVO <= 25 && mediaVA > 25) {
       return "Condutiva";
     }
 
-    // MISTA: VO Alterada (>25) e VA Alterada (>25) com GAP significativo (>= 15 dB)
-    if (mediaVO > 25 && gap >= 15) {
+    // 6. MISTA: Ambas alteradas (VO >25 E VA >25) COM gap significativo (≥15)
+    if (mediaVO > 25 && mediaVA > 25 && gap >= 15) {
       return "Mista";
     }
 
-    // NEUROSSENSORIAL: VO Alterada (>25) e VA Alterada (>25) com curvas acopladas (GAP < 15 dB)
-    return "Neurossensorial";
+    // 7. NEUROSSENSORIAL: Ambas alteradas com curvas acopladas (gap <15)
+    if (mediaVO > 25 && mediaVA > 25 && gap < 15) {
+      return "Neurossensorial";
+    }
+
+    // 8. Caso edge: VA alterada mas VO normal sem gap suficiente
+    return "Neurossensorial"; // Assume conservador
   }
 
   // === CÁLCULO GERAL E MONTAGEM DE LAUDO ===
@@ -1724,7 +1726,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOD as keyof AudiometriaData
+                        freq.fieldVAOD as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1771,7 +1773,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOD as keyof AudiometriaData
+                          freq.fieldVOOD as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1834,7 +1836,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOE as keyof AudiometriaData
+                        freq.fieldVAOE as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1881,7 +1883,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOE as keyof AudiometriaData
+                          freq.fieldVOOE as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1948,16 +1950,15 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOD.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOD.includes("normalidade") ||
                         formData.classificacaoOD === "-"
-                          ? "bg-green-100 text-green-800"
-                          : formData.classificacaoOD.includes("Leve")
-                            ? "bg-amber-100 text-amber-800"
-                            : formData.classificacaoOD.includes("Moderada")
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
-                      }`}
+                        ? "bg-green-100 text-green-800"
+                        : formData.classificacaoOD.includes("Leve")
+                          ? "bg-amber-100 text-amber-800"
+                          : formData.classificacaoOD.includes("Moderada")
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {formData.classificacaoOD === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -2013,16 +2014,15 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOE.includes("normalidade") ||
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOE.includes("normalidade") ||
                         formData.classificacaoOE === "-"
-                          ? "bg-green-100 text-green-800"
-                          : formData.classificacaoOE.includes("Leve")
-                            ? "bg-amber-100 text-amber-800"
-                            : formData.classificacaoOE.includes("Moderada")
-                              ? "bg-orange-100 text-orange-800"
-                              : "bg-red-100 text-red-800"
-                      }`}
+                        ? "bg-green-100 text-green-800"
+                        : formData.classificacaoOE.includes("Leve")
+                          ? "bg-amber-100 text-amber-800"
+                          : formData.classificacaoOE.includes("Moderada")
+                            ? "bg-orange-100 text-orange-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
                     >
                       {formData.classificacaoOE === "-"
                         ? "Dentro dos padrões da normalidade"

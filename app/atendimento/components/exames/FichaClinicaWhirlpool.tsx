@@ -427,12 +427,13 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   const [formData, setFormData] = useState<FichaClinicaData>({
     ...VALOR_INICIAL,
-    codigoMedico: user?.nome ? user.codigo : "",
-    medico: user?.nome ? user.nome : "",
   });
 
   const [showObservacoesPessoais, setShowObservacoesPessoais] =
     useState<boolean>(false);
+
+  const codigoMedicoFinal = formulario?.codigoMedico || user?.codigo || "";
+  const medicoFinal = formulario?.medico || user?.nome || "";
 
   useEffect(() => {
     if (atendimento) {
@@ -618,117 +619,127 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   // Validação do formulário
   // Validação do formulário - VERSÃO CORRIGIDA
-  const validateForm = useCallback((): boolean => {
-    const errors: Record<string, string> = {};
+  const validateForm = useCallback(
+    (codigo: string, nome: string): boolean => {
+      const errors: Record<string, string> = {};
 
-    // 1. VALIDAÇÃO DA PRESSÃO ARTERIAL (OBRIGATÓRIO)
-    const pressoesArteriais = Array.isArray(formData.pressaoArterial)
-      ? formData.pressaoArterial
-      : [];
+      // 1. VALIDAÇÃO DA PRESSÃO ARTERIAL (OBRIGATÓRIO)
+      const pressoesArteriais = Array.isArray(formData.pressaoArterial)
+        ? formData.pressaoArterial
+        : [];
 
-    if (pressoesArteriais.length === 0) {
-      errors.pressaoArterial =
-        "Pelo menos uma aferição de pressão arterial é obrigatória";
-    } else {
-      // Verifica se há pelo menos uma aferição com valor válido (formato 120/80)
-      const temAfericaoValida = pressoesArteriais.some((pa) => {
-        if (!pa.valor || !pa.valor.trim()) return false;
-
-        // Valida o formato da pressão arterial (ex: 120/80)
-        const partes = pa.valor.split("/");
-
-        if (partes.length !== 2) return false;
-
-        const sistolica = parseInt(partes[0]);
-        const diastolica = parseInt(partes[1]);
-
-        return (
-          !isNaN(sistolica) &&
-          !isNaN(diastolica) &&
-          sistolica > 0 &&
-          diastolica > 0
-        );
-      });
-
-      if (!temAfericaoValida) {
+      if (pressoesArteriais.length === 0) {
         errors.pressaoArterial =
-          "É necessário preencher pelo menos uma aferição de pressão arterial válida (formato: 120/80)";
+          "Pelo menos uma aferição de pressão arterial é obrigatória";
+      } else {
+        // Verifica se há pelo menos uma aferição com valor válido (formato 120/80)
+        const temAfericaoValida = pressoesArteriais.some((pa) => {
+          if (!pa.valor || !pa.valor.trim()) return false;
+
+          // Valida o formato da pressão arterial (ex: 120/80)
+          const partes = pa.valor.split("/");
+
+          if (partes.length !== 2) return false;
+
+          const sistolica = parseInt(partes[0]);
+          const diastolica = parseInt(partes[1]);
+
+          return (
+            !isNaN(sistolica) &&
+            !isNaN(diastolica) &&
+            sistolica > 0 &&
+            diastolica > 0
+          );
+        });
+
+        if (!temAfericaoValida) {
+          errors.pressaoArterial =
+            "É necessário preencher pelo menos uma aferição de pressão arterial válida (formato: 120/80)";
+        }
       }
-    }
 
-    // 2. VALIDAÇÃO DO PESO (OBRIGATÓRIO)
-    const pesoValor = formData.peso.trim();
+      // 2. VALIDAÇÃO DO PESO (OBRIGATÓRIO)
+      const pesoValor = formData.peso.trim();
 
-    if (!pesoValor) {
-      errors.peso = "Peso é obrigatório";
-    } else {
-      // Valida se o peso é um número válido
-      const pesoNum = parseFloat(pesoValor.replace(",", "."));
+      if (!pesoValor) {
+        errors.peso = "Peso é obrigatório";
+      } else {
+        // Valida se o peso é um número válido
+        const pesoNum = parseFloat(pesoValor.replace(",", "."));
 
-      if (isNaN(pesoNum) || pesoNum <= 0 || pesoNum > 300) {
-        errors.peso = "Informe um peso válido (ex: 70,5)";
+        if (isNaN(pesoNum) || pesoNum <= 0 || pesoNum > 300) {
+          errors.peso = "Informe um peso válido (ex: 70,5)";
+        }
       }
-    }
 
-    // 3. VALIDAÇÃO DA ALTURA (OBRIGATÓRIO)
-    const alturaValor = formData.altura.trim();
+      // 3. VALIDAÇÃO DA ALTURA (OBRIGATÓRIO)
+      const alturaValor = formData.altura.trim();
 
-    if (!alturaValor) {
-      errors.altura = "Altura é obrigatória";
-    } else {
-      // Valida se a altura é um número válido
-      const alturaNum = parseFloat(alturaValor.replace(",", "."));
+      if (!alturaValor) {
+        errors.altura = "Altura é obrigatória";
+      } else {
+        // Valida se a altura é um número válido
+        const alturaNum = parseFloat(alturaValor.replace(",", "."));
 
-      if (isNaN(alturaNum) || alturaNum <= 0 || alturaNum > 3) {
-        errors.altura = "Informe uma altura válida (ex: 1,75)";
+        if (isNaN(alturaNum) || alturaNum <= 0 || alturaNum > 3) {
+          errors.altura = "Informe uma altura válida (ex: 1,75)";
+        }
       }
-    }
 
-    // 4. Validações existentes (mantidas sem alteração)
-    if (
-      showObservacoesPessoais &&
-      !formData.observacoesDoencasPessoais.trim()
-    ) {
-      errors.observacoesDoencasPessoais =
-        "Observações são obrigatórias quando há doenças pessoais selecionadas";
-    }
-
-    if (formData.conclusao === "Apto com restrições") {
-      if (!formData.duracaoRestricaoDias?.trim()) {
-        errors.duracaoRestricaoDias =
-          "Duração provável é obrigatória para apto com restrições";
+      // 4. VALIDAÇÃO DO MÉDICO (OBRIGATÓRIO)
+      if (!codigo || !nome) {
+        errors.medico = "Dados do médico não encontrados. Por favor, atualize a página ou faça login novamente.";
       }
-      if (!formData.dataInicioRestricao?.trim()) {
-        errors.dataInicioRestricao =
-          "Data de início é obrigatória para apto com restrições";
+
+      // 5. Validações existentes (mantidas sem alteração)
+      if (
+        showObservacoesPessoais &&
+        !formData.observacoesDoencasPessoais.trim()
+      ) {
+        errors.observacoesDoencasPessoais =
+          "Observações são obrigatórias quando há doenças pessoais selecionadas";
       }
-    }
 
-    if (
-      formData.conclusao === "Aguardar Avaliação" &&
-      !formData.informacaoAguardarAvaliacao?.trim()
-    ) {
-      errors.informacaoAguardarAvaliacao =
-        "Informação médica é obrigatória para aguardar avaliação";
-    }
+      if (formData.conclusao === "Apto com restrições") {
+        if (!formData.duracaoRestricaoDias?.trim()) {
+          errors.duracaoRestricaoDias =
+            "Duração provável é obrigatória para apto com restrições";
+        }
+        if (!formData.dataInicioRestricao?.trim()) {
+          errors.dataInicioRestricao =
+            "Data de início é obrigatória para apto com restrições";
+        }
+      }
 
-    setFormErrors(errors);
+      if (
+        formData.conclusao === "Aguardar Avaliação" &&
+        !formData.informacaoAguardarAvaliacao?.trim()
+      ) {
+        errors.informacaoAguardarAvaliacao =
+          "Informação médica é obrigatória para aguardar avaliação";
+      }
 
-    return Object.keys(errors).length === 0;
-  }, [formData, showObservacoesPessoais]);
+      setFormErrors(errors);
+
+      return Object.keys(errors).length === 0;
+    }, [formData, showObservacoesPessoais]);
 
   const handleSave = useCallback(async () => {
-    if (!validateForm()) {
+    if (!validateForm(codigoMedicoFinal, medicoFinal)) {
       return;
     }
 
     setIsLoading(true);
     try {
-      onSave?.(formData);
+      onSave?.({
+        ...formData,
+        codigoMedico: codigoMedicoFinal,
+        medico: medicoFinal,
+      });
     } finally {
       setIsLoading(false);
     }
-  }, [formData, onSave, validateForm]);
+  }, [formData, onSave, validateForm, codigoMedicoFinal, medicoFinal]);
 
   // Componentes reutilizáveis otimizados
   const SimNaoCheckboxGroup = useCallback(
@@ -882,6 +893,18 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     <div className="max-w-6xl mx-auto p-6 space-y-3 min-h-screen">
       <HeaderExame agendamento={agendamento} exame={exame} />
 
+      {(!codigoMedicoFinal || !medicoFinal) && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-lg flex items-start gap-3">
+          <TriangleAlert className="w-5 h-5 mt-0.5 flex-shrink-0" />
+          <div>
+            <h3 className="font-semibold text-sm">Atenção: Dados do médico não carregados</h3>
+            <p className="text-sm mt-1">
+              As informações do médico responsável (código e nome) não puderam ser identificadas. Não será possível salvar a ficha clínica. Por favor, atualize a página ou faça login novamente.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* 2. Anamnese e Histórico Familiar */}
       {tipoAdmissional && !exame.includes("Triagem") && (
         <>
@@ -925,11 +948,10 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       <span className="text-blue-500 ml-1">*</span>
                     </label>
                     <Textarea
-                      className={`w-full border-blue-300 focus:border-blue-400 ${
-                        formErrors.observacoesDoencasPessoais
-                          ? "border-red-500"
-                          : ""
-                      }`}
+                      className={`w-full border-blue-300 focus:border-blue-400 ${formErrors.observacoesDoencasPessoais
+                        ? "border-red-500"
+                        : ""
+                        }`}
                       placeholder="Descreva as observações sobre as doenças pessoais/antecedentes selecionados..."
                       rows={3}
                       value={formData.observacoesDoencasPessoais}
@@ -1076,23 +1098,23 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
             {(atendimento?.SEXO === "Feminino" ||
               atendimento?.TIPOEXAMENOME === "DEMISSIONAL") && (
-              <div className="p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Data da última menstruação:
-                </label>
-                <FormattedInput
-                  maxLength={10}
-                  placeholder="DD/MM/AAAA"
-                  value={formData.ultimaMenstruacao}
-                  onChange={(value) =>
-                    handleInputChange("ultimaMenstruacao", value)
-                  }
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Formato automático: DD/MM/AAAA
-                </p>
-              </div>
-            )}
+                <div className="p-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data da última menstruação:
+                  </label>
+                  <FormattedInput
+                    maxLength={10}
+                    placeholder="DD/MM/AAAA"
+                    value={formData.ultimaMenstruacao}
+                    onChange={(value) =>
+                      handleInputChange("ultimaMenstruacao", value)
+                    }
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Formato automático: DD/MM/AAAA
+                  </p>
+                </div>
+              )}
           </Card>
         </div>
       )}
@@ -1249,26 +1271,26 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
               {formData.testesArticulares?.cotovelosMovimentacao ===
                 "Alterado" && (
-                <div className="mt-3">
-                  <label className="block text-xs text-gray-600 mb-1">
-                    Observações:
-                  </label>
-                  <Textarea
-                    className="w-full bg-white border-gray-300"
-                    placeholder="Descreva as alterações encontradas..."
-                    rows={2}
-                    value={
-                      formData.testesArticulares?.cotovelosObservacoes || ""
-                    }
-                    onChange={(e) =>
-                      handleTestesArticularesChange(
-                        "cotovelosObservacoes",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              )}
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Observações:
+                    </label>
+                    <Textarea
+                      className="w-full bg-white border-gray-300"
+                      placeholder="Descreva as alterações encontradas..."
+                      rows={2}
+                      value={
+                        formData.testesArticulares?.cotovelosObservacoes || ""
+                      }
+                      onChange={(e) =>
+                        handleTestesArticularesChange(
+                          "cotovelosObservacoes",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                )}
             </div>
           </div>
 
@@ -1502,25 +1524,25 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
               {formData.testesArticulares?.amplitudeMovimentosArticulares ===
                 "Alterado" && (
-                <div className="mt-3">
-                  <label className="block text-xs text-gray-600 mb-1">
-                    Alterado em:
-                  </label>
-                  <Input
-                    className="w-full bg-white border-gray-300"
-                    placeholder="Especifique onde está alterado..."
-                    value={
-                      formData.testesArticulares?.amplitudeAlteradoEm || ""
-                    }
-                    onChange={(e) =>
-                      handleTestesArticularesChange(
-                        "amplitudeAlteradoEm",
-                        e.target.value,
-                      )
-                    }
-                  />
-                </div>
-              )}
+                  <div className="mt-3">
+                    <label className="block text-xs text-gray-600 mb-1">
+                      Alterado em:
+                    </label>
+                    <Input
+                      className="w-full bg-white border-gray-300"
+                      placeholder="Especifique onde está alterado..."
+                      value={
+                        formData.testesArticulares?.amplitudeAlteradoEm || ""
+                      }
+                      onChange={(e) =>
+                        handleTestesArticularesChange(
+                          "amplitudeAlteradoEm",
+                          e.target.value,
+                        )
+                      }
+                    />
+                  </div>
+                )}
             </div>
           </div>
 
@@ -2032,13 +2054,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             />
             {formData.resultadoImc && (
               <p
-                className={`text-xs font-medium mt-1 ${
-                  formData.resultadoImc.includes("normal")
-                    ? "text-green-600"
-                    : formData.resultadoImc.includes("Abaixo")
-                      ? "text-amber-600"
-                      : "text-orange-600"
-                }`}
+                className={`text-xs font-medium mt-1 ${formData.resultadoImc.includes("normal")
+                  ? "text-green-600"
+                  : formData.resultadoImc.includes("Abaixo")
+                    ? "text-amber-600"
+                    : "text-orange-600"
+                  }`}
               >
                 {formData.resultadoImc}
               </p>
@@ -2106,11 +2127,10 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                   <span className="text-red-500 ml-1">*</span>
                 </label>
                 <Input
-                  className={`w-full border-blue-300 focus:border-blue-400 ${
-                    formErrors.informacaoAguardarAvaliacao
-                      ? "border-red-500"
-                      : ""
-                  }`}
+                  className={`w-full border-blue-300 focus:border-blue-400 ${formErrors.informacaoAguardarAvaliacao
+                    ? "border-red-500"
+                    : ""
+                    }`}
                   placeholder="Descreva as informações médicas para aguardar avaliação..."
                   value={formData.informacaoAguardarAvaliacao}
                   onChange={(e) =>
@@ -2357,9 +2377,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <Input
-                      className={`bg-white border-amber-300 focus:border-amber-400 ${
-                        formErrors.duracaoRestricaoDias ? "border-red-500" : ""
-                      }`}
+                      className={`bg-white border-amber-300 focus:border-amber-400 ${formErrors.duracaoRestricaoDias ? "border-red-500" : ""
+                        }`}
                       placeholder="Ex: 30"
                       type="number"
                       value={formData.duracaoRestricaoDias}
@@ -2382,9 +2401,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       <span className="text-red-500 ml-1">*</span>
                     </label>
                     <Input
-                      className={`bg-white border-amber-300 focus:border-amber-400 ${
-                        formErrors.dataInicioRestricao ? "border-red-500" : ""
-                      }`}
+                      className={`bg-white border-amber-300 focus:border-amber-400 ${formErrors.dataInicioRestricao ? "border-red-500" : ""
+                        }`}
                       type="date"
                       value={formData.dataInicioRestricao}
                       onChange={(e) =>
@@ -2421,12 +2439,20 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
       {/* Actions */}
       <div className="flex justify-end gap-4 pt-6 border-t border-gray-200">
-        {formErrors.pressaoArterial && (
-          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-600 flex items-center gap-2">
-              <TriangleAlert className="w-4 h-4" />
-              {formErrors.pressaoArterial}
-            </p>
+        {(formErrors.pressaoArterial || formErrors.medico) && (
+          <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-md flex flex-col gap-1">
+            {formErrors.pressaoArterial && (
+              <p className="text-sm text-red-600 flex items-center gap-2">
+                <TriangleAlert className="w-4 h-4" />
+                {formErrors.pressaoArterial}
+              </p>
+            )}
+            {formErrors.medico && (
+              <p className="text-sm text-red-600 flex items-center gap-2">
+                <TriangleAlert className="w-4 h-4" />
+                {formErrors.medico}
+              </p>
+            )}
           </div>
         )}
 

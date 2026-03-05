@@ -1,12 +1,72 @@
 // PreferencialTipo.tsx
 import { Button } from "@heroui/button";
 import { motion, AnimatePresence } from "framer-motion";
-import { UserPlusIcon, ArrowLeft } from "lucide-react";
+import { UserPlusIcon, ArrowLeft, CheckCircle } from "lucide-react";
 import React, { useState } from "react";
 
 import { COLOR_PALETTE, PREFERENCIAL_OPTIONS } from "@/config/constants";
 
-// Componente para seleção do tipo preferencial
+// Animações corporativas mais elegantes
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      when: "beforeChildren",
+      staggerChildren: 0.08,
+      duration: 0.6,
+      ease: [0.25, 0.1, 0.25, 1], // Cubic-bezier mais suave (ease-in-out)
+    },
+  },
+  exit: {
+    opacity: 0,
+    transition: {
+      when: "afterChildren",
+      staggerChildren: 0.05,
+      staggerDirection: -1,
+      duration: 0.5,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.5,
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  },
+  exit: {
+    opacity: 0,
+    y: -10,
+    transition: {
+      duration: 0.3,
+    },
+  },
+};
+
+const buttonHoverVariants = {
+  initial: { scale: 1, boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" },
+  hover: {
+    scale: 1.02,
+    boxShadow: "0 20px 30px -8px rgba(0, 0, 0, 0.15)",
+    transition: {
+      duration: 0.3,
+      ease: [0.25, 0.1, 0.25, 1],
+    },
+  },
+  tap: {
+    scale: 0.98,
+    boxShadow: "0 5px 15px -3px rgba(0, 0, 0, 0.1)",
+    transition: {
+      duration: 0.1,
+    },
+  },
+};
+
 const PreferencialTipo = ({
   onSelect,
   onBack,
@@ -16,6 +76,7 @@ const PreferencialTipo = ({
 }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [hoveredOption, setHoveredOption] = useState<string | null>(null);
 
   const handleOptionClick = (option: string) => {
     setSelectedOption(option);
@@ -25,317 +86,297 @@ const PreferencialTipo = ({
     setTimeout(() => {
       onSelect(option);
       setIsSubmitting(false);
-    }, 400);
+    }, 600); // Aumentado para uma transição mais suave
   };
 
   const getIconColor = (option: string) => {
     if (selectedOption === option) {
       return "text-white";
     }
-
+    if (hoveredOption === option) {
+      return "text-white";
+    }
     return "text-white/90";
   };
 
   const getButtonBackground = (option: string) => {
     if (selectedOption === option) {
-      return `linear-gradient(135deg, ${COLOR_PALETTE.dark} 0%, ${COLOR_PALETTE.primary} 100%)`;
+      return `linear-gradient(145deg, ${COLOR_PALETTE.primary}80 0%, ${COLOR_PALETTE.primary} 100%)`;
     }
-
-    return `linear-gradient(135deg, ${COLOR_PALETTE.accent} 0%, #7a9c8a 100%)`;
+    if (hoveredOption === option) {
+      return `linear-gradient(145deg, ${COLOR_PALETTE.accent} 0%, ${COLOR_PALETTE.primary} 100%)`;
+    }
+    return `linear-gradient(145deg, ${COLOR_PALETTE.accent}80 0%, ${COLOR_PALETTE.primary}80 100%)`;
   };
 
   return (
     <motion.div
-      animate={{
-        opacity: 1,
-        scale: 1,
-        transition: {
-          duration: 0.5,
-          ease: [0.43, 0.13, 0.23, 0.96], // Curva easing mais suave
-        },
-      }}
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      exit="exit"
       className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl mx-2"
-      exit={{
-        opacity: 0,
-        scale: 0.95,
-        transition: {
-          duration: 0.4,
-          ease: "easeInOut",
-        },
-      }}
-      initial={{
-        opacity: 0,
-        scale: 0.95,
-        y: 20,
-      }}
-      transition={{
-        duration: 0.5,
-        ease: [0.43, 0.13, 0.23, 0.96],
-      }}
     >
       <div
-        className="p-4 md:p-6 lg:p-8 rounded-2xl shadow-lg border relative overflow-hidden"
+        className="p-6 md:p-8 lg:p-10 rounded-2xl shadow-xl border relative overflow-hidden backdrop-blur-sm"
         style={{
-          backgroundColor: COLOR_PALETTE.background,
-          borderColor: COLOR_PALETTE.primary,
+          backgroundColor: `${COLOR_PALETTE.background}CC`,
+          borderColor: `${COLOR_PALETTE.primary}40`,
+          backdropFilter: "blur(10px)",
         }}
       >
-        {/* Background decorativo sutil */}
+        {/* Gradiente de fundo elegante */}
         <div
-          className="absolute inset-0 opacity-5"
+          className="absolute inset-0 opacity-10"
           style={{
-            background: `radial-gradient(circle at 30% 20%, ${COLOR_PALETTE.primary} 0%, transparent 50%)`,
+            background: `radial-gradient(circle at 50% 0%, ${COLOR_PALETTE.primary} 0%, transparent 60%),
+                        radial-gradient(circle at 0% 100%, ${COLOR_PALETTE.accent} 0%, transparent 60%)`,
           }}
         />
 
-        <motion.div
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
-          className="text-center mb-6 md:mb-8 lg:mb-10 relative z-10"
-          initial={{
-            opacity: 0,
-            y: -20,
-          }}
-          transition={{
-            delay: 0.1,
-            duration: 0.4,
-            ease: "easeOut",
-          }}
-        >
-          <h2
-            className="text-xl md:text-2xl lg:text-3xl font-bold mb-2"
+        {/* Linhas decorativas sutis */}
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
+        <div className="absolute bottom-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent rotate-180" />
+
+        <motion.div variants={itemVariants} className="text-center mb-8 md:mb-10 lg:mb-12 relative z-10">
+          <motion.h2
+            className="text-2xl md:text-3xl lg:text-4xl font-light mb-3 tracking-tight"
             style={{ color: COLOR_PALETTE.text }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1, duration: 0.6 }}
           >
-            Selecione o tipo preferencial
-          </h2>
-          <p
-            className="text-xs md:text-sm lg:text-base"
+            Atendimento <span className="font-semibold" style={{ color: COLOR_PALETTE.primary }}>Preferencial</span>
+          </motion.h2>
+          <motion.p
+            className="text-sm md:text-base lg:text-lg font-light"
             style={{ color: COLOR_PALETTE.gray }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
           >
-            Escolha abaixo a opção que melhor se aplica
-          </p>
+            Selecione uma das opções abaixo para continuar
+          </motion.p>
+
+          {/* Indicador de progresso sutil */}
+          <motion.div
+            className="w-20 h-1 mx-auto mt-4 rounded-full overflow-hidden"
+            style={{ backgroundColor: `${COLOR_PALETTE.primary}20` }}
+            initial={{ width: 0, opacity: 0 }}
+            animate={{ width: 80, opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.8 }}
+          >
+            <motion.div
+              className="h-full rounded-full"
+              style={{ backgroundColor: COLOR_PALETTE.primary }}
+              initial={{ width: "0%" }}
+              animate={{ width: "100%" }}
+              transition={{ delay: 0.4, duration: 1, ease: "easeInOut" }}
+            />
+          </motion.div>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6 mb-6 md:mb-8 lg:mb-10 relative z-10">
-          <AnimatePresence>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 lg:gap-6 mb-8 md:mb-10 lg:mb-12 relative z-10">
+          <AnimatePresence mode="wait">
             {PREFERENCIAL_OPTIONS.map((option, index) => (
               <motion.div
                 key={option}
-                animate={{
-                  opacity: 1,
-                  scale: 1,
-                  y: 0,
-                }}
+                variants={itemVariants}
+                custom={index}
                 className="flex"
-                exit={{
-                  opacity: 0,
-                  scale: 0.9,
-                  transition: {
-                    duration: 0.2,
-                  },
-                }}
-                initial={{
-                  opacity: 0,
-                  scale: 0.9,
-                  y: 20,
-                }}
-                transition={{
-                  duration: 0.4,
-                  delay: index * 0.05,
-                  ease: "backOut",
-                }}
-                whileHover={{
-                  scale: 1.03,
-                  transition: {
-                    duration: 0.2,
-                    ease: "easeOut",
-                  },
-                }}
-                whileTap={{
-                  scale: 0.97,
-                  transition: {
-                    duration: 0.1,
-                  },
-                }}
+                onHoverStart={() => setHoveredOption(option)}
+                onHoverEnd={() => setHoveredOption(null)}
               >
-                <Button
-                  className="flex flex-col items-center justify-center p-4 md:p-6 lg:p-8 h-32 sm:h-36 md:h-40 w-full text-sm md:text-base lg:text-lg font-bold text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
-                  disabled={isSubmitting}
-                  style={{
-                    background: getButtonBackground(option),
-                  }}
-                  onClick={() => handleOptionClick(option)}
+                <motion.div
+                  className="w-full"
+                  variants={buttonHoverVariants}
+                  initial="initial"
+                  whileHover="hover"
+                  whileTap="tap"
                 >
-                  {/* Efeito de overlay no hover */}
-                  <div className="absolute inset-0 bg-white/0 group-hover:bg-white/10 transition-all duration-300" />
+                  <Button
+                    className="flex flex-col items-center justify-center p-6 md:p-8 lg:p-10 h-40 sm:h-44 md:h-48 w-full text-base md:text-lg lg:text-xl font-medium text-white rounded-xl shadow-lg relative overflow-hidden group"
+                    disabled={isSubmitting}
+                    style={{
+                      background: getButtonBackground(option),
+                      backdropFilter: "blur(5px)",
+                    }}
+                    onClick={() => handleOptionClick(option)}
+                  >
+                    {/* Efeito de brilho suave no hover */}
+                    <motion.div
+                      className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+                      initial={{ x: "-100%" }}
+                      whileHover={{ x: "100%" }}
+                      transition={{ duration: 0.8, ease: "easeInOut" }}
+                    />
 
-                  {/* Efeito de brilho na seleção */}
-                  {selectedOption === option && (
+                    {/* Efeito de borda interna */}
+                    <div className="absolute inset-0 rounded-xl border border-white/10" />
+
+                    {/* Ícone com animação elegante */}
                     <motion.div
                       animate={{
-                        scale: [1, 1.2, 1],
-                        opacity: [0.3, 0.1, 0],
+                        scale: selectedOption === option ? 1 : hoveredOption === option ? 1.05 : 1,
+                        y: selectedOption === option ? -2 : 0,
                       }}
-                      className="absolute inset-0 bg-white/30 rounded-2xl"
-                      initial={false}
-                      transition={{
-                        duration: 0.6,
-                        ease: "easeOut",
+                      className="mb-4 relative"
+                      transition={{ duration: 0.3 }}
+                    >
+                      <UserPlusIcon
+                        className={`w-12 h-12 md:w-14 md:h-14 lg:w-16 lg:h-16 transition-all duration-500 ${getIconColor(option)}`}
+                        strokeWidth={1.5}
+                      />
+
+                      {/* Indicador de seleção elegante */}
+                      {selectedOption === option && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          exit={{ scale: 0, opacity: 0 }}
+                          className="absolute -top-2 -right-2"
+                        >
+                          <div className="relative">
+                            <motion.div
+                              className="absolute inset-0 rounded-full"
+                              style={{ backgroundColor: COLOR_PALETTE.primary }}
+                              animate={{ scale: [1, 1.5, 1] }}
+                              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <CheckCircle className="w-6 h-6 text-white relative z-10" />
+                          </div>
+                        </motion.div>
+                      )}
+                    </motion.div>
+
+                    {/* Título da opção */}
+                    <motion.span
+                      animate={{
+                        scale: selectedOption === option ? 1.02 : 1,
+                        y: selectedOption === option ? 1 : 0,
                       }}
-                    />
-                  )}
+                      className="text-center leading-tight font-medium relative z-10 px-2"
+                      style={{ letterSpacing: "0.02em" }}
+                    >
+                      {option}
+                    </motion.span>
 
-                  <motion.div
-                    animate={{
-                      scale: selectedOption === option ? 1.1 : 1,
-                      rotate: selectedOption === option ? [0, 5, -5, 0] : 0,
-                    }}
-                    className="mb-3 relative"
-                    transition={{
-                      duration: 0.3,
-                      ease: "easeOut",
-                    }}
-                  >
-                    <UserPlusIcon
-                      className={`w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14 transition-all duration-300 ${getIconColor(option)}`}
-                    />
+                    {/* Descrição sutil */}
+                    <motion.span
+                      className="text-xs opacity-0 group-hover:opacity-70 transition-opacity duration-300 mt-1"
+                      style={{ letterSpacing: "0.01em" }}
+                    >
+                      Clique para selecionar
+                    </motion.span>
 
-                    {/* Indicador de seleção */}
-                    {selectedOption === option && (
+                    {/* Efeito de loading elegante quando selecionado */}
+                    {selectedOption === option && isSubmitting && (
                       <motion.div
-                        animate={{
-                          scale: [0, 1],
-                          opacity: [0, 1],
-                        }}
-                        className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-white flex items-center justify-center"
-                        initial={false}
-                        transition={{
-                          duration: 0.3,
-                          ease: "easeOut",
-                        }}
+                        className="absolute bottom-3 right-3"
+                        initial={{ opacity: 0, scale: 0 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0 }}
                       >
-                        <div
-                          className="w-3 h-3 rounded-full"
-                          style={{ backgroundColor: COLOR_PALETTE.primary }}
-                        />
+                        <div className="relative">
+                          <motion.div
+                            className="w-5 h-5 rounded-full border-2"
+                            style={{ borderColor: `${COLOR_PALETTE.primary}40`, borderTopColor: "white" }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                          />
+                        </div>
                       </motion.div>
                     )}
-                  </motion.div>
-
-                  <motion.span
-                    animate={{
-                      scale: selectedOption === option ? 1.05 : 1,
-                    }}
-                    className="text-center leading-tight text-xs md:text-sm lg:text-base relative z-10 transition-all duration-300"
-                  >
-                    {option}
-                  </motion.span>
-
-                  {/* Efeito de loading quando selecionado */}
-                  {selectedOption === option && isSubmitting && (
-                    <motion.div
-                      animate={{
-                        rotate: 360,
-                      }}
-                      className="absolute bottom-4 right-4 w-6 h-6 rounded-full border-2 border-white/30 border-t-white"
-                      transition={{
-                        duration: 1,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                  )}
-                </Button>
+                  </Button>
+                </motion.div>
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
 
         <motion.div
-          animate={{
-            opacity: 1,
-            y: 0,
-          }}
+          variants={itemVariants}
           className="flex justify-center relative z-10"
-          initial={{
-            opacity: 0,
-            y: 20,
-          }}
-          transition={{
-            delay: 0.3,
-            duration: 0.4,
-            ease: "easeOut",
-          }}
         >
-          <Button
-            className="px-6 py-3 md:px-8 md:py-4 rounded-xl border text-sm md:text-base font-bold group transition-all duration-300"
-            disabled={isSubmitting}
-            style={{
-              backgroundColor: COLOR_PALETTE.primary,
-              color: "white",
-              borderColor: COLOR_PALETTE.accent,
-            }}
-            onClick={onBack}
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            transition={{ duration: 0.2 }}
           >
-            <motion.div
-              animate={{
-                x: [0, -3, 0],
+            <Button
+              className="px-8 py-4 rounded-xl text-sm md:text-base font-medium group transition-all duration-300 relative overflow-hidden"
+              disabled={isSubmitting}
+              style={{
+                backgroundColor: "transparent",
+                color: COLOR_PALETTE.primary,
+                border: `1px solid ${COLOR_PALETTE.primary}40`,
               }}
-              className="flex items-center"
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                repeatType: "reverse",
-              }}
+              onClick={onBack}
             >
-              <ArrowLeft className="h-4 w-4 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-              Voltar
-            </motion.div>
-          </Button>
+              {/* Efeito de hover no botão voltar */}
+              <motion.div
+                className="absolute inset-0"
+                style={{ backgroundColor: COLOR_PALETTE.primary }}
+                initial={{ opacity: 0 }}
+                whileHover={{ opacity: 0.05 }}
+                transition={{ duration: 0.3 }}
+              />
+
+              <div className="flex items-center relative z-10">
+                <motion.div
+                  animate={{ x: hoveredOption ? -2 : 0 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2 transition-transform duration-300 group-hover:-translate-x-1" />
+                </motion.div>
+                Voltar
+              </div>
+            </Button>
+          </motion.div>
         </motion.div>
 
-        {/* Feedback de loading */}
+        {/* Overlay de loading elegante */}
         <AnimatePresence>
           {isSubmitting && selectedOption && (
             <motion.div
-              animate={{
-                opacity: 1,
-                scale: 1,
-              }}
-              className="absolute inset-0 bg-black/10 backdrop-blur-[1px] flex items-center justify-center rounded-2xl"
-              exit={{
-                opacity: 0,
-                scale: 0.9,
-              }}
-              initial={{
-                opacity: 0,
-                scale: 0.9,
-              }}
-              transition={{
-                duration: 0.3,
-              }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="absolute inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center rounded-2xl"
             >
               <motion.div
-                animate={{
-                  scale: [1, 1.1, 1],
-                  opacity: [0.7, 1, 0.7],
-                }}
-                className="text-center p-4"
-                transition={{
-                  duration: 1.5,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="text-center p-6 rounded-2xl"
+                style={{ backgroundColor: `${COLOR_PALETTE.background}CC` }}
               >
-                <div className="w-12 h-12 rounded-full border-4 border-white/30 border-t-white mx-auto mb-2" />
-                <p
-                  className="text-white font-semibold"
-                  style={{ textShadow: "0 2px 4px rgba(0,0,0,0.3)" }}
+                <div className="relative">
+                  <motion.div
+                    className="w-16 h-16 rounded-full border-3 mx-auto mb-4"
+                    style={{ borderColor: `${COLOR_PALETTE.primary}30`, borderTopColor: COLOR_PALETTE.primary }}
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                  />
+                  <motion.div
+                    className="absolute inset-0 flex items-center justify-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: [0, 1, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <UserPlusIcon className="w-6 h-6" style={{ color: COLOR_PALETTE.primary }} strokeWidth={1.5} />
+                  </motion.div>
+                </div>
+                <motion.p
+                  className="font-medium text-sm"
+                  style={{ color: COLOR_PALETTE.text }}
+                  animate={{ opacity: [0.7, 1, 0.7] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
                 >
-                  Processando...
-                </p>
+                  Processando sua solicitação...
+                </motion.p>
               </motion.div>
             </motion.div>
           )}
