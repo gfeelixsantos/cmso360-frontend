@@ -1,8 +1,7 @@
-// Geração de relatório
 import { Scheduling } from "../interface/scheduling";
 import { formatCPF } from "@/lib/utils";
 
-const primaryColor = "#0B3B2A";
+const primaryColor = "#114F36";
 const secondaryColor = "#AFCA07";
 const lightGray = "#f8f9fa";
 const borderColor = "#dee2e6";
@@ -65,21 +64,15 @@ export function reportInternal(employee: Scheduling): string {
 
   function getStatusColor(status: string): string {
     const s = (status || "").toLowerCase();
-    if (s.includes("finalizado") || s.includes("concluído") || s.includes("realizado")) return "#28a745";
+    if (s.includes("concluído") || s.includes("realizado")) return "#28a745";
     if (s.includes("aguardando") || s.includes("pendente")) return "#ffc107";
     if (s.includes("alterado") || s.includes("anormalidade")) return "#dc3545";
     return "#6c757d";
   }
 
-  // Filtra exames que possuem profissional e sala
-  const examesFiltrados = employee.EXAMES?.filter(exame =>
-    exame.profissional && exame.profissional.trim() !== "" &&
-    exame.sala && exame.sala.trim() !== ""
-  ) || [];
-
-  // Monta tabela de exames apenas com os filtrados
+  // Monta tabela de exames com dataExame
   let examsTable = "";
-  examesFiltrados.forEach((exame) => {
+  employee.EXAMES.forEach((exame) => {
     const examDate = formatExamDate(exame.dataExame);
     const examTime = extractTimeFromDateTime(exame.dataExame);
     const duration = exame.dataExame
@@ -89,30 +82,22 @@ export function reportInternal(employee: Scheduling): string {
 
     examsTable += `
       <tr>
-        <td style="padding: 10px 8px; font-weight: 500; color: #1F2937; border-bottom: 1px solid ${borderColor}; font-size: 12px;">${exame.nomeExame}</td>
-        <td style="padding: 10px 8px; color: #4B5563; border-bottom: 1px solid ${borderColor}; font-size: 12px;">${exame.sala || "—"}</td>
-        <td style="padding: 10px 8px; color: #4B5563; border-bottom: 1px solid ${borderColor}; font-size: 12px;">${exame.profissional || "—"}</td>
-        <td style="padding: 10px 8px; color: #4B5563; border-bottom: 1px solid ${borderColor}; font-size: 12px;">${examDate}</td>
-        <td style="padding: 10px 8px; color: #4B5563; border-bottom: 1px solid ${borderColor}; font-size: 12px;">${duration || "—"}</td>
-        <td style="padding: 10px 8px; border-bottom: 1px solid ${borderColor};">
-          <span style="background-color: ${statusColor}; color: white; padding: 3px 8px; border-radius: 20px; font-size: 10px; font-weight: 500; display: inline-block; white-space: nowrap;">
-            ${exame.status || "Desconhecido"}
-          </span>
-        </td>
+        <td style="padding:10px;font-weight:600;">${exame.nomeExame}</td>
+        <td style="padding:10px;">${exame.sala || "—"}</td>
+        <td style="padding:10px;">${exame.profissional || "—"}</td>
+        <td style="padding:10px;">${examDate}</td>
+        <td style="padding:10px;">${duration || "—"}</td>
+        <td style="padding:10px;"><span style="background-color:${statusColor};color:white;padding:3px 8px;border-radius:3px;font-size:12px;">${exame.status || "Desconhecido"}</span></td>
       </tr>
     `;
   });
 
+  const atendimentoStatus = employee.ATENDIMENTOSTATUS || "Processando";
+  const asoStatus = employee.ASOSTATUS || "Em andamento";
+  const parecerMedico = employee.PARECERMEDICO || "";
   const recomendacaoMedica = employee.RECOMENDACAOMEDICA || "";
   const riscos = employee.RISCOSASO || [];
   const observacoes = employee.OBSERVACOES || "";
-
-  // Formatação do documento da empresa
-  const empresaDocumento = employee.CNPJEMPRESA
-    ? employee.CNPJEMPRESA
-    : employee.CPFEMPRESA
-      ? formatCPF(employee.CPFEMPRESA)
-      : "N/A";
 
   return `
     <!DOCTYPE html>
@@ -120,433 +105,113 @@ export function reportInternal(employee: Scheduling): string {
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Relatório de Saúde Ocupacional - ${employee.NOME}</title>
+      <title>Relatório de Atendimento - Saúde Ocupacional</title>
       <style>
-        * { 
-          margin: 0; 
-          padding: 0; 
-          box-sizing: border-box; 
-        }
-        
-        body { 
-          font-family: 'Segoe UI', Roboto, -apple-system, BlinkMacSystemFont, sans-serif; 
-          color: #1F2937; 
-          background: #f0f2f5; 
-          padding: 20px; 
-          line-height: 1.4;
-        }
-        
-        .container { 
-          width: 210mm; 
-          min-height: 297mm;
-          margin: 0 auto; 
-          background: #fff; 
-          box-shadow: 0 4px 20px rgba(0,0,0,0.1); 
-          padding: 15mm 20mm; 
-          position: relative;
-        }
-        
-        @media print { 
-          body { 
-            background: none; 
-            padding: 0; 
-          } 
-          .container { 
-            box-shadow: none; 
-            padding: 15mm 20mm; 
-          }
-          .no-print {
-            display: none !important;
-          }
-        }
-        
-        /* Botão de impressão */
-        .print-button-container {
-          text-align: right;
-          margin-bottom: 15px;
-        }
-        
-        .print-button {
-          background-color: ${primaryColor};
-          color: white;
-          border: none;
-          padding: 10px 20px;
-          border-radius: 6px;
-          font-size: 14px;
-          font-weight: 500;
-          cursor: pointer;
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          transition: background-color 0.2s;
-        }
-        
-        .print-button:hover {
-          background-color: #0a2f1f;
-        }
-        
-        .print-button svg {
-          width: 16px;
-          height: 16px;
-        }
-        
-        /* Header */
-        .header { 
-          display: flex; 
-          justify-content: space-between; 
-          align-items: flex-start; 
-          border-bottom: 2px solid ${primaryColor}; 
-          padding-bottom: 12px; 
-          margin-bottom: 20px; 
-        }
-        
-        .header-left h1 { 
-          font-size: 20px; 
-          color: ${primaryColor}; 
-          margin-bottom: 6px; 
-          font-weight: 600;
-          letter-spacing: -0.2px;
-        }
-        
-        .header-info {
-          display: flex;
-          gap: 20px;
-          font-size: 12px;
-          color: #6B7280;
-          flex-wrap: wrap;
-        }
-        
-        .header-info-item {
-          display: flex;
-          align-items: center;
-        }
-        
-        .header-info-label {
-          font-weight: 600;
-          color: #4B5563;
-          margin-right: 4px;
-        }
-        
-        .company-logo {
-          height: 45px;
-          width: auto;
-          max-width: 180px;
-          object-fit: contain;
-        }
-        
-        /* Sections */
-        .section { 
-          margin-bottom: 20px; 
-        }
-        
-        .section-title { 
-          background: ${lightGray}; 
-          padding: 8px 12px; 
-          font-weight: 600; 
-          font-size: 13px; 
-          text-transform: uppercase; 
-          color: ${primaryColor}; 
-          border-left: 3px solid ${primaryColor}; 
-          margin-bottom: 12px; 
-          letter-spacing: 0.2px;
-        }
-        
-        /* Grid Layout */
-        .grid-3 {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          gap: 12px;
-        }
-        
-        .grid-4 {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr 1fr;
-          gap: 12px;
-        }
-        
-        .grid-full { 
-          grid-column: 1 / -1; 
-        }
-        
-        /* Fields */
-        .field { 
-          border: 1px solid ${borderColor}; 
-          padding: 10px; 
-          border-radius: 4px; 
-          background: ${lightGray}; 
-        }
-        
-        .field-label { 
-          font-size: 10px; 
-          font-weight: 600; 
-          color: #6B7280; 
-          text-transform: uppercase; 
-          margin-bottom: 2px; 
-          display: block; 
-          letter-spacing: 0.2px;
-        }
-        
-        .field-value { 
-          font-size: 13px; 
-          color: #1F2937; 
-          font-weight: 500;
-          word-break: break-word; 
-        }
-        
-        /* Risk Tags */
-        .risk-tag { 
-          display: inline-block; 
-          background: ${secondaryColor}; 
-          color: #1F2937; 
-          padding: 3px 8px; 
-          margin: 2px; 
-          border-radius: 20px; 
-          font-size: 11px; 
-          font-weight: 500;
-        }
-        
-        /* Company info line */
-        .company-info {
-          font-size: 11px;
-          color: #6B7280;
-          margin-top: 2px;
-        }
-        
-        /* Table */
-        table { 
-          width: 100%; 
-          border-collapse: collapse; 
-          margin-top: 5px; 
-          font-size: 12px;
-        }
-        
-        th { 
-          background: ${primaryColor}; 
-          color: white; 
-          padding: 8px 8px; 
-          text-align: left; 
-          font-weight: 600; 
-          font-size: 11px; 
-          text-transform: uppercase; 
-          letter-spacing: 0.2px;
-        }
-        
-        th:first-child {
-          border-top-left-radius: 4px;
-        }
-        
-        th:last-child {
-          border-top-right-radius: 4px;
-        }
-        
-        /* Footer */
-        .footer { 
-          margin-top: 30px; 
-          padding-top: 15px; 
-          border-top: 1px solid ${borderColor}; 
-          font-size: 10px; 
-          color: #9CA3AF; 
-          text-align: center; 
-        }
-        
-        /* Observations box */
-        .observations-box {
-          background: ${lightGray};
-          border: 1px solid ${borderColor};
-          border-radius: 4px;
-          padding: 12px;
-          font-size: 12px;
-          color: #1F2937;
-          white-space: pre-line;
-        }
-        
-        /* Alert boxes */
-        .alert { 
-          padding: 12px; 
-          margin: 10px 0; 
-          border-radius: 4px; 
-          border-left: 3px solid; 
-          font-size: 12px;
-        }
-        
-        .alert-info { 
-          background: #d1ecf1; 
-          border-left-color: #0c5460; 
-          color: #0c5460; 
-        }
-        
-        .alert-danger { 
-          background: #f8d7da; 
-          border-left-color: #dc3545; 
-          color: #721c24; 
-        }
-        
-        /* Print optimization */
-        @media print {
-          tr {
-            page-break-inside: avoid;
-          }
-          
-          .section {
-            page-break-inside: avoid;
-          }
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333; background: #f0f2f5; padding: 20px; }
+        .container { width: 210mm; margin: 0 auto; background: #fff; box-shadow: 0 0 15px rgba(0,0,0,0.1); padding: 20mm; line-height: 1.6; }
+        @media print { body { background: none; padding: 0; } .container { box-shadow: none; padding: 0; } }
+        .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid ${primaryColor}; padding-bottom: 15px; margin-bottom: 20px; }
+        .header-left h1 { font-size: 26px; color: ${primaryColor}; margin-bottom: 5px; }
+        .header-left p { font-size: 13px; color: #666; }
+        .ticket-badge { background: ${primaryColor}; color: white; padding: 15px 20px; border-radius: 6px; text-align: center; min-width: 120px; }
+        .ticket-badge .label { font-size: 11px; text-transform: uppercase; opacity: 0.9; margin-bottom: 5px; }
+        .ticket-badge .value { font-size: 28px; font-weight: bold; }
+        .section { margin-bottom: 25px; }
+        .section-title { background: ${lightGray}; padding: 10px 15px; font-weight: 700; font-size: 14px; text-transform: uppercase; color: ${primaryColor}; border-left: 4px solid ${primaryColor}; margin-bottom: 12px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .grid-full { grid-column: 1 / -1; }
+        .field { border: 1px solid ${borderColor}; padding: 10px; border-radius: 4px; background: ${lightGray}; }
+        .field-label { font-size: 12px; font-weight: 600; color: #666; text-transform: uppercase; margin-bottom: 3px; display: block; }
+        .field-value { font-size: 14px; color: #333; word-break: break-word; }
+        .status-badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .status-ok { background: #d4edda; color: #155724; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .status-alert { background: #f8d7da; color: #721c24; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { background: ${primaryColor}; color: white; padding: 12px; text-align: left; font-weight: 600; font-size: 12px; text-transform: uppercase; }
+        td { padding: 10px; border-bottom: 1px solid ${borderColor}; font-size: 13px; }
+        tr:hover { background: ${lightGray}; }
+        .alert { padding: 12px; margin: 10px 0; border-radius: 4px; border-left: 4px solid; }
+        .alert-danger { background: #f8d7da; border-left-color: #dc3545; color: #721c24; }
+        .alert-info { background: #d1ecf1; border-left-color: #0c5460; color: #0c5460; }
+        .risk-tag { display: inline-block; background: ${secondaryColor}; color: #333; padding: 4px 8px; margin: 2px; border-radius: 3px; font-size: 12px; }
       </style>
     </head>
     <body>
-      <!-- Botão de imprimir (não aparece na impressão) -->
-      <div class="print-button-container no-print">
-        <button class="print-button" onclick="window.print()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
-            <path d="M6 9V3h12v6"/>
-            <path d="M6 15h12v6H6z"/>
-          </svg>
-          Imprimir / Salvar PDF
-        </button>
-      </div>
-
       <div class="container">
-        <!-- Header com logo no canto superior direito -->
         <div class="header">
           <div class="header-left">
-            <h1>${employee.NOME}</h1>
-            <div class="header-info">
-              <div class="header-info-item">
-                <span class="header-info-label">CPF:</span>
-                <span>${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"}</span>
-              </div>
-              <div class="header-info-item">
-                <span class="header-info-label">Matrícula:</span>
-                <span>${employee.MATRICULAFUNCIONARIO || "N/A"}</span>
-              </div>
-              <div class="header-info-item">
-                <span class="header-info-label">Nascimento:</span>
-                <span>${employee.DATANASCIMENTO || "N/A"}</span>
-              </div>
-            </div>
+            <h1>${employee.NOME.toUpperCase()}</h1>
+            <p>CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"}</p>
+            <p>Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}</p>
           </div>
-          <img src="https://cmsocupacional.com.br/images/logo.png" alt="CMS Ocupacional" class="company-logo" onerror="this.style.display='none'">
+          <div class="ticket-badge">
+            <div class="label">Ticket</div>
+            <div class="value">${ticketId}</div>
+          </div>
         </div>
 
-        <!-- Dados da Empresa com cargo, setor e unidade na mesma linha -->
         <div class="section">
-          <div class="section-title">Dados da Empresa</div>
-          <div class="field" style="margin-bottom: 12px;">
-            <span class="field-label">Empresa</span>
-            <span class="field-value" style="font-size: 14px; font-weight: 600;">${employee.NOMEEMPRESA}</span>
-            <div class="company-info">${empresaDocumento}</div>
-          </div>
-          
-          <!-- Cargo, Setor e Unidade na mesma linha -->
-          <div class="grid-3">
-            <div class="field">
-              <span class="field-label">Cargo</span>
-              <span class="field-value" style="font-size: 12px;">${employee.NOMECARGO}</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Setor</span>
-              <span class="field-value" style="font-size: 12px;">${employee.NOMESETOR}</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Unidade</span>
-              <span class="field-value" style="font-size: 12px;">${employee.UNIDADEATENDIMENTO}</span>
-            </div>
+          <div class="section-title">Dados da Empresa e Cargo</div>
+          <div class="grid">
+            <div class="field"><span class="field-label">Empresa</span><span class="field-value">${employee.NOMEEMPRESA}</span></div>
+            <div class="field"><span class="field-label">Código</span><span class="field-value">${employee.CODIGOEMPRESA}</span></div>
+            <div class="field"><span class="field-label">Cargo</span><span class="field-value">${employee.NOMECARGO}</span></div>
+            <div class="field"><span class="field-label">Setor</span><span class="field-value">${employee.NOMESETOR}</span></div>
+            <div class="field grid-full"><span class="field-label">Unidade</span><span class="field-value">${employee.UNIDADEATENDIMENTO}</span></div>
           </div>
         </div>
 
-        <!-- Cronograma (com informação do ticket) -->
         <div class="section">
           <div class="section-title">Cronograma</div>
-          <div class="grid-4">
-            <div class="field">
-              <span class="field-label">Data Agendamento</span>
-              <span class="field-value" style="font-size: 12px;">${dataAgendamento}</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Hora</span>
-              <span class="field-value" style="font-size: 12px;">${horaAgendamento}</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Tipo Exame</span>
-              <span class="field-value" style="font-size: 12px;">${employee.TIPOEXAMENOME}</span>
-            </div>
-            <div class="field">
-              <span class="field-label">Ticket</span>
-              <span class="field-value" style="font-size: 12px; font-weight: 600; color: ${primaryColor};">${ticketId}</span>
-            </div>
+          <div class="grid">
+            <div class="field"><span class="field-label">Data Agendamento</span><span class="field-value">${dataAgendamento}</span></div>
+            <div class="field"><span class="field-label">Hora</span><span class="field-value">${horaAgendamento}</span></div>
+            ${
+              employee.TICKET?.emissao
+                ? `<div class="field"><span class="field-label">Entrada</span><span class="field-value">${new Date(employee.TICKET.emissao).toLocaleString("pt-BR")}</span></div>`
+                : ""
+            }
+            <div class="field"><span class="field-label">Tipo Exame</span><span class="field-value">${employee.TIPOEXAMENOME}</span></div>
           </div>
-          
-          <!-- Riscos (se houver) -->
-          ${riscos && riscos.length > 0 ? `
-          <div style="margin-top: 12px;">
-            <div style="margin-bottom: 6px; font-weight: 600; color: ${primaryColor}; font-size: 12px;">Fatores de Risco</div>
-            <div>
-              ${riscos.map((r) => `<span class="risk-tag">${r.risco}</span>`).join("")}
-            </div>
-          </div>
-          ` : ""}
         </div>
 
-        <!-- Recomendações (se houver) -->
-        ${recomendacaoMedica ? `
         <div class="section">
-          <div class="section-title">Recomendações Médicas</div>
-          <div class="alert ${recomendacaoMedica.toLowerCase().includes("restrição") || recomendacaoMedica.toLowerCase().includes("afastamento") ? "alert-danger" : "alert-info"}">
-            ${recomendacaoMedica}
+          <div class="section-title">Status</div>
+          <div class="grid">
+            <div class="field"><span class="field-label">Atendimento</span><span class="field-value"><span class="status-badge status-${atendimentoStatus.includes("Finalizado") || atendimentoStatus.includes("Concluído") ? "ok" : "pending"}">${atendimentoStatus}</span></span></div>
+            <div class="field"><span class="field-label">ASO</span><span class="field-value"><span class="status-badge status-${asoStatus.includes("Liberado") || asoStatus.includes("Aprovado") ? "ok" : asoStatus.includes("Restrição") ? "alert" : "pending"}">${asoStatus}</span></span></div>
           </div>
+          ${
+            riscos && riscos.length > 0
+              ? `<div class="field grid-full"><span class="field-label">Riscos</span><span class="field-value">${riscos.map((r) => `<div class="risk-tag">${r.risco}</div>`).join("")}</span></div>`
+              : ""
+          }
         </div>
-        ` : ""}
 
-        <!-- Observações (se houver) -->
-        ${observacoes ? `
-        <div class="section">
-          <div class="section-title">Observações</div>
-          <div class="observations-box" style="font-size: 12px;">
-            ${observacoes.replace(/\n/g, '<br>')}
-          </div>
-        </div>
-        ` : ""}
-
-        <!-- Exames Realizados (apenas com profissional e sala) -->
         <div class="section">
           <div class="section-title">Exames Realizados</div>
-          ${examsTable ? `
           <table>
-            <thead>
-              <tr>
-                <th style="padding: 8px;">Exame</th>
-                <th style="padding: 8px;">Sala</th>
-                <th style="padding: 8px;">Profissional</th>
-                <th style="padding: 8px;">Data/Hora</th>
-                <th style="padding: 8px;">Duração</th>
-                <th style="padding: 8px;">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${examsTable}
-            </tbody>
+            <thead><tr><th>Exame</th><th>Sala</th><th>Profissional</th><th>Data/Hora</th><th>Duração</th><th>Status</th></tr></thead>
+            <tbody>${examsTable || '<tr><td colspan="6" style="text-align:center;padding:20px;">Pendente</td></tr>'}</tbody>
           </table>
-          ` : `
-          <div style="text-align: center; padding: 20px; color: #6B7280; background: ${lightGray}; border-radius: 4px; font-size: 12px;">
-            Nenhum exame com profissional e sala designados
-          </div>
-          `}
         </div>
 
-        <!-- Footer -->
-        <div class="footer">
-          <p>Relatório gerado em ${new Date().toLocaleString("pt-BR")}</p>
-          <p style="margin-top: 3px;">Documento confidencial - Uso exclusivo da empresa</p>
+        ${parecerMedico ? `<div class="section"><div class="section-title">Parecer Médico</div><div class="alert alert-info">${parecerMedico}</div></div>` : ""}
+        
+        ${
+          recomendacaoMedica
+            ? `<div class="section"><div class="section-title">Recomendações</div><div class="alert alert-${recomendacaoMedica.includes("Restrição") || recomendacaoMedica.includes("Afastamento") ? "danger" : "info"}">${recomendacaoMedica}</div></div>`
+            : ""
+        }
+
+        ${observacoes ? `<div class="section"><div class="section-title">Observações</div><div class="field grid-full"><span class="field-value">${observacoes}</span></div></div>` : ""}
+
+        <div style="margin-top: 40px; padding-top: 15px; border-top: 2px solid ${borderColor}; font-size: 12px; color: #666; text-align: center;">
+          <p>Relatório gerado em ${new Date().toLocaleString("pt-BR")} | Documento confidencial</p>
         </div>
       </div>
-
-      <script>
-        // Script para garantir que o botão de impressão funcione
-        document.querySelector('.print-button')?.addEventListener('click', function() {
-          window.print();
-        });
-      </script>
     </body>
     </html>
   `;

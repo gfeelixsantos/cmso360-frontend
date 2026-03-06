@@ -16,10 +16,13 @@ const getCurrentMessage = async (): Promise<Message | null> => {
 
 • Aproveitamento de exames do mesmo ASO dentro de 30 dias.
 • Atendimento credenciadas não será possível realizar upload de exames.
-• Visualização das audiomerias anteriores do funcionário.
-• Upload de anexos no relatório.
-• Impressão do relatório em PDF.
 • Finalização de ultrassom via tela de relatório.
+• Impressão do relatório de atendimento.
+• Parecer altura com cinto > 100kg.
+• Sincronização SOC página de relatório (beta).
+• Upload de anexos no relatório.
+• Visualização das audiomerias anteriores do funcionário.
+
 `,
       date: new Date().toLocaleDateString("pt-BR"),
       isImportant: false,
@@ -33,5 +36,4 @@ const getCurrentMessage = async (): Promise<Message | null> => {
 
 export { getCurrentMessage };
 
-// Sincronizacao SOC página de relatorio (beta)
 

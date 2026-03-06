@@ -24,7 +24,7 @@ import {
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
-  NEST_SOC_SINCRONIZAR_PRONTUARIO,
+  NEST_SOC_PEDIDOEXAME,
   NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
 
@@ -201,49 +201,31 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     }
   };
 
-  const handleSyncWithSOC = async () => {
+  const handleSyncWithSOC = async (manterExamesRealizados: boolean) => {
     try {
       setLoadingSyncSoc(true);
 
-      const response = await fetch(NEST_SOC_SINCRONIZAR_PRONTUARIO, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          schedulingId: atendimento._id,
-          empresa: atendimento.CODIGOEMPRESA,
-          funcionario: atendimento.CODIGO,
-        }),
-      });
+      const response = await fetch(
+        `${NEST_SOC_PEDIDOEXAME}codempresa=${atendimento.CODIGOEMPRESA}&codfuncionario=${atendimento.CODIGO}&data=${atendimento.DATAAGENDAMENTO}&manterExamesRealizados=${manterExamesRealizados}`,
+      );
 
       if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData.message || "Erro ao sincronizar com SOC");
+        throw new Error("Erro ao sincronizar com SOC");
       }
 
-      const { data, resumo } = await response.json();
+      const updatedScheduling = await response.json();
 
-      console.log("Scheduling atualizado após sync inteligente:", data);
+      console.log("Scheduling atualizado após sync:", updatedScheduling);
 
-      if (onUpdateScheduling && data) {
-        onUpdateScheduling(data);
+      if (onUpdateScheduling) {
+        onUpdateScheduling(updatedScheduling);
       }
 
-      if (resumo) {
-        alert(
-          `Sincronização cadastral e Merge Inteligente concluídos com sucesso!\n\n` +
-          `📊 Resumo de Exames:\n` +
-          `- Preservados (Em andamento/Feitos): ${resumo.preservados}\n` +
-          `- Faltantes adicionados: ${resumo.adicionados}\n` +
-          `- Removidos/Cancelados no SOC: ${resumo.removidos}`
-        );
-      } else {
-        alert("Sincronização realizada com sucesso!");
-      }
-
+      alert("Sincronização realizada com sucesso!");
       setSyncSocModalOpen(false);
-    } catch (error: any) {
+    } catch (error) {
       console.error("Erro ao sincronizar:", error);
-      alert(error.message || "Erro ao sincronizar com SOC");
+      alert("Erro ao sincronizar com SOC");
     } finally {
       setLoadingSyncSoc(false);
     }
@@ -378,7 +360,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
               <Button
                 color="default"
-
+                disabled={loadingSyncSoc}
                 size="sm"
                 startContent={
                   loadingSyncSoc ? (
