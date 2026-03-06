@@ -33,7 +33,7 @@ import ExamUploadModal from "./ExamUploadModal";
 import DeleteAttachmentModal from "./DeleteAttachmentModal";
 import { SelectedFile } from "./SelectedFilesList";
 
-import { adjustForBrazilTime, getCurrentUser } from "@/lib/utils";
+import { getCurrentUser } from "@/lib/utils";
 import {
   ExamRegister,
   Scheduling,
@@ -292,7 +292,7 @@ const ExamesTable: React.FC<{
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";
 
-    return new Date(dateString).toLocaleString("pt-BR");
+    return new Date(dateString).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
   };
 
   const calculateWaitTime = (
@@ -302,8 +302,8 @@ const ExamesTable: React.FC<{
     if (!ticketTime || !exame) return null;
 
     try {
-      const ticketDate = adjustForBrazilTime(new Date(ticketTime));
-      const exameDate = adjustForBrazilTime(new Date(exame.dataExame));
+      const ticketDate = new Date(ticketTime);
+      const exameDate = new Date(exame.dataExame);
 
       const diffMs = exameDate.getTime() - ticketDate.getTime();
       const diffMinutes = Math.floor(diffMs / (1000 * 60));

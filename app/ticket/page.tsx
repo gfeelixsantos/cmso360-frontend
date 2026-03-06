@@ -160,12 +160,7 @@ const useBrazilTime = () => {
 
   useEffect(() => {
     const updateTime = () => {
-      // Usando UTC-3 (Horário de Brasília)
-      const now = new Date();
-      const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-      const brasiliaTime = new Date(utc + 3600000 * -3);
-
-      setCurrentTime(brasiliaTime);
+      setCurrentTime(new Date());
     };
 
     updateTime();
