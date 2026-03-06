@@ -305,7 +305,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         isLoading={loadingSyncSoc}
         isOpen={syncSocModalOpen}
         onClose={() => setSyncSocModalOpen(false)}
-        onConfirm={handleSyncWithSOC}
+        onConfirm={() => handleSyncWithSOC(true)}
       />
 
       <ModalHeader className="flex gap-2">
