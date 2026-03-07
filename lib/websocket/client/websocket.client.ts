@@ -20,6 +20,9 @@ export class WebSocketClient {
       this.socket = io(process.env.NEXT_PUBLIC_WS_URL!, {
         transports: ["websocket"],
         auth: { user },
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: Infinity,
       });
 
       this.socket.on("connect", () => {
