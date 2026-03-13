@@ -7,11 +7,9 @@ import {
   ModalContent,
   ModalHeader,
   ModalBody,
-  Checkbox,
   ModalFooter,
 } from "@heroui/react";
 import React from "react";
-import { useState } from "react";
 
 // ============================================
 interface SyncSocConfirmationModalProps {
@@ -78,10 +76,15 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
             <ModalBody>
               <div className="mt-2 text-sm text-gray-700">
                 <p>
-                  A sincronização inteligente atualizará <strong>seus dados cadastrais</strong> e executará um Merge dinâmico nos seus Exames em relação ao cruzamento de base com o SOC.
+                  A sincronização inteligente atualizará{" "}
+                  <strong>seus dados cadastrais</strong> e executará um Merge
+                  dinâmico nos seus Exames em relação ao cruzamento de base com
+                  o SOC.
                 </p>
                 <p className="text-xs text-black mt-2 bg-yellow-100 p-2 rounded">
-                  <strong>IMPORTANTE: </strong> Seu histórico clínico atual não será afetado. Exames Finalizados serão sempre mantidos e exames repetentes serão adicionados.
+                  <strong>IMPORTANTE: </strong> Seu histórico clínico atual não
+                  será afetado. Exames Finalizados serão sempre mantidos e
+                  exames repetentes serão adicionados.
                 </p>
               </div>
             </ModalBody>

@@ -114,15 +114,16 @@ const ExameCard = memo(
       : "N/A";
     const hora = exame?.dataExame
       ? new Date(exame.dataExame).toLocaleTimeString("pt-BR", {
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+          hour: "2-digit",
+          minute: "2-digit",
+        })
       : "";
 
     return (
       <tr
-        className={`transition-all border-b border-default-200 ${isActive ? "bg-primary-50" : "hover:bg-default-50"
-          }`}
+        className={`transition-all border-b border-default-200 ${
+          isActive ? "bg-primary-50" : "hover:bg-default-50"
+        }`}
       >
         <td className="p-2 text-default-800">
           <div className="flex flex-col">
@@ -1389,7 +1390,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA}>
                           {ParecerTrabalhoAltura.APTO_ALTURA}
                         </SelectItem>
-                        <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA_CINTO_100KG}>
+                        <SelectItem
+                          key={ParecerTrabalhoAltura.APTO_ALTURA_CINTO_100KG}
+                        >
                           {ParecerTrabalhoAltura.APTO_ALTURA_CINTO_100KG}
                         </SelectItem>
                         <SelectItem key={ParecerTrabalhoAltura.INAPTO_ALTURA}>
@@ -1489,19 +1492,19 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
                   {opinion?.opinionType ===
                     ParecerMedico.INAPTO_TEMPORARIAMENTE && (
-                      <Input
-                        classNames={{
-                          label: "text-xs sm:text-sm",
-                        }}
-                        label="Inapto até"
-                        size="sm"
-                        type="date"
-                        value={opinion?.laudoRestricao?.dataFim ?? todayIso()}
-                        onValueChange={(value) => {
-                          setOpinion((prev) => {
-                            const newLaudo = prev?.laudoRestricao
-                              ? { ...prev.laudoRestricao }
-                              : {
+                    <Input
+                      classNames={{
+                        label: "text-xs sm:text-sm",
+                      }}
+                      label="Inapto até"
+                      size="sm"
+                      type="date"
+                      value={opinion?.laudoRestricao?.dataFim ?? todayIso()}
+                      onValueChange={(value) => {
+                        setOpinion((prev) => {
+                          const newLaudo = prev?.laudoRestricao
+                            ? { ...prev.laudoRestricao }
+                            : {
                                 cid: "",
                                 descricaoCid: "",
                                 restricoes: "",
@@ -1511,13 +1514,13 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                                 recomendacoes: "",
                               };
 
-                            newLaudo.dataFim = value;
+                          newLaudo.dataFim = value;
 
-                            return { ...(prev || {}), laudoRestricao: newLaudo };
-                          });
-                        }}
-                      />
-                    )}
+                          return { ...(prev || {}), laudoRestricao: newLaudo };
+                        });
+                      }}
+                    />
+                  )}
                 </>
               )}
 

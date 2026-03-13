@@ -27,7 +27,6 @@ import {
   NEST_SOC_PEDIDOEXAME,
   NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
-
 import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // função de geração de relatório
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { IUserInfo } from "@/hooks/useUser";
@@ -178,13 +177,17 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     if (!atendimento?._id) return;
     try {
       setLoadingViewReport(true);
-      const response = await fetch(`${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`);
+      const response = await fetch(
+        `${NEST_RELATORIO_FUNCIONARIO}${atendimento._id}`,
+      );
+
       if (!response.ok) {
         throw new Error("Erro ao carregar relatório");
       }
       const data: Scheduling = await response.json();
       const html = reportInternal(data);
       const newWin = window.open("", "_blank");
+
       if (newWin) {
         newWin.document.open();
         newWin.document.write(html);

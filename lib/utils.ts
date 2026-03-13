@@ -17,13 +17,17 @@ export async function fetchBodyJson<T>(
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorData = await response.json().catch(() => null);
+      const errorMessage =
+        errorData?.message || `HTTP error! status: ${response.status}`;
+
+      throw new Error(errorMessage);
     }
 
     return (await response.json()) as T;
   } catch (err) {
     console.error(err);
-    throw new Error(`Erro em processar fetch: ${err}`);
+    throw err;
   }
 }
 
@@ -236,4 +240,3 @@ export const getStatusColor = (status: string) => {
       return "primary";
   }
 };
-

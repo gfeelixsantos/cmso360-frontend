@@ -2,13 +2,27 @@ import { supabase } from "../supabase";
 
 import { IUserRegister } from "@/lib/user/interfaces/IUser";
 
+const normalizeCpf = (value: string) => value.replace(/\D/g, "");
+
 export class SupabaseService {
   static async getUserByCpf(cpf: string): Promise<IUserRegister> {
-    const { data, error } = await supabase
+    const cpfNormalizado = normalizeCpf(cpf);
+
+    let { data, error } = await supabase
       .from("clients")
       .select("*")
-      .eq("cpf", cpf)
+      .eq("cpf", cpfNormalizado)
       .maybeSingle();
+
+    if (!data && !error) {
+      const { data: allData } = await supabase.from("clients").select("*");
+
+      if (allData) {
+        data =
+          allData.find((user) => normalizeCpf(user.cpf) === cpfNormalizado) ||
+          null;
+      }
+    }
 
     if (error) {
       console.error("Error fetching client:", error);
@@ -34,7 +48,19 @@ export class SupabaseService {
 
   static async deleteUserByCPF(cpf: string) {
     try {
-      const { error } = await supabase.from("clients").delete().eq("cpf", cpf);
+      const user = await SupabaseService.getUserByCpf(cpf);
+
+      if (!user) {
+        return {
+          status: 404,
+          message: "Usuário não encontrado",
+        };
+      }
+
+      const { error } = await supabase
+        .from("clients")
+        .delete()
+        .eq("cpf", user.cpf);
 
       if (error) {
         throw new Error(`Erro ao deletar usuário: ${error.message}`);
@@ -50,5 +76,29 @@ export class SupabaseService {
         message: err.message || "Erro inesperado",
       };
     }
+  }
+
+  static async updatePassword(
+    cpf: string,
+    newPassword: string,
+  ): Promise<boolean> {
+    const user = await SupabaseService.getUserByCpf(cpf);
+
+    if (!user) {
+      return false;
+    }
+
+    const { error } = await supabase
+      .from("clients")
+      .update({ password: newPassword })
+      .eq("cpf", user.cpf);
+
+    if (error) {
+      console.error("Error updating password:", error);
+
+      return false;
+    }
+
+    return true;
   }
 }

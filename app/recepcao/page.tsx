@@ -740,6 +740,7 @@ const RecepcaoPage: React.FC = () => {
             conectado={conectado}
             exameSelecionado={exameSelecionado}
             handleConectar={handleConectar}
+            isReconnecting={isReconnecting}
             salaSelecionada={salaSelecionada}
             setSalaSelecionada={setSalaSelecionada}
             setStatusSelecionado={setStatusSelecionado}

@@ -54,6 +54,7 @@ export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}soc/sync-soc`;
 export const NEST_SOC_SINCRONIZAR_PRONTUARIO = `${NEST_URL}soc/sincronizar-prontuario`;
 
 export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;
+export const NEST_USER_SETTINGS_URL = `${NEST_URL}user-settings/`;
 
 // ---------------------------------------------------------
 // NEXT APPLICATION

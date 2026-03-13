@@ -169,4 +169,66 @@ export class UserService {
       );
     }
   }
+
+  static async validateRecoveryCode(
+    cpf: string,
+    codigoRecuperacao: string,
+  ): Promise<ApiResponse<{ valid: boolean }>> {
+    const userRegister = await SupabaseService.getUserByCpf(cpf);
+
+    if (!userRegister) {
+      return new ApiResponse(
+        HttpCodes.BAD_REQUEST,
+        "CPF ou código de recuperação inválidos",
+        { valid: false },
+      );
+    }
+
+    const normalizeCpf = (value: string) => value.replace(/\D/g, "");
+    const cpfBancoNormalizado = normalizeCpf(userRegister.cpf);
+    const ultimos2Cpf = cpfBancoNormalizado.slice(-2);
+
+    const codigoBase = String(userRegister.codigo).split("").reverse().join("");
+    const codigoEsperado = `${codigoBase}${ultimos2Cpf}`;
+
+    const isValid = codigoEsperado === codigoRecuperacao;
+
+    return new ApiResponse(
+      isValid ? HttpCodes.OK : HttpCodes.UNAUTHORIZED,
+      isValid
+        ? "Código validado com sucesso"
+        : "CPF ou código de recuperação inválidos",
+      { valid: isValid },
+    );
+  }
+
+  static async resetPassword(
+    cpf: string,
+    novaSenha: string,
+  ): Promise<ApiResponse<{ success: boolean }>> {
+    const userRegister = await SupabaseService.getUserByCpf(cpf);
+
+    if (!userRegister) {
+      return new ApiResponse(
+        HttpCodes.BAD_REQUEST,
+        ApiMessages.USER_INPUT_INVALID,
+        { success: false },
+      );
+    }
+
+    const hashedPassword = await Bcrypt.createHash(novaSenha);
+    const updated = await SupabaseService.updatePassword(cpf, hashedPassword);
+
+    if (!updated) {
+      return new ApiResponse(
+        HttpCodes.INTERNAL_SERVER_ERROR,
+        ApiMessages.INTERNAL_ERROR,
+        { success: false },
+      );
+    }
+
+    return new ApiResponse(HttpCodes.OK, "Senha atualizada com sucesso", {
+      success: true,
+    });
+  }
 }

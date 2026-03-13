@@ -62,6 +62,25 @@ export function openHistoricoHTML(
 
       const graficos = generateAudiogramSVG(dadosCompletos);
 
+      // Lógica para identificação do profissional (Substituição de CPF vazio)
+      let labelProfissional = "CPF(s) do Profissional";
+      let valueProfissional = "";
+      
+      const cpf1 = audiometria.CPF_FONO ? formatCPF(audiometria.CPF_FONO) : "";
+      const cpf2 = audiometria.CPF_FONO2 ? formatCPF(audiometria.CPF_FONO2) : "";
+      
+      if (cpf1 || cpf2) {
+        valueProfissional = `${cpf1} ${cpf2 ? `<br/>${cpf2}` : ""}`;
+      } else {
+        // Fallback: Registro Profissional
+        labelProfissional = "Registro Profissional";
+        const reg1 = `${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ""} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ""}`;
+        const reg2 = audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ""}` : "";
+        valueProfissional = `${reg1} ${reg2 ? `<br/>${reg2}` : ""}`.trim();
+        
+        if (!valueProfissional) valueProfissional = "Não informado";
+      }
+
       return `
       <div class="audiometria-card">
         <!-- HEADER DO EXAME -->
@@ -82,7 +101,6 @@ export function openHistoricoHTML(
             ${createInfoItem("Unidade", audiometria.NOME_UNIDADE)}
             ${createInfoItem("Setor", audiometria.SETOR)}
             ${createInfoItem("Cargo", audiometria.CARGO)}
-            ${createInfoItem("Função", audiometria.FUNCAO)}
             ${createInfoItem("Repouso Auditivo", dadosCompletos.repousoAuditivo === "Sim" ? `${dadosCompletos.horasRepouso}h` : "Não")}
             ${createInfoItem("Audiômetro", dadosCompletos.tipoAudiometro)}
             ${createInfoItem("Otoscopia OD", formatOtoscopia(dadosCompletos.meatoscopiaOD))}
@@ -249,10 +267,9 @@ export function openHistoricoHTML(
             </div>
           </div>
           <div class="assinatura-box">
-            <div class="assinatura-label">CPF(s) do Profissional</div>
+            <div class="assinatura-label">${labelProfissional}</div>
             <div class="assinatura-value">
-              ${formatCPF(audiometria.CPF_FONO) || ""} 
-              ${audiometria.CPF_FONO2 ? `<br/>${formatCPF(audiometria.CPF_FONO2)}` : ""}
+              ${valueProfissional}
             </div>
           </div>
         </div>
@@ -979,24 +996,49 @@ function createTabelaValores(data: any): string {
 }
 
 function createIRFSRT(data: any): string {
-  if (!data.srtOD && !data.srtOE && !data.irfOD && !data.irfOE) {
+  const hasSrtOD = data.srtOD && data.srtOD.trim() !== "";
+  const hasIrfOD = data.irfOD && data.irfOD.trim() !== "";
+  const hasSrtOE = data.srtOE && data.srtOE.trim() !== "";
+  const hasIrfOE = data.irfOE && data.irfOE.trim() !== "";
+  
+  const hasOD = hasSrtOD || hasIrfOD;
+  const hasOE = hasSrtOE || hasIrfOE;
+
+  if (!hasOD && !hasOE) {
     return "";
   }
+
+  const renderRow = (label: string, value: string) => {
+    if (!value || value.trim() === "") return "";
+    return `<div style="font-size: 13px"><strong>${label}:</strong> ${value}</div>`;
+  };
 
   return `
     <div class="irf-box">
       <h5 class="section-title" style="margin-bottom: 0">Testes de Fala (Logoaudiometria)</h5>
       <div class="irf-grid">
+        ${
+          hasOD
+            ? `
         <div>
           <div class="label font-semibold text-red">OD</div>
-          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOD || "-"}</div>
-          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOD || "-"}</div>
+          ${renderRow("SRT", data.srtOD)}
+          ${renderRow("IRF", data.irfOD)}
         </div>
+        `
+            : ""
+        }
+        ${
+          hasOE
+            ? `
         <div>
           <div class="label font-semibold text-blue">OE</div>
-          <div style="font-size: 13px"><strong>SRT:</strong> ${data.srtOE || "-"}</div>
-          <div style="font-size: 13px"><strong>IRF:</strong> ${data.irfOE || "-"}</div>
+          ${renderRow("SRT", data.srtOE)}
+          ${renderRow("IRF", data.irfOE)}
         </div>
+        `
+            : ""
+        }
       </div>
     </div>
   `;

@@ -120,13 +120,11 @@ const MetricCard = ({
   value,
   icon: Icon,
   description,
-  color = COLORS.primary,
 }: {
   title: string;
   value: number;
   icon: any;
   description?: string;
-  color?: string;
 }) => (
   <article className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
     <div className="p-6">
@@ -140,10 +138,7 @@ const MetricCard = ({
             <p className="text-xs text-gray-500 mt-1">{description}</p>
           )}
         </div>
-        <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center text-white shadow-lg"
-          style={{ backgroundColor: color }}
-        >
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#44735E]/12 text-[#44735E] border border-[#44735E]/20 shadow-sm">
           <Icon className="h-6 w-6" />
         </div>
       </div>
@@ -243,7 +238,6 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
           </span>
         </div>
         <ProgressBar
-          color={COLORS.purple}
           max={ticket.total}
           size="sm"
           value={ticket.preferencial}
@@ -565,7 +559,6 @@ export function StatisticsSection() {
         {/* 🏥 MÉTRICAS DE FLUXO - Dados históricos do backend */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <MetricCard
-            color={COLORS.info}
             description="Histórico desde agosto/2025"
             icon={Clock}
             title="Aguardando Resultados"
@@ -573,7 +566,6 @@ export function StatisticsSection() {
           />
 
           <MetricCard
-            color={COLORS.warning}
             description="Histórico desde janeiro/2026"
             icon={Stethoscope}
             title="Aguardando Avaliação Médica"
@@ -581,7 +573,6 @@ export function StatisticsSection() {
           />
 
           <MetricCard
-            color={COLORS.purple}
             description={`${statisticsData?.porUnidade?.reduce(
               (sum, u) =>
                 sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0),
@@ -604,8 +595,8 @@ export function StatisticsSection() {
             >
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-100 rounded-lg">
-                    <Activity className="h-5 w-5 text-blue-600" />
+                  <div className="p-2 rounded-lg bg-[#44735E]/12 border border-[#44735E]/20">
+                    <Activity className="h-5 w-5 text-[#44735E]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -670,8 +661,8 @@ export function StatisticsSection() {
             >
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 rounded-lg">
-                    <Layers className="h-5 w-5 text-green-600" />
+                  <div className="p-2 rounded-lg bg-[#44735E]/12 border border-[#44735E]/20">
+                    <Layers className="h-5 w-5 text-[#44735E]" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
@@ -901,8 +892,8 @@ export function StatisticsSection() {
                     <div className="border-t border-gray-200 pt-6">
                       <div className="flex items-center justify-between mb-6">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-blue-100 rounded-lg">
-                            <FlaskConical className="h-5 w-5 text-green-600" />
+                          <div className="p-2 rounded-lg bg-[#44735E]/12 border border-[#44735E]/20">
+                            <FlaskConical className="h-5 w-5 text-[#44735E]" />
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold text-gray-900">
@@ -1045,3 +1036,8 @@ export function StatisticsSection() {
     </AnimatePresence>
   );
 }
+
+
+
+
+

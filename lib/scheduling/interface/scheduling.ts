@@ -40,6 +40,33 @@ export type RiscosAso = {
   grupo: string;
 };
 
+export type SignatureStatus =
+  // Padrão Final PT-BR
+  | 'NAO_REQUER_ASSINATURA'
+  | 'AGUARDANDO_AUTENTICACAO'
+  | 'AGUARDANDO_REPROCESSAMENTO'
+  | 'PROCESSANDO_ASSINATURA'
+  | 'ASSINADO'
+  | 'FALHA_ASSINATURA'
+  // Transitório EN (Compatibilidade)
+  | 'NOT_REQUIRED'
+  | 'WAITING_AUTH'
+  | 'PENDING_RETRY'
+  | 'PROCESSING'
+  | 'SIGNED'
+  | 'FAILED';
+
+export type SignatureInfo = {
+  status: SignatureStatus;
+  provider?: string;
+  lastAttempt?: Date;
+  nextRetryAt?: Date;
+  retryCount: number;
+  lastError?: string;
+  lastErrorCategory?: string;
+  signedAt?: Date;
+};
+
 export class ExamRegister {
   id?: string;
   codigoExame: string;
@@ -54,8 +81,14 @@ export class ExamRegister {
   url: string = "";
   formulario: any;
   grupo: string = "";
+  signatureInfo?: SignatureInfo;
 
-  constructor(codigoExame: string, nomeExame: string, status: string, id?: string) {
+  constructor(
+    codigoExame: string,
+    nomeExame: string,
+    status: string,
+    id?: string,
+  ) {
     this.codigoExame = codigoExame;
     this.nomeExame = nomeExame;
     this.status = status;

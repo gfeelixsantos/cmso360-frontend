@@ -11,6 +11,8 @@ import {
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Socket } from "socket.io-client";
 
+import { IPscAuthStatus } from "@/lib/user/interfaces/IUser";
+
 import FichaClinicaOcupacional from "./exames/FichaClinicaOcupacional";
 import AcuidadeVisual from "./exames/AcuidadeVisual";
 import Espirometria from "./exames/Espirometria";
@@ -41,10 +43,13 @@ interface AtendimentoModalExamesProps {
   sala: string;
   codigosAtendimento: Set<string>;
   socket: Socket;
+  assinaDigitalmente?: boolean;
+  pscAuthStatus?: IPscAuthStatus;
+  onPscAuth?: (provider?: string) => void;
 }
 
-// Tipos para o modal de notificação
-type NotificationType = "confirm" | "success" | "error";
+    // Tipos para o modal de notificação
+    type NotificationType = "confirm" | "success" | "error";
 
 interface NotificationModalState {
   isOpen: boolean;
@@ -65,6 +70,9 @@ const AtendimentoModalExames = ({
   codigosAtendimento,
   funcionarioSelecionado,
   socket,
+  assinaDigitalmente,
+  pscAuthStatus,
+  onPscAuth,
 }: AtendimentoModalExamesProps) => {
   const user = useUser();
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
@@ -193,13 +201,18 @@ const AtendimentoModalExames = ({
         // Verifica se todos os exames foram concluídos
         const todosExamesConcluidos = verificarExamesPendentes(result);
 
+        // --- ALTERAÇÃO: REMOVIDA A VERIFICAÇÃO DO LEMBRETE PSC DAQUI ---
+        // O aviso agora é exibido apenas no início (botão Conectar)
+
+        const successMessage = todosExamesConcluidos
+          ? "Concluído, pode LIBERAR o funcionário."
+          : "Funcionário deve AGUARDAR demais exames.";
+
         setNotificationModal({
           isOpen: true,
           type: "success",
           title: "Exame Concluído",
-          message: todosExamesConcluidos
-            ? "Concluído, pode LIBERAR o funcionário."
-            : "Funcionário deve AGUARDAR demais exames.",
+          message: successMessage,
           showCancel: false,
           isLoading: false,
           onConfirm: () => {
@@ -331,6 +344,7 @@ const AtendimentoModalExames = ({
             button: "bg-red-600 hover:bg-red-700",
             icon: "",
           };
+
       }
     };
 
@@ -376,14 +390,14 @@ const AtendimentoModalExames = ({
                     variant="flat"
                     onPress={onCancel}
                   >
-                    Cancelar
+                     "Cancelar"
                   </Button>
                 )}
                 <Button
                   className={`${colors.button} text-white flex-1 sm:flex-initial font-medium`}
                   onPress={onConfirm}
                 >
-                  {type === "confirm" ? "Confirmar" : "Entendido"}
+                   {type === "confirm" ? "Confirmar" : "Entendido"}
                 </Button>
               </div>
             )}

@@ -1,4 +1,5 @@
 import { Scheduling } from "../interface/scheduling";
+
 import { formatCPF } from "@/lib/utils";
 
 const primaryColor = "#1f5f46";
@@ -7,7 +8,6 @@ const borderColor = "#E5E7EB";
 const subtleText = "#6B7280";
 
 export function reportInternal(employee: Scheduling): string {
-
   const ticketId = employee.TICKET
     ? `${employee.TICKET.prefixo || ""}${employee.TICKET.numero || ""}`
     : employee.CODIGO;
@@ -26,7 +26,9 @@ export function reportInternal(employee: Scheduling): string {
 
   function formatExamDate(dataExame: string): string {
     const date = parseDateTime(dataExame);
+
     if (!date) return "Pendente";
+
     return date.toLocaleString("pt-BR", {
       day: "2-digit",
       month: "2-digit",
@@ -38,7 +40,9 @@ export function reportInternal(employee: Scheduling): string {
 
   function extractTimeFromDateTime(dateStr: string): string {
     const date = parseDateTime(dateStr);
+
     if (!date) return "--:--";
+
     return date.toLocaleString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
@@ -49,35 +53,49 @@ export function reportInternal(employee: Scheduling): string {
     if (!timeStr || typeof timeStr !== "string") return null;
     const [h, m] = timeStr.split(":");
     const date = new Date();
+
     date.setHours(+h || 0, +m || 0);
+
     return date;
   }
 
   function computeDuration(start: string, end: string): string {
     const startDate = getTimeFromString(start);
     const endDate = getTimeFromString(end);
+
     if (!startDate || !endDate) return "";
     const diff = (endDate.getTime() - startDate.getTime()) / 60000;
+
     return diff >= 0 ? `${Math.round(diff)} min` : "";
   }
 
   function getStatusColor(status: string): string {
     const s = (status || "").toLowerCase();
-    if (s.includes("finalizado") || s.includes("concluído") || s.includes("realizado")) return "#16a34a";
+
+    if (
+      s.includes("finalizado") ||
+      s.includes("concluído") ||
+      s.includes("realizado")
+    )
+      return "#16a34a";
     if (s.includes("aguardando") || s.includes("pendente")) return "#f59e0b";
     if (s.includes("alterado") || s.includes("anormalidade")) return "#dc2626";
+
     return "#6b7280";
   }
 
-  const examesFiltrados = employee.EXAMES?.filter(exame =>
-    exame.profissional && exame.profissional.trim() !== "" &&
-    exame.sala && exame.sala.trim() !== ""
-  ) || [];
+  const examesFiltrados =
+    employee.EXAMES?.filter(
+      (exame) =>
+        exame.profissional &&
+        exame.profissional.trim() !== "" &&
+        exame.sala &&
+        exame.sala.trim() !== "",
+    ) || [];
 
   let examsTable = "";
 
   examesFiltrados.forEach((exame) => {
-
     const examDate = formatExamDate(exame.dataExame);
     const examTime = extractTimeFromDateTime(exame.dataExame);
 
@@ -381,30 +399,44 @@ Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 
 </div>
 
-${riscos && riscos.length > 0 ? `
+${
+  riscos && riscos.length > 0
+    ? `
 <div style="margin-top:6px">
-${riscos.map((r)=>`<span class="risk-tag">${r.risco}</span>`).join("")}
-</div>` : ""}
+${riscos.map((r) => `<span class="risk-tag">${r.risco}</span>`).join("")}
+</div>`
+    : ""
+}
 
 </div>
 
-${recomendacaoMedica ? `
+${
+  recomendacaoMedica
+    ? `
 <div class="section">
 <div class="section-title">Recomendação Médica</div>
 <div class="observations">${recomendacaoMedica}</div>
-</div>` : ""}
+</div>`
+    : ""
+}
 
-${observacoes ? `
+${
+  observacoes
+    ? `
 <div class="section">
 <div class="section-title">Observações</div>
-<div class="observations">${observacoes.replace(/\\n/g,"<br>")}</div>
-</div>` : ""}
+<div class="observations">${observacoes.replace(/\\n/g, "<br>")}</div>
+</div>`
+    : ""
+}
 
 <div class="section">
 
 <div class="section-title">Exames Realizados</div>
 
-${examsTable ? `
+${
+  examsTable
+    ? `
 <table>
 
 <thead>
@@ -423,11 +455,13 @@ ${examsTable}
 </tbody>
 
 </table>
-` : `
+`
+    : `
 <div class="observations" style="text-align:center">
 Nenhum exame com profissional e sala designados
 </div>
-`}
+`
+}
 
 </div>
 

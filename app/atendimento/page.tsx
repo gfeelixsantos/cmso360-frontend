@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -11,10 +11,15 @@ import {
   ModalContent,
   ModalFooter,
   ModalHeader,
+  Spinner,
 } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
+import { PscProviderStatus } from "./components/PscProviderStatus";
+import { PscProviderSelector } from "./components/PscProviderSelector";
+
 import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
+import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
 import {
   CustomEventMap,
   emitEvent,
@@ -60,7 +65,7 @@ import CmsoLoading from "@/components/shared/CmsoLoading";
 // Socket singleton & helpers
 // - garante apenas 1 conexão ativa por cliente
 // - registra handlers de forma idempotente
-// - expõe connect/disconnect limpos
+// - expÃµe connect/disconnect limpos
 // =================================================================================
 
 let SINGLETON_SOCKET: Socket | null = null;
@@ -74,14 +79,14 @@ type ConnectOptions = {
 };
 
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
-  // ✅ Se já existe socket conectado, reutiliza
+  // ? Se já existe socket conectado, reutiliza
   if (SINGLETON_SOCKET?.connected) {
-    console.log("♻️ Reutilizando socket existente:", SINGLETON_SOCKET.id);
+    console.log("?? Reutilizando socket existente:", SINGLETON_SOCKET.id);
 
     return SINGLETON_SOCKET;
   }
 
-  // ✅ Se existe mas está desconectado, remove
+  // ? Se existe mas está desconectado, remove
   if (SINGLETON_SOCKET) {
     try {
       SINGLETON_SOCKET.removeAllListeners();
@@ -94,7 +99,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 
   const { auth, onConnect, onDisconnect, onConnectError } = opts;
 
-  // Configurações socket
+  // ConfiguraçÃµes socket
   const s = io(NEST_URL, {
     auth,
     transports: ["websocket"], // Apenas WebSocket, sem polling
@@ -118,55 +123,55 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     let lastActivity = Date.now();
 
     s.on("connect", () => {
-      console.log("✅ Socket conectado:", s.id);
+      console.log("? Socket conectado:", s.id);
       onConnect?.(s);
     });
 
     s.on("disconnect", (reason: string) => {
-      console.warn("⚠️ Socket desconectado:", reason);
+      console.warn("?? Socket desconectado:", reason);
 
-      // ✅ NOVO: Distinguir desconexões normais de erros
+      // ? NOVO: Distinguir desconexÃµes normais de erros
       if (reason === "io server disconnect") {
         // Servidor forçou desconexão - reconectar manualmente
-        console.log("🔄 Servidor desconectou - tentando reconectar...");
+        console.log("?? Servidor desconectou - tentando reconectar...");
         s.connect();
       } else if (reason === "transport close") {
         // Conexão caiu - reconectar automático
-        console.log("🔄 Conexão perdida - reconexão automática...");
+        console.log("?? Conexão perdida - reconexão automática...");
       }
 
       onDisconnect?.(reason);
     });
 
     s.on("connect_error", (err: any) => {
-      console.error("❌ Erro de conexão:", err.message);
+      console.error("? Erro de conexão:", err.message);
       onConnectError?.(err);
     });
 
-    // Monitorar reconexões
+    // Monitorar reconexÃµes
     s.on("reconnect", (attemptNumber: number) => {
-      console.log(`✅ Reconectado após ${attemptNumber} tentativas`);
+      console.log(`? Reconectado após ${attemptNumber} tentativas`);
     });
 
     s.on("reconnect_attempt", (attemptNumber: number) => {
-      console.log(`🔄 Tentativa de reconexão #${attemptNumber}`);
+      console.log(`?? Tentativa de reconexão #${attemptNumber}`);
     });
 
     s.on("reconnect_error", (err: any) => {
-      console.error("❌ Erro ao reconectar:", err.message);
+      console.error("? Erro ao reconectar:", err.message);
     });
 
     s.on("reconnect_failed", () => {
-      console.error("❌ Falha ao reconectar após múltiplas tentativas");
+      console.error("? Falha ao reconectar após múltiplas tentativas");
     });
 
     // Monitorar ping/pong para detectar problemas
     s.on("ping", () => {
-      console.debug("📡 Ping enviado ao servidor");
+      console.debug("?? Ping enviado ao servidor");
     });
 
     s.on("pong", (latency: number) => {
-      console.debug(`📡 Pong recebido (${latency}ms)`);
+      console.debug(`?? Pong recebido (${latency}ms)`);
     });
 
     registeredOnce = true;
@@ -178,7 +183,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
-      console.log("🔌 Fechando socket:", SINGLETON_SOCKET.id);
+      console.log("?? Fechando socket:", SINGLETON_SOCKET.id);
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
     } catch (err) {
@@ -265,6 +270,90 @@ const AtendimentoPage: React.FC = () => {
     total: 0,
   });
 
+  const {
+    settings,
+    pscAuthStatus,
+    isLoading: isPscLoading,
+    refetch: refetchPscStatus,
+  } = usePscAuthStatus();
+  const assinaDigitalmente = settings?.assinaDigitalmente ?? false;
+  const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
+
+  // Estados para gerenciar o popup de autenticação PSC
+  const [isPscAuthenticating, setIsPscAuthenticating] = useState(false);
+  const [modalPscAvisoOpen, setModalPscAvisoOpen] = useState(false);
+  const [isWaitingForAuthToConnect, setIsWaitingForAuthToConnect] = useState(false);
+  const [pscAuthWindowUrl, setPscAuthWindowUrl] = useState<string>("");
+  const pscWindowRef = useRef<Window | null>(null);
+  const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpar os intervalos ao sair
+  useEffect(() => {
+    return () => {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    };
+  }, []);
+
+  // Polling para detectar sucesso ou fechamento da janela
+  useEffect(() => {
+    if (isPscAuthenticating) {
+      pscPollingRef.current = setInterval(async () => {
+        // Checar se o popup foi fechado prematuramente
+        if (pscWindowRef.current && pscWindowRef.current.closed) {
+          if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+          setIsPscAuthenticating(false);
+          addToast({
+            title: "Autenticação Não Concluída",
+            description: "A janela de autenticação foi fechada antes de concluir.",
+            severity: "warning",
+            color: "foreground",
+            variant: "flat",
+          });
+          return;
+        }
+
+        // Tentar buscar novo status
+        try {
+          // Precisamos acessar a função refetch diretamente do hook atualizada, então apenas chamamos ela.
+          await refetchPscStatus();
+        } catch (error) {
+          console.error("[PSC Auth] Erro no polling de status:", error);
+        }
+      }, 3000);
+    } else {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    }
+
+    return () => {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    };
+  }, [isPscAuthenticating, refetchPscStatus]);
+
+  // Se o polling detectou o status ativo
+  useEffect(() => {
+    if (isPscAuthenticating && pscAuthStatus.isActive) {
+      setIsPscAuthenticating(false);
+
+      if (pscWindowRef.current && !pscWindowRef.current.closed) {
+        pscWindowRef.current.close();
+      }
+
+      addToast({
+        title: "Autenticação Realizada",
+        description: "Assinatura digital habilitada com sucesso.",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      // --- NOVO: Conectar automaticamente se estava aguardando ---
+      if (isWaitingForAuthToConnect) {
+        setIsWaitingForAuthToConnect(false);
+        executeConnection();
+      }
+    }
+  }, [pscAuthStatus.isActive, isPscAuthenticating, isWaitingForAuthToConnect, refetchPscStatus]);
+
   useEffect(() => {
     const currentUser = getCurrentUser();
 
@@ -275,8 +364,113 @@ const AtendimentoPage: React.FC = () => {
     }
   }, [router]);
 
+  const handlePscAuth = async (provider?: string) => {
+    console.log(`[PSC Auth] Iniciando com provedor: ${provider || "Nenhum/Padrão"}`);
+    try {
+      if (!user) return;
+
+      const payload = {
+        user: user,
+        provider: provider
+      };
+
+      const safeNestUrl = NEST_URL || "";
+      const baseUrl = safeNestUrl.endsWith('/') ? safeNestUrl.slice(0, -1) : safeNestUrl;
+      const finalUrl = `${baseUrl}/psc/auth/start`;
+
+      console.log(`[PSC Auth] URL chamada: ${finalUrl}`);
+      console.log("[PSC Auth] Payload enviada:", JSON.stringify(payload));
+
+      const response = await fetch(finalUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[PSC Auth] Falha HTTP Status ${response.status} na URL ${finalUrl}:`, errorText);
+        throw new Error(errorText || 'Falha ao iniciar autenticação');
+      }
+
+      const data = await response.json();
+      if (data.url) {
+        console.log("[PSC Auth] Abrindo janela popup para URL retornada");
+
+        setPscAuthWindowUrl(data.url);
+        setIsPscAuthenticating(true);
+
+        const width = 800;
+        const height = 700;
+        const left = window.screen.width ? (window.screen.width - width) / 2 : 0;
+        const top = window.screen.height ? (window.screen.height - height) / 2 : 0;
+
+        const newWindow = window.open(
+          data.url,
+          'psc_auth',
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`
+        );
+
+        if (newWindow) {
+          pscWindowRef.current = newWindow;
+          newWindow.focus();
+        } else {
+          console.warn("[PSC Auth] O navegador bloqueou o popup.");
+        }
+      } else {
+        console.warn("[PSC Auth] Callback bem sucedido mas sem URL de redirecionamento.");
+      }
+    } catch (error: any) {
+      console.error("[PSC Auth] Erro capturado:", error);
+      addToast({
+        title: "Erro de Autenticação",
+        description: `Falha ao conectar com provedor: ${error.message || "Erro desconhecido"}`,
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
+      });
+    }
+  };
+
+    const handlePscClick = () => {
+    if (pscAuthStatus.status === "ACTIVE") {
+      addToast({
+        title: "Sessão Ativa",
+        description: "Sua sessão com o provedor de assinatura já está ativa.",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
+      });
+      return;
+    }
+
+    // Se for BRYKMS e estiver configurado, não faz nada (considerado autenticado)
+    if (settings?.assinaturaProvider === "BRYKMS") {
+      const isBryKmsConfigured = settings?.uuidCert && settings?.uuidCert.trim() !== "";
+      if (isBryKmsConfigured) {
+        addToast({
+          title: "BRy Cloud Configurado",
+          description: "Seu provedor BRy Cloud está configurado e pronto para uso.",
+          severity: "success",
+          color: "foreground",
+          variant: "flat",
+        });
+        return;
+      }
+    }
+
+    const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+    if (defaultPscProvider) {
+      handlePscAuth(defaultPscProvider);
+    } else {
+      setIsProviderSelectorOpen(true);
+    }
+  };
+
   // ---------------------------------------------------------
-  // Carrega tickets e solicitações de preparo ao conectar
+  // Carrega tickets e solicitaçÃµes de preparo ao conectar
   // ---------------------------------------------------------
   type initialTicketsRequest = {
     tickets: Ticket[];
@@ -380,10 +574,10 @@ const AtendimentoPage: React.FC = () => {
 
     // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
     if (conectado) {
-      console.log("♻️ Mudança de contexto detectada - agendando reconexão...");
+      console.log("?? Mudança de contexto detectada - agendando reconexão...");
 
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("🔄 Executando reconexão...");
+        console.log("?? Executando reconexão...");
         closeSocket();
         setConectado(false);
 
@@ -402,9 +596,18 @@ const AtendimentoPage: React.FC = () => {
   }, [unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
   // ---------------------------------------------------------
-  // Conexão com socket: conectar/desconectar controlado
+  // Nova função auxiliar para executar a conexão (separada da validação)
+  // ---------------------------------------------------------
+  const executeConnection = () => {
+    setIsLoading(true);
+    setConectado(true);
+  };
+
+  // ---------------------------------------------------------
+  // Conexão com socket: Validação PSC + Lógica de Conexão
   // ---------------------------------------------------------
   const handleConectar = () => {
+    // 1. Lógica de Desconexão (mantida)
     if (conectado) {
       closeSocket();
       socketRef.current = null;
@@ -419,10 +622,10 @@ const AtendimentoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
-
       return;
     }
 
+    // 2. Validação de seleção (mantida)
     if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) {
       setModalText(
         <p>
@@ -431,12 +634,44 @@ const AtendimentoPage: React.FC = () => {
         </p>,
       );
       setModalAlert(true);
-
       return;
     }
 
-    setIsLoading(true);
-    setConectado(true);
+    // 3. NOVA VALIDAÇÃO PSC (Ponto de entrada)
+    // Verifica se precisa de assinatura E não tem sessão ativa
+    // Para BRYKMS: verifica se ID e PIN estão configurados
+    let requiresPscAuth = false;
+    
+    if (assinaDigitalmente) {
+      if (settings?.assinaturaProvider === "BRYKMS") {
+        // Para BRYKMS, verifica se ID e PIN estão configurados
+        const isBryKmsConfigured = settings?.uuidCert && settings?.uuidCert.trim() !== "";
+        requiresPscAuth = !isBryKmsConfigured;
+      } else {
+        // Para PSC, verifica se tem sessão ativa
+        requiresPscAuth = !pscAuthStatus.isActive;
+      }
+    }
+
+    // Se precisa autenticar -> Abre Modal (apenas para PSC)
+    if (requiresPscAuth && settings?.assinaturaProvider !== "BRYKMS") {
+      setModalPscAvisoOpen(true);
+      return;
+    }
+    
+    // Se BRYKMS não está configurado, mostra alerta
+    if (requiresPscAuth && settings?.assinaturaProvider === "BRYKMS") {
+      setModalText(
+        <p>
+          Para usar o provedor <strong>BRy Cloud</strong>, configure o <strong>ID Cert (UUID)</strong> e <strong>PIN</strong> nas configurações de assinatura digital.
+        </p>,
+      );
+      setModalAlert(true);
+      return;
+    }
+
+    // 4. Se passou por tudo, conecta
+    executeConnection();
   };
 
   // Este effect só observa a flag `conectado` e efetua a conexão uma vez.
@@ -455,7 +690,7 @@ const AtendimentoPage: React.FC = () => {
     const s = createSocketIfNeeded({
       auth,
       onConnect: async (socket) => {
-        console.log("✅ Conectado ao WebSocket:", socket.id);
+        console.log("? Conectado ao WebSocket:", socket.id);
         socketRef.current = socket;
         setIsReconnecting(false);
 
@@ -477,7 +712,7 @@ const AtendimentoPage: React.FC = () => {
         }
       },
       onDisconnect: (reason) => {
-        console.log("⚠️ Socket desconectado, reason=", reason);
+        console.log("?? Socket desconectado, reason=", reason);
 
         // Só mostra alerta se não foi desconexão intencional
         if (reason !== "io client disconnect") {
@@ -502,7 +737,7 @@ const AtendimentoPage: React.FC = () => {
         setIsLoading(false);
       },
       onConnectError: (err) => {
-        console.error("❌ Erro ao conectar:", err);
+        console.error("? Erro ao conectar:", err);
         setIsLoading(false);
         setIsReconnecting(false);
 
@@ -519,7 +754,7 @@ const AtendimentoPage: React.FC = () => {
     // Handlers de eventos otimizados
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
-        console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
+        console.log(`?? Recebidos ${schedules.length} agendamentos iniciais`);
 
         setAgendamentosGeral((prev) => {
           // Usa Map para merge eficiente
@@ -536,14 +771,14 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
-      console.log(`🔄 UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
+      console.log(`?? UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
 
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => {
             // Evita duplicatas
             if (prev.some((p) => p._id === schedule._id)) {
-              console.warn("⚠️ Agendamento duplicado ignorado:", schedule._id);
+              console.warn("?? Agendamento duplicado ignorado:", schedule._id);
 
               return prev;
             }
@@ -567,7 +802,7 @@ const AtendimentoPage: React.FC = () => {
             }
 
             console.warn(
-              "⚠️ Agendamento não encontrado para UPDATE:",
+              "?? Agendamento não encontrado para UPDATE:",
               schedule.CODIGOPRONTUARIO,
             );
 
@@ -591,10 +826,10 @@ const AtendimentoPage: React.FC = () => {
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
     } as any);
 
-    // ✅ Cleanup
+    // ? Cleanup
     return () => {
       unregister();
-      // NÃO fecha o socket aqui - deixa o singleton gerenciar
+      // NÃƒO fecha o socket aqui - deixa o singleton gerenciar
       // closeSocket();
       // socketRef.current = null;
     };
@@ -681,7 +916,17 @@ const AtendimentoPage: React.FC = () => {
             onSetStatsModalOpen={setIsStatsModalOpen}
           />
         )}
+        {/* PSC Provider Status movido para a Sidebar */}
       </HeaderApp>
+
+      <PscProviderSelector
+        isOpen={isProviderSelectorOpen}
+        onClose={() => setIsProviderSelectorOpen(false)}
+        onSelect={(provider) => {
+          setIsProviderSelectorOpen(false);
+          handlePscAuth(provider);
+        }}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <motion.aside
@@ -691,10 +936,21 @@ const AtendimentoPage: React.FC = () => {
           transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
         >
           <SidebarRecepcao
+            pscStatusElement={
+              assinaDigitalmente ? (
+                <PscProviderStatus
+                  isLoading={isPscLoading}
+                  pscAuthStatus={pscAuthStatus}
+                  settings={settings}
+                  onClick={handlePscClick}
+                />
+              ) : null
+            }
             agendadosFiltrados={agendamentosGeral}
             conectado={conectado}
             exameSelecionado={exameSelecionado}
             handleConectar={handleConectar}
+            isReconnecting={isReconnecting}
             salaSelecionada={salaSelecionada}
             setSalaSelecionada={setSalaSelecionada}
             setStatusSelecionado={setStatusSelecionado}
@@ -732,7 +988,7 @@ const AtendimentoPage: React.FC = () => {
               // tickets={tickets}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={() => setModalAtendimentoAberto(true)}
-              // onPreparationRequests={empreparacao}
+            // onPreparationRequests={empreparacao}
             />
           ) : (
             <EmptyState
@@ -744,13 +1000,16 @@ const AtendimentoPage: React.FC = () => {
       </div>
 
       <AtendimentoModalExames
+        assinaDigitalmente={assinaDigitalmente}
         codigosAtendimento={codigosDeAtendimento}
         exame={exameSelecionado}
         funcionarioSelecionado={funcionarioSelecionado}
         isOpen={modalAtendimentoAberto}
+        pscAuthStatus={pscAuthStatus}
         sala={salaSelecionada}
         socket={socketRef.current!}
         onClose={() => setModalAtendimentoAberto(false)}
+        onPscAuth={handlePscAuth}
       />
 
       <StatsModal
@@ -780,8 +1039,118 @@ const AtendimentoPage: React.FC = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Modal de Aguardando Autenticação PSC */}
+      <Modal disableAnimation={true} isDismissable={false} isOpen={isPscAuthenticating} hideCloseButton>
+        <ModalContent>
+          <ModalHeader className="bg-blue-600 text-white flex flex-col gap-1">
+            Autenticação Necessária
+          </ModalHeader>
+          <ModalBody className="py-6 flex flex-col items-center justify-center text-center">
+            <Spinner color="primary" size="lg" className="mb-4" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Aguardando provedor...</h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Conclua a autenticação na janela que foi aberta.
+            </p>
+
+            {pscAuthWindowUrl && (
+              <div className="bg-blue-50 border border-blue-100 p-3 rounded-lg w-full mb-4">
+                <p className="text-xs text-blue-800 mb-1 font-medium text-center">A janela não abriu?</p>
+                <a
+                  href={pscAuthWindowUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:text-blue-800 hover:underline text-xs break-all text-center block"
+                  onClick={(e) => {
+                    // Atualizar a ref se abrir manualmente
+                    setTimeout(() => {
+                      if (!pscWindowRef.current || pscWindowRef.current.closed) {
+                        // Sem ref segura p/ verificar fechar, mas polling ainda continua
+                        console.log("Aberto via aba manual");
+                      }
+                    }, 500);
+                  }}
+                >
+                  Clique aqui para abrir a autenticação em uma nova aba diretamente
+                </a>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter className="flex justify-center border-t border-gray-100">
+            <Button
+              color="danger"
+              variant="light"
+              onPress={() => {
+                if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+                setIsPscAuthenticating(false);
+                if (pscWindowRef.current && !pscWindowRef.current.closed) {
+                  pscWindowRef.current.close();
+                }
+              }}
+            >
+              Cancelar Autenticação
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+      {/* Modal de Aviso PSC ao Conectar */}
+      <Modal 
+        isOpen={modalPscAvisoOpen} 
+        onClose={() => setModalPscAvisoOpen(false)}
+        isDismissable={false}
+        disableAnimation={true}
+      >
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 bg-amber-500 text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">??</span>
+              <span className="text-lg font-semibold">Autenticação Necessária</span>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-6 px-6">
+            <p className="font-semibold text-lg text-gray-800">Você possui assinatura digital habilitada.</p>
+            <p className="text-gray-600 mt-2">
+              Sua sessão de assinatura não está ativa. Deseja autenticar agora para assinar os exames automaticamente?
+            </p>
+          </ModalBody>
+          <ModalFooter className="px-6 pb-4">
+            <Button 
+              variant="flat" 
+              color="default" 
+              className="font-medium"
+              onPress={() => {
+                // Opção: Continuar sem autenticar (apenas conecta)
+                setModalPscAvisoOpen(false);
+                executeConnection();
+              }}
+            >
+              Continuar sem autenticar
+            </Button>
+            <Button 
+              color="primary" 
+              className="font-medium bg-blue-600"
+              onPress={() => {
+                // Opção: Autenticar agora
+                setModalPscAvisoOpen(false);
+                setIsWaitingForAuthToConnect(true); // Marca para conectar após sucesso
+                
+                const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+                if (defaultPscProvider) {
+                  handlePscAuth(defaultPscProvider);
+                } else {
+                  setIsProviderSelectorOpen(true);
+                }
+              }}
+            >
+              Autenticar agora
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };
 
 export default AtendimentoPage;
+
+

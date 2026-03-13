@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Plus, Wifi, WifiOff, Users } from "lucide-react";
-import { Button, Chip } from "@heroui/react";
+import { Button } from "@heroui/react";
 
+import { StatusBadge } from "./StatusBadge";
 import AgendamentosList from "../../app/recepcao/components/AgendamentosList";
 
 import {
@@ -31,29 +32,11 @@ interface SidebarRecepcaoProps {
   onHandleModal: (state: boolean) => void;
   exameSelecionado: string;
   onHandleExameSelecionado: (exame: string) => void;
+  pscStatusElement?: React.ReactNode;
+  isReconnecting?: boolean;
 }
 
-/* 🔹 Status Badge */
-const StatusBadge = ({ conectado }: { conectado: boolean }) => (
-  <Chip
-    className={`font-semibold px-3 py-1 rounded-full shadow-sm ${
-      conectado
-        ? "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white"
-        : "bg-gray-100 text-gray-600 border border-gray-300"
-    }`}
-    size="sm"
-    variant="flat"
-  >
-    <span className="flex items-center gap-1.5">
-      <span
-        className={`w-2 h-2 rounded-full ${conectado ? "bg-lime-300" : "bg-gray-400"}`}
-      />
-      {conectado ? "Conectado" : "Desconectado"}
-    </span>
-  </Chip>
-);
-
-/* 🔹 SelectField CMSO */
+/* ðŸ”¹ SelectField CMSO */
 const SelectField = ({
   id,
   label,
@@ -80,11 +63,10 @@ const SelectField = ({
     <div className="relative">
       <select
         aria-label={label}
-        className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${
-          conectado
+        className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${conectado
             ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
             : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#4CAF50]"
-        }`}
+          }`}
         disabled={conectado}
         id={id}
         value={value}
@@ -116,7 +98,7 @@ const SelectField = ({
   </div>
 );
 
-/* 🔹 Botão Novo Atendimento */
+/* ðŸ”¹ BotÃ£o Novo Atendimento */
 const ActionButtonGroup = ({
   onAddAtendimento,
 }: {
@@ -148,12 +130,14 @@ export function SidebarRecepcao({
   onHandleModal,
   exameSelecionado,
   onHandleExameSelecionado,
+  pscStatusElement,
+  isReconnecting = false,
 }: SidebarRecepcaoProps) {
   const pathname = usePathname();
   const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO);
   const [examesAtendimento, setExamesAtendimento] = useState<string[]>([]);
 
-  /* Atualiza opções de sala + lista de exames */
+  /* Atualiza opÃ§Ãµes de sala + lista de exames */
   useEffect(() => {
     if (!pathname) return;
 
@@ -180,9 +164,41 @@ export function SidebarRecepcao({
       <main className="p-5 pt-6">
         {/* Header */}
         <header className="mb-6">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-[#104e35]">Controles</h2>
-            <StatusBadge conectado={conectado && !onLoading} />
+          <h2 className="text-lg font-bold text-[#104e35] mb-4">Controles</h2>
+
+          <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2">
+              <span className="text-sm font-medium text-gray-700 text-left">Servidor:</span>
+              <div className="justify-self-end w-[150px]">
+                <StatusBadge
+                  className="!w-full justify-center"
+                  color={conectado && !onLoading ? (isReconnecting ? "yellow" : "green") : "gray"}
+                  icon={
+                    conectado && !onLoading && isReconnecting ? (
+                      <div className="w-3 h-3 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />
+                    ) : !conectado ? (
+                      <WifiOff className="w-3 h-3" />
+                    ) : undefined
+                  }
+                  label={
+                    conectado && !onLoading
+                      ? isReconnecting
+                        ? "Reconectando..."
+                        : "Conectado"
+                      : "Desconectado"
+                  }
+                />
+              </div>
+            </div>
+
+            {pscStatusElement && (
+              <div className="grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2">
+                <span className="text-sm font-medium text-gray-700 text-left pt-1">Assinatura:</span>
+                <div className="justify-self-end w-[150px]">
+                  {pscStatusElement}
+                </div>
+              </div>
+            )}
           </div>
         </header>
 
@@ -214,7 +230,7 @@ export function SidebarRecepcao({
             onChange={setSalaSelecionada}
           />
 
-          {/* Exames — aparece só no atendimento */}
+          {/* Exames â€” aparece sÃ³ no atendimento */}
           {pathname && pathname.includes("atendimento") && (
             <SelectField
               conectado={conectado}
@@ -226,22 +242,21 @@ export function SidebarRecepcao({
               ]}
               value={exameSelecionado}
               onChange={(value) => {
-                console.log("Sidebar selecionou exame:", value); // ← Adicione este log
+                console.log("Sidebar selecionou exame:", value); // â† Adicione este log
                 onHandleExameSelecionado(value);
               }}
             />
           )}
         </section>
 
-        {/* Botão Conectar */}
+        {/* BotÃ£o Conectar */}
         <div className="mb-6">
           <Button
             aria-pressed={conectado}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${
-              conectado
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${conectado
                 ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                 : "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white hover:opacity-90"
-            }`}
+              }`}
             disabled={onLoading}
             isLoading={onLoading}
             onPress={() => !onLoading && handleConectar()}
@@ -265,7 +280,7 @@ export function SidebarRecepcao({
           </Button>
         </div>
 
-        {/* Botão Novo Atendimento — só na recepção */}
+        {/* BotÃ£o Novo Atendimento â€” sÃ³ na recepÃ§Ã£o */}
         {conectado && pathname?.includes("recepcao") && (
           <ActionButtonGroup onAddAtendimento={handleAddAtendimento} />
         )}
@@ -284,10 +299,18 @@ export function SidebarRecepcao({
         {/* Footer */}
         <footer className="mt-10 pt-4 border-t border-gray-200 mb-8">
           <p className="text-xs text-gray-500 text-center font-medium">
-            Sistema <span className="text-[#104e35] font-bold">CMSO 360°</span>
+            Sistema <span className="text-[#104e35] font-bold">CMSO 360Â°</span>
           </p>
         </footer>
       </main>
     </aside>
   );
 }
+
+
+
+
+
+
+
+

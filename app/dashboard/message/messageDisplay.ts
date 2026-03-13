@@ -35,5 +35,3 @@ const getCurrentMessage = async (): Promise<Message | null> => {
 };
 
 export { getCurrentMessage };
-
-

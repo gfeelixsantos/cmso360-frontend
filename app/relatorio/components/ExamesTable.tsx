@@ -14,41 +14,37 @@ import {
   TableRow,
 } from "@heroui/react";
 import {
+  AlertCircle,
+  Check,
   CheckCircle,
   Clock,
-  AlertCircle,
-  FileText,
-  Upload,
   Eye,
+  FileText,
   MoreVertical,
   Pen,
-  Trash,
   Printer,
-  Check,
+  Trash,
+  Upload,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
+import DeleteAttachmentModal from "./DeleteAttachmentModal";
 import ExamEditModal from "./ExamEditModal";
 import ExamUploadModal from "./ExamUploadModal";
-import DeleteAttachmentModal from "./DeleteAttachmentModal";
 import { SelectedFile } from "./SelectedFilesList";
 
-import { getCurrentUser } from "@/lib/utils";
-import {
-  ExamRegister,
-  Scheduling,
-} from "@/lib/scheduling/interface/scheduling";
-import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {
   NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_EXAM_REISSUE,
   NEST_SCHEDULINGS_EXAM_UPDATE,
 } from "@/config/constants";
+import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import {
+  ExamRegister,
+  Scheduling,
+} from "@/lib/scheduling/interface/scheduling";
+import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/hooks/useUser";
-
-// ============================================
-// COMPONENTE: ExamesTable
-// ============================================
 
 interface UploadExamModalState {
   isOpen: boolean;
@@ -98,7 +94,6 @@ const ExamesTable: React.FC<{
     setIsCredenciada(isCredenciada);
   }, [atendimento?.NOMECARGO, atendimento?.NOMESETOR]);
 
-  // Função para buscar exames atualizados do backend
   const fetchUpdatedExames = async () => {
     try {
       const response = await fetch(
@@ -109,10 +104,8 @@ const ExamesTable: React.FC<{
         const updatedAtendimento = await response.json();
         const updatedExams = updatedAtendimento.EXAMES || [];
 
-        // Atualiza o estado local
         setLocalExames(updatedExams);
 
-        // Notifica o componente pai se necessário
         if (onUpdateScheduling) {
           onUpdateScheduling(updatedAtendimento);
         }
@@ -136,7 +129,6 @@ const ExamesTable: React.FC<{
   };
 
   const handleDeleteSuccess = (updatedScheduling?: Scheduling) => {
-    // Fecha o modal de confirmação
     setDeleteAttachmentModal({
       isOpen: false,
       examId: "",
@@ -145,24 +137,19 @@ const ExamesTable: React.FC<{
     });
 
     if (updatedScheduling) {
-      // Atualiza o estado local com os dados recebidos do backend
       setLocalExames(updatedScheduling.EXAMES || []);
 
-      // Atualiza o componente pai se necessário
       if (onUpdateScheduling) {
         onUpdateScheduling(updatedScheduling);
       }
     } else {
-      // Se não recebeu os dados atualizados, faz uma nova requisição para buscar
       fetchUpdatedExames();
     }
   };
 
-  // Handle para reemitir exame
   const handleReemitirExame = async (exame: ExamRegister) => {
     if (!exame.formulario || !exame.profissional || !exame.codigoProfissional) {
-      alert("Dados incompletos para reemissão de exame");
-
+      alert("Dados incompletos para reemissao de exame");
       return;
     }
 
@@ -188,64 +175,59 @@ const ExamesTable: React.FC<{
 
       if (result) {
         alert(
-          "Reemissão enviada para processamento, atualize a página para visualizar o resultado.",
+          "Reemissao enviada para processamento, atualize a pagina para visualizar o resultado.",
         );
       } else {
-        throw new Error("Atualização não concluída.");
+        throw new Error("Atualizacao nao concluida.");
       }
     } catch (error) {
       console.error("Erro ao reemitir exame:", error);
       alert(error);
     } finally {
-      // fim de atualizacao
       setReemitindoExams(false);
     }
   };
 
   const handleFinalizarExame = async (exame: ExamRegister) => {
     if (exame.grupo != "Ultrassom") {
-      return alert("Exame não identificado como Ultrassom para finalização.");
-    } else {
-      const confirmResponse = confirm("Finalizar Ultrassom como NORMAL ?");
+      return alert("Exame nao identificado como Ultrassom para finalizacao.");
+    }
 
-      try {
-        const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
+    const confirmResponse = confirm("Finalizar Ultrassom como NORMAL ?");
+
+    try {
+      const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          funcionarioId: atendimento._id,
+          codigoExame: [exame.codigoExame],
+          formulario: {
+            normal: confirmResponse ? "Sim" : "Nao",
+            observacoes: "",
           },
+          sala: "Emitido via relatorio",
+          profissional: currentUser ?? "Desconhecido",
+          isEditing: true,
+          dataExame: new Date(),
+        }),
+      });
 
-          body: JSON.stringify({
-            funcionarioId: atendimento._id,
-            codigoExame: [exame.codigoExame],
-            formulario: {
-              normal: confirmResponse ? "Sim" : "Não",
-              observacoes: "",
-            },
-            sala: "Emitido via relatório",
-            profissional: currentUser ?? "Desconhecido",
-            isEditing: true,
-            dataExame: new Date(),
-          }),
-        });
+      const result: Scheduling = await response.json();
 
-        const result: Scheduling = await response.json();
-
-        if (result) {
-          alert("Exame atualizado, atualize a página para ver o resultado.");
-        }
-      } catch (err) {
-        alert(`Erro ao finalizar exame ${err}`);
+      if (result) {
+        alert("Exame atualizado, atualize a pagina para ver o resultado.");
       }
+    } catch (err) {
+      alert(`Erro ao finalizar exame ${err}`);
     }
   };
 
-  // Handler para quando o modal de edição é fechado
   const handleEditModalClose = () => {
     setEditExamModal({ isOpen: false, exam: null });
 
-    // Faz refetch dos exames após fechar o modal
-    // Usamos setTimeout para garantir que o backend já processou a atualização
     setTimeout(() => {
       fetchUpdatedExames();
     }, 1500);
@@ -258,7 +240,6 @@ const ExamesTable: React.FC<{
       (exame) =>
         exame.nomeExame?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         exame.codigoExame?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        // Adicione o "?" aqui também para evitar erros de busca
         exame.grupo?.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [localExames, searchTerm]);
@@ -289,10 +270,81 @@ const ExamesTable: React.FC<{
     }
   };
 
+  const getSignatureStatusMeta = (exame: ExamRegister) => {
+    const signatureStatus = exame.signatureInfo?.status;
+
+    if (
+      !signatureStatus ||
+      signatureStatus === "NOT_REQUIRED" ||
+      signatureStatus === "NAO_REQUER_ASSINATURA"
+    ) {
+      return null;
+    }
+
+    if (
+      signatureStatus === "WAITING_AUTH" ||
+      signatureStatus === "AGUARDANDO_AUTENTICACAO" ||
+      signatureStatus === "PROCESSING" ||
+      signatureStatus === "PROCESSANDO_ASSINATURA"
+    ) {
+      return {
+        icon: <Clock size={12} className="text-amber-600" />,
+        label:
+          signatureStatus === "PROCESSING" ||
+          signatureStatus === "PROCESSANDO_ASSINATURA"
+            ? "Processando assinatura digital"
+            : "Aguardando assinatura digital",
+        labelClassName: "text-amber-700",
+        detail:
+          exame.signatureInfo?.provider &&
+          `via ${exame.signatureInfo.provider.toUpperCase()}`,
+        detailClassName: "text-amber-600/80",
+      };
+    }
+
+    if (
+      signatureStatus === "PENDING_RETRY" ||
+      signatureStatus === "AGUARDANDO_REPROCESSAMENTO" ||
+      signatureStatus === "FAILED" ||
+      signatureStatus === "FALHA_ASSINATURA"
+    ) {
+      return {
+        icon: <AlertCircle size={12} className="text-rose-600" />,
+        label:
+          signatureStatus === "FAILED" ||
+          signatureStatus === "FALHA_ASSINATURA"
+            ? "Falha na assinatura digital"
+            : "Aguardando reprocessamento da assinatura",
+        labelClassName: "text-rose-700",
+        detail:
+          exame.signatureInfo?.lastError ||
+          (exame.signatureInfo?.provider &&
+            `via ${exame.signatureInfo.provider.toUpperCase()}`),
+        detailClassName: "text-rose-600/80",
+      };
+    }
+
+    if (signatureStatus === "SIGNED" || signatureStatus === "ASSINADO") {
+      return {
+        icon: <CheckCircle size={12} className="text-emerald-600" />,
+        label: "Assinado digitalmente",
+        labelClassName: "text-emerald-700",
+        detail:
+          exame.signatureInfo?.provider &&
+          `via ${exame.signatureInfo.provider.toUpperCase()}`,
+        detailClassName: "text-emerald-600/80",
+      };
+    }
+
+    return null;
+  };
+
   const formatDate = (dateString: string) => {
     if (!dateString) return "-";
 
-    return new Date(dateString).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+    return new Date(dateString).toLocaleString("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+    });
   };
 
   const calculateWaitTime = (
@@ -304,7 +356,6 @@ const ExamesTable: React.FC<{
     try {
       const ticketDate = new Date(ticketTime);
       const exameDate = new Date(exame.dataExame);
-
       const diffMs = exameDate.getTime() - ticketDate.getTime();
       const diffMinutes = Math.floor(diffMs / (1000 * 60));
 
@@ -314,12 +365,12 @@ const ExamesTable: React.FC<{
 
       if (diffMinutes < 60) {
         return `${diffMinutes} min`;
-      } else {
-        const hours = Math.floor(diffMinutes / 60);
-        const minutes = diffMinutes % 60;
-
-        return `${hours}h ${minutes}min`;
       }
+
+      const hours = Math.floor(diffMinutes / 60);
+      const minutes = diffMinutes % 60;
+
+      return `${hours}h ${minutes}min`;
     } catch {
       return null;
     }
@@ -327,13 +378,13 @@ const ExamesTable: React.FC<{
 
   if (!localExames.length) {
     return (
-      <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
-        <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
+      <div className="rounded-lg border-2 border-dashed border-gray-300 py-8 text-center">
+        <FileText className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+        <h3 className="mb-2 text-lg font-medium text-gray-900">
           Nenhum exame encontrado
         </h3>
         <p className="text-gray-500">
-          Não há exames cadastrados para este atendimento.
+          Nao ha exames cadastrados para este atendimento.
         </p>
       </div>
     );
@@ -341,7 +392,6 @@ const ExamesTable: React.FC<{
 
   return (
     <div className="space-y-4">
-      {/* Modal para exclusão de anexo */}
       <DeleteAttachmentModal
         atendimentoId={atendimento._id}
         examGrupo={deleteAttachmentModal.examGrupo}
@@ -359,7 +409,6 @@ const ExamesTable: React.FC<{
         onSuccess={handleDeleteSuccess}
       />
 
-      {/* Modal de edição de exame - COM REFETCH APÓS FECHAR */}
       {editExamModal.isOpen && editExamModal.exam && (
         <ExamEditModal
           atendimento={atendimento}
@@ -369,7 +418,6 @@ const ExamesTable: React.FC<{
         />
       )}
 
-      {/* Modal de upload de resultado */}
       {uploadExamModal.isOpen && uploadExamModal.exame && (
         <ExamUploadModal
           atendimento={atendimento}
@@ -389,25 +437,24 @@ const ExamesTable: React.FC<{
         />
       )}
 
-      {/* Header com filtro */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <h3 className="text-lg font-semibold text-gray-900">
             Exames Realizados
           </h3>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-green-500" />
               {localExames.filter((e) => e.status === "FINALIZADO").length}{" "}
               Finalizados
             </span>
             <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-yellow-500 rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-yellow-500" />
               {localExames.filter((e) => e.status === "PENDENTE").length}{" "}
               Pendentes
             </span>
             <span className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-blue-500 rounded-full" />
+              <div className="h-2 w-2 rounded-full bg-blue-500" />
               {localExames.filter((e) => e.url).length} Com resultado
             </span>
           </div>
@@ -421,14 +468,13 @@ const ExamesTable: React.FC<{
         />
       </div>
 
-      {/* Tabela de exames */}
-      <div className="border border-gray-200 rounded-lg overflow-hidden">
+      <div className="overflow-hidden rounded-lg border border-gray-200">
         <Table
           removeWrapper
           aria-label="Tabela de exames"
           classNames={{
             base: "min-w-full",
-            th: "bg-gray-50 text-gray-700 font-semibold text-xs px-3 py-2",
+            th: "bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700",
             td: "px-3 py-2",
           }}
         >
@@ -436,7 +482,7 @@ const ExamesTable: React.FC<{
             <TableColumn>EXAME</TableColumn>
             <TableColumn className="w-4/24">STATUS</TableColumn>
             <TableColumn>RESULTADO</TableColumn>
-            <TableColumn className="text-center">AÇÕES</TableColumn>
+            <TableColumn className="text-center">ACOES</TableColumn>
           </TableHeader>
           <TableBody>
             {filteredExames.map((exame, index) => {
@@ -445,24 +491,42 @@ const ExamesTable: React.FC<{
                 atendimento.TICKET?.emissao,
                 exame,
               );
+              const signatureMeta = getSignatureStatusMeta(exame);
 
               return (
                 <TableRow key={examKey}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <div className="font-medium text-gray-900 text-sm">
+                      <div className="text-sm font-medium text-gray-900">
                         {exame.nomeExame}
                       </div>
-                      <div className="flex flex-col text-xs text-gray-500">
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                         <div>{formatDate(exame.dataExame)}</div>
                         <div>
                           {exame.sala} - {exame.profissional}
                         </div>
-                        <div />
+                        {waitTime && (
+                          <div className="flex items-center text-xs text-gray-500">
+                            <span>Espera: {waitTime}</span>
+                          </div>
+                        )}
                       </div>
-                      {waitTime && (
-                        <div className="flex items-center text-xs text-gray-500">
-                          <span>Espera: {waitTime}</span>
+                      {signatureMeta && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                          <div
+                            className={`inline-flex items-center gap-1 font-medium ${signatureMeta.labelClassName}`}
+                          >
+                            {signatureMeta.icon}
+                            <span>{signatureMeta.label}</span>
+                          </div>
+                          {signatureMeta.detail && (
+                            <span
+                              className={`max-w-full truncate ${signatureMeta.detailClassName}`}
+                              title={signatureMeta.detail}
+                            >
+                              {signatureMeta.detail}
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
@@ -530,7 +594,7 @@ const ExamesTable: React.FC<{
                             <MoreVertical size={14} />
                           </Button>
                         </DropdownTrigger>
-                        <DropdownMenu aria-label="Ações do exame">
+                        <DropdownMenu aria-label="Acoes do exame">
                           <DropdownItem
                             key="reemitir"
                             color="default"

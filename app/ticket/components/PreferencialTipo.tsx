@@ -96,6 +96,7 @@ const PreferencialTipo = ({
     if (hoveredOption === option) {
       return "text-white";
     }
+
     return "text-white/90";
   };
 
@@ -106,16 +107,17 @@ const PreferencialTipo = ({
     if (hoveredOption === option) {
       return `linear-gradient(145deg, ${COLOR_PALETTE.accent} 0%, ${COLOR_PALETTE.primary} 100%)`;
     }
+
     return `linear-gradient(145deg, ${COLOR_PALETTE.accent}80 0%, ${COLOR_PALETTE.primary}80 100%)`;
   };
 
   return (
     <motion.div
-      variants={containerVariants}
-      initial="hidden"
       animate="visible"
-      exit="exit"
       className="w-full max-w-sm sm:max-w-2xl md:max-w-4xl mx-2"
+      exit="exit"
+      initial="hidden"
+      variants={containerVariants}
     >
       <div
         className="p-6 md:p-8 lg:p-10 rounded-2xl shadow-xl border relative overflow-hidden backdrop-blur-sm"
@@ -138,21 +140,30 @@ const PreferencialTipo = ({
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
         <div className="absolute bottom-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent rotate-180" />
 
-        <motion.div variants={itemVariants} className="text-center mb-8 md:mb-10 lg:mb-12 relative z-10">
+        <motion.div
+          className="text-center mb-8 md:mb-10 lg:mb-12 relative z-10"
+          variants={itemVariants}
+        >
           <motion.h2
-            className="text-2xl md:text-3xl lg:text-4xl font-light mb-3 tracking-tight"
-            style={{ color: COLOR_PALETTE.text }}
-            initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
+            className="text-2xl md:text-3xl lg:text-4xl font-light mb-3 tracking-tight"
+            initial={{ opacity: 0, y: -10 }}
+            style={{ color: COLOR_PALETTE.text }}
             transition={{ delay: 0.1, duration: 0.6 }}
           >
-            Atendimento <span className="font-semibold" style={{ color: COLOR_PALETTE.primary }}>Preferencial</span>
+            Atendimento{" "}
+            <span
+              className="font-semibold"
+              style={{ color: COLOR_PALETTE.primary }}
+            >
+              Preferencial
+            </span>
           </motion.h2>
           <motion.p
-            className="text-sm md:text-base lg:text-lg font-light"
-            style={{ color: COLOR_PALETTE.gray }}
-            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
+            className="text-sm md:text-base lg:text-lg font-light"
+            initial={{ opacity: 0 }}
+            style={{ color: COLOR_PALETTE.gray }}
             transition={{ delay: 0.2, duration: 0.6 }}
           >
             Selecione uma das opções abaixo para continuar
@@ -160,17 +171,17 @@ const PreferencialTipo = ({
 
           {/* Indicador de progresso sutil */}
           <motion.div
-            className="w-20 h-1 mx-auto mt-4 rounded-full overflow-hidden"
-            style={{ backgroundColor: `${COLOR_PALETTE.primary}20` }}
-            initial={{ width: 0, opacity: 0 }}
             animate={{ width: 80, opacity: 1 }}
+            className="w-20 h-1 mx-auto mt-4 rounded-full overflow-hidden"
+            initial={{ width: 0, opacity: 0 }}
+            style={{ backgroundColor: `${COLOR_PALETTE.primary}20` }}
             transition={{ delay: 0.3, duration: 0.8 }}
           >
             <motion.div
-              className="h-full rounded-full"
-              style={{ backgroundColor: COLOR_PALETTE.primary }}
-              initial={{ width: "0%" }}
               animate={{ width: "100%" }}
+              className="h-full rounded-full"
+              initial={{ width: "0%" }}
+              style={{ backgroundColor: COLOR_PALETTE.primary }}
               transition={{ delay: 0.4, duration: 1, ease: "easeInOut" }}
             />
           </motion.div>
@@ -181,16 +192,16 @@ const PreferencialTipo = ({
             {PREFERENCIAL_OPTIONS.map((option, index) => (
               <motion.div
                 key={option}
-                variants={itemVariants}
-                custom={index}
                 className="flex"
-                onHoverStart={() => setHoveredOption(option)}
+                custom={index}
+                variants={itemVariants}
                 onHoverEnd={() => setHoveredOption(null)}
+                onHoverStart={() => setHoveredOption(option)}
               >
                 <motion.div
                   className="w-full"
-                  variants={buttonHoverVariants}
                   initial="initial"
+                  variants={buttonHoverVariants}
                   whileHover="hover"
                   whileTap="tap"
                 >
@@ -207,8 +218,8 @@ const PreferencialTipo = ({
                     <motion.div
                       className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
                       initial={{ x: "-100%" }}
-                      whileHover={{ x: "100%" }}
                       transition={{ duration: 0.8, ease: "easeInOut" }}
+                      whileHover={{ x: "100%" }}
                     />
 
                     {/* Efeito de borda interna */}
@@ -217,7 +228,12 @@ const PreferencialTipo = ({
                     {/* Ícone com animação elegante */}
                     <motion.div
                       animate={{
-                        scale: selectedOption === option ? 1 : hoveredOption === option ? 1.05 : 1,
+                        scale:
+                          selectedOption === option
+                            ? 1
+                            : hoveredOption === option
+                              ? 1.05
+                              : 1,
                         y: selectedOption === option ? -2 : 0,
                       }}
                       className="mb-4 relative"
@@ -231,17 +247,21 @@ const PreferencialTipo = ({
                       {/* Indicador de seleção elegante */}
                       {selectedOption === option && (
                         <motion.div
-                          initial={{ scale: 0, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
-                          exit={{ scale: 0, opacity: 0 }}
                           className="absolute -top-2 -right-2"
+                          exit={{ scale: 0, opacity: 0 }}
+                          initial={{ scale: 0, opacity: 0 }}
                         >
                           <div className="relative">
                             <motion.div
+                              animate={{ scale: [1, 1.5, 1] }}
                               className="absolute inset-0 rounded-full"
                               style={{ backgroundColor: COLOR_PALETTE.primary }}
-                              animate={{ scale: [1, 1.5, 1] }}
-                              transition={{ duration: 1, repeat: Infinity, ease: "easeInOut" }}
+                              transition={{
+                                duration: 1,
+                                repeat: Infinity,
+                                ease: "easeInOut",
+                              }}
                             />
                             <CheckCircle className="w-6 h-6 text-white relative z-10" />
                           </div>
@@ -272,17 +292,24 @@ const PreferencialTipo = ({
                     {/* Efeito de loading elegante quando selecionado */}
                     {selectedOption === option && isSubmitting && (
                       <motion.div
-                        className="absolute bottom-3 right-3"
-                        initial={{ opacity: 0, scale: 0 }}
                         animate={{ opacity: 1, scale: 1 }}
+                        className="absolute bottom-3 right-3"
                         exit={{ opacity: 0, scale: 0 }}
+                        initial={{ opacity: 0, scale: 0 }}
                       >
                         <div className="relative">
                           <motion.div
-                            className="w-5 h-5 rounded-full border-2"
-                            style={{ borderColor: `${COLOR_PALETTE.primary}40`, borderTopColor: "white" }}
                             animate={{ rotate: 360 }}
-                            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                            className="w-5 h-5 rounded-full border-2"
+                            style={{
+                              borderColor: `${COLOR_PALETTE.primary}40`,
+                              borderTopColor: "white",
+                            }}
+                            transition={{
+                              duration: 1,
+                              repeat: Infinity,
+                              ease: "linear",
+                            }}
                           />
                         </div>
                       </motion.div>
@@ -295,13 +322,13 @@ const PreferencialTipo = ({
         </div>
 
         <motion.div
-          variants={itemVariants}
           className="flex justify-center relative z-10"
+          variants={itemVariants}
         >
           <motion.div
+            transition={{ duration: 0.2 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            transition={{ duration: 0.2 }}
           >
             <Button
               className="px-8 py-4 rounded-xl text-sm md:text-base font-medium group transition-all duration-300 relative overflow-hidden"
@@ -316,10 +343,10 @@ const PreferencialTipo = ({
               {/* Efeito de hover no botão voltar */}
               <motion.div
                 className="absolute inset-0"
-                style={{ backgroundColor: COLOR_PALETTE.primary }}
                 initial={{ opacity: 0 }}
-                whileHover={{ opacity: 0.05 }}
+                style={{ backgroundColor: COLOR_PALETTE.primary }}
                 transition={{ duration: 0.3 }}
+                whileHover={{ opacity: 0.05 }}
               />
 
               <div className="flex items-center relative z-10">
@@ -339,40 +366,51 @@ const PreferencialTipo = ({
         <AnimatePresence>
           {isSubmitting && selectedOption && (
             <motion.div
-              initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.4 }}
               className="absolute inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center rounded-2xl"
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
             >
               <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.3 }}
                 className="text-center p-6 rounded-2xl"
+                exit={{ scale: 0.9, opacity: 0 }}
+                initial={{ scale: 0.9, opacity: 0 }}
                 style={{ backgroundColor: `${COLOR_PALETTE.background}CC` }}
+                transition={{ duration: 0.3 }}
               >
                 <div className="relative">
                   <motion.div
-                    className="w-16 h-16 rounded-full border-3 mx-auto mb-4"
-                    style={{ borderColor: `${COLOR_PALETTE.primary}30`, borderTopColor: COLOR_PALETTE.primary }}
                     animate={{ rotate: 360 }}
-                    transition={{ duration: 1.2, repeat: Infinity, ease: "linear" }}
+                    className="w-16 h-16 rounded-full border-3 mx-auto mb-4"
+                    style={{
+                      borderColor: `${COLOR_PALETTE.primary}30`,
+                      borderTopColor: COLOR_PALETTE.primary,
+                    }}
+                    transition={{
+                      duration: 1.2,
+                      repeat: Infinity,
+                      ease: "linear",
+                    }}
                   />
                   <motion.div
+                    animate={{ opacity: [0, 1, 0] }}
                     className="absolute inset-0 flex items-center justify-center"
                     initial={{ opacity: 0 }}
-                    animate={{ opacity: [0, 1, 0] }}
                     transition={{ duration: 2, repeat: Infinity }}
                   >
-                    <UserPlusIcon className="w-6 h-6" style={{ color: COLOR_PALETTE.primary }} strokeWidth={1.5} />
+                    <UserPlusIcon
+                      className="w-6 h-6"
+                      strokeWidth={1.5}
+                      style={{ color: COLOR_PALETTE.primary }}
+                    />
                   </motion.div>
                 </div>
                 <motion.p
+                  animate={{ opacity: [0.7, 1, 0.7] }}
                   className="font-medium text-sm"
                   style={{ color: COLOR_PALETTE.text }}
-                  animate={{ opacity: [0.7, 1, 0.7] }}
                   transition={{ duration: 1.5, repeat: Infinity }}
                 >
                   Processando sua solicitação...

@@ -20,11 +20,20 @@ export async function POST(
     const data = userLoginSchema.parse(body);
 
     const userLogged = await UserService.login(data);
-    const { token, userInfo } = userLogged?.data!;
+
+    if (userLogged.status !== HttpCodes.OK || !userLogged.data) {
+      return NextResponse.json(
+        new ApiResponse(userLogged.status, userLogged.message),
+        { status: userLogged.status },
+      );
+    }
+
+    const { token, userInfo } = userLogged.data;
 
     if (!token) {
       return NextResponse.json(
         new ApiResponse(HttpCodes.UNAUTHORIZED, ApiMessages.USER_INPUT_INVALID),
+        { status: HttpCodes.UNAUTHORIZED },
       );
     }
 

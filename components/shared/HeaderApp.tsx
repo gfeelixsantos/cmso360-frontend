@@ -6,6 +6,7 @@ import {
   Bell,
   AlertCircle,
   CheckCircle,
+  Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -293,6 +294,18 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                           {user?.nome}
                         </p>
                       </div>
+
+                      <button
+                        className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        role="menuitem"
+                        onClick={() => {
+                          setIsDropdownOpen(false);
+                          router.push("/configuracoes");
+                        }}
+                      >
+                        <Settings className="h-4 w-4 mr-3" />
+                        Configurações
+                      </button>
 
                       <button
                         className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
