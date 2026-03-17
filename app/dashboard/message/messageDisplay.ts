@@ -82,17 +82,6 @@ const getCurrentMessage = async (): Promise<Message | null> => {
       contentType: "html",
       content: `
         <div class="flex flex-col md:flex-row items-center justify-center gap-8 py-1">
-          <div class="w-full md:w-1/3 flex justify-center">
-            <video
-              autoplay
-              loop
-              muted
-              playsinline
-              class="w-full h-auto max-w-[200px] md:max-w-full rounded-lg"
-              src="/images/gifs/work.webm"
-            />
-          </div>
-
           <div class="w-full md:w-2/3">
             <h3 class="text-xl font-bold mb-4">Destaques da versão</h3>
             <ul class="space-y-2">
@@ -103,6 +92,16 @@ const getCurrentMessage = async (): Promise<Message | null> => {
               <li><strong>Sincronização SOC (beta)</strong> para atualização cadastral e merge de exames.</li>
               <li><strong>Histórico de audiometrias anteriores</strong> disponível para análise clínica.</li>
             </ul>
+          </div>
+          <div class="w-full md:w-1/3 flex justify-center">
+            <video
+              autoplay
+              loop
+              muted
+              playsinline
+              class="w-full h-auto max-w-[200px] md:max-w-full rounded-lg"
+              src="/images/gifs/work.webm"
+            />
           </div>
         </div>
       `,

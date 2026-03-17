@@ -1,11 +1,12 @@
-import { Chip, Divider, Input } from "@heroui/react";
+import { Chip, Divider, Input, Tooltip } from "@heroui/react";
 import {
   Building,
   Calendar,
-  FileCheck,
   Stethoscope,
   User,
   UserCheck,
+  ShieldCheck,
+  FileText,
 } from "lucide-react";
 import React, { useState } from "react";
 
@@ -279,14 +280,120 @@ const InformacoesGerais: React.FC<{
 
           {atendimento.MEDICO && (
             <div className="space-y-3">
-              <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-                <FileCheck size={16} />
-                Parecer ASO
-              </h4>
-              <span className="text-sm text-gray-900">
-                {atendimento.PARECERMEDICO?.replace(/_/g, " ") ||
-                  "Não informado"}
-              </span>
+              <div className="flex items-center justify-between mb-2">
+                <h4 className="font-medium text-sm text-gray-600">
+                  Parecer ASO
+                </h4>
+                <div className="flex gap-2">
+                  {(atendimento.ASOINFO?.url ||
+                    atendimento.ASOINFO?.asoUrl) && (
+                    <Tooltip closeDelay={0} content="Visualizar ASO" delay={0}>
+                      <a
+                        className="text-[#44735e] hover:bg-green-50 p-1.5 rounded-full transition-colors"
+                        href={
+                          atendimento.ASOINFO.url || atendimento.ASOINFO.asoUrl
+                        }
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <FileText size={16} />
+                      </a>
+                    </Tooltip>
+                  )}
+                  {(atendimento.ASOINFO?.validacao ||
+                    atendimento.ASOINFO?.validacaoUrl) && (
+                    <Tooltip
+                      closeDelay={0}
+                      content="Relatório de Validação"
+                      delay={0}
+                    >
+                      <a
+                        className="text-[#44735e] hover:bg-green-50 p-1.5 rounded-full transition-colors"
+                        href={
+                          atendimento.ASOINFO.validacao ||
+                          atendimento.ASOINFO.validacaoUrl
+                        }
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <ShieldCheck size={16} />
+                      </a>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-sm font-bold text-gray-900">
+                  {atendimento.PARECERMEDICO?.replace(/_/g, " ") ||
+                    "Não informado"}
+                </span>
+
+                {atendimento.ASOINFO && (
+                  <div className="flex flex-col gap-1.5 mt-1 pt-2 border-t border-gray-100">
+                    {atendimento.ASOINFO.status && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">
+                          Status:
+                        </span>
+                        <Chip
+                          className="font-medium h-5"
+                          color={
+                            atendimento.ASOINFO.status === "ASSINADO" ||
+                            atendimento.ASOINFO.status === "LIBERADO"
+                              ? "success"
+                              : "warning"
+                          }
+                          size="sm"
+                          variant="flat"
+                        >
+                          {atendimento.ASOINFO.status}
+                        </Chip>
+                      </div>
+                    )}
+
+                    {(atendimento.ASOINFO.tipoAssinatura ||
+                      atendimento.ASOINFO.assinatura) && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">
+                          Assinatura:
+                        </span>
+                        <span className="text-xs font-semibold text-gray-600">
+                          {atendimento.ASOINFO.tipoAssinatura ||
+                            atendimento.ASOINFO.assinatura}
+                        </span>
+                      </div>
+                    )}
+
+                    {atendimento.ASOINFO.updatedAt && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">
+                          Atualização:
+                        </span>
+                        <span className="text-xs font-semibold text-gray-600">
+                          {typeof atendimento.ASOINFO.updatedAt === "string"
+                            ? new Date(
+                                atendimento.ASOINFO.updatedAt,
+                              ).toLocaleString("pt-BR")
+                            : new Date(
+                                atendimento.ASOINFO.updatedAt.$date,
+                              ).toLocaleString("pt-BR")}
+                        </span>
+                      </div>
+                    )}
+
+                    {atendimento.ASOINFO.error && (
+                      <div className="flex items-start gap-2 max-w-xs">
+                        <span className="text-[10px] font-bold text-red-400 uppercase whitespace-nowrap">
+                          Erro:
+                        </span>
+                        <span className="text-[10px] text-red-600 font-medium">
+                          {atendimento.ASOINFO.error}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 

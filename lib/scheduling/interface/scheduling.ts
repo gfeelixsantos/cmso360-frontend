@@ -67,6 +67,24 @@ export type SignatureInfo = {
   signedAt?: Date;
 };
 
+export type AsoInfo = {
+  asoUrl?: string;
+  validacaoUrl?: string;
+  url?: string;
+  validacao?: string;
+  status?: string;
+  tipoAssinatura?: string;
+  assinatura?: string;
+  updatedAt?: { $date: string } | string;
+  error?: string | null;
+  retry?: {
+    retryCount: number;
+    lastAttempt: Date;
+    nextRetryAt: Date;
+    lastError: string;
+  };
+};
+
 export class ExamRegister {
   id?: string;
   codigoExame: string;
@@ -140,6 +158,7 @@ export type Scheduling = {
   TIPOEXAME: string;
   TIPOEXAMENOME: string;
   UNIDADEATENDIMENTO: string;
+  ASOINFO?: AsoInfo;
   _id: string;
 };
 

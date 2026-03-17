@@ -106,6 +106,8 @@ const TicketActions: React.FC<{
       socket,
       salaSelecionada,
       currentUser?.nome,
+      undefined,
+      "RECEPCAO",
     );
   };
 
@@ -119,6 +121,8 @@ const TicketActions: React.FC<{
       socket,
       salaSelecionada,
       currentUser?.nome,
+      undefined,
+      "RECEPCAO",
     );
     setTicketSelecionado(ticket);
     onHandleModal(true);

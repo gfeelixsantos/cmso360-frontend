@@ -1040,7 +1040,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
         setResultadosCalculados(true);
       }
     } else if (atendimento) {
-      const isAdmissional = AttendanceRules.isAdmissional(atendimento);
+      const isAdmissional = AtendimentoRules.isAdmissional(atendimento);
 
       if (!isAdmissional) {
         setFormData((prev) => ({ ...prev, audiometriaAnterior: "Sim" }));
@@ -1050,8 +1050,8 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     // Validação para aplicar formulário de plug de silicone - utilizado em admissional Whirlpool e RH Brasil
     if (
       (AtendimentoRules.isAdmissional(atendimento) &&
-        AttendanceRules.isRhBrasilWhirlpool(atendimento)) ||
-      AttendanceRules.isWhirlpoolAdmissional(atendimento)
+        AtendimentoRules.isRhBrasilWhirlpool(atendimento)) ||
+      AtendimentoRules.isWhirlpoolAdmissional(atendimento)
     ) {
       setApplyFormPlug(true);
     }
@@ -1697,7 +1697,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOD as keyof AudiometriaData
+                        freq.fieldVAOD as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1744,7 +1744,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOD as keyof AudiometriaData
+                          freq.fieldVOOD as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1807,7 +1807,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       placeholder=""
                       value={
                         formData[
-                          freq.fieldVAOE as keyof AudiometriaData
+                        freq.fieldVAOE as keyof AudiometriaData
                         ] as string
                       }
                       onChange={(value) =>
@@ -1854,7 +1854,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         placeholder=""
                         value={
                           formData[
-                            freq.fieldVOOE as keyof AudiometriaData
+                          freq.fieldVOOE as keyof AudiometriaData
                           ] as string
                         }
                         onChange={(value) =>
@@ -1957,16 +1957,15 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOD.includes("normalidade") ||
-                        formData.classificacaoOD === "-"
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOD.includes("normalidade") ||
+                          formData.classificacaoOD === "-"
                           ? "bg-green-100 text-green-800"
                           : formData.classificacaoOD.includes("Leve")
                             ? "bg-amber-100 text-amber-800"
                             : formData.classificacaoOD.includes("Moderada")
                               ? "bg-orange-100 text-orange-800"
                               : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {formData.classificacaoOD === "-"
                         ? "Dentro dos padrões da normalidade"
@@ -2022,16 +2021,15 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                       Classificação (Grau Lloyd & Kaplan)
                     </label>
                     <div
-                      className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOE.includes("normalidade") ||
-                        formData.classificacaoOE === "-"
+                      className={`text-center font-bold text-sm p-2 rounded ${formData.classificacaoOE.includes("normalidade") ||
+                          formData.classificacaoOE === "-"
                           ? "bg-green-100 text-green-800"
                           : formData.classificacaoOE.includes("Leve")
                             ? "bg-amber-100 text-amber-800"
                             : formData.classificacaoOE.includes("Moderada")
                               ? "bg-orange-100 text-orange-800"
                               : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {formData.classificacaoOE === "-"
                         ? "Dentro dos padrões da normalidade"

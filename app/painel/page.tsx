@@ -342,9 +342,8 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
-              index === itemAtual ? "bg-white scale-125" : "bg-white/50"
-            }`}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${index === itemAtual ? "bg-white scale-125" : "bg-white/50"
+              }`}
           />
         ))}
       </div>
@@ -463,6 +462,8 @@ const ConfigModal = ({
   setAudioHabilitado,
   unidadeSelecionada,
   onUnidadeChange,
+  filtroChamada,
+  setFiltroChamada,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -470,6 +471,8 @@ const ConfigModal = ({
   setAudioHabilitado: (value: boolean) => void;
   unidadeSelecionada: string;
   onUnidadeChange: (value: string) => void;
+  filtroChamada: string;
+  setFiltroChamada: (value: any) => void;
 }) => {
   if (!isOpen) return null;
 
@@ -524,6 +527,29 @@ const ConfigModal = ({
             </select>
           </div>
 
+          <div>
+            <label
+              className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2"
+              style={{ color: COLOR_PALETTE.text }}
+            >
+              Chamada
+            </label>
+            <select
+              className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-xs sm:text-sm md:text-base"
+              style={{
+                borderColor: COLOR_PALETTE.border,
+                color: COLOR_PALETTE.text,
+                backgroundColor: COLOR_PALETTE.lightGray,
+              }}
+              value={filtroChamada}
+              onChange={(e) => setFiltroChamada(e.target.value)}
+            >
+              <option value="TODOS">TODOS</option>
+              <option value="RECEPÇÃO">RECEPÇÃO</option>
+              <option value="ATENDIMENTO">ATENDIMENTO</option>
+            </select>
+          </div>
+
           <div className="flex items-center justify-between">
             <span
               className="text-xs sm:text-sm md:text-base"
@@ -532,17 +558,15 @@ const ConfigModal = ({
               Áudio
             </span>
             <button
-              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
-                audioHabilitado ? "bg-green-500" : "bg-gray-300"
-              }`}
+              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${audioHabilitado ? "bg-green-500" : "bg-gray-300"
+                }`}
               onClick={() => setAudioHabilitado(!audioHabilitado)}
             >
               <span
-                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
-                  audioHabilitado
-                    ? "translate-x-5 sm:translate-x-6"
-                    : "translate-x-0.5 sm:translate-x-1"
-                }`}
+                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${audioHabilitado
+                  ? "translate-x-5 sm:translate-x-6"
+                  : "translate-x-0.5 sm:translate-x-1"
+                  }`}
               />
             </button>
           </div>
@@ -575,6 +599,7 @@ const ConfigModal = ({
             }}
             onClick={() => {
               localStorage.setItem("painel_validate", unidadeSelecionada);
+              localStorage.setItem("painel_filtro", filtroChamada);
               onClose();
             }}
           >
@@ -634,6 +659,9 @@ export default function PainelPage() {
   const [showConfig, setShowConfig] = useState(false);
   const [showAudioModal, setShowAudioModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [filtroChamada, setFiltroChamada] = useState<
+    "TODOS" | "RECEPÇÃO" | "ATENDIMENTO"
+  >("TODOS");
 
   // Estados para controle do idle
   const [isIdle, setIsIdle] = useState(false);
@@ -984,8 +1012,26 @@ export default function PainelPage() {
 
     socket.on("chamar funcionario", (call: PainelCall) => {
       console.log(
-        `📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala}`,
+        `📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala} - Exame: ${call.exame}`,
       );
+
+      // Lógica de filtragem baseada na configuração do painel
+      const isRecepcao = call.exame === "RECEPCAO";
+      const isAtendimento = !isRecepcao && call.exame !== "";
+
+      const filtro = localStorage.getItem("painel_filtro") || "TODOS";
+
+      if (filtro === "RECEPÇÃO" && !isRecepcao) {
+        console.log("🚫 Chamada ignorada: filtro RECEPÇÃO ativo");
+
+        return;
+      }
+
+      if (filtro === "ATENDIMENTO" && !isAtendimento) {
+        console.log("🚫 Chamada ignorada: filtro ATENDIMENTO ativo");
+
+        return;
+      }
 
       const jaExiste =
         ativasRef.current.some((c) => c.id === call.id) ||
@@ -1096,11 +1142,13 @@ export default function PainelPage() {
     inicializarPainel();
   }, [isLiberado, audioHabilitado]);
 
-  const validarAcesso = (serial: string, unidade: string) => {
+  const validarAcesso = (serial: string, unidade: string, filtro: string) => {
     if (serial === SERVICES_KEY && unidade) {
       setUnidadeSelecionada(unidade);
+      setFiltroChamada(filtro as any);
       setIsLiberado(true);
       localStorage.setItem("painel_validate", unidade);
+      localStorage.setItem("painel_filtro", filtro);
     } else {
       alert("Chave inválida ou unidade não selecionada!");
     }
@@ -1108,10 +1156,15 @@ export default function PainelPage() {
 
   useEffect(() => {
     const unidadeSalva = localStorage.getItem("painel_validate");
+    const filtroSalvo = localStorage.getItem("painel_filtro") as any;
 
     if (unidadeSalva) {
       setUnidadeSelecionada(unidadeSalva);
       setIsLiberado(true);
+    }
+
+    if (filtroSalvo) {
+      setFiltroChamada(filtroSalvo);
     }
   }, []);
 
@@ -1224,6 +1277,28 @@ export default function PainelPage() {
                 </select>
               </div>
 
+              <div>
+                <label
+                  className="text-xs sm:text-sm font-semibold"
+                  style={{ color: COLOR_PALETTE.text }}
+                >
+                  Chamada
+                </label>
+                <select
+                  className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 transition-all text-xs sm:text-sm md:text-base"
+                  id="filtroSelect"
+                  style={{
+                    borderColor: COLOR_PALETTE.border,
+                    color: COLOR_PALETTE.text,
+                    backgroundColor: COLOR_PALETTE.lightGray,
+                  }}
+                >
+                  <option value="TODOS">TODOS</option>
+                  <option value="RECEPÇÃO">RECEPÇÃO</option>
+                  <option value="ATENDIMENTO">ATENDIMENTO</option>
+                </select>
+              </div>
+
               <button
                 className="w-full rounded-xl px-3 sm:px-4 md:px-6 py-2 sm:py-3 md:py-4 font-bold text-white mt-3 sm:mt-4 transition-all hover:shadow-lg transform hover:scale-[1.02] text-xs sm:text-sm md:text-base"
                 style={{
@@ -1240,8 +1315,14 @@ export default function PainelPage() {
                         "unidadeSelect",
                       ) as HTMLSelectElement
                     )?.value || "";
+                  const filtro =
+                    (
+                      document.getElementById(
+                        "filtroSelect",
+                      ) as HTMLSelectElement
+                    )?.value || "TODOS";
 
-                  validarAcesso(serial, unidade);
+                  validarAcesso(serial, unidade, filtro);
                 }}
               >
                 <Monitor className="inline mr-2" size={16} /> ACESSAR PAINEL
@@ -1316,8 +1397,10 @@ export default function PainelPage() {
       {/* Modal de Configurações */}
       <ConfigModal
         audioHabilitado={audioHabilitado}
+        filtroChamada={filtroChamada}
         isOpen={showConfig}
         setAudioHabilitado={setAudioHabilitado}
+        setFiltroChamada={setFiltroChamada}
         unidadeSelecionada={unidadeSelecionada}
         onClose={() => setShowConfig(false)}
         onUnidadeChange={handleUnidadeChange}
