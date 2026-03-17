@@ -5,8 +5,9 @@ import { usePathname } from "next/navigation";
 import { Plus, Wifi, WifiOff, Users } from "lucide-react";
 import { Button } from "@heroui/react";
 
-import { StatusBadge } from "./StatusBadge";
 import AgendamentosList from "../../app/recepcao/components/AgendamentosList";
+
+import { StatusBadge } from "./StatusBadge";
 
 import {
   EXAMES_LIST,
@@ -63,10 +64,11 @@ const SelectField = ({
     <div className="relative">
       <select
         aria-label={label}
-        className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${conectado
+        className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${
+          conectado
             ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
             : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#4CAF50]"
-          }`}
+        }`}
         disabled={conectado}
         id={id}
         value={value}
@@ -168,11 +170,19 @@ export function SidebarRecepcao({
 
           <div className="flex flex-col gap-3">
             <div className="grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2">
-              <span className="text-sm font-medium text-gray-700 text-left">Servidor:</span>
+              <span className="text-sm font-medium text-gray-700 text-left">
+                Servidor:
+              </span>
               <div className="justify-self-end w-[150px]">
                 <StatusBadge
                   className="!w-full justify-center"
-                  color={conectado && !onLoading ? (isReconnecting ? "yellow" : "green") : "gray"}
+                  color={
+                    conectado && !onLoading
+                      ? isReconnecting
+                        ? "yellow"
+                        : "green"
+                      : "gray"
+                  }
                   icon={
                     conectado && !onLoading && isReconnecting ? (
                       <div className="w-3 h-3 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />
@@ -193,7 +203,9 @@ export function SidebarRecepcao({
 
             {pscStatusElement && (
               <div className="grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2">
-                <span className="text-sm font-medium text-gray-700 text-left pt-1">Assinatura:</span>
+                <span className="text-sm font-medium text-gray-700 text-left pt-1">
+                  Assinatura:
+                </span>
                 <div className="justify-self-end w-[150px]">
                   {pscStatusElement}
                 </div>
@@ -253,10 +265,11 @@ export function SidebarRecepcao({
         <div className="mb-6">
           <Button
             aria-pressed={conectado}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${conectado
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${
+              conectado
                 ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
                 : "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white hover:opacity-90"
-              }`}
+            }`}
             disabled={onLoading}
             isLoading={onLoading}
             onPress={() => !onLoading && handleConectar()}
@@ -306,11 +319,3 @@ export function SidebarRecepcao({
     </aside>
   );
 }
-
-
-
-
-
-
-
-

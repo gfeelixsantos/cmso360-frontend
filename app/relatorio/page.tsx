@@ -28,6 +28,9 @@ import {
   Input,
   Modal,
   ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   useDisclosure,
   Spinner,
   Autocomplete,
@@ -58,6 +61,13 @@ import { formatCPF, getCurrentUser, getStatusColor, logout } from "@/lib/utils";
 import { useModalOptimizer } from "@/hooks/useModalOptimizer";
 import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
 import { IUserInfo } from "@/hooks/useUser";
+
+function normalizeString(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 // Componente lazy para o conteúdo pesado do modal
 const LazyModalContent = lazy(() => import("./LazyModalContent"));
@@ -150,6 +160,13 @@ export default function RelatoriosPage() {
   const [selectedAtendimento, setSelectedAtendimento] =
     useState<Scheduling | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
+
+  // Estado para modal de alerta
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+  }>({ open: false, type: "warning", message: "" });
   const [loadingDetailsId, setLoadingDetailsId] = useState<string | null>(null);
 
   // Hooks otimizados
@@ -268,7 +285,8 @@ export default function RelatoriosPage() {
       if (currentFilters.tipoExame)
         backendFilters.tipoExame = currentFilters.tipoExame;
       if (currentFilters.status) backendFilters.status = currentFilters.status;
-      if (currentFilters.search) backendFilters.search = currentFilters.search;
+      if (currentFilters.search)
+        backendFilters.search = normalizeString(currentFilters.search);
       if (currentFilters.profissional)
         backendFilters.profissional = currentFilters.profissional;
       if (currentFilters.atendente)
@@ -361,13 +379,21 @@ export default function RelatoriosPage() {
   const handleExportCSV = useCallback(async () => {
     try {
       if (!hasActiveFilters) {
-        alert("Por favor, aplique filtros antes de exportar.");
+        setAlertModal({
+          open: true,
+          type: "warning",
+          message: "Por favor, aplique filtros antes de exportar.",
+        });
 
         return;
       }
 
       if (totalRecords === 0) {
-        alert("Não há resultados para exportar.");
+        setAlertModal({
+          open: true,
+          type: "warning",
+          message: "Não há resultados para exportar.",
+        });
 
         return;
       }
@@ -415,7 +441,11 @@ export default function RelatoriosPage() {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Erro ao exportar CSV:", error);
-      alert("⚠ Erro ao exportar relatório. Tente novamente.");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Erro ao exportar relatório. Tente novamente.",
+      });
     } finally {
       setIsExporting(false);
     }
@@ -1097,7 +1127,7 @@ export default function RelatoriosPage() {
       <Modal
         aria-label="Modal de detalhes do atendimento"
         classNames={{
-          base: "max-h-[90vh]",
+          base: "max-h-[90vh] border border-[#44735e]/20",
           wrapper: "z-[500]",
           backdrop: "z-[400]",
         }}
@@ -1112,6 +1142,48 @@ export default function RelatoriosPage() {
           ) : (
             renderModalContent
           )}
+        </ModalContent>
+      </Modal>
+
+      {/* Modal de Alerta */}
+      <Modal
+        disableAnimation
+        classNames={{
+          base: "z-[1100]",
+          wrapper: "z-[1100]",
+          backdrop: "z-[1099]",
+        }}
+        isDismissable={false}
+        isOpen={alertModal.open}
+        onClose={() => setAlertModal({ ...alertModal, open: false })}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader
+            className={
+              alertModal.type === "success"
+                ? "text-green-600"
+                : alertModal.type === "error"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+            }
+          >
+            {alertModal.type === "success"
+              ? "Sucesso"
+              : alertModal.type === "error"
+                ? "Erro"
+                : "Atenção"}
+          </ModalHeader>
+          <ModalBody>
+            <p>{alertModal.message}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+              onPress={() => setAlertModal({ ...alertModal, open: false })}
+            >
+              OK
+            </Button>
+          </ModalFooter>
         </ModalContent>
       </Modal>
     </div>

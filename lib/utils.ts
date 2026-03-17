@@ -53,7 +53,7 @@ export function mapCadastroPessoasToUserInfo(
     cpf: socUser.CPF ?? "",
     conselho: socUser.CONSELHO_CLASSE ?? "",
     ufconselho: socUser.UF_CONSELHO ?? "",
-    perfil: socUser.REGISTRO_FUNCIONAL ?? "",
+    perfil: socUser.REGISTRO_FUNCIONAL || "CONVIDADO",
   };
 }
 

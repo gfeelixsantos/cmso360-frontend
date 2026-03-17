@@ -87,7 +87,7 @@ export default function CMSO360Animation() {
       >
         <p className="text-sm text-gray-500">
           <span className="font-semibold text-[#104e35]">Versão Beta</span> •
-          Última atualização: 10/2025
+          Última atualização: 03/2026
         </p>
       </motion.div>
     </div>

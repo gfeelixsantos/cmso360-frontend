@@ -1,5 +1,13 @@
-﻿"use client";
-import { AlertCircle, CheckCircle, Clock, ShieldAlert, Cloud } from "lucide-react";
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  ShieldAlert,
+  Cloud,
+} from "lucide-react";
 
 import { StatusBadge, StatusColor } from "@/components/shared/StatusBadge";
 import { IPscAuthStatus, IUserInfoSettings } from "@/lib/user/interfaces/IUser";
@@ -15,7 +23,6 @@ function getStatusConfig(
   status: IPscAuthStatus["status"],
   provider?: string | null,
   isBryKmsConfigured?: boolean,
-  pscName?: string | null,
 ): {
   label: string;
   icon: React.ComponentType<any>;
@@ -24,7 +31,7 @@ function getStatusConfig(
   if (provider === "BRYKMS") {
     if (isBryKmsConfigured) {
       return {
-        label: "BRy Cloud",
+        label: "Bry Cloud",
         icon: Cloud,
         color: "green",
       };
@@ -40,7 +47,7 @@ function getStatusConfig(
   switch (status) {
     case "ACTIVE":
       return {
-        label: pscName?.trim() || "Autenticado",
+        label: "Autenticado",
         icon: CheckCircle,
         color: "green",
       };
@@ -83,26 +90,87 @@ function formatExpiresAt(expiresAt: string | null): string {
   }
 }
 
+function getProviderLabel(
+  settings?: IUserInfoSettings | null,
+  pscName?: string | null,
+): string | null {
+  if (settings?.assinaturaProvider === "BRYKMS") {
+    return "BRy Cloud";
+  }
+
+  if (pscName?.trim()) {
+    return pscName.trim();
+  }
+
+  if (settings?.pscPadrao?.trim()) {
+    return settings.pscPadrao.trim();
+  }
+
+  if (settings?.provedorPadrao?.trim()) {
+    return settings.provedorPadrao.trim();
+  }
+
+  if (settings?.assinaturaProvider === "PSC") {
+    return "PSC";
+  }
+
+  return null;
+}
+
+function formatRemainingTime(expiresAt: string | null, now: number): string {
+  if (!expiresAt) return "";
+
+  const expiresAtMs = new Date(expiresAt).getTime();
+
+  if (Number.isNaN(expiresAtMs)) return "";
+
+  const diffMs = expiresAtMs - now;
+
+  if (diffMs <= 0) {
+    return "Sessão expirada";
+  }
+
+  const totalMinutes = Math.floor(diffMs / (1000 * 60));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60);
+  const minutes = totalMinutes % 60;
+
+  if (days > 0) {
+    return `Válido por ${days}d ${hours}h`;
+  }
+
+  if (hours > 0) {
+    return `Válido por ${hours}h ${minutes}min`;
+  }
+
+  return `Válido por ${Math.max(minutes, 1)}min`;
+}
+
 export function PscProviderStatus({
   pscAuthStatus,
   settings,
   isLoading = false,
   onClick,
 }: PscProviderStatusProps) {
+  const [now, setNow] = useState(() => Date.now());
   const isBryKmsConfigured =
     settings?.assinaturaProvider === "BRYKMS" &&
-    settings?.uuidCert &&
+    !!settings?.uuidCert &&
     settings.uuidCert.trim() !== "";
 
   const config = getStatusConfig(
     pscAuthStatus.status,
     settings?.assinaturaProvider,
     isBryKmsConfigured,
-    pscAuthStatus.pscName,
   );
   const Icon = config.icon;
   const isBryCloudActive =
     settings?.assinaturaProvider === "BRYKMS" && isBryKmsConfigured;
+  const providerLabel = getProviderLabel(settings, pscAuthStatus.pscName);
+  const remainingTimeLabel = useMemo(
+    () => formatRemainingTime(pscAuthStatus.expiresAt, now),
+    [pscAuthStatus.expiresAt, now],
+  );
   const badgeIcon =
     isBryCloudActive && config.color === "green" ? (
       <Cloud className="w-3 h-3 text-white fill-white" />
@@ -119,11 +187,23 @@ export function PscProviderStatus({
     settings?.assinaturaProvider !== "BRYKMS" &&
     pscAuthStatus.status !== "ACTIVE";
 
+  useEffect(() => {
+    if (!pscAuthStatus.expiresAt || !pscAuthStatus.isActive) return;
+
+    const interval = window.setInterval(() => {
+      setNow(Date.now());
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, [pscAuthStatus.expiresAt, pscAuthStatus.isActive]);
+
   if (isLoading) {
     return (
       <StatusBadge
         color="yellow"
-        icon={<div className="w-3 h-3 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />}
+        icon={
+          <div className="w-3 h-3 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />
+        }
         label="Conectando ao provedor..."
       />
     );
@@ -138,16 +218,19 @@ export function PscProviderStatus({
         label={config.label}
         onClick={isClickable ? onClick : undefined}
       />
+      {/* Tempo de expiração - apenas para PSC, não para BRYKMS */}
       {pscAuthStatus.expiresAt &&
         pscAuthStatus.isActive &&
         settings?.assinaturaProvider !== "BRYKMS" && (
-          <span className="text-xs text-gray-500 pl-1">
-            Expira: {formatExpiresAt(pscAuthStatus.expiresAt)}
-          </span>
+          <>
+            <span className="text-xs font-medium text-[#104e35] pl-1">
+              {remainingTimeLabel}
+            </span>
+            <span className="text-xs text-gray-500 pl-1">
+              Expira em: {formatExpiresAt(pscAuthStatus.expiresAt)}
+            </span>
+          </>
         )}
     </div>
   );
 }
-
-
-

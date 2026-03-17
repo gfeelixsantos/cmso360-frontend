@@ -14,6 +14,24 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
   "ws",
 );
 
+// ---------------------------------------------------------
+// WORKER (Scraping Metrics)
+// ---------------------------------------------------------
+const WORKER_PORT = 3334;
+const WORKER_URL_DEVELOP = `http://127.0.0.1:${WORKER_PORT}/`;
+
+export const WORKER_URL = process.env.NODE_ENV.includes("dev")
+  ? WORKER_URL_DEVELOP
+  : process.env.NEXT_PUBLIC_WORKER_URL_PRODUCTION ||
+    NEST_URL_DEVELOP.replace("3333", "3334");
+
+export const WORKER_WS_URL = WORKER_URL?.replace("http", "ws").replace(
+  "https",
+  "ws",
+);
+
+export const WORKER_SCRAPER_STATUS = `${WORKER_URL}scraper/status`;
+
 export const NEST_TICKETS_URL = `${NEST_URL}ticket`;
 export const NEST_TICKET_QUERY = `${NEST_URL}ticket?unidade=`;
 export const NEST_TICKET_DELETE = `${NEST_URL}ticket/delete/`;

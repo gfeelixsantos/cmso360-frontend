@@ -1,6 +1,13 @@
 // PainelDireita.tsx
 "use client";
-import React, { useCallback, useEffect, useMemo, useState, memo } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  memo,
+  useRef,
+} from "react";
 import {
   addToast,
   Button,
@@ -24,6 +31,7 @@ import {
   ModalFooter,
   Checkbox,
   CheckboxGroup,
+  Spinner,
 } from "@heroui/react";
 import {
   ClipboardList,
@@ -47,9 +55,14 @@ import {
   CODIGOS_ESPACO_CONFINADO,
   CODIGOS_RISCO_ALTURA,
   USER_PROFILE,
+  NEST_URL,
 } from "@/config/constants";
 import { NEST_SCHEDULINGS_FINISH } from "@/config/constants";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
+
+// Hook para status de autenticação PSC
+import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
+import { PscProviderSelector } from "@/app/atendimento/components/PscProviderSelector";
 
 /* ---------------------- Tipos ---------------------- */
 
@@ -777,6 +790,311 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const [examesRepeticaoModalOpen, setExamesRepeticaoModalOpen] =
     useState(false);
   const [confirmacaoModalOpen, setConfirmacaoModalOpen] = useState(false);
+
+  /* ---------------------- Estados para Autenticação PSC ---------------------- */
+  const {
+    settings,
+    pscAuthStatus,
+    isLoading: isPscLoading,
+    refetch: refetchPscStatus,
+  } = usePscAuthStatus();
+
+  const assinaDigitalmente = settings?.assinaDigitalmente ?? false;
+  const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
+
+  // Estados para gerenciar o popup de autenticação PSC
+  const [isPscAuthenticating, setIsPscAuthenticating] = useState(false);
+  const [modalPscAvisoOpen, setModalPscAvisoOpen] = useState(false);
+  const [isWaitingForAuthToSave, setIsWaitingForAuthToSave] = useState(false);
+  const [pscAuthWindowUrl, setPscAuthWindowUrl] = useState<string>("");
+  const pscWindowRef = useRef<Window | null>(null);
+  const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Limpar os intervalos ao sair
+  useEffect(() => {
+    return () => {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    };
+  }, []);
+
+  // Polling para detectar sucesso ou fechamento da janela
+  useEffect(() => {
+    if (isPscAuthenticating) {
+      pscPollingRef.current = setInterval(async () => {
+        // Checar se o popup foi fechado prematuramente
+        if (pscWindowRef.current && pscWindowRef.current.closed) {
+          if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+          setIsPscAuthenticating(false);
+          addToast({
+            title: "Autenticação Não Concluída",
+            description:
+              "A janela de autenticação foi fechada antes de concluir.",
+            severity: "warning",
+            color: "foreground",
+            variant: "flat",
+          });
+
+          return;
+        }
+
+        // Tentar buscar novo status
+        try {
+          await refetchPscStatus();
+        } catch (error) {
+          console.error("[PSC Auth] Erro no polling de status:", error);
+        }
+      }, 3000);
+    } else {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    }
+
+    return () => {
+      if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+    };
+  }, [isPscAuthenticating, refetchPscStatus]);
+
+  // Se o polling detectou o status ativo
+  useEffect(() => {
+    if (isPscAuthenticating && pscAuthStatus.isActive) {
+      setIsPscAuthenticating(false);
+
+      if (pscWindowRef.current && !pscWindowRef.current.closed) {
+        pscWindowRef.current.close();
+      }
+
+      addToast({
+        title: "Autenticação Realizada",
+        description: "Assinatura digital habilitada com sucesso.",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      // --- Se estava aguardando para salvar, continuar ---
+      if (isWaitingForAuthToSave) {
+        setIsWaitingForAuthToSave(false);
+        // Abre a confirmação normalmente após autenticação bem-sucedida
+        handleOpenConfirmacaoWithAuth();
+      }
+    }
+  }, [pscAuthStatus.isActive, isPscAuthenticating, isWaitingForAuthToSave]);
+
+  /**
+   * Inicia o processo de autenticação PSC
+   */
+  const handlePscAuth = async (provider?: string) => {
+    console.log(
+      `[PSC Auth] Iniciando com provedor: ${provider || "Nenhum/Padrão"}`,
+    );
+    try {
+      if (!user) return;
+
+      const payload = {
+        user: user,
+        provider: provider,
+      };
+
+      const safeNestUrl = NEST_URL || "";
+      const baseUrl = safeNestUrl.endsWith("/")
+        ? safeNestUrl.slice(0, -1)
+        : safeNestUrl;
+      const finalUrl = `${baseUrl}/psc/auth/start`;
+
+      console.log(`[PSC Auth] URL chamada: ${finalUrl}`);
+      console.log("[PSC Auth] Payload enviada:", JSON.stringify(payload));
+
+      const response = await fetch(finalUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+
+        console.error(
+          `[PSC Auth] Falha HTTP Status ${response.status} na URL ${finalUrl}:`,
+          errorText,
+        );
+        throw new Error(errorText || "Falha ao iniciar autenticação");
+      }
+
+      const data = await response.json();
+
+      if (data.url) {
+        console.log("[PSC Auth] Abrindo janela popup para URL retornada");
+
+        setPscAuthWindowUrl(data.url);
+        setIsPscAuthenticating(true);
+
+        const width = 800;
+        const height = 700;
+        const left = window.screen.width
+          ? (window.screen.width - width) / 2
+          : 0;
+        const top = window.screen.height
+          ? (window.screen.height - height) / 2
+          : 0;
+
+        const newWindow = window.open(
+          data.url,
+          "psc_auth",
+          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
+        );
+
+        if (newWindow) {
+          pscWindowRef.current = newWindow;
+          newWindow.focus();
+        } else {
+          console.warn("[PSC Auth] O navegador bloqueou o popup.");
+        }
+      } else {
+        console.warn(
+          "[PSC Auth] Callback bem sucedido mas sem URL de redirecionamento.",
+        );
+      }
+    } catch (error: any) {
+      console.error("[PSC Auth] Erro capturado:", error);
+      addToast({
+        title: "Erro de Autenticação",
+        description: `Falha ao conectar com provedor: ${error.message || "Erro desconhecido"}`,
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
+      });
+    }
+  };
+
+  /**
+   * Função para lidar com clique no status PSC
+   */
+  const handlePscClick = () => {
+    if (pscAuthStatus.status === "ACTIVE") {
+      addToast({
+        title: "Sessão Ativa",
+        description: "Sua sessão com o provedor de assinatura já está ativa.",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      return;
+    }
+
+    // Se for BRYKMS e estiver configurado, não faz nada (considerado autenticado)
+    if (settings?.assinaturaProvider === "BRYKMS") {
+      const isBryKmsConfigured =
+        settings?.uuidCert && settings?.uuidCert.trim() !== "";
+
+      if (isBryKmsConfigured) {
+        addToast({
+          title: "BRy Cloud Configurado",
+          description:
+            "Seu provedor BRy Cloud está configurado e pronto para uso.",
+          severity: "success",
+          color: "foreground",
+          variant: "flat",
+        });
+
+        return;
+      }
+    }
+
+    const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+
+    if (defaultPscProvider) {
+      handlePscAuth(defaultPscProvider);
+    } else {
+      setIsProviderSelectorOpen(true);
+    }
+  };
+
+  /**
+   * Função modificada para abrir confirmação com verificação de autenticação
+   */
+  const handleOpenConfirmacaoWithAuth = () => {
+    if (!opinion || !opinion.opinionType) {
+      addToast({
+        variant: "solid",
+        title: "Parecer incompleto",
+        description: "Selecione um parecer médico antes de salvar.",
+        color: "danger",
+      });
+
+      return;
+    }
+
+    if (
+      opinionRequiresDetails(opinion) &&
+      (!opinion.details || opinion.details.trim() === "")
+    ) {
+      addToast({
+        variant: "solid",
+        title: "Justificativa necessária",
+        description:
+          "Este parecer exige justificativa. Preencha o campo 'Detalhes' antes de salvar.",
+        color: "danger",
+      });
+
+      return;
+    }
+
+    if (
+      opinionRequiresExames(opinion) &&
+      (!opinion.examesParaRepetir || opinion.examesParaRepetir.length === 0)
+    ) {
+      addToast({
+        variant: "solid",
+        title: "Exames não selecionados",
+        description: "Para solicitar repetição, selecione ao menos um exame.",
+        color: "danger",
+      });
+
+      return;
+    }
+
+    // Verifica se precisa de autenticação PSC
+    let requiresPscAuth = false;
+
+    if (assinaDigitalmente) {
+      if (settings?.assinaturaProvider === "BRYKMS") {
+        // Para BRYKMS, verifica se ID e PIN estão configurados
+        const isBryKmsConfigured =
+          settings?.uuidCert && settings?.uuidCert.trim() !== "";
+
+        requiresPscAuth = !isBryKmsConfigured;
+      } else {
+        // Para PSC, verifica se tem sessão ativa
+        requiresPscAuth = !pscAuthStatus.isActive;
+      }
+    }
+
+    // Se precisa autenticar -> Abre Modal (apenas para PSC)
+    if (requiresPscAuth && settings?.assinaturaProvider !== "BRYKMS") {
+      setModalPscAvisoOpen(true);
+
+      return;
+    }
+
+    // Se BRYKMS não está configurado, mostra alerta
+    if (requiresPscAuth && settings?.assinaturaProvider === "BRYKMS") {
+      addToast({
+        title: "Configuração Necessária",
+        description:
+          "Para usar o provedor BRy Cloud, configure o ID Cert (UUID) e PIN nas configurações de assinatura digital.",
+        severity: "warning",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      return;
+    }
+
+    // Se passou por tudo, abre o modal de confirmação
+    setConfirmacaoModalOpen(true);
+  };
 
   /* ---------------------- Helpers ---------------------- */
   const todayIso = useCallback(
@@ -1532,7 +1850,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                   isDisabled={isSavingOpinion || !opinion?.opinionType}
                   size="md"
                   startContent={<CheckCircle2 className="w-4 h-4" />}
-                  onPress={handleOpenConfirmacao}
+                  onPress={handleOpenConfirmacaoWithAuth}
                 >
                   Salvar Parecer
                 </Button>
@@ -1595,6 +1913,132 @@ const PainelDireita: React.FC<RightPanelProps> = ({
           });
         }}
       />
+
+      {/* PSC Provider Selector */}
+      <PscProviderSelector
+        isOpen={isProviderSelectorOpen}
+        onClose={() => setIsProviderSelectorOpen(false)}
+        onSelect={(provider) => {
+          setIsProviderSelectorOpen(false);
+          handlePscAuth(provider);
+        }}
+      />
+
+      {/* Modal de Aguardando Autenticação PSC */}
+      <HeroModal
+        hideCloseButton
+        disableAnimation={true}
+        isDismissable={false}
+        isOpen={isPscAuthenticating}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
+            Autenticação Necessária
+          </ModalHeader>
+          <ModalBody className="py-6 flex flex-col items-center justify-center text-center">
+            <Spinner className="mb-4" color="primary" size="lg" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">
+              Aguardando provedor...
+            </h3>
+            <p className="text-gray-600 mb-4 text-sm">
+              Conclua a autenticação na janela que foi aberta.
+            </p>
+
+            {pscAuthWindowUrl && (
+              <div className="bg-[#e8f4e3] border border-[#b8d864] p-3 rounded-lg w-full mb-4">
+                <p className="text-xs text-[#2a4a3a] mb-1 font-medium text-center">
+                  A janela não abriu?
+                </p>
+                <a
+                  className="text-[#44735e] hover:text-[#2a4a3a] hover:underline text-xs break-all text-center block"
+                  href={pscAuthWindowUrl}
+                  rel="noopener noreferrer"
+                  target="_blank"
+                >
+                  Clique aqui para abrir a autenticação em uma nova aba
+                  diretamente
+                </a>
+              </div>
+            )}
+          </ModalBody>
+          <ModalFooter className="flex justify-center border-t border-gray-100">
+            <Button
+              color="danger"
+              variant="light"
+              onPress={() => {
+                if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+                setIsPscAuthenticating(false);
+                if (pscWindowRef.current && !pscWindowRef.current.closed) {
+                  pscWindowRef.current.close();
+                }
+              }}
+            >
+              Cancelar Autenticação
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
+
+      {/* Modal de Aviso PSC ao Salvar */}
+      <HeroModal
+        disableAnimation={true}
+        isDismissable={false}
+        isOpen={modalPscAvisoOpen}
+        onClose={() => setModalPscAvisoOpen(false)}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">🔐</span>
+              <span className="text-lg font-semibold">
+                Autenticação Necessária
+              </span>
+            </div>
+          </ModalHeader>
+          <ModalBody className="py-6 px-6">
+            <p className="font-semibold text-lg text-gray-800">
+              Você possui assinatura digital habilitada.
+            </p>
+            <p className="text-gray-600 mt-2">
+              Sua sessão de assinatura não está ativa. Deseja autenticar agora
+              para salvar o parecer com assinatura digital?
+            </p>
+          </ModalBody>
+          <ModalFooter className="px-6 pb-4">
+            <Button
+              className="font-medium"
+              color="default"
+              variant="flat"
+              onPress={() => {
+                // Opção: Continuar sem autenticar (apenas salva)
+                setModalPscAvisoOpen(false);
+                setConfirmacaoModalOpen(true);
+              }}
+            >
+              Continuar sem autenticar
+            </Button>
+            <Button
+              className="font-medium bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+              onPress={() => {
+                // Opção: Autenticar agora
+                setModalPscAvisoOpen(false);
+                setIsWaitingForAuthToSave(true);
+
+                const defaultPscProvider =
+                  settings?.pscPadrao ?? settings?.provedorPadrao;
+
+                if (defaultPscProvider) {
+                  handlePscAuth(defaultPscProvider);
+                } else {
+                  setIsProviderSelectorOpen(true);
+                }
+              }}
+            >
+              Autenticar agora
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
     </aside>
   );
 };

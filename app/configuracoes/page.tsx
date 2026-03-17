@@ -88,8 +88,15 @@ export default function ConfiguracoesPage() {
           setFormData({
             assinaturaImagemUrl: userSettings.assinaturaImagemUrl || "",
             assinaDigitalmente: userSettings.assinaDigitalmente || false,
-            pscPadrao: userSettings.pscPadrao ?? userSettings.provedorPadrao ?? "",
-            assinaturaProvider: userSettings.assinaturaProvider ?? (userSettings.uuidCert ? "BRYKMS" : userSettings.assinaDigitalmente ? "PSC" : null),
+            pscPadrao:
+              userSettings.pscPadrao ?? userSettings.provedorPadrao ?? "",
+            assinaturaProvider:
+              userSettings.assinaturaProvider ??
+              (userSettings.uuidCert
+                ? "BRYKMS"
+                : userSettings.assinaDigitalmente
+                  ? "PSC"
+                  : null),
             uuidCert: userSettings.uuidCert ?? "",
             pin: "", // PIN não é retornado do backend por segurança
           });
@@ -107,66 +114,69 @@ export default function ConfiguracoesPage() {
   }, [router]);
 
   const validateForm = (): string | null => {
-  if (formData.assinaDigitalmente) {
-    if (!formData.assinaturaProvider) {
-      return "Quando a assinatura digital está ativa, um provedor de assinatura é obrigatório.";
+    if (formData.assinaDigitalmente) {
+      if (!formData.assinaturaProvider) {
+        return "Quando a assinatura digital está ativa, um provedor de assinatura é obrigatório.";
+      }
+
+      if (formData.assinaturaProvider === "BRYKMS") {
+        if (!formData.uuidCert.trim()) {
+          return "Para o provedor BRy Cloud, o ID Cert (UUID) é obrigatório.";
+        }
+        if (!formData.pin.trim()) {
+          return "Para o provedor BRy Cloud, o PIN do certificado é obrigatório.";
+        }
+      }
     }
 
-    if (formData.assinaturaProvider === "BRYKMS") {
-      if (!formData.uuidCert.trim()) {
-        return "Para o provedor BRy Cloud, o ID Cert (UUID) é obrigatório.";
-      }
-      if (!formData.pin.trim()) {
-        return "Para o provedor BRy Cloud, o PIN do certificado é obrigatório.";
-      }
-    }
-  }
-  return null;
-};
+    return null;
+  };
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  // Validações no frontend
-  const validationError = validateForm();
-  if (validationError) {
-    setErrorMessage(validationError);
-    setSaveStatus("error");
-    return;
-  }
-  
-  setIsSaving(true);
-  setSaveStatus("idle");
-  setErrorMessage("");
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  try {
-    const result = await saveUserSettings({
-      userCodigo: user?.codigo || "",
-      assinaturaImagemUrl: formData.assinaturaImagemUrl || undefined,
-      assinaDigitalmente: formData.assinaDigitalmente,
-      pscPadrao: formData.pscPadrao || null,
-      assinaturaProvider: formData.assinaturaProvider || null,
-      uuidCert: formData.uuidCert || null,
-      pin: formData.pin || null,
-    });
+    // Validações no frontend
+    const validationError = validateForm();
 
-    if (result.success) {
-      setSaveStatus("success");
-      setSettings({
-        ...settings!,
-        ...formData,
-      });
-    } else {
+    if (validationError) {
+      setErrorMessage(validationError);
       setSaveStatus("error");
-      setErrorMessage(result.error || "Erro ao salvar configurações");
+
+      return;
     }
-  } catch (error) {
-    setSaveStatus("error");
-    setErrorMessage("Erro ao salvar configurações");
-  } finally {
-    setIsSaving(false);
-  }
-};
+
+    setIsSaving(true);
+    setSaveStatus("idle");
+    setErrorMessage("");
+
+    try {
+      const result = await saveUserSettings({
+        userCodigo: user?.codigo || "",
+        assinaturaImagemUrl: formData.assinaturaImagemUrl || undefined,
+        assinaDigitalmente: formData.assinaDigitalmente,
+        pscPadrao: formData.pscPadrao || null,
+        assinaturaProvider: formData.assinaturaProvider || null,
+        uuidCert: formData.uuidCert || null,
+        pin: formData.pin || null,
+      });
+
+      if (result.success) {
+        setSaveStatus("success");
+        setSettings({
+          ...settings!,
+          ...formData,
+        });
+      } else {
+        setSaveStatus("error");
+        setErrorMessage(result.error || "Erro ao salvar configurações");
+      }
+    } catch (error) {
+      setSaveStatus("error");
+      setErrorMessage("Erro ao salvar configurações");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   if (isLoading || !user) {
     return <CmsoLoading />;
@@ -274,31 +284,43 @@ const handleSubmit = async (e: React.FormEvent) => {
                     <Select
                       label="Provedor de Assinatura"
                       placeholder="Selecione o provedor de assinatura"
-                      selectedKeys={formData.assinaturaProvider ? [formData.assinaturaProvider] : []}
+                      selectedKeys={
+                        formData.assinaturaProvider
+                          ? [formData.assinaturaProvider]
+                          : []
+                      }
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0] as string;
-                        
-                        setFormData({ 
-                          ...formData, 
+
+                        setFormData({
+                          ...formData,
                           assinaturaProvider:
-                          selected === "PSC"
-                            ? "PSC"
-                            : selected === "BRYKMS"
-                              ? "BRYKMS"
-                              : null,
-                          pscPadrao: selected === "PSC" ? formData.pscPadrao : "",
-                          uuidCert: selected === "BRYKMS" ? formData.uuidCert : "",
+                            selected === "PSC"
+                              ? "PSC"
+                              : selected === "BRYKMS"
+                                ? "BRYKMS"
+                                : null,
+                          pscPadrao:
+                            selected === "PSC" ? formData.pscPadrao : "",
+                          uuidCert:
+                            selected === "BRYKMS" ? formData.uuidCert : "",
                           pin: selected === "BRYKMS" ? formData.pin : "",
                         });
                       }}
                     >
-                      <SelectItem key="PSC" textValue="PSC - Provedor de Serviço de Certificação">
+                      <SelectItem
+                        key="PSC"
+                        textValue="PSC - Provedor de Serviço de Certificação"
+                      >
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
                           <span>PSC - Provedor de Serviço de Certificação</span>
                         </div>
                       </SelectItem>
-                      <SelectItem key="BRYKMS" textValue="BRy Cloud - Key Management Service">
+                      <SelectItem
+                        key="BRYKMS"
+                        textValue="BRy Cloud - Key Management Service"
+                      >
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
                           <span>BRy Cloud - Key Management Service</span>
@@ -312,21 +334,42 @@ const handleSubmit = async (e: React.FormEvent) => {
 
                   {/* Configurações PSC */}
                   <div
-                    className={formData.assinaDigitalmente && formData.assinaturaProvider === "PSC" ? "block" : "hidden"}
+                    className={
+                      formData.assinaDigitalmente &&
+                      formData.assinaturaProvider === "PSC"
+                        ? "block"
+                        : "hidden"
+                    }
                   >
                     <Select
                       label="Provedor PSC Padrão"
                       placeholder="Selecione o provedor PSC padrão"
-                      selectedKeys={formData.pscPadrao ? [formData.pscPadrao] : []}
+                      selectedKeys={
+                        formData.pscPadrao ? [formData.pscPadrao] : []
+                      }
                       onSelectionChange={(keys) => {
                         const selected = Array.from(keys)[0] as string;
+
                         setFormData({ ...formData, pscPadrao: selected });
                       }}
                     >
                       {PSC_PROVIDERS.map((item) => (
-                        <SelectItem key={item.psc} textValue={item.psc ? `${item.psc} (${item.provider})` : item.provider}>
+                        <SelectItem
+                          key={item.psc}
+                          textValue={
+                            item.psc
+                              ? `${item.psc} (${item.provider})`
+                              : item.provider
+                          }
+                        >
                           <div className="flex items-center gap-2">
-                            {item.psc && <ProviderIcon name={item.psc} size={24} className="flex-shrink-0" />}
+                            {item.psc && (
+                              <ProviderIcon
+                                className="flex-shrink-0"
+                                name={item.psc}
+                                size={24}
+                              />
+                            )}
                             <span>
                               {item.psc
                                 ? `${item.psc} (${item.provider})`
@@ -337,16 +380,23 @@ const handleSubmit = async (e: React.FormEvent) => {
                       ))}
                     </Select>
                     <p className="text-xs text-gray-500 mt-1">
-                      Selecione um provedor PSC ou &quot;Nenhum&quot; para escolher a cada autenticação
+                      Selecione um provedor PSC ou &quot;Nenhum&quot; para
+                      escolher a cada autenticação
                     </p>
                   </div>
 
                   {/* Configurações BRy Cloud */}
                   <div
-                    className={formData.assinaDigitalmente && formData.assinaturaProvider === "BRYKMS" ? "block" : "hidden"}
+                    className={
+                      formData.assinaDigitalmente &&
+                      formData.assinaturaProvider === "BRYKMS"
+                        ? "block"
+                        : "hidden"
+                    }
                   >
                     <div className="space-y-4">
                       <Input
+                        description="UUID do certificado digital fornecido pelo BRy Cloud"
                         label="ID Cert (UUID)"
                         placeholder="Digite o UUID do seu certificado no BRy Cloud"
                         value={formData.uuidCert}
@@ -356,13 +406,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                             uuidCert: e.target.value,
                           })
                         }
-                        description="UUID do certificado digital fornecido pelo BRy Cloud"
                       />
-                      
+
                       <Input
-                        type="password"
+                        description="PIN de segurança do seu certificado digital (será armazenado em base64)"
                         label="PIN do Certificado"
                         placeholder="Digite o PIN do seu certificado"
+                        type="password"
                         value={formData.pin}
                         onChange={(e) =>
                           setFormData({
@@ -370,13 +420,13 @@ const handleSubmit = async (e: React.FormEvent) => {
                             pin: e.target.value,
                           })
                         }
-                        description="PIN de segurança do seu certificado digital (será armazenado em base64)"
                       />
-                      
+
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm text-blue-700">
-                          <strong>Atenção:</strong> O PIN será criptografado em base64 e armazenado com segurança. 
-                          Não compartilhe suas credenciais com terceiros.
+                          <strong>Atenção:</strong> O PIN será criptografado em
+                          base64 e armazenado com segurança. Não compartilhe
+                          suas credenciais com terceiros.
                         </p>
                       </div>
                     </div>
@@ -486,7 +536,8 @@ const handleSubmit = async (e: React.FormEvent) => {
                           </p>
                         ) : (
                           <p className="text-amber-600">
-                            Configure as credenciais BRy Cloud para usar a assinatura digital.
+                            Configure as credenciais BRy Cloud para usar a
+                            assinatura digital.
                           </p>
                         )
                       ) : pscAuthStatus.isActive ? (
@@ -495,12 +546,14 @@ const handleSubmit = async (e: React.FormEvent) => {
                         </p>
                       ) : (
                         <p className="text-amber-600">
-                          A autenticação do provedor PSC será necessária para assinatura digital.
+                          A autenticação do provedor PSC será necessária para
+                          assinatura digital.
                         </p>
                       )
                     ) : (
                       <p>
-                        Provedor não é necessário pois a assinatura digital está desabilitada.
+                        Provedor não é necessário pois a assinatura digital está
+                        desabilitada.
                       </p>
                     )}
                   </div>
@@ -513,4 +566,3 @@ const handleSubmit = async (e: React.FormEvent) => {
     </div>
   );
 }
-

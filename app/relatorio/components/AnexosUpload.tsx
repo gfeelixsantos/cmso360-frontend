@@ -1,5 +1,14 @@
 import React, { useState, useRef, useCallback, DragEvent } from "react";
-import { Button, Spinner, Tooltip } from "@heroui/react";
+import {
+  Button,
+  Spinner,
+  Tooltip,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import {
   ExternalLink,
   UploadCloud,
@@ -34,6 +43,13 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Estado para modal de alerta
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+  }>({ open: false, type: "warning", message: "" });
+
   const processFiles = useCallback(
     async (selectedFiles: FileList | File[]) => {
       const validFiles: File[] = [];
@@ -64,7 +80,12 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
       });
 
       if (newErrors.length > 0) {
-        alert("Atenção - Erro em alguns arquivos:\n\n" + newErrors.join("\n"));
+        setAlertModal({
+          open: true,
+          type: "error",
+          message:
+            "Atenção - Erro em alguns arquivos:\n\n" + newErrors.join("\n"),
+        });
       }
 
       if (validFiles.length > 0) {
@@ -73,7 +94,11 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
           await onUpload(validFiles);
         } catch (error) {
           console.error("Erro ao fazer upload:", error);
-          alert("Ocorreu um erro ao tentar enviar os arquivos.");
+          setAlertModal({
+            open: true,
+            type: "error",
+            message: "Ocorreu um erro ao tentar enviar os arquivos.",
+          });
         } finally {
           setUploading(false);
         }
@@ -331,6 +356,48 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
       `,
         }}
       />
+
+      {/* Modal de Alerta */}
+      <Modal
+        disableAnimation
+        classNames={{
+          base: "z-[1100]",
+          wrapper: "z-[1100]",
+          backdrop: "z-[1099]",
+        }}
+        isDismissable={false}
+        isOpen={alertModal.open}
+        onClose={() => setAlertModal({ ...alertModal, open: false })}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader
+            className={
+              alertModal.type === "success"
+                ? "text-green-600"
+                : alertModal.type === "error"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+            }
+          >
+            {alertModal.type === "success"
+              ? "Sucesso"
+              : alertModal.type === "error"
+                ? "Erro"
+                : "Atenção"}
+          </ModalHeader>
+          <ModalBody>
+            <p>{alertModal.message}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+              onPress={() => setAlertModal({ ...alertModal, open: false })}
+            >
+              OK
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

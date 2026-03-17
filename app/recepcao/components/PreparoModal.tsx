@@ -285,10 +285,10 @@ export default function EmPreparacaoModal({
       disableAnimation
       backdrop="blur"
       classNames={{
-        base: "rounded-xl shadow-xl bg-white",
-        header: "border-b border-gray-100 px-5 py-3",
+        base: "rounded-xl shadow-xl bg-white border border-[#44735e]/20",
+        header: "border-b border-[#44735e]/15 px-5 py-3",
         body: "px-5 py-4",
-        footer: "border-t border-gray-100 px-5 py-3",
+        footer: "border-t border-[#44735e]/15 px-5 py-3",
       }}
       isOpen={isOpen}
       size="md"
@@ -299,7 +299,7 @@ export default function EmPreparacaoModal({
           <>
             <ModalHeader className="flex items-center justify-between gap-3 p-4">
               <div className="flex items-center gap-2">
-                <FileClock className="text-blue-600" size={20} />
+                <FileClock className="text-[#44735e]" size={20} />
                 <span className="text-lg font-semibold text-gray-800">
                   Solicitar Documentação
                 </span>
@@ -379,7 +379,7 @@ export default function EmPreparacaoModal({
 
             <ModalFooter className="flex justify-end gap-2">
               <Button
-                className="text-gray-600 hover:text-gray-800 px-4"
+                className="text-[#2a4a3a] hover:bg-[#e8f4e3] px-4"
                 size="sm"
                 variant="light"
                 onPress={onClose}
@@ -387,7 +387,7 @@ export default function EmPreparacaoModal({
                 Cancelar
               </Button>
               <Button
-                className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-medium shadow-sm hover:from-blue-700 hover:to-blue-800 px-4"
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white font-medium shadow-sm hover:opacity-90 px-4 focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
                 isDisabled={!isFormValid}
                 isLoading={loading}
                 size="sm"

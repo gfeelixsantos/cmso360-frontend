@@ -2,6 +2,8 @@
 // app/relatorios/LazyModalContent.tsx
 import React, { useState, useCallback } from "react";
 import {
+  Modal as HeroModal,
+  ModalContent,
   ModalHeader,
   ModalBody,
   ModalFooter,
@@ -60,6 +62,14 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [syncSocModalOpen, setSyncSocModalOpen] = useState(false);
 
+  // Estado para modal de alerta
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+    onConfirm?: () => void;
+  }>({ open: false, type: "warning", message: "" });
+
   // ============================================
   // HANDLERS PARA ANEXOS
   // ============================================
@@ -92,10 +102,18 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
           onUpdateScheduling(updatedAtendimento);
         }
 
-        alert("Anexos enviados com sucesso!");
+        setAlertModal({
+          open: true,
+          type: "success",
+          message: "Anexos enviados com sucesso!",
+        });
       } catch (error) {
         console.error("Erro ao fazer upload:", error);
-        alert("Erro ao enviar anexos");
+        setAlertModal({
+          open: true,
+          type: "error",
+          message: "Erro ao enviar anexos",
+        });
       } finally {
         setLoadingAttachments(false);
       }
@@ -107,35 +125,48 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     async (fileName: string) => {
       if (!atendimento._id) return;
 
-      if (!confirm("Deseja realmente remover este anexo?")) return;
+      setAlertModal({
+        open: true,
+        type: "warning",
+        message: "Deseja realmente remover este anexo?",
+        onConfirm: async () => {
+          try {
+            const response = await fetch(NEST_SCHEDULINGS_ANEXO_REMOVE, {
+              method: "DELETE",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                schedulingId: atendimento._id,
+                fileName: fileName,
+              }),
+            });
 
-      try {
-        const response = await fetch(NEST_SCHEDULINGS_ANEXO_REMOVE, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            schedulingId: atendimento._id,
-            fileName: fileName,
-          }),
-        });
+            if (!response.ok) {
+              throw new Error("Erro ao remover anexo");
+            }
 
-        if (!response.ok) {
-          throw new Error("Erro ao remover anexo");
-        }
+            const updatedAtendimento = await response.json();
 
-        const updatedAtendimento = await response.json();
+            if (onUpdateScheduling) {
+              onUpdateScheduling(updatedAtendimento);
+            }
 
-        if (onUpdateScheduling) {
-          onUpdateScheduling(updatedAtendimento);
-        }
-
-        alert("Anexo removido com sucesso!");
-      } catch (error) {
-        console.error("Erro ao remover anexo:", error);
-        alert("Erro ao remover anexo");
-      }
+            setAlertModal({
+              open: true,
+              type: "success",
+              message: "Anexo removido com sucesso!",
+            });
+          } catch (error) {
+            console.error("Erro ao remover anexo:", error);
+            setAlertModal({
+              open: true,
+              type: "error",
+              message: "Erro ao remover anexo",
+            });
+          }
+        },
+      });
     },
     [atendimento._id, onUpdateScheduling],
   );
@@ -162,11 +193,19 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       if (data.sas_url) {
         window.open(data.sas_url, "_blank", "noopener,noreferrer");
       } else {
-        alert("Prontuário não disponível");
+        setAlertModal({
+          open: true,
+          type: "warning",
+          message: "Prontuário não disponível",
+        });
       }
     } catch (error) {
       console.error("Erro ao visualizar prontuário:", error);
-      alert("Não foi possível carregar o prontuário");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Não foi possível carregar o prontuário",
+      });
     } finally {
       setLoadingViewMedicalRecord(false);
     }
@@ -194,11 +233,19 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         newWin.document.close();
         newWin.onload = () => newWin.focus();
       } else {
-        alert("Não foi possível abrir o relatório em nova aba");
+        setAlertModal({
+          open: true,
+          type: "error",
+          message: "Não foi possível abrir o relatório em nova aba",
+        });
       }
     } catch (error) {
       console.error("Erro ao buscar relatório:", error);
-      alert("Não foi possível carregar o relatório");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Não foi possível carregar o relatório",
+      });
     } finally {
       setLoadingViewReport(false);
     }
@@ -224,11 +271,19 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         onUpdateScheduling(updatedScheduling);
       }
 
-      alert("Sincronização realizada com sucesso!");
+      setAlertModal({
+        open: true,
+        type: "success",
+        message: "Sincronização realizada com sucesso!",
+      });
       setSyncSocModalOpen(false);
     } catch (error) {
       console.error("Erro ao sincronizar:", error);
-      alert("Erro ao sincronizar com SOC");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Erro ao sincronizar com SOC",
+      });
     } finally {
       setLoadingSyncSoc(false);
     }
@@ -254,12 +309,20 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         throw new Error(errorData.message || "Erro ao excluir atendimento");
       }
 
-      alert("Atendimento excluído com sucesso!");
+      setAlertModal({
+        open: true,
+        type: "success",
+        message: "Atendimento excluído com sucesso!",
+      });
       setDeleteModalOpen(false);
       onClose();
     } catch (error: any) {
       console.error("Erro ao excluir:", error);
-      alert(error.message || "Erro ao excluir atendimento");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: error.message || "Erro ao excluir atendimento",
+      });
     } finally {
       setLoadingDeleteScheduling(false);
     }
@@ -418,6 +481,68 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
           Fechar
         </Button>
       </ModalFooter>
+
+      {/* Modal de Alerta */}
+      <HeroModal
+        disableAnimation
+        classNames={{
+          base: "z-[1100]",
+          wrapper: "z-[1100]",
+          backdrop: "z-[1099]",
+        }}
+        isDismissable={false}
+        isOpen={alertModal.open}
+        onClose={() => setAlertModal({ ...alertModal, open: false })}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader
+            className={
+              alertModal.type === "success"
+                ? "text-green-600"
+                : alertModal.type === "error"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+            }
+          >
+            {alertModal.type === "success"
+              ? "Sucesso"
+              : alertModal.type === "error"
+                ? "Erro"
+                : "Atenção"}
+          </ModalHeader>
+          <ModalBody>
+            <p>{alertModal.message}</p>
+          </ModalBody>
+          <ModalFooter>
+            {alertModal.onConfirm ? (
+              <>
+                <Button
+                  variant="light"
+                  onPress={() => setAlertModal({ ...alertModal, open: false })}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+                  onPress={() => {
+                    alertModal.onConfirm?.();
+                    setAlertModal({ ...alertModal, open: false });
+                  }}
+                >
+                  Confirmar
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+                onPress={() => setAlertModal({ ...alertModal, open: false })}
+              >
+                OK
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </HeroModal>
     </>
   );
 };

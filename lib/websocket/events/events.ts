@@ -28,6 +28,9 @@ enum EventType {
   // Painel
   PAINEL_CALL = "PAINEL_CALL",
   PAINEL_TICKETS = "PAINEL_TICKETS_TO_CALL",
+
+  // Scraper
+  SCRAPER_STATUS_UPDATE = "SCRAPER_STATUS_UPDATE",
 }
 
 // Mapeamento de eventos para seus payloads
@@ -44,6 +47,7 @@ interface EventPayloadMap {
   [EventType.UPDATE_SCHEDULE]: SchedulingChange;
   [EventType.UPDATE_RECORD]: SchedulingChange;
   [EventType.PREPARATION_REQUEST]: PreparationRequestModel;
+  [EventType.SCRAPER_STATUS_UPDATE]: any[];
 }
 
 // Estender os tipos do Socket.IO para eventos personalizados
@@ -60,6 +64,7 @@ interface CustomEventMap {
   [EventType.UPDATE_SCHEDULE]: (payload: SchedulingChange) => void;
   [EventType.UPDATE_RECORD]: (payload: SchedulingChange) => void;
   [EventType.PREPARATION_REQUEST]: (payload: PreparationRequestModel) => void;
+  [EventType.SCRAPER_STATUS_UPDATE]: (payload: any[]) => void;
 }
 
 // Função genérica para emitir eventos tipados

@@ -13,7 +13,10 @@ export interface StatusBadgeProps {
   className?: string;
 }
 
-const colorStyles: Record<StatusColor, { bg: string; dot: string; text: string }> = {
+const colorStyles: Record<
+  StatusColor,
+  { bg: string; dot: string; text: string }
+> = {
   green: {
     bg: "bg-gradient-to-r from-[#104e35] to-[#4CAF50]",
     dot: "bg-lime-300",
@@ -62,7 +65,3 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
     </Chip>
   );
 };
-
-
-
-

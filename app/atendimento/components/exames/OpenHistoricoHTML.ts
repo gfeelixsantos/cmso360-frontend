@@ -65,19 +65,24 @@ export function openHistoricoHTML(
       // Lógica para identificação do profissional (Substituição de CPF vazio)
       let labelProfissional = "CPF(s) do Profissional";
       let valueProfissional = "";
-      
+
       const cpf1 = audiometria.CPF_FONO ? formatCPF(audiometria.CPF_FONO) : "";
-      const cpf2 = audiometria.CPF_FONO2 ? formatCPF(audiometria.CPF_FONO2) : "";
-      
+      const cpf2 = audiometria.CPF_FONO2
+        ? formatCPF(audiometria.CPF_FONO2)
+        : "";
+
       if (cpf1 || cpf2) {
         valueProfissional = `${cpf1} ${cpf2 ? `<br/>${cpf2}` : ""}`;
       } else {
         // Fallback: Registro Profissional
         labelProfissional = "Registro Profissional";
         const reg1 = `${audiometria.CONSELHO_CLASSE_EXAMINADOR1 || ""} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR1 || ""}`;
-        const reg2 = audiometria.CONSELHO_CLASSE_EXAMINADOR2 ? `${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ""}` : "";
+        const reg2 = audiometria.CONSELHO_CLASSE_EXAMINADOR2
+          ? `${audiometria.CONSELHO_CLASSE_EXAMINADOR2} ${audiometria.NUM_CONSELHO_CLASSE_EXAMINADOR2 || ""}`
+          : "";
+
         valueProfissional = `${reg1} ${reg2 ? `<br/>${reg2}` : ""}`.trim();
-        
+
         if (!valueProfissional) valueProfissional = "Não informado";
       }
 
@@ -1000,7 +1005,7 @@ function createIRFSRT(data: any): string {
   const hasIrfOD = data.irfOD && data.irfOD.trim() !== "";
   const hasSrtOE = data.srtOE && data.srtOE.trim() !== "";
   const hasIrfOE = data.irfOE && data.irfOE.trim() !== "";
-  
+
   const hasOD = hasSrtOD || hasIrfOD;
   const hasOE = hasSrtOE || hasIrfOE;
 
@@ -1010,6 +1015,7 @@ function createIRFSRT(data: any): string {
 
   const renderRow = (label: string, value: string) => {
     if (!value || value.trim() === "") return "";
+
     return `<div style="font-size: 13px"><strong>${label}:</strong> ${value}</div>`;
   };
 

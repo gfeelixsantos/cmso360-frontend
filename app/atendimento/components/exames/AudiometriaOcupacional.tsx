@@ -1039,13 +1039,19 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       if (formulario.resultadoOD && formulario.resultadoOE) {
         setResultadosCalculados(true);
       }
+    } else if (atendimento) {
+      const isAdmissional = AttendanceRules.isAdmissional(atendimento);
+
+      if (!isAdmissional) {
+        setFormData((prev) => ({ ...prev, audiometriaAnterior: "Sim" }));
+      }
     }
 
     // Validação para aplicar formulário de plug de silicone - utilizado em admissional Whirlpool e RH Brasil
     if (
       (AtendimentoRules.isAdmissional(atendimento) &&
-        AtendimentoRules.isRhBrasilWhirlpool(atendimento)) ||
-      AtendimentoRules.isWhirlpoolAdmissional(atendimento)
+        AttendanceRules.isRhBrasilWhirlpool(atendimento)) ||
+      AttendanceRules.isWhirlpoolAdmissional(atendimento)
     ) {
       setApplyFormPlug(true);
     }
@@ -1622,7 +1628,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
           title="Audiometria Tonal (Limiares Auditivos)"
         />
 
-        <div className="mb-4 flex justify-between items-center">
+        <div className="mb-4">
           <div className="text-md text-gray-600">
             <p className="mb-1">
               {resultadosCalculados
@@ -1632,40 +1638,6 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             <p className="mb-1">
               Utilize "--" ou "---" para indicar ausência de resposta.
             </p>
-          </div>
-          <div className="flex gap-2">
-            {/* ATUALIZAÇÃO 3: Botão para ver audiometria anterior ao lado do calcular */}
-            {formData.audiometriaAnterior === "Sim" && (
-              <Button
-                className="bg-blue-600 text-white"
-                isDisabled={carregandoAudiometriaAnterior}
-                startContent={
-                  carregandoAudiometriaAnterior ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )
-                }
-                onPress={verAudiometriaAnterior}
-              >
-                {carregandoAudiometriaAnterior ? "Buscando..." : "Ver Anterior"}
-              </Button>
-            )}
-            <Button
-              className="bg-green-600 text-white"
-              color="primary"
-              isDisabled={isCalculating}
-              startContent={
-                isCalculating ? (
-                  <Spinner size="sm" />
-                ) : (
-                  <Calculator className="h-4 w-4" />
-                )
-              }
-              onPress={calcularResultados}
-            >
-              {isCalculating ? "Calculando..." : "Calcular Resultados"}
-            </Button>
           </div>
         </div>
 
@@ -1926,6 +1898,42 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
             </tbody>
           </table>
         </div>
+
+        <div className="mt-4 flex justify-end">
+          <div className="flex gap-2">
+            {formData.audiometriaAnterior === "Sim" && (
+              <Button
+                className="bg-blue-600 text-white"
+                isDisabled={carregandoAudiometriaAnterior}
+                startContent={
+                  carregandoAudiometriaAnterior ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )
+                }
+                onPress={verAudiometriaAnterior}
+              >
+                {carregandoAudiometriaAnterior ? "Buscando..." : "Ver Anterior"}
+              </Button>
+            )}
+            <Button
+              className="bg-green-600 text-white"
+              color="primary"
+              isDisabled={isCalculating}
+              startContent={
+                isCalculating ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <Calculator className="h-4 w-4" />
+                )
+              }
+              onPress={calcularResultados}
+            >
+              {isCalculating ? "Calculando..." : "Calcular Resultados"}
+            </Button>
+          </div>
+        </div>
       </Card>
 
       {/* 4. Conclusão e Laudo Final - SÓ APARECE APÓS CÁLCULO */}
@@ -2146,10 +2154,17 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
         <Button
           className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
           color="primary"
-          onPress={handleSave}
-          startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
+          isDisabled={
+            !formData.resultadoOD ||
+            !formData.resultadoOE ||
+            isLoading ||
+            !resultadosCalculados
+          }
+          startContent={
+            isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />
+          }
           // ATUALIZAÇÃO 2: Desabilitar o botão se os resultados não foram calculados
-          isDisabled={!formData.resultadoOD || !formData.resultadoOE || isLoading || !resultadosCalculados}
+          onPress={handleSave}
         >
           {isLoading ? "Salvando..." : "Concluir exame"}
         </Button>

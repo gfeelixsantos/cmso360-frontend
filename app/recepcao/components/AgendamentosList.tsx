@@ -26,6 +26,13 @@ import { useUser } from "@/hooks/useUser";
 // Importar o LazyModalContent
 const LazyModalContent = lazy(() => import("@/app/relatorio/LazyModalContent"));
 
+function normalizeString(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
+
 interface AgendamentosListProps {
   agendadosFiltrados: Scheduling[];
   conectado: boolean;
@@ -127,7 +134,7 @@ const DetalhesModal: React.FC<{
     <Modal
       aria-label="Modal de detalhes do atendimento"
       classNames={{
-        base: "max-h-[90vh]",
+        base: "max-h-[90vh] border border-[#44735e]/20",
         wrapper: "z-[1000]",
       }}
       isOpen={isOpen}
@@ -269,15 +276,15 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
       );
     }
 
-    const termoBusca = buscaSenha.toLowerCase().trim();
+    const termoBusca = normalizeString(buscaSenha.trim());
 
     return agendadosFiltrados.filter(
       (agendamento) =>
         agendamento.UNIDADEATENDIMENTO === unidadeSelecionada &&
-        (agendamento.NOME.toLowerCase().includes(termoBusca) ||
-          agendamento.NOMEEMPRESA.toLowerCase().includes(termoBusca) ||
+        (normalizeString(agendamento.NOME).includes(termoBusca) ||
+          normalizeString(agendamento.NOMEEMPRESA).includes(termoBusca) ||
           (agendamento.NOMECARGO &&
-            agendamento.NOMECARGO.toLowerCase().includes(termoBusca))),
+            normalizeString(agendamento.NOMECARGO).includes(termoBusca))),
     );
   }, [agendadosFiltrados, unidadeSelecionada, buscaSenha]);
 

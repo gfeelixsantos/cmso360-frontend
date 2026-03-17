@@ -28,6 +28,13 @@ import {
 import { Search } from "lucide-react";
 
 import PdfViewer from "./components/PdfView";
+
+function normalizeString(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 import PainelDireita from "./components/PainelDireita";
 
 import {
@@ -46,6 +53,7 @@ import {
 
 // Componentes
 import { HeaderApp } from "@/components/shared/HeaderApp";
+import { PscProviderStatus } from "@/app/atendimento/components/PscProviderStatus";
 
 // Utils e config
 import { getCurrentUser, logout } from "@/lib/utils";
@@ -54,6 +62,9 @@ import {
   NEST_PRONTUARIO_REGISTROS,
   NEST_URL,
 } from "@/config/constants";
+
+// Hooks
+import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
 
 // UI Components
 
@@ -200,6 +211,14 @@ export default function UnifiedProntuarioPage() {
   // Estado para controle de scroll e carregamento de mais itens
   const [scrollContainerRef, setScrollContainerRef] =
     useState<HTMLDivElement | null>(null);
+
+  // Estados para autenticação PSC
+  const {
+    settings: pscSettings,
+    pscAuthStatus,
+    isLoading: isPscLoading,
+  } = usePscAuthStatus();
+  const assinaDigitalmente = pscSettings?.assinaDigitalmente ?? false;
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -584,8 +603,9 @@ export default function UnifiedProntuarioPage() {
 
   const filtered = useMemo(() => {
     return records.filter((r) => {
+      const normalizedSearch = normalizeString(search);
       const nameMatch =
-        !search || r.NOME.toLowerCase().includes(search.toLowerCase());
+        !search || normalizeString(r.NOME).includes(normalizedSearch);
       const statusMatch = attendanceStatus === r.currentStatus;
 
       return nameMatch && statusMatch;
@@ -640,6 +660,17 @@ export default function UnifiedProntuarioPage() {
         {/* LEFT: Lista / filtros */}
         <aside className="w-80 bg-default-50 border-r border-divider p-4 flex flex-col flex-shrink-0">
           <div className="space-y-4">
+            {/* Badge do Provedor de Assinatura Digital */}
+            {assinaDigitalmente && (
+              <div className="mb-2">
+                <PscProviderStatus
+                  isLoading={isPscLoading}
+                  pscAuthStatus={pscAuthStatus}
+                  settings={pscSettings}
+                />
+              </div>
+            )}
+
             <Select
               className="w-full"
               isDisabled={isLoadingEmpresasMedicos}

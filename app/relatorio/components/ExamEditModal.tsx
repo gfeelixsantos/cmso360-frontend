@@ -51,6 +51,13 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Estado para modal de alerta
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+  }>({ open: false, type: "warning", message: "" });
+
   // Estados para lógica de Psicossocial (mesma do AtendimentoModalExames)
   const [entrevistaPsico, setEntrevistaPsico] = useState<boolean>(false);
   const [psicossocial, setPsicossocial] = useState<boolean>(false);
@@ -189,12 +196,20 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         const result: Scheduling = await response.json();
 
         if (!result) {
-          alert("Erro ao atualizar exame.");
+          setAlertModal({
+            open: true,
+            type: "error",
+            message: "Erro ao atualizar exame.",
+          });
 
           return;
         }
 
-        alert("Exame atualizado com sucesso!");
+        setAlertModal({
+          open: true,
+          type: "success",
+          message: "Exame atualizado com sucesso!",
+        });
 
         // Fecha o modal - o componente pai fará o refetch
         onClose();
@@ -228,8 +243,8 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         size="2xl"
         onClose={onClose}
       >
-        <ModalContent>
-          <ModalHeader className="bg-blue-600 text-white">
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
             Carregando formulário...
           </ModalHeader>
           <ModalBody className="py-8">
@@ -299,17 +314,66 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
       {/* Modal de erro simplificado */}
       {error && (
         <Modal isOpen={!!error} size="sm" onClose={() => setError("")}>
-          <ModalContent>
-            <ModalHeader className="bg-red-600 text-white">✗ Erro</ModalHeader>
+          <ModalContent className="border border-[#44735e]/20">
+            <ModalHeader className="bg-[#2a4a3a] text-white">
+              ✗ Erro
+            </ModalHeader>
             <ModalBody>
               <p className="text-red-700">{error}</p>
             </ModalBody>
-            <ModalFooter>
-              <Button onPress={() => setError("")}>Fechar</Button>
+            <ModalFooter className="border-t border-[#44735e]/15">
+              <Button
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+                onPress={() => setError("")}
+              >
+                Fechar
+              </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>
       )}
+
+      {/* Modal de Alerta */}
+      <Modal
+        disableAnimation
+        classNames={{
+          base: "z-[1100]",
+          wrapper: "z-[1100]",
+          backdrop: "z-[1099]",
+        }}
+        isDismissable={false}
+        isOpen={alertModal.open}
+        onClose={() => setAlertModal({ ...alertModal, open: false })}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader
+            className={
+              alertModal.type === "success"
+                ? "text-green-600"
+                : alertModal.type === "error"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+            }
+          >
+            {alertModal.type === "success"
+              ? "Sucesso"
+              : alertModal.type === "error"
+                ? "Erro"
+                : "Atenção"}
+          </ModalHeader>
+          <ModalBody>
+            <p>{alertModal.message}</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+              onPress={() => setAlertModal({ ...alertModal, open: false })}
+            >
+              OK
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </>
   );
 };

@@ -812,17 +812,16 @@ const RecepcaoPage: React.FC = () => {
 
       {/* Modal de confirmação do HeroUI */}
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
-        <ModalContent>
-          <ModalHeader>
-            <ExclamationCircleIcon className="h-6 w-6" />
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="text-[#2a4a3a]">
+            <ExclamationCircleIcon className="h-6 w-6 text-[#44735e]" />
             Atenção
           </ModalHeader>
           <ModalBody>{modalText}</ModalBody>
           <ModalFooter className="flex justify-end gap-2">
             <Button
-              color="primary"
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
               size="sm"
-              variant="ghost"
               onPress={() => setModalAlert(false)}
             >
               Confirmar

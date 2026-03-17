@@ -69,14 +69,17 @@ const DeleteConfirmationModal: React.FC<{
       }}
       onClose={onCloseModalDelete}
     >
-      <ModalContent className="z-[1001] shadow-2xl" style={{ zIndex: 1001 }}>
-        <ModalHeader className="flex flex-col gap-1">
+      <ModalContent
+        className="z-[1001] shadow-2xl border border-[#44735e]/20"
+        style={{ zIndex: 1001 }}
+      >
+        <ModalHeader className="flex flex-col gap-1 border-b border-[#44735e]/15">
           <div className="flex items-center gap-2 text-red-600">
             <AlertCircle size={24} />
             <span className="text-lg font-semibold">Confirmar Exclusão</span>
           </div>
         </ModalHeader>
-        <ModalBody>
+        <ModalBody className="py-5">
           <p className="text-gray-700">
             Esta ação irá excluir <strong>permanentemente</strong> o atendimento
             e todos os dados associados.
@@ -95,8 +98,9 @@ const DeleteConfirmationModal: React.FC<{
             }}
           />
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="border-t border-[#44735e]/15">
           <Button
+            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
             disabled={isLoading}
             variant="light"
             onPress={onCloseModalDelete}
@@ -104,6 +108,7 @@ const DeleteConfirmationModal: React.FC<{
             Cancelar
           </Button>
           <Button
+            className="focus-visible:ring-2 focus-visible:ring-red-300"
             color="danger"
             isLoading={isLoading}
             startContent={isLoading ? null : <Trash size={16} />}

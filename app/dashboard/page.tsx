@@ -17,7 +17,11 @@ import {
 import { Button } from "@heroui/react";
 
 import { StatisticsSection } from "./components/StatisticsSection";
-import { getCurrentMessage, Message } from "./message/messageDisplay";
+import {
+  getCurrentMessage,
+  Message,
+  sanitizeMessageHtml,
+} from "./message/messageDisplay";
 
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { getCurrentUser, logout } from "@/lib/utils";
@@ -69,14 +73,14 @@ const MessageModal: React.FC<{
   if (!isOpen || !message) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-sm">
       <motion.div
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden border border-[#44735e]/15"
         exit={{ opacity: 0, scale: 0.95 }}
         initial={{ opacity: 0, scale: 0.95 }}
       >
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 border-b border-[#44735e]/15 bg-[#f5f9f7]">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <video
@@ -88,7 +92,7 @@ const MessageModal: React.FC<{
                 src="/images/gifs/Notification.webm"
               />
               <div>
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-[#2a4a3a]">
                   {message.title}
                 </h2>
                 <p className="text-md text-gray-500">{message.date}</p>
@@ -96,7 +100,7 @@ const MessageModal: React.FC<{
             </div>
             <button
               aria-label="Fechar"
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-2 hover:bg-[#e8f4e3] rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
               onClick={onClose}
             >
               <X className="h-5 w-5 text-gray-500" />
@@ -104,20 +108,29 @@ const MessageModal: React.FC<{
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[50vh]">
+        <div className="p-6 overflow-y-auto max-h-[58vh]">
           <div className="prose prose-lg max-w-none">
-            <div className="whitespace-pre-line text-gray-700">
-              {message.content}
-            </div>
+            {message.contentType === "html" ? (
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: sanitizeMessageHtml(message.content),
+                }}
+                className="text-gray-700 leading-relaxed [&_p]:my-3 [&_strong]:text-[#2a4a3a] [&_a]:text-[#44735e] [&_a:hover]:text-[#2a4a3a] [&_a]:underline [&_img]:rounded-2xl [&_img]:max-h-56 [&_img]:w-auto [&_img]:mx-auto [&_img]:my-4 [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:my-3 [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pl-6 [&_h3]:text-[#2a4a3a] [&_h3]:text-xl [&_h3]:font-bold [&_h3]:mt-6 [&_h3]:mb-2 [&_blockquote]:mt-5 [&_blockquote]:rounded-xl [&_blockquote]:border-l-4 [&_blockquote]:border-[#44735e] [&_blockquote]:bg-[#f5f9f7] [&_blockquote]:px-4 [&_blockquote]:py-3 [&_blockquote]:text-[#2a4a3a]"
+              />
+            ) : (
+              <div className="whitespace-pre-line text-gray-700">
+                {message.content}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="p-6 border-t border-gray-200 bg-gray-50">
+        <div className="p-6 border-t border-[#44735e]/15 bg-[#f5f9f7]">
           <div className="flex justify-end">
             <Button
-              className="px-6 py-2"
+              className="px-6 py-2 text-[#2a4a3a] hover:bg-[#e8f4e3]"
               color="default"
-              variant="ghost"
+              variant="flat"
               onPress={onClose}
             >
               Fechar

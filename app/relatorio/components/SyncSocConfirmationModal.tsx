@@ -67,13 +67,13 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
       }}
       onClose={onClose}
     >
-      <ModalContent>
+      <ModalContent className="border border-[#44735e]/20">
         {(onCloseModal) => (
           <>
-            <ModalHeader className="flex flex-col gap-1">
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
               Confirmar Sincronização SOC
             </ModalHeader>
-            <ModalBody>
+            <ModalBody className="py-5">
               <div className="mt-2 text-sm text-gray-700">
                 <p>
                   A sincronização inteligente atualizará{" "}
@@ -81,15 +81,16 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
                   dinâmico nos seus Exames em relação ao cruzamento de base com
                   o SOC.
                 </p>
-                <p className="text-xs text-black mt-2 bg-yellow-100 p-2 rounded">
+                <p className="text-xs text-[#2a4a3a] mt-2 bg-[#e8f4e3] border border-[#b8d864] p-2 rounded">
                   <strong>IMPORTANTE: </strong> Seu histórico clínico atual não
                   será afetado. Exames Finalizados serão sempre mantidos e
                   exames repetentes serão adicionados.
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter>
+            <ModalFooter className="border-t border-[#44735e]/15">
               <Button
+                className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
                 color="default"
                 disabled={isLoading}
                 variant="light"
@@ -98,8 +99,9 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
                 Cancelar
               </Button>
               <Button
-                color="primary"
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
                 isLoading={isLoading}
+                variant="solid"
                 onPress={handleConfirm}
               >
                 {isLoading ? "Sincronizando..." : "Confirmar Sincronização"}

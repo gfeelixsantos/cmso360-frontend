@@ -169,13 +169,13 @@ const ExamUploadModal: React.FC<{
       size="xl"
       onClose={onClose}
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
+      <ModalContent className="border border-[#44735e]/20">
+        <ModalHeader className="flex flex-col gap-1 text-[#2a4a3a] border-b border-[#44735e]/15">
           <div className="flex items-center gap-2">
-            <Upload size={20} />
+            <Upload className="text-[#44735e]" size={20} />
             <p>Envio de Resultado </p>
           </div>
-          <p className="text-sm text-primary">{exame.nomeExame}</p>
+          <p className="text-sm text-[#44735e]">{exame.nomeExame}</p>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -202,7 +202,7 @@ const ExamUploadModal: React.FC<{
                     className={`cursor-pointer flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg border ${
                       isUploading
                         ? "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200"
-                        : "bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                        : "bg-[#e8f4e3] text-[#44735e] hover:bg-[#d9ebd1] border-[#b8d864]"
                     }`}
                     htmlFor="file-input-modal"
                   >
@@ -247,15 +247,21 @@ const ExamUploadModal: React.FC<{
             </div>
           </div>
         </ModalBody>
-        <ModalFooter>
-          <Button disabled={isUploading} variant="light" onPress={onClose}>
+        <ModalFooter className="border-t border-[#44735e]/15">
+          <Button
+            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+            disabled={isUploading}
+            variant="light"
+            onPress={onClose}
+          >
             Cancelar
           </Button>
           <Button
-            color="primary"
+            className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
             disabled={selectedFiles.length === 0 || isUploading}
             isLoading={isUploading}
             startContent={<Upload size={16} />}
+            variant="solid"
             onPress={handleUpload}
           >
             Enviar ({selectedFiles.length})

@@ -358,8 +358,8 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
         isOpen={!!requestToConfirm}
         onOpenChange={handleCancel}
       >
-        <ModalContent>
-          <ModalHeader>Confirmar</ModalHeader>
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="text-[#2a4a3a]">Confirmar</ModalHeader>
           <ModalBody>
             {requestToConfirm && (
               <p>
@@ -370,17 +370,17 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
           </ModalBody>
           <ModalFooter className="flex justify-end gap-2">
             <Button
-              color="danger"
+              className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+              color="default"
               size="sm"
-              variant="ghost"
+              variant="flat"
               onClick={handleCancel}
             >
               Cancelar
             </Button>
             <Button
-              color="primary"
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
               size="sm"
-              variant="ghost"
               onClick={handleConfirm}
             >
               Confirmar

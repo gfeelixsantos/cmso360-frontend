@@ -92,14 +92,14 @@ const DeleteAttachmentModal: React.FC<{
       size="md"
       onClose={onClose}
     >
-      <ModalContent>
-        <ModalHeader className="flex flex-col gap-1">
+      <ModalContent className="border border-[#44735e]/20">
+        <ModalHeader className="flex flex-col gap-1 border-b border-[#44735e]/15">
           <div className="flex items-center gap-2 text-red-600">
             <AlertCircle size={24} />
             <span>Remover Resultado</span>
           </div>
         </ModalHeader>
-        <ModalBody>
+        <ModalBody className="py-5">
           <p className="text-gray-700">
             Tem certeza que deseja remover o resultado do exame{" "}
             <strong>{examName}</strong>?
@@ -129,11 +129,17 @@ const DeleteAttachmentModal: React.FC<{
             </div>
           )}
         </ModalBody>
-        <ModalFooter>
-          <Button disabled={isDeleting} variant="light" onPress={onClose}>
+        <ModalFooter className="border-t border-[#44735e]/15">
+          <Button
+            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+            disabled={isDeleting}
+            variant="light"
+            onPress={onClose}
+          >
             Cancelar
           </Button>
           <Button
+            className="focus-visible:ring-2 focus-visible:ring-red-300"
             color="danger"
             isLoading={isDeleting}
             startContent={isDeleting ? "" : <Trash size={16} />}

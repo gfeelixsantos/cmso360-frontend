@@ -36,7 +36,13 @@ import {
   Switch,
   Checkbox,
   Spinner,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
 } from "@heroui/react";
+import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Socket } from "socket.io-client";
@@ -81,6 +87,13 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { AsoFuncionarioDto } from "@/lib/soc/interfaces/AsoFuncionario";
 import { reportInternal } from "@/lib/scheduling/report/reportInternal";
+
+function normalizeString(str: string): string {
+  return str
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
+}
 
 interface AtendimentoModalProps {
   isOpen: boolean;
@@ -153,6 +166,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
   // Controls when error labels are shown
   const [showErrors, setShowErrors] = useState<boolean>(false);
+
+  // Estados para modal de alerta
+  const [modalAlert, setModalAlert] = useState<boolean>(false);
+  const [modalText, setModalText] = useState<React.ReactNode>("");
+  const [isSuccessModal, setIsSuccessModal] = useState<boolean>(false);
 
   // Controle de agendamento selecionado
   const [selectedSchedulingId, setSelectedSchedulingId] = useState<
@@ -238,13 +256,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
   const filteredAgendamentos = useMemo(() => {
     if (!agendamentos) return [];
-    const term = searchTerm.trim().toLowerCase();
+    const term = normalizeString(searchTerm.trim());
 
     return agendamentos.filter((p) => {
       const matchesSearch =
         term === "" ||
-        p.NOME.toLowerCase().includes(term) ||
-        p.NOMEEMPRESA.toLowerCase().includes(term) ||
+        normalizeString(p.NOME).includes(term) ||
+        normalizeString(p.NOMEEMPRESA).includes(term) ||
         p.CPFFUNCIONARIO?.toLowerCase().includes(term);
 
       // 1. Caso "all" (todos)
@@ -280,9 +298,27 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // Actions: buscar funcionario por código (somente números)
   // ---------------------------------------------------------
   const handleBuscarFuncionario = useCallback(async () => {
-    if (!empresa || !codigoFuncionario)
-      return alert("Informe empresa e código do funcionário");
-    if (!unidadeSelecionada) return alert("Selecione uma unidade");
+    if (!empresa || !codigoFuncionario) {
+      setModalText(
+        <p>
+          Informe <strong>empresa</strong> e{" "}
+          <strong>código do funcionário</strong>
+        </p>,
+      );
+      setModalAlert(true);
+
+      return;
+    }
+    if (!unidadeSelecionada) {
+      setModalText(
+        <p>
+          Selecione uma <strong>unidade</strong>
+        </p>,
+      );
+      setModalAlert(true);
+
+      return;
+    }
 
     try {
       setIsLoading(true);
@@ -788,8 +824,16 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
   // Função que faz o print da guia de atendimento
   const handlePrint = () => {
-    if (!funcionarioSelecionado) alert("Selecione um funcionário");
-    else {
+    if (!funcionarioSelecionado) {
+      setModalText(
+        <p>
+          Selecione um <strong>funcionário</strong>
+        </p>,
+      );
+      setModalAlert(true);
+
+      return;
+    } else {
       const htmlContent = reportInternal(funcionarioSelecionado);
       const printWindow = window.open("", "_blank", "width=900,height=800");
 
@@ -871,11 +915,23 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           funcionarioSelecionado._id,
         );
 
-        alert("Atendimento enviado com sucesso");
-        onClose();
+        // Não fecha o modal aqui - mostra confirmação primeiro
+        setIsSuccessModal(true);
+        setModalText(
+          <p className="text-green-600 font-semibold">
+            Atendimento enviado com sucesso!
+          </p>,
+        );
+        setModalAlert(true);
       }
     } catch (err) {
-      alert(`Erro ao submeter atendimento: ${err}`);
+      setIsSuccessModal(false);
+      setModalText(
+        <p>
+          Erro ao submeter atendimento: <strong>{String(err)}</strong>
+        </p>,
+      );
+      setModalAlert(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -1095,7 +1151,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden"
       >
         {/* HEADER */}
-        <header className="flex items-center justify-between gap-4 p-2 bg-gradient-to-r from-[#395467] to-[#40b9b0] text-white">
+        <header className="flex items-center justify-between gap-4 p-2 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
           <div className="flex items-center gap-4">
             {/* Senha/Ticket em destaque */}
             {ticketSelecionado ? (
@@ -1857,7 +1913,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             </Button>
 
             <Button
-              className="px-4 py-2 rounded bg-gradient-to-r from-[#003366] to-[#6AA84F] text-white hover:shadow-lg transition-all duration-200"
+              className="px-4 py-2 rounded bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white hover:shadow-lg transition-all duration-200"
               isDisabled={!validation.all || isSubmitting}
               isLoading={isSubmitting}
               onPress={handleSubmit}
@@ -1885,6 +1941,34 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           onOpenChange={setIsOpenPreparationModal}
         />
       )}
+
+      {/* Modal de Alerta */}
+      <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="text-[#2a4a3a]">
+            <ExclamationCircleIcon className="h-6 w-6 text-[#44735e]" />{" "}
+            {isSuccessModal ? "Sucesso" : "Atenção"}
+          </ModalHeader>
+          <ModalBody>{modalText}</ModalBody>
+          <ModalFooter className="flex justify-end gap-2">
+            <Button
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+              size="sm"
+              onPress={() => {
+                setModalAlert(false);
+                // Se for mensagem de sucesso, fecha o modal principal
+                if (isSuccessModal) {
+                  onClose();
+                }
+                // Reset dos estados
+                setIsSuccessModal(false);
+              }}
+            >
+              Confirmar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

@@ -68,12 +68,12 @@ export const StatsModal: React.FC<{
     <AnimatePresence>
       {isOpen && (
         <>
-          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl w-full h-full max-h-screen overflow-hidden flex flex-col max-w-6xl">
+          <div className="fixed inset-0 bg-black/45 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl w-full h-full max-h-screen overflow-hidden flex flex-col max-w-6xl border border-[#44735e]/15">
               {/* Cabeçalho do modal */}
-              <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-white">
+              <div className="p-4 border-b border-[#44735e]/15 flex justify-between items-center bg-[#f5f9f7]">
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">
+                  <h2 className="text-xl font-bold text-[#2a4a3a]">
                     Estatísticas de Atendimentos
                   </h2>
                   <p className="text-sm text-gray-600 mt-1">

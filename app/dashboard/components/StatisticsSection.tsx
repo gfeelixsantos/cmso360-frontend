@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
+import { ScraperMonitor } from "./ScraperMonitor";
+
 import { TicketStatus } from "@/lib/ticket/ticket";
 import {
   ExameStatisticsDto,
@@ -237,11 +239,7 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
             {ticket.preferencial} ({preferencialPercent.toFixed(0)}%)
           </span>
         </div>
-        <ProgressBar
-          max={ticket.total}
-          size="sm"
-          value={ticket.preferencial}
-        />
+        <ProgressBar max={ticket.total} size="sm" value={ticket.preferencial} />
       </div>
     </div>
   );
@@ -556,32 +554,27 @@ export function StatisticsSection() {
           />
         </div>
 
-        {/* 🏥 MÉTRICAS DE FLUXO - Dados históricos do backend */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <MetricCard
-            description="Histórico desde agosto/2025"
-            icon={Clock}
-            title="Aguardando Resultados"
-            value={totais?.aguardandoResultados || 0}
-          />
+        {/* 🏥 MÉTRICAS DE FLUXO & MONITORAMENTO - Lado a Lado */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="flex flex-col gap-6">
+            <MetricCard
+              description=""
+              icon={Clock}
+              title="Aguardando Resultados"
+              value={totais?.aguardandoResultados || 0}
+            />
 
-          <MetricCard
-            description="Histórico desde janeiro/2026"
-            icon={Stethoscope}
-            title="Aguardando Avaliação Médica"
-            value={totais?.aguardandoAvaliacaoMedica || 0}
-          />
+            <MetricCard
+              description=""
+              icon={Stethoscope}
+              title="Aguardando Avaliação Médica"
+              value={totais?.aguardandoAvaliacaoMedica || 0}
+            />
+          </div>
 
-          <MetricCard
-            description={`${statisticsData?.porUnidade?.reduce(
-              (sum, u) =>
-                sum + u.tickets.reduce((tSum, t) => tSum + t.preferencial, 0),
-              0,
-            )} preferenciais`}
-            icon={Ticket}
-            title="Senhas"
-            value={totais?.totalTicketsEmitidos || 0}
-          />
+          <div className="lg:col-span-2">
+            <ScraperMonitor />
+          </div>
         </div>
 
         {/* 📊 STATUS E TIPOS DE EXAME */}
@@ -1036,8 +1029,3 @@ export function StatisticsSection() {
     </AnimatePresence>
   );
 }
-
-
-
-
-

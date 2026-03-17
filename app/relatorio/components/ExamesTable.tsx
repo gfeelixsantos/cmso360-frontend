@@ -6,6 +6,11 @@ import {
   DropdownMenu,
   DropdownTrigger,
   Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
   Table,
   TableBody,
   TableCell,
@@ -86,6 +91,14 @@ const ExamesTable: React.FC<{
   const [isCredenciada, setIsCredenciada] = useState<boolean>(false);
   const currentUser = getCurrentUser();
 
+  // Estado para modal de alerta
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+    onConfirm?: () => void;
+  }>({ open: false, type: "warning", message: "" });
+
   useEffect(() => {
     const isCredenciada =
       atendimento?.NOMECARGO?.includes("KIT CREDENCIADA") ||
@@ -149,7 +162,12 @@ const ExamesTable: React.FC<{
 
   const handleReemitirExame = async (exame: ExamRegister) => {
     if (!exame.formulario || !exame.profissional || !exame.codigoProfissional) {
-      alert("Dados incompletos para reemissao de exame");
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Dados incompletos para reemissao de exame",
+      });
+
       return;
     }
 
@@ -174,15 +192,18 @@ const ExamesTable: React.FC<{
       const result: Scheduling = await response.json();
 
       if (result) {
-        alert(
-          "Reemissao enviada para processamento, atualize a pagina para visualizar o resultado.",
-        );
+        setAlertModal({
+          open: true,
+          type: "success",
+          message:
+            "Reemissao enviada para processamento, atualize a pagina para visualizar o resultado.",
+        });
       } else {
         throw new Error("Atualizacao nao concluida.");
       }
     } catch (error) {
       console.error("Erro ao reemitir exame:", error);
-      alert(error);
+      setAlertModal({ open: true, type: "error", message: String(error) });
     } finally {
       setReemitindoExams(false);
     }
@@ -190,39 +211,59 @@ const ExamesTable: React.FC<{
 
   const handleFinalizarExame = async (exame: ExamRegister) => {
     if (exame.grupo != "Ultrassom") {
-      return alert("Exame nao identificado como Ultrassom para finalizacao.");
-    }
-
-    const confirmResponse = confirm("Finalizar Ultrassom como NORMAL ?");
-
-    try {
-      const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          funcionarioId: atendimento._id,
-          codigoExame: [exame.codigoExame],
-          formulario: {
-            normal: confirmResponse ? "Sim" : "Nao",
-            observacoes: "",
-          },
-          sala: "Emitido via relatorio",
-          profissional: currentUser ?? "Desconhecido",
-          isEditing: true,
-          dataExame: new Date(),
-        }),
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Exame nao identificado como Ultrassom para finalizacao.",
       });
 
-      const result: Scheduling = await response.json();
-
-      if (result) {
-        alert("Exame atualizado, atualize a pagina para ver o resultado.");
-      }
-    } catch (err) {
-      alert(`Erro ao finalizar exame ${err}`);
+      return;
     }
+
+    setAlertModal({
+      open: true,
+      type: "warning",
+      message: "Finalizar Ultrassom como NORMAL ?",
+      onConfirm: async () => {
+        try {
+          const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              funcionarioId: atendimento._id,
+              codigoExame: [exame.codigoExame],
+              formulario: {
+                normal: "Sim",
+                observacoes: "",
+              },
+              sala: "Emitido via relatorio",
+              profissional: currentUser ?? "Desconhecido",
+              isEditing: true,
+              dataExame: new Date(),
+            }),
+          });
+
+          const result: Scheduling = await response.json();
+
+          if (result) {
+            setAlertModal({
+              open: true,
+              type: "success",
+              message:
+                "Exame atualizado, atualize a pagina para ver o resultado.",
+            });
+          }
+        } catch (err) {
+          setAlertModal({
+            open: true,
+            type: "error",
+            message: `Erro ao finalizar exame ${err}`,
+          });
+        }
+      },
+    });
   };
 
   const handleEditModalClose = () => {
@@ -288,7 +329,7 @@ const ExamesTable: React.FC<{
       signatureStatus === "PROCESSANDO_ASSINATURA"
     ) {
       return {
-        icon: <Clock size={12} className="text-amber-600" />,
+        icon: <Clock className="text-amber-600" size={12} />,
         label:
           signatureStatus === "PROCESSING" ||
           signatureStatus === "PROCESSANDO_ASSINATURA"
@@ -309,10 +350,9 @@ const ExamesTable: React.FC<{
       signatureStatus === "FALHA_ASSINATURA"
     ) {
       return {
-        icon: <AlertCircle size={12} className="text-rose-600" />,
+        icon: <AlertCircle className="text-rose-600" size={12} />,
         label:
-          signatureStatus === "FAILED" ||
-          signatureStatus === "FALHA_ASSINATURA"
+          signatureStatus === "FAILED" || signatureStatus === "FALHA_ASSINATURA"
             ? "Falha na assinatura digital"
             : "Aguardando reprocessamento da assinatura",
         labelClassName: "text-rose-700",
@@ -326,7 +366,7 @@ const ExamesTable: React.FC<{
 
     if (signatureStatus === "SIGNED" || signatureStatus === "ASSINADO") {
       return {
-        icon: <CheckCircle size={12} className="text-emerald-600" />,
+        icon: <CheckCircle className="text-emerald-600" size={12} />,
         label: "Assinado digitalmente",
         labelClassName: "text-emerald-700",
         detail:
@@ -660,6 +700,68 @@ const ExamesTable: React.FC<{
           </TableBody>
         </Table>
       </div>
+
+      {/* Modal de Alerta */}
+      <Modal
+        disableAnimation
+        classNames={{
+          base: "z-[1100]",
+          wrapper: "z-[1100]",
+          backdrop: "z-[1099]",
+        }}
+        isDismissable={false}
+        isOpen={alertModal.open}
+        onClose={() => setAlertModal({ ...alertModal, open: false })}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader
+            className={
+              alertModal.type === "success"
+                ? "text-green-600"
+                : alertModal.type === "error"
+                  ? "text-red-600"
+                  : "text-yellow-600"
+            }
+          >
+            {alertModal.type === "success"
+              ? "Sucesso"
+              : alertModal.type === "error"
+                ? "Erro"
+                : "Atenção"}
+          </ModalHeader>
+          <ModalBody>
+            <p>{alertModal.message}</p>
+          </ModalBody>
+          <ModalFooter>
+            {alertModal.onConfirm ? (
+              <>
+                <Button
+                  variant="light"
+                  onPress={() => setAlertModal({ ...alertModal, open: false })}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+                  onPress={() => {
+                    alertModal.onConfirm?.();
+                    setAlertModal({ ...alertModal, open: false });
+                  }}
+                >
+                  Confirmar
+                </Button>
+              </>
+            ) : (
+              <Button
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+                onPress={() => setAlertModal({ ...alertModal, open: false })}
+              >
+                OK
+              </Button>
+            )}
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

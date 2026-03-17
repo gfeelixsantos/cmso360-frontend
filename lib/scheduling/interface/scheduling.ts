@@ -42,19 +42,19 @@ export type RiscosAso = {
 
 export type SignatureStatus =
   // Padrão Final PT-BR
-  | 'NAO_REQUER_ASSINATURA'
-  | 'AGUARDANDO_AUTENTICACAO'
-  | 'AGUARDANDO_REPROCESSAMENTO'
-  | 'PROCESSANDO_ASSINATURA'
-  | 'ASSINADO'
-  | 'FALHA_ASSINATURA'
+  | "NAO_REQUER_ASSINATURA"
+  | "AGUARDANDO_AUTENTICACAO"
+  | "AGUARDANDO_REPROCESSAMENTO"
+  | "PROCESSANDO_ASSINATURA"
+  | "ASSINADO"
+  | "FALHA_ASSINATURA"
   // Transitório EN (Compatibilidade)
-  | 'NOT_REQUIRED'
-  | 'WAITING_AUTH'
-  | 'PENDING_RETRY'
-  | 'PROCESSING'
-  | 'SIGNED'
-  | 'FAILED';
+  | "NOT_REQUIRED"
+  | "WAITING_AUTH"
+  | "PENDING_RETRY"
+  | "PROCESSING"
+  | "SIGNED"
+  | "FAILED";
 
 export type SignatureInfo = {
   status: SignatureStatus;

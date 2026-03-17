@@ -11,8 +11,6 @@ import {
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Socket } from "socket.io-client";
 
-import { IPscAuthStatus } from "@/lib/user/interfaces/IUser";
-
 import FichaClinicaOcupacional from "./exames/FichaClinicaOcupacional";
 import AcuidadeVisual from "./exames/AcuidadeVisual";
 import Espirometria from "./exames/Espirometria";
@@ -25,6 +23,7 @@ import Ultrassom from "./exames/Ultrassom";
 import FichaClinicaWhirlpool from "./exames/FichaClinicaWhirlpool";
 import { AtendimentoRules } from "./AtendimentoRules";
 
+import { IPscAuthStatus } from "@/lib/user/interfaces/IUser";
 import { TicketActionType } from "@/lib/ticket/ticket";
 import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
@@ -48,8 +47,8 @@ interface AtendimentoModalExamesProps {
   onPscAuth?: (provider?: string) => void;
 }
 
-    // Tipos para o modal de notificação
-    type NotificationType = "confirm" | "success" | "error";
+// Tipos para o modal de notificação
+type NotificationType = "confirm" | "success" | "error";
 
 interface NotificationModalState {
   isOpen: boolean;
@@ -328,23 +327,24 @@ const AtendimentoModalExames = ({
       switch (type) {
         case "confirm":
           return {
-            header: "bg-blue-600",
-            button: "bg-blue-600 hover:bg-blue-700",
+            header: "bg-gradient-to-r from-[#44735e] to-[#5a8c7a]",
+            button:
+              "bg-gradient-to-r from-[#44735e] to-[#5a8c7a] hover:opacity-90",
             icon: "",
           };
         case "success":
           return {
-            header: "bg-green-600",
-            button: "bg-green-600 hover:bg-green-700",
+            header: "bg-gradient-to-r from-[#44735e] to-[#5a8c7a]",
+            button:
+              "bg-gradient-to-r from-[#44735e] to-[#5a8c7a] hover:opacity-90",
             icon: "",
           };
         case "error":
           return {
-            header: "bg-red-600",
-            button: "bg-red-600 hover:bg-red-700",
+            header: "bg-[#2a4a3a]",
+            button: "bg-[#44735e] hover:bg-[#2a4a3a]",
             icon: "",
           };
-
       }
     };
 
@@ -385,19 +385,19 @@ const AtendimentoModalExames = ({
               <div className="flex gap-2 w-full sm:w-auto">
                 {showCancel && (
                   <Button
-                    className="flex-1 sm:flex-initial font-medium"
+                    className="flex-1 sm:flex-initial font-medium text-[#2a4a3a] hover:bg-[#e8f4e3]"
                     color="default"
                     variant="flat"
                     onPress={onCancel}
                   >
-                     "Cancelar"
+                    Cancelar
                   </Button>
                 )}
                 <Button
-                  className={`${colors.button} text-white flex-1 sm:flex-initial font-medium`}
+                  className={`${colors.button} text-white flex-1 sm:flex-initial font-medium focus-visible:ring-2 focus-visible:ring-[#44735e]/40`}
                   onPress={onConfirm}
                 >
-                   {type === "confirm" ? "Confirmar" : "Entendido"}
+                  {type === "confirm" ? "Confirmar" : "Entendido"}
                 </Button>
               </div>
             )}

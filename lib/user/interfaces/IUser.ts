@@ -32,9 +32,9 @@ export interface IUserInfoSettings {
   pscPadrao?: string | null;
   // Compatibilidade com payloads legados do frontend
   provedorPadrao?: string | null;
-  
+
   // Novos campos para BRy Cloud
-  assinaturaProvider?: 'PSC' | 'BRYKMS' | null;
+  assinaturaProvider?: "PSC" | "BRYKMS" | null;
   uuidCert?: string | null;
   pin?: string | null; // Não retornado do backend por segurança
 }
