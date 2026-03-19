@@ -6,29 +6,225 @@ import {
   ModalBody,
   ModalFooter,
   Button,
+  Spinner,
 } from "@heroui/react";
-import { AlertCircle, Key, Trash } from "lucide-react";
-import React, { useState } from "react";
+import { AlertCircle, CheckCircle, Key, Trash } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
-// ============================================
-// COMPONENTE: DeleteConfirmationModal
-// ============================================
-const DeleteConfirmationModal: React.FC<{
+type DeleteStatus = "confirm" | "loading" | "success" | "error";
+
+interface DeleteConfirmationModalProps {
   isOpenModalDelete: boolean;
   onCloseModalDelete: () => void;
-  onConfirm: (password: string) => void;
-  isLoading: boolean;
-}> = ({ isOpenModalDelete, onCloseModalDelete, onConfirm, isLoading }) => {
+  onConfirm: (password: string) => Promise<void>;
+  isLoading?: boolean;
+}
+
+const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
+  isOpenModalDelete,
+  onCloseModalDelete,
+  onConfirm,
+}) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [status, setStatus] = useState<DeleteStatus>("confirm");
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const handleConfirm = () => {
+  useEffect(() => {
+    if (isOpenModalDelete) {
+      setStatus("confirm");
+      setPassword("");
+      setError("");
+      setErrorMessage("");
+    }
+  }, [isOpenModalDelete]);
+
+  const handleConfirm = async () => {
     if (!password.trim()) {
       setError("A senha é obrigatória");
-
       return;
     }
-    onConfirm(password);
+
+    setStatus("loading");
+    setError("");
+
+    try {
+      await onConfirm(password);
+      setStatus("success");
+    } catch (err: any) {
+      setStatus("error");
+      setErrorMessage(err.message || "Erro ao excluir atendimento");
+    }
+  };
+
+  const handleClose = () => {
+    setStatus("confirm");
+    setPassword("");
+    setError("");
+    setErrorMessage("");
+    onCloseModalDelete();
+  };
+
+  const renderContent = () => {
+    switch (status) {
+      case "confirm":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <Trash size={20} />
+                <span className="text-lg font-semibold">
+                  Confirmar Exclusão
+                </span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-5">
+              <div className="mt-2 text-sm text-gray-700">
+                <p className="flex items-center gap-2">
+                  <AlertCircle size={18} className="text-red-500" />
+                  <span>
+                    Esta ação irá excluir <strong>permanentemente</strong> o
+                    atendimento e todos os dados associados.
+                  </span>
+                </p>
+                <p className="text-xs text-red-600 mt-3 bg-red-50 border border-red-200 p-2 rounded">
+                  <strong>ATENÇÃO:</strong> Esta ação não pode ser desfeita.
+                </p>
+              </div>
+              <div className="mt-4">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Digite a senha de exclusão:
+                </label>
+                <Input
+                  endContent={<Key className="text-gray-400" size={20} />}
+                  errorMessage={error}
+                  isInvalid={!!error}
+                  placeholder="Senha de exclusão"
+                  type="password"
+                  value={password}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-red-200">
+              <Button
+                className="text-red-600 hover:bg-red-50"
+                color="default"
+                variant="light"
+                onPress={handleClose}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-red-600 to-red-500 text-white"
+                startContent={<Trash size={16} />}
+                variant="solid"
+                onPress={handleConfirm}
+              >
+                Confirmar Exclusão
+              </Button>
+            </ModalFooter>
+          </>
+        );
+
+      case "loading":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <Trash size={20} />
+                <span className="text-lg font-semibold">
+                  Excluindo Atendimento
+                </span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <Spinner color="danger" size="lg" />
+                <p className="text-sm text-gray-600 text-center">
+                  Processando exclusão...
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter />
+          </>
+        );
+
+      case "success":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-green-600 to-green-500 text-white">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={20} />
+                <span className="text-lg font-semibold">
+                  Exclusão Concluída
+                </span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <CheckCircle size={48} className="text-green-500" />
+                <p className="text-sm text-gray-700 text-center font-medium">
+                  Atendimento excluído com sucesso!
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-green-200 justify-center">
+              <Button
+                className="bg-gradient-to-r from-green-600 to-green-500 text-white"
+                variant="solid"
+                onPress={handleClose}
+              >
+                OK
+              </Button>
+            </ModalFooter>
+          </>
+        );
+
+      case "error":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={20} />
+                <span className="text-lg font-semibold">Erro na Exclusão</span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <AlertCircle size={48} className="text-red-500" />
+                <p className="text-sm text-gray-700 text-center font-medium">
+                  Ocorreu um erro ao excluir o atendimento
+                </p>
+                <p className="text-xs text-red-500 text-center max-w-full break-words px-4">
+                  {errorMessage || "Tente novamente mais tarde."}
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-red-200 justify-center gap-2">
+              <Button
+                className="text-red-600 hover:bg-red-50"
+                color="default"
+                variant="light"
+                onPress={handleClose}
+              >
+                Fechar
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-red-600 to-red-500 text-white"
+                startContent={<Trash size={16} />}
+                variant="solid"
+                onPress={handleConfirm}
+              >
+                Tentar Novamente
+              </Button>
+            </ModalFooter>
+          </>
+        );
+    }
   };
 
   return (
@@ -42,6 +238,7 @@ const DeleteConfirmationModal: React.FC<{
         backdrop: "z-[1000] bg-black/50 backdrop-blur-sm",
       }}
       isOpen={isOpenModalDelete}
+      isDismissable={status === "confirm"}
       motionProps={{
         variants: {
           enter: {
@@ -67,56 +264,10 @@ const DeleteConfirmationModal: React.FC<{
       style={{
         position: "fixed",
       }}
-      onClose={onCloseModalDelete}
+      onClose={status === "confirm" ? handleClose : () => {}}
     >
-      <ModalContent
-        className="z-[1001] shadow-2xl border border-[#44735e]/20"
-        style={{ zIndex: 1001 }}
-      >
-        <ModalHeader className="flex flex-col gap-1 border-b border-[#44735e]/15">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle size={24} />
-            <span className="text-lg font-semibold">Confirmar Exclusão</span>
-          </div>
-        </ModalHeader>
-        <ModalBody className="py-5">
-          <p className="text-gray-700">
-            Esta ação irá excluir <strong>permanentemente</strong> o atendimento
-            e todos os dados associados.
-          </p>
-          <p>Para confirmar, digite a senha de exclusão:</p>
-          <Input
-            endContent={<Key className="text-gray-400" size={20} />}
-            errorMessage={error}
-            isInvalid={!!error}
-            placeholder="Senha de exclusão"
-            type="password"
-            value={password}
-            onChange={(e) => {
-              setPassword(e.target.value);
-              setError("");
-            }}
-          />
-        </ModalBody>
-        <ModalFooter className="border-t border-[#44735e]/15">
-          <Button
-            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
-            disabled={isLoading}
-            variant="light"
-            onPress={onCloseModalDelete}
-          >
-            Cancelar
-          </Button>
-          <Button
-            className="focus-visible:ring-2 focus-visible:ring-red-300"
-            color="danger"
-            isLoading={isLoading}
-            startContent={isLoading ? null : <Trash size={16} />}
-            onPress={handleConfirm}
-          >
-            Confirmar Exclusão
-          </Button>
-        </ModalFooter>
+      <ModalContent className="border border-red-300">
+        {renderContent()}
       </ModalContent>
     </Modal>
   );

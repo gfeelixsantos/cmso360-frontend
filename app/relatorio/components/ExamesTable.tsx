@@ -36,6 +36,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import DeleteAttachmentModal from "./DeleteAttachmentModal";
 import ExamEditModal from "./ExamEditModal";
 import ExamUploadModal from "./ExamUploadModal";
+import ReemitExameModal from "./ReemitExameModal";
 import { SelectedFile } from "./SelectedFilesList";
 
 import {
@@ -89,6 +90,10 @@ const ExamesTable: React.FC<{
 
   const [reemitindoExams, setReemitindoExams] = useState<boolean>(false);
   const [isCredenciada, setIsCredenciada] = useState<boolean>(false);
+  const [reemitModal, setReemitModal] = useState<{
+    isOpen: boolean;
+    exame: ExamRegister | null;
+  }>({ isOpen: false, exame: null });
   const currentUser = getCurrentUser();
 
   // Estado para modal de alerta
@@ -171,6 +176,14 @@ const ExamesTable: React.FC<{
       return;
     }
 
+    setReemitModal({ isOpen: true, exame });
+  };
+
+  const handleReemitConfirm = async () => {
+    const exame = reemitModal.exame;
+
+    if (!exame) return;
+
     setReemitindoExams(true);
 
     try {
@@ -192,18 +205,16 @@ const ExamesTable: React.FC<{
       const result: Scheduling = await response.json();
 
       if (result) {
-        setAlertModal({
-          open: true,
-          type: "success",
-          message:
-            "Reemissao enviada para processamento, atualize a pagina para visualizar o resultado.",
-        });
+        await fetchUpdatedExames();
+
+        return Promise.resolve();
       } else {
         throw new Error("Atualizacao nao concluida.");
       }
     } catch (error) {
       console.error("Erro ao reemitir exame:", error);
-      setAlertModal({ open: true, type: "error", message: String(error) });
+
+      return Promise.reject(error);
     } finally {
       setReemitindoExams(false);
     }
@@ -447,6 +458,13 @@ const ExamesTable: React.FC<{
           })
         }
         onSuccess={handleDeleteSuccess}
+      />
+
+      <ReemitExameModal
+        exame={reemitModal.exame}
+        isOpen={reemitModal.isOpen}
+        onClose={() => setReemitModal({ isOpen: false, exame: null })}
+        onConfirm={handleReemitConfirm}
       />
 
       {editExamModal.isOpen && editExamModal.exam && (

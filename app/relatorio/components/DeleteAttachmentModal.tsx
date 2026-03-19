@@ -6,17 +6,17 @@ import {
   ModalFooter,
   Button,
   Input,
+  Spinner,
 } from "@heroui/react";
-import { AlertCircle, Key, Trash } from "lucide-react";
-import React, { useState } from "react";
+import { AlertCircle, CheckCircle, Key, Trash } from "lucide-react";
+import React, { useState, useEffect } from "react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { NEST_SCHEDULINGS_DELETE_ATTACHMENT } from "@/config/constants";
 
-// ============================================
-// COMPONENTE: DeleteAttachmentModal
-// ============================================
-const DeleteAttachmentModal: React.FC<{
+type DeleteAttachmentStatus = "confirm" | "loading" | "success" | "error";
+
+interface DeleteAttachmentModalProps {
   isOpen: boolean;
   onClose: () => void;
   examId: string;
@@ -24,7 +24,9 @@ const DeleteAttachmentModal: React.FC<{
   examGrupo: string;
   atendimentoId: string;
   onSuccess: (updatedScheduling?: Scheduling) => void;
-}> = ({
+}
+
+const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
   isOpen,
   onClose,
   examId,
@@ -33,12 +35,22 @@ const DeleteAttachmentModal: React.FC<{
   atendimentoId,
   onSuccess,
 }) => {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState("");
   const [removePassword, setRemovePassword] = useState("");
+  const [error, setError] = useState("");
+  const [status, setStatus] = useState<DeleteAttachmentStatus>("confirm");
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (isOpen) {
+      setStatus("confirm");
+      setRemovePassword("");
+      setError("");
+      setErrorMessage("");
+    }
+  }, [isOpen]);
 
   const handleDelete = async () => {
-    setIsDeleting(true);
+    setStatus("loading");
     setError("");
 
     try {
@@ -57,23 +69,191 @@ const DeleteAttachmentModal: React.FC<{
 
       if (!response.ok) {
         const errorData = await response.json();
-
         throw new Error(errorData.message || "Erro ao excluir resultado");
       }
 
       const result = await response.json();
 
-      if (result.success) {
-        // Chama onSuccess passando o scheduling atualizado
+      if (result.success && result.scheduling) {
+        setStatus("success");
         onSuccess(result.scheduling);
+      } else if (result.success) {
+        setStatus("success");
       } else {
         throw new Error(result.message || "Erro ao excluir resultado");
       }
     } catch (err: any) {
       console.error("Erro ao excluir anexo:", err);
-      setError(err.message || "Erro ao excluir resultado");
-    } finally {
-      setIsDeleting(false);
+      setStatus("error");
+      setErrorMessage(err.message || "Erro ao excluir resultado");
+    }
+  };
+
+  const handleClose = () => {
+    setStatus("confirm");
+    setRemovePassword("");
+    setError("");
+    setErrorMessage("");
+    onClose();
+  };
+
+  const renderContent = () => {
+    switch (status) {
+      case "confirm":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <Trash size={20} />
+                <span className="text-lg font-semibold">Remover Resultado</span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-5">
+              <div className="mt-2 text-sm text-gray-700">
+                <p className="flex items-center gap-2">
+                  <AlertCircle size={18} className="text-red-500" />
+                  <span>
+                    Tem certeza que deseja remover o resultado do exame{" "}
+                    <strong>{examName}</strong>?
+                  </span>
+                </p>
+                <p className="text-xs text-gray-600 mt-3 bg-gray-50 border border-gray-200 p-2 rounded">
+                  Esta ação removerá o PDF e reverterá o status do exame para
+                  "Aguardando Resultado".
+                </p>
+              </div>
+              <div className="mt-4">
+                <label className="text-sm font-medium text-gray-700 mb-1 block">
+                  Digite a senha de exclusão:
+                </label>
+                <Input
+                  endContent={<Key className="text-gray-400" size={20} />}
+                  errorMessage={error}
+                  isInvalid={!!error}
+                  placeholder="Senha de exclusão"
+                  type="password"
+                  value={removePassword}
+                  onChange={(e) => {
+                    setRemovePassword(e.target.value);
+                    setError("");
+                  }}
+                />
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-red-200">
+              <Button
+                className="text-red-600 hover:bg-red-50"
+                color="default"
+                variant="light"
+                onPress={handleClose}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-red-600 to-red-500 text-white"
+                startContent={<Trash size={16} />}
+                variant="solid"
+                onPress={handleDelete}
+              >
+                Remover Resultado
+              </Button>
+            </ModalFooter>
+          </>
+        );
+
+      case "loading":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <Trash size={20} />
+                <span className="text-lg font-semibold">Removendo Resultado</span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <Spinner color="danger" size="lg" />
+                <p className="text-sm text-gray-600 text-center">
+                  Processando remoção...
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter />
+          </>
+        );
+
+      case "success":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-green-600 to-green-500 text-white">
+              <div className="flex items-center gap-2">
+                <CheckCircle size={20} />
+                <span className="text-lg font-semibold">Remoção Concluída</span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <CheckCircle size={48} className="text-green-500" />
+                <p className="text-sm text-gray-700 text-center font-medium">
+                  Resultado removido com sucesso!
+                </p>
+                <p className="text-xs text-gray-500 text-center">
+                  Os dados do atendimento serão atualizados automaticamente.
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-green-200 justify-center">
+              <Button
+                className="bg-gradient-to-r from-green-600 to-green-500 text-white"
+                variant="solid"
+                onPress={handleClose}
+              >
+                OK
+              </Button>
+            </ModalFooter>
+          </>
+        );
+
+      case "error":
+        return (
+          <>
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
+              <div className="flex items-center gap-2">
+                <AlertCircle size={20} />
+                <span className="text-lg font-semibold">Erro na Remoção</span>
+              </div>
+            </ModalHeader>
+            <ModalBody className="py-8">
+              <div className="flex flex-col items-center gap-4">
+                <AlertCircle size={48} className="text-red-500" />
+                <p className="text-sm text-gray-700 text-center font-medium">
+                  Ocorreu um erro ao remover o resultado
+                </p>
+                <p className="text-xs text-red-500 text-center max-w-full break-words px-4">
+                  {errorMessage || "Tente novamente mais tarde."}
+                </p>
+              </div>
+            </ModalBody>
+            <ModalFooter className="border-t border-red-200 justify-center gap-2">
+              <Button
+                className="text-red-600 hover:bg-red-50"
+                color="default"
+                variant="light"
+                onPress={handleClose}
+              >
+                Fechar
+              </Button>
+              <Button
+                className="bg-gradient-to-r from-red-600 to-red-500 text-white"
+                startContent={<Trash size={16} />}
+                variant="solid"
+                onPress={handleDelete}
+              >
+                Tentar Novamente
+              </Button>
+            </ModalFooter>
+          </>
+        );
     }
   };
 
@@ -83,71 +263,38 @@ const DeleteAttachmentModal: React.FC<{
       aria-labelledby="delete-attachment-title"
       backdrop="blur"
       classNames={{
-        wrapper: "z-[1001]",
-        backdrop: "z-[1000]",
+        base: "z-[1000]",
+        wrapper: "z-[1000]",
+        backdrop: "z-[1000] bg-black/50 backdrop-blur-sm",
       }}
-      disableAnimation={true}
       isOpen={isOpen}
-      shouldBlockScroll={false} // Tente desativar o block scroll
+      isDismissable={status === "confirm"}
+      motionProps={{
+        variants: {
+          enter: {
+            y: 0,
+            opacity: 1,
+            transition: {
+              duration: 0.3,
+              ease: "easeOut",
+            },
+          },
+          exit: {
+            y: -20,
+            opacity: 0,
+            transition: {
+              duration: 0.2,
+              ease: "easeIn",
+            },
+          },
+        },
+      }}
+      shouldBlockScroll={false}
       size="md"
-      onClose={onClose}
+      onClose={status === "confirm" ? handleClose : () => {}}
     >
-      <ModalContent className="border border-[#44735e]/20">
-        <ModalHeader className="flex flex-col gap-1 border-b border-[#44735e]/15">
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle size={24} />
-            <span>Remover Resultado</span>
-          </div>
-        </ModalHeader>
-        <ModalBody className="py-5">
-          <p className="text-gray-700">
-            Tem certeza que deseja remover o resultado do exame{" "}
-            <strong>{examName}</strong>?
-          </p>
-          <p className="text-sm text-gray-500">
-            Esta ação removerá o PDF e reverterá o status do exame para
-            "Aguardando Resultado".
-          </p>
-          <Input
-            endContent={<Key className="text-gray-400" size={20} />}
-            errorMessage={error}
-            isInvalid={!!error}
-            placeholder="Senha de exclusão"
-            type="password"
-            value={removePassword}
-            onChange={(e) => {
-              setRemovePassword(e.target.value);
-              setError("");
-            }}
-          />
-          {error && (
-            <div className="p-2 bg-red-50 border border-red-200 rounded">
-              <div className="flex items-center gap-2 text-red-600 text-sm">
-                <AlertCircle size={14} />
-                <span>{error}</span>
-              </div>
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter className="border-t border-[#44735e]/15">
-          <Button
-            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
-            disabled={isDeleting}
-            variant="light"
-            onPress={onClose}
-          >
-            Cancelar
-          </Button>
-          <Button
-            className="focus-visible:ring-2 focus-visible:ring-red-300"
-            color="danger"
-            isLoading={isDeleting}
-            startContent={isDeleting ? "" : <Trash size={16} />}
-            onPress={handleDelete}
-          >
-            Remover Resultado
-          </Button>
-        </ModalFooter>
+      <ModalContent className="border border-red-300">
+        {renderContent()}
       </ModalContent>
     </Modal>
   );

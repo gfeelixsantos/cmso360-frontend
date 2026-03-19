@@ -268,6 +268,7 @@ export default function ConfiguracoesPage() {
                       </p>
                     </div>
                     <Switch
+                      color="success"
                       isSelected={formData.assinaDigitalmente}
                       onValueChange={(value) =>
                         setFormData({
@@ -283,7 +284,7 @@ export default function ConfiguracoesPage() {
                   >
                     <Select
                       label="Provedor de Assinatura"
-                      placeholder="Selecione o provedor de assinatura"
+                      placeholder="Selecione"
                       selectedKeys={
                         formData.assinaturaProvider
                           ? [formData.assinaturaProvider]
@@ -319,17 +320,14 @@ export default function ConfiguracoesPage() {
                       </SelectItem>
                       <SelectItem
                         key="BRYKMS"
-                        textValue="BRy Cloud - Key Management Service"
+                        textValue="BRy Cloud - Cerificado em nuvem"
                       >
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
-                          <span>BRy Cloud - Key Management Service</span>
+                          <span>BRy Cloud - Certificado em nuvem</span>
                         </div>
                       </SelectItem>
                     </Select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Escolha o provedor para assinatura digital
-                    </p>
                   </div>
 
                   {/* Configurações PSC */}
@@ -396,7 +394,6 @@ export default function ConfiguracoesPage() {
                   >
                     <div className="space-y-4">
                       <Input
-                        description="UUID do certificado digital fornecido pelo BRy Cloud"
                         label="ID Cert (UUID)"
                         placeholder="Digite o UUID do seu certificado no BRy Cloud"
                         value={formData.uuidCert}
@@ -409,7 +406,6 @@ export default function ConfiguracoesPage() {
                       />
 
                       <Input
-                        description="PIN de segurança do seu certificado digital (será armazenado em base64)"
                         label="PIN do Certificado"
                         placeholder="Digite o PIN do seu certificado"
                         type="password"
@@ -424,8 +420,7 @@ export default function ConfiguracoesPage() {
 
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm text-blue-700">
-                          <strong>Atenção:</strong> O PIN será criptografado em
-                          base64 e armazenado com segurança. Não compartilhe
+                          <strong>Atenção:</strong> O PIN será criptografado e armazenado com segurança. Não compartilhe
                           suas credenciais com terceiros.
                         </p>
                       </div>
@@ -433,7 +428,7 @@ export default function ConfiguracoesPage() {
                   </div>
 
                   <Input
-                    label="URL da Imagem de Assinatura"
+                    label="URL da Imagem para assinatura digitalizada"
                     placeholder="https://exemplo.com/assinatura.png"
                     value={formData.assinaturaImagemUrl}
                     onChange={(e) =>

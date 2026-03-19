@@ -544,7 +544,7 @@ const ConfigModal = ({
               value={filtroChamada}
               onChange={(e) => setFiltroChamada(e.target.value)}
             >
-              <option value="TODOS">TODOS</option>
+              <option value="CONJUNTO">CONJUNTO</option>
               <option value="RECEPÇÃO">RECEPÇÃO</option>
               <option value="ATENDIMENTO">ATENDIMENTO</option>
             </select>
@@ -660,8 +660,8 @@ export default function PainelPage() {
   const [showAudioModal, setShowAudioModal] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [filtroChamada, setFiltroChamada] = useState<
-    "TODOS" | "RECEPÇÃO" | "ATENDIMENTO"
-  >("TODOS");
+    "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO"
+  >("CONJUNTO");
 
   // Estados para controle do idle
   const [isIdle, setIsIdle] = useState(false);
@@ -1019,7 +1019,7 @@ export default function PainelPage() {
       const isRecepcao = call.exame === "RECEPCAO";
       const isAtendimento = !isRecepcao && call.exame !== "";
 
-      const filtro = localStorage.getItem("painel_filtro") || "TODOS";
+      const filtro = localStorage.getItem("painel_filtro") || "CONJUNTO";
 
       if (filtro === "RECEPÇÃO" && !isRecepcao) {
         console.log("🚫 Chamada ignorada: filtro RECEPÇÃO ativo");
@@ -1164,7 +1164,7 @@ export default function PainelPage() {
     }
 
     if (filtroSalvo) {
-      setFiltroChamada(filtroSalvo);
+      setFiltroChamada(filtroSalvo === "TODOS" ? "CONJUNTO" : filtroSalvo);
     }
   }, []);
 
@@ -1293,7 +1293,7 @@ export default function PainelPage() {
                     backgroundColor: COLOR_PALETTE.lightGray,
                   }}
                 >
-                  <option value="TODOS">TODOS</option>
+                  <option value="CONJUNTO">CONJUNTO</option>
                   <option value="RECEPÇÃO">RECEPÇÃO</option>
                   <option value="ATENDIMENTO">ATENDIMENTO</option>
                 </select>
@@ -1320,7 +1320,7 @@ export default function PainelPage() {
                       document.getElementById(
                         "filtroSelect",
                       ) as HTMLSelectElement
-                    )?.value || "TODOS";
+                    )?.value || "CONJUNTO";
 
                   validarAcesso(serial, unidade, filtro);
                 }}
@@ -1446,7 +1446,7 @@ export default function PainelPage() {
                       className="text-xs sm:text-xs md:text-sm uppercase tracking-wide font-semibold"
                       style={{ color: COLOR_PALETTE.textLight }}
                     >
-                      Unidade
+                      {filtroChamada}
                     </div>
                     <div
                       className="text-sm sm:text-base md:text-lg font-bold truncate max-w-[120px] sm:max-w-[150px] md:max-w-none"
@@ -1506,8 +1506,12 @@ export default function PainelPage() {
                         <div
                           className={
                             chamadaAtual.name
-                              ? "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1"
-                              : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider px-1"
+                              ? (chamadaAtual.exame === "RECEPCAO"
+                                ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1"
+                                : "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1")
+                              : (chamadaAtual.exame === "RECEPCAO"
+                                ? "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black mb-1 sm:mb-2 md:mb-4 uppercase tracking-wider px-1"
+                                : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider px-1")
                           }
                           style={{ color: currentExamColors.primary }}
                         >

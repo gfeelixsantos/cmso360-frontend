@@ -57,7 +57,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     useState(false);
   const [loadingViewReport, setLoadingViewReport] = useState(false);
   const [loadingSyncSoc, setLoadingSyncSoc] = useState(false);
-  const [loadingDeleteScheduling, setLoadingDeleteScheduling] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
   const [syncSocModalOpen, setSyncSocModalOpen] = useState(false);
@@ -291,7 +290,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
   const handleDeleteScheduling = async (password: string) => {
     try {
-      setLoadingDeleteScheduling(true);
       const response = await fetch(NEST_SCHEDULINGS_DELETE, {
         method: "DELETE",
         headers: {
@@ -305,26 +303,14 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-
         throw new Error(errorData.message || "Erro ao excluir atendimento");
       }
 
-      setAlertModal({
-        open: true,
-        type: "success",
-        message: "Atendimento excluído com sucesso!",
-      });
-      setDeleteModalOpen(false);
       onClose();
+      return Promise.resolve();
     } catch (error: any) {
       console.error("Erro ao excluir:", error);
-      setAlertModal({
-        open: true,
-        type: "error",
-        message: error.message || "Erro ao excluir atendimento",
-      });
-    } finally {
-      setLoadingDeleteScheduling(false);
+      return Promise.reject(error);
     }
   };
 
@@ -361,7 +347,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   return (
     <>
       <DeleteConfirmationModal
-        isLoading={loadingDeleteScheduling}
         isOpenModalDelete={deleteModalOpen}
         onCloseModalDelete={() => setDeleteModalOpen(false)}
         onConfirm={handleDeleteScheduling}
@@ -442,7 +427,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
               </Button>
               <Button
                 color="danger"
-                disabled={loadingDeleteScheduling}
                 size="sm"
                 startContent={<Trash size={16} />}
                 variant="light"
