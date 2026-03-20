@@ -1,5 +1,5 @@
 // components/PdfViewer.tsx
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button, Card, CardBody } from "@heroui/react";
 
@@ -17,11 +17,21 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   onPdfIndexChange,
 }) => {
   const [zoom, setZoom] = useState<number>(100);
+  const [cacheBust, setCacheBust] = useState<number>(Date.now());
 
   const currentPdfUrl = selectedRecord?.pdfUrls?.[currentPdfIndex]?.url ?? "";
   const currentPdfTitle =
     selectedRecord?.pdfUrls?.[currentPdfIndex]?.title ?? "";
   const totalPdfs = selectedRecord?.pdfUrls?.length ?? 0;
+  const iframeSrc = useMemo(() => {
+    if (!currentPdfUrl) return "";
+    const separator = currentPdfUrl.includes("?") ? "&" : "?";
+    return `${currentPdfUrl}${separator}cb=${cacheBust}`;
+  }, [currentPdfUrl, cacheBust]);
+
+  useEffect(() => {
+    setCacheBust(Date.now());
+  }, [selectedRecord?._id, currentPdfIndex, currentPdfUrl]);
 
   const changePdfIndex = (dir: "next" | "prev" | "go", val?: number) => {
     if (!selectedRecord) return;
@@ -83,7 +93,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
           >
             <iframe
               className="bg-white shadow-2xl rounded-lg transition-all duration-300"
-              src={currentPdfUrl}
+              src={iframeSrc}
               style={{
                 width: `${zoom}%`,
                 height: `${zoom}%`,

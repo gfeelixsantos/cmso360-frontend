@@ -59,6 +59,7 @@ import {
 } from "@/config/constants";
 import { NEST_SCHEDULINGS_FINISH } from "@/config/constants";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
+import { addDaysToISODate, getBrazilDateISO } from "@/lib/utils";
 
 // Hook para status de autenticação PSC
 import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
@@ -504,16 +505,9 @@ const LaudosModal = memo(
     onClose: () => void;
     onSave: (tipo: LaudoTipo, data: any) => void;
   }) => {
-    const todayIso = useCallback(
-      () => new Date().toISOString().split("T")[0],
-      [],
-    );
+    const todayIso = useCallback(() => getBrazilDateISO(), []);
     const calcularDataFim = useCallback((inicio: string, dias: number) => {
-      const data = new Date(inicio);
-
-      data.setDate(data.getDate() + dias);
-
-      return data.toISOString().split("T")[0];
+      return addDaysToISODate(inicio, dias);
     }, []);
 
     const [tipoLaudo, setTipoLaudo] = useState<LaudoTipo>(
@@ -1097,16 +1091,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   };
 
   /* ---------------------- Helpers ---------------------- */
-  const todayIso = useCallback(
-    () => new Date().toISOString().split("T")[0],
-    [],
-  );
+  const todayIso = useCallback(() => getBrazilDateISO(), []);
   const calcularDataFim = useCallback((inicio: string, dias: number) => {
-    const data = new Date(inicio);
-
-    data.setDate(data.getDate() + dias);
-
-    return data.toISOString().split("T")[0];
+    return addDaysToISODate(inicio, dias);
   }, []);
 
   /* ---------------------- Dados Derivados ---------------------- */
@@ -1298,6 +1285,15 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const saveOpinion = useCallback(async () => {
     if (!opinion || !opinion.opinionType || !selectedRecord) return;
 
+    const pinFromSettings =
+      typeof (settings as any)?.pin === "string"
+        ? String((settings as any).pin).trim()
+        : "";
+    const credentials =
+      settings?.assinaturaProvider === "BRYKMS" && pinFromSettings
+        ? { pin: pinFromSettings }
+        : undefined;
+
     setIsSavingOpinion(true);
     try {
       const response = await fetch(NEST_SCHEDULINGS_FINISH, {
@@ -1309,6 +1305,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
           scheduledId: selectedRecord._id,
           user: user,
           options: opinion,
+          credentials,
         }),
       });
 

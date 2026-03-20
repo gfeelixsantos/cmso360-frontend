@@ -984,7 +984,10 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
                         placeholder="Ex: J1"
                         value={formData.pertoBinocular}
                         onChange={(e) =>
-                          handleInputChange("pertoBinocular", e.target.value)
+                          handleInputChange(
+                            "pertoBinocular",
+                            e.target.value.toUpperCase(),
+                          )
                         }
                       />
                     </td>

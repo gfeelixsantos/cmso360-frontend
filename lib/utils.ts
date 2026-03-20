@@ -2,6 +2,35 @@ import { IUserInfo } from "./user/interfaces/IUser";
 import { ICadastroPessoas } from "./soc/interfaces/ICadastroPessoas";
 import { AtendimentoStatus } from "./scheduling/enum/scheduling.enum";
 
+const BRAZIL_TIMEZONE = "America/Sao_Paulo";
+
+export function getBrazilDateISO(date: Date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: BRAZIL_TIMEZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "01";
+  const day = parts.find((part) => part.type === "day")?.value ?? "01";
+
+  return `${year}-${month}-${day}`;
+}
+
+export function addDaysToISODate(isoDate: string, days: number): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+
+  if (!year || !month || !day) return isoDate;
+
+  const utcDate = new Date(Date.UTC(year, month - 1, day));
+
+  utcDate.setUTCDate(utcDate.getUTCDate() + days);
+
+  return utcDate.toISOString().slice(0, 10);
+}
+
 export async function fetchBodyJson<T>(
   url: string,
   method: string,

@@ -83,7 +83,11 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
 
   const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
     return exames
-      .filter((ex) => ex.status !== ExamStatus.FINALIZADO)
+      .filter(
+        (ex) =>
+          ex.status !== ExamStatus.FINALIZADO &&
+          ex.status !== ExamStatus.PROCESSANDO,
+      )
       .reduce((total, ex) => {
         return total + (ESTIMATIVA_EXAMES[ex.grupo] ?? 20);
       }, 0);
@@ -123,7 +127,11 @@ Ninguém “passa na frente”
           : Number.MAX_SAFE_INTEGER;
 
         const examesPendentes =
-          a.EXAMES?.filter((ex) => ex.status !== ExamStatus.FINALIZADO) ?? [];
+          a.EXAMES?.filter(
+            (ex) =>
+              ex.status !== ExamStatus.FINALIZADO &&
+              ex.status !== ExamStatus.PROCESSANDO,
+          ) ?? [];
 
         return {
           ...a,

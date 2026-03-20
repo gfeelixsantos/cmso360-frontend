@@ -8,7 +8,7 @@ import {
   Input,
   Spinner,
 } from "@heroui/react";
-import { AlertCircle, CheckCircle, Key, Trash } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Key, Trash } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
@@ -39,6 +39,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
   const [error, setError] = useState("");
   const [status, setStatus] = useState<DeleteAttachmentStatus>("confirm");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -46,8 +47,13 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
       setRemovePassword("");
       setError("");
       setErrorMessage("");
+      setIsCapsLockOn(false);
     }
   }, [isOpen]);
+
+  const handleCapsLockCheck = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    setIsCapsLockOn(event.getModifierState("CapsLock"));
+  };
 
   const handleDelete = async () => {
     setStatus("loading");
@@ -94,6 +100,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
     setRemovePassword("");
     setError("");
     setErrorMessage("");
+    setIsCapsLockOn(false);
     onClose();
   };
 
@@ -137,7 +144,16 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
                     setRemovePassword(e.target.value);
                     setError("");
                   }}
+                  onKeyDown={handleCapsLockCheck}
+                  onKeyUp={handleCapsLockCheck}
+                  onBlur={() => setIsCapsLockOn(false)}
                 />
+                {isCapsLockOn ? (
+                  <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <AlertTriangle size={14} />
+                    <span>Caps Lock ativo</span>
+                  </div>
+                ) : null}
               </div>
             </ModalBody>
             <ModalFooter className="border-t border-red-200">

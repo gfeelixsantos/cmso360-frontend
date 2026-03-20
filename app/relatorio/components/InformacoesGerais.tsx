@@ -11,6 +11,7 @@ import {
 import React, { useState } from "react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { getAsoStatusLabel, normalizeAsoStatus } from "@/lib/scheduling/status.helper";
 import { formatCPF, getStatusColor } from "@/lib/utils";
 
 // ============================================
@@ -338,15 +339,17 @@ const InformacoesGerais: React.FC<{
                         <Chip
                           className="font-medium h-5"
                           color={
-                            atendimento.ASOINFO.status === "ASSINADO" ||
-                            atendimento.ASOINFO.status === "LIBERADO"
+                            normalizeAsoStatus(atendimento.ASOINFO.status) ===
+                              "ASSINADO" ||
+                            normalizeAsoStatus(atendimento.ASOINFO.status) ===
+                              "LIBERADO"
                               ? "success"
                               : "warning"
                           }
                           size="sm"
                           variant="flat"
                         >
-                          {atendimento.ASOINFO.status}
+                          {getAsoStatusLabel(atendimento.ASOINFO.status)}
                         </Chip>
                       </div>
                     )}

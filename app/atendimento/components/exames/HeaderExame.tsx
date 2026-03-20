@@ -8,8 +8,13 @@ import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 interface HeaderExameProp {
   agendamento?: Scheduling;
   exame: string;
+  formularioPreCarregado?: boolean;
 }
-export default function HeaderExame({ agendamento, exame }: HeaderExameProp) {
+export default function HeaderExame({
+  agendamento,
+  exame,
+  formularioPreCarregado = false,
+}: HeaderExameProp) {
   const [isKitCredenciada, setIsKitCredenciada] = useState(false);
 
   // Exibe mensagem de kit credenciada
@@ -59,6 +64,11 @@ export default function HeaderExame({ agendamento, exame }: HeaderExameProp) {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+        {formularioPreCarregado && (
+          <div className="p-4 m-4 rounded-lg border border-blue-200 bg-blue-50 text-blue-800 text-sm">
+            Formulario ja carregado com dados previamente registrados deste exame.
           </div>
         )}
         <div className="flex items-center gap-3 mb-4">

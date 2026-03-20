@@ -57,7 +57,13 @@ import {
   NEST_RELATORIO_PARAMETROS,
 } from "@/config/constants";
 import { HeaderApp } from "@/components/shared/HeaderApp";
-import { formatCPF, getCurrentUser, getStatusColor, logout } from "@/lib/utils";
+import {
+  formatCPF,
+  getBrazilDateISO,
+  getCurrentUser,
+  getStatusColor,
+  logout,
+} from "@/lib/utils";
 import { useModalOptimizer } from "@/hooks/useModalOptimizer";
 import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
 import { IUserInfo } from "@/hooks/useUser";
@@ -427,8 +433,7 @@ export default function RelatoriosPage() {
       a.href = url;
 
       // Nome do arquivo com data atual
-      const now = new Date();
-      const dateStr = now.toISOString().split("T")[0];
+      const dateStr = getBrazilDateISO();
 
       a.download = `relatorio_atendimentos_${dateStr}.csv`;
 

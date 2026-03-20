@@ -8,7 +8,7 @@ import {
   Button,
   Spinner,
 } from "@heroui/react";
-import { AlertCircle, CheckCircle, Key, Trash } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle, Key, Trash } from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 type DeleteStatus = "confirm" | "loading" | "success" | "error";
@@ -17,6 +17,7 @@ interface DeleteConfirmationModalProps {
   isOpenModalDelete: boolean;
   onCloseModalDelete: () => void;
   onConfirm: (password: string) => Promise<void>;
+  onDeleteSuccess?: () => void;
   isLoading?: boolean;
 }
 
@@ -24,11 +25,13 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   isOpenModalDelete,
   onCloseModalDelete,
   onConfirm,
+  onDeleteSuccess,
 }) => {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState<DeleteStatus>("confirm");
   const [errorMessage, setErrorMessage] = useState("");
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
 
   useEffect(() => {
     if (isOpenModalDelete) {
@@ -36,8 +39,26 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
       setPassword("");
       setError("");
       setErrorMessage("");
+      setIsCapsLockOn(false);
     }
   }, [isOpenModalDelete]);
+
+  useEffect(() => {
+    if (status !== "success") return;
+
+    const timeoutId = window.setTimeout(() => {
+      onCloseModalDelete();
+      onDeleteSuccess?.();
+    }, 2200);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [status, onCloseModalDelete, onDeleteSuccess]);
+
+  const handleCapsLockCheck = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    setIsCapsLockOn(event.getModifierState("CapsLock"));
+  };
 
   const handleConfirm = async () => {
     if (!password.trim()) {
@@ -62,6 +83,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     setPassword("");
     setError("");
     setErrorMessage("");
+    setIsCapsLockOn(false);
     onCloseModalDelete();
   };
 
@@ -106,7 +128,16 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                     setPassword(e.target.value);
                     setError("");
                   }}
+                  onKeyDown={handleCapsLockCheck}
+                  onKeyUp={handleCapsLockCheck}
+                  onBlur={() => setIsCapsLockOn(false)}
                 />
+                {isCapsLockOn ? (
+                  <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                    <AlertTriangle size={14} />
+                    <span>Caps Lock ativo</span>
+                  </div>
+                ) : null}
               </div>
             </ModalBody>
             <ModalFooter className="border-t border-red-200">
@@ -160,7 +191,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
               <div className="flex items-center gap-2">
                 <CheckCircle size={20} />
                 <span className="text-lg font-semibold">
-                  Exclusão Concluída
+                  Exclusao Concluida
                 </span>
               </div>
             </ModalHeader>
@@ -168,19 +199,14 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
               <div className="flex flex-col items-center gap-4">
                 <CheckCircle size={48} className="text-green-500" />
                 <p className="text-sm text-gray-700 text-center font-medium">
-                  Atendimento excluído com sucesso!
+                  Atendimento excluido com sucesso!
+                </p>
+                <p className="text-xs text-gray-500 text-center">
+                  Fechando automaticamente...
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter className="border-t border-green-200 justify-center">
-              <Button
-                className="bg-gradient-to-r from-green-600 to-green-500 text-white"
-                variant="solid"
-                onPress={handleClose}
-              >
-                OK
-              </Button>
-            </ModalFooter>
+            <ModalFooter className="border-t border-green-200" />
           </>
         );
 
@@ -274,3 +300,4 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 };
 
 export default React.memo(DeleteConfirmationModal);
+

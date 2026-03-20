@@ -651,7 +651,9 @@ export default function PainelPage() {
   const cancelLoop = useRef<boolean>(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioPoolRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+  const audioCacheRef = useRef<Map<string, Blob>>(new Map());
+  const audioUrlCacheRef = useRef<Map<string, string>>(new Map());
+  const mainAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [isLiberado, setIsLiberado] = useState(false);
   const [audioHabilitado, setAudioHabilitado] = useState(false);
@@ -819,22 +821,54 @@ export default function PainelPage() {
 
         const executar = async () => {
           try {
-            console.log("URL do áudio:", `${NEST_URL}${call.audio}`);
-            const audio = new Audio(`${NEST_URL}${call.audio}`);
+            const fullAudioUrl = `${NEST_URL}${call.audio}`;
+            // Chave única baseada na URL + Sala + Exame para evitar confusão se o paciente mudar de sala
+            const cacheKey = `${fullAudioUrl}|${call.sala}|${call.exame}`;
 
+            console.log("Tentando reproduzir áudio:", fullAudioUrl, "Sala:", call.sala);
+
+            let audioSrc = fullAudioUrl;
+
+            // Verificar se temos no cache específico para esta chamada
+            if (audioCacheRef.current.has(cacheKey)) {
+              console.log("✅ Usando áudio sincronizado do cache (Blob)");
+              const blob = audioCacheRef.current.get(cacheKey)!;
+              if (audioUrlCacheRef.current.has(cacheKey)) {
+                audioSrc = audioUrlCacheRef.current.get(cacheKey)!;
+              } else {
+                audioSrc = URL.createObjectURL(blob);
+                audioUrlCacheRef.current.set(cacheKey, audioSrc);
+              }
+            }
+
+            if (!mainAudioRef.current) {
+              mainAudioRef.current = new Audio();
+            }
+
+            const audio = mainAudioRef.current;
+            audio.src = audioSrc;
             audio.preload = "auto";
 
             await new Promise<void>((res, rej) => {
               let carregado = false;
-
-              audio.oncanplaythrough = () => {
+              const onCanPlay = () => {
                 carregado = true;
                 res();
+                audio.removeEventListener("canplaythrough", onCanPlay);
               };
-              audio.onerror = () => rej(new Error("Erro ao carregar áudio"));
+
+              audio.addEventListener("canplaythrough", onCanPlay);
+              audio.onerror = () => {
+                audio.removeEventListener("canplaythrough", onCanPlay);
+                rej(new Error("Erro ao carregar áudio"));
+              };
+
               setTimeout(() => {
-                if (!carregado) rej(new Error("Timeout ao carregar áudio"));
-              }, 2000);
+                if (!carregado) {
+                  audio.removeEventListener("canplaythrough", onCanPlay);
+                  rej(new Error("Timeout ao carregar áudio"));
+                }
+              }, 15000); // 15 segundos de timeout para redes lentas
             });
 
             await audio.play();
@@ -1043,6 +1077,27 @@ export default function PainelPage() {
         return;
       }
 
+      // --- SISTEMA DE PRE-FETCH ---
+      if (call.audio) {
+        const fullUrl = `${NEST_URL}${call.audio}`;
+        const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
+
+        console.log("📥 Iniciando pre-fetch do áudio:", fullUrl, "Sala:", call.sala);
+        fetch(fullUrl)
+          .then(res => res.blob())
+          .then(blob => {
+            // Se já existia uma URL de objeto para esta chave, revogamos para liberar memória
+            if (audioUrlCacheRef.current.has(cacheKey)) {
+              URL.revokeObjectURL(audioUrlCacheRef.current.get(cacheKey)!);
+              audioUrlCacheRef.current.delete(cacheKey);
+            }
+            audioCacheRef.current.set(cacheKey, blob);
+            console.log("✨ Áudio cacheado e sincronizado:", cacheKey);
+          })
+          .catch(err => console.error("❌ Falha no pre-fetch:", err));
+      }
+      // ----------------------------
+
       if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
         // console.log("➕ Adicionando chamada às ativas");
         setAtivasSync((prev) => [...prev, call]);
@@ -1107,11 +1162,16 @@ export default function PainelPage() {
       cancelLoop.current = true;
       loopRodando.current = false;
 
-      audioPoolRef.current.forEach((audio) => {
-        audio.pause();
-        audio.src = "";
-      });
-      audioPoolRef.current.clear();
+      // Limpeza de cache de áudio
+      audioUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+      audioUrlCacheRef.current.clear();
+      audioCacheRef.current.clear();
+
+      if (mainAudioRef.current) {
+        mainAudioRef.current.pause();
+        mainAudioRef.current.src = "";
+        mainAudioRef.current = null;
+      }
     };
   }, [
     isLiberado,

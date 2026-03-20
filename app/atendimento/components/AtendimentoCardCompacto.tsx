@@ -56,6 +56,7 @@ const useExamProgress = (exames: ExamRegister[]) => {
   const completed = exames.filter(
     (exame) =>
       exame.status === ExamStatus.FINALIZADO ||
+      exame.status === ExamStatus.PROCESSANDO ||
       exame.status === ExamStatus.AGUARDANDO_RESULTADO,
   ).length;
 

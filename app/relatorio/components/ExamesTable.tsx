@@ -49,6 +49,10 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
+import {
+  getSignatureStatusLabel,
+  normalizeSignatureStatus,
+} from "@/lib/scheduling/status.helper";
 import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/hooks/useUser";
 
@@ -300,6 +304,8 @@ const ExamesTable: React.FC<{
     switch (status) {
       case ExamStatus.FINALIZADO:
         return "success";
+      case ExamStatus.PROCESSANDO:
+        return "primary";
       case ExamStatus.PENDENTE:
         return "warning";
       case ExamStatus.AGUARDANDO_RESULTADO:
@@ -313,6 +319,8 @@ const ExamesTable: React.FC<{
     switch (status) {
       case ExamStatus.FINALIZADO:
         return <CheckCircle size={14} />;
+      case ExamStatus.PROCESSANDO:
+        return <Clock size={14} />;
       case ExamStatus.PENDENTE:
         return <Clock size={14} />;
       case ExamStatus.AGUARDANDO_RESULTADO:
@@ -323,26 +331,22 @@ const ExamesTable: React.FC<{
   };
 
   const getSignatureStatusMeta = (exame: ExamRegister) => {
-    const signatureStatus = exame.signatureInfo?.status;
+    const signatureStatus = normalizeSignatureStatus(exame.signatureInfo?.status);
 
     if (
       !signatureStatus ||
-      signatureStatus === "NOT_REQUIRED" ||
       signatureStatus === "NAO_REQUER_ASSINATURA"
     ) {
       return null;
     }
 
     if (
-      signatureStatus === "WAITING_AUTH" ||
       signatureStatus === "AGUARDANDO_AUTENTICACAO" ||
-      signatureStatus === "PROCESSING" ||
       signatureStatus === "PROCESSANDO_ASSINATURA"
     ) {
       return {
         icon: <Clock className="text-amber-600" size={12} />,
         label:
-          signatureStatus === "PROCESSING" ||
           signatureStatus === "PROCESSANDO_ASSINATURA"
             ? "Processando assinatura digital"
             : "Aguardando assinatura digital",
@@ -355,15 +359,13 @@ const ExamesTable: React.FC<{
     }
 
     if (
-      signatureStatus === "PENDING_RETRY" ||
       signatureStatus === "AGUARDANDO_REPROCESSAMENTO" ||
-      signatureStatus === "FAILED" ||
       signatureStatus === "FALHA_ASSINATURA"
     ) {
       return {
         icon: <AlertCircle className="text-rose-600" size={12} />,
         label:
-          signatureStatus === "FAILED" || signatureStatus === "FALHA_ASSINATURA"
+          signatureStatus === "FALHA_ASSINATURA"
             ? "Falha na assinatura digital"
             : "Aguardando reprocessamento da assinatura",
         labelClassName: "text-rose-700",
@@ -375,7 +377,7 @@ const ExamesTable: React.FC<{
       };
     }
 
-    if (signatureStatus === "SIGNED" || signatureStatus === "ASSINADO") {
+    if (signatureStatus === "ASSINADO") {
       return {
         icon: <CheckCircle className="text-emerald-600" size={12} />,
         label: "Assinado digitalmente",
@@ -387,7 +389,12 @@ const ExamesTable: React.FC<{
       };
     }
 
-    return null;
+    return {
+      icon: <Clock className="text-default-500" size={12} />,
+      label: getSignatureStatusLabel(signatureStatus),
+      labelClassName: "text-default-600",
+      detailClassName: "text-default-500",
+    };
   };
 
   const formatDate = (dateString: string) => {
@@ -402,11 +409,19 @@ const ExamesTable: React.FC<{
     ticketTime: Date | null | undefined,
     exame: ExamRegister,
   ) => {
-    if (!ticketTime || !exame) return null;
+    if (!ticketTime || !exame?.dataExame) return null;
 
     try {
       const ticketDate = new Date(ticketTime);
       const exameDate = new Date(exame.dataExame);
+
+      if (
+        Number.isNaN(ticketDate.getTime()) ||
+        Number.isNaN(exameDate.getTime())
+      ) {
+        return null;
+      }
+
       const diffMs = exameDate.getTime() - ticketDate.getTime();
       const diffMinutes = Math.floor(diffMs / (1000 * 60));
 
@@ -513,7 +528,12 @@ const ExamesTable: React.FC<{
             </span>
             <span className="flex items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
-              {localExames.filter((e) => e.url).length} Com resultado
+              {
+                localExames.filter(
+                  (e) => e.url && e.status === ExamStatus.FINALIZADO,
+                ).length
+              }{" "}
+              Com resultado
             </span>
           </div>
         </div>
@@ -549,6 +569,9 @@ const ExamesTable: React.FC<{
                 atendimento.TICKET?.emissao,
                 exame,
               );
+              const hasExecutionData = Boolean(
+                exame.dataExame || exame.sala || exame.profissional,
+              );
               const signatureMeta = getSignatureStatusMeta(exame);
 
               return (
@@ -558,17 +581,23 @@ const ExamesTable: React.FC<{
                       <div className="text-sm font-medium text-gray-900">
                         {exame.nomeExame}
                       </div>
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                        <div>{formatDate(exame.dataExame)}</div>
-                        <div>
-                          {exame.sala} - {exame.profissional}
-                        </div>
-                        {waitTime && (
-                          <div className="flex items-center text-xs text-gray-500">
-                            <span>Espera: {waitTime}</span>
+                      {hasExecutionData ? (
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
+                          <div>{formatDate(exame.dataExame)}</div>
+                          <div>
+                            {exame.sala || "-"} - {exame.profissional || "-"}
                           </div>
-                        )}
-                      </div>
+                          {waitTime && (
+                            <div className="flex items-center text-xs text-gray-500">
+                              <span>Espera: {waitTime}</span>
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-gray-500">
+                          Sem detalhes registrados para este exame.
+                        </div>
+                      )}
                       {signatureMeta && (
                         <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
                           <div
@@ -623,7 +652,7 @@ const ExamesTable: React.FC<{
                           Enviar
                         </Button>
                       </div>
-                      {exame.url && (
+                      {exame.url && exame.status === ExamStatus.FINALIZADO && (
                         <div className="flex flex-col gap-1">
                           <Button
                             className="w-full"

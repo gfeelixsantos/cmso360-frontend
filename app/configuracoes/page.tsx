@@ -340,8 +340,8 @@ export default function ConfiguracoesPage() {
                     }
                   >
                     <Select
-                      label="Provedor PSC Padrão"
-                      placeholder="Selecione o provedor PSC padrão"
+                      label="Provedor Padrão"
+                      placeholder="Selecione"
                       selectedKeys={
                         formData.pscPadrao ? [formData.pscPadrao] : []
                       }
@@ -377,10 +377,6 @@ export default function ConfiguracoesPage() {
                         </SelectItem>
                       ))}
                     </Select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Selecione um provedor PSC ou &quot;Nenhum&quot; para
-                      escolher a cada autenticação
-                    </p>
                   </div>
 
                   {/* Configurações BRy Cloud */}
@@ -394,8 +390,7 @@ export default function ConfiguracoesPage() {
                   >
                     <div className="space-y-4">
                       <Input
-                        label="ID Cert (UUID)"
-                        placeholder="Digite o UUID do seu certificado no BRy Cloud"
+                        label="UUID do seu certificado no BRy Cloud (ID Cert)"
                         value={formData.uuidCert}
                         onChange={(e) =>
                           setFormData({
@@ -407,7 +402,6 @@ export default function ConfiguracoesPage() {
 
                       <Input
                         label="PIN do Certificado"
-                        placeholder="Digite o PIN do seu certificado"
                         type="password"
                         value={formData.pin}
                         onChange={(e) =>

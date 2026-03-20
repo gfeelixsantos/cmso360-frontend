@@ -191,6 +191,23 @@ const CONCLUSAO_OPTIONS = [
   { value: "Aguardar Avaliação", label: "Aguardar Avaliação" },
 ] as const;
 
+const normalizarConclusaoClinica = (conclusao?: string): string | undefined => {
+  if (!conclusao) return undefined;
+
+  const normalizarTexto = (texto: string) =>
+    texto
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim()
+      .toUpperCase();
+
+  const valorNormalizado = normalizarTexto(conclusao);
+  const opcao = CONCLUSAO_OPTIONS.find(
+    (item) => normalizarTexto(item.value) === valorNormalizado,
+  );
+
+  return opcao?.value ?? conclusao;
+};
 const TESTE_ARTICULAR_PADRAO: TestesArticulares = {
   // 1 - PUNHOS
   testePhalen: "Negativo",
@@ -436,6 +453,10 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   const codigoMedicoFinal = formulario?.codigoMedico || user?.codigo || "";
   const medicoFinal = formulario?.medico || user?.nome || "";
   const missingMedicoData = !codigoMedicoFinal || !medicoFinal;
+  const formularioPreCarregado =
+    !!formulario &&
+    typeof formulario === "object" &&
+    Object.keys(formulario).length > 0;
 
   useEffect(() => {
     if (atendimento) {
@@ -446,6 +467,8 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
       setFormData((prev) => ({
         ...prev,
         ...formulario,
+        conclusao:
+          normalizarConclusaoClinica(formulario?.conclusao) ?? prev.conclusao,
       }));
     }
 
@@ -910,7 +933,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
   return (
     <div className="max-w-6xl mx-auto p-6 space-y-3 min-h-screen">
-      <HeaderExame agendamento={agendamento} exame={exame} />
+      <HeaderExame
+        agendamento={agendamento}
+        exame={exame}
+        formularioPreCarregado={formularioPreCarregado}
+      />
 
       {missingMedicoData && !showMedicoWarning && (
         <div className="bg-gray-50 border border-gray-200 text-gray-700 p-4 rounded-lg flex items-center gap-3">

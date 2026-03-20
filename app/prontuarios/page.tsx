@@ -291,7 +291,9 @@ export default function UnifiedProntuarioPage() {
         if (medicosFiltro) params.append("medico", medicosFiltro);
 
         url = `${url}?${params.toString()}`;
-        const response = await fetch(url);
+        const response = await fetch(url, {
+          cache: "no-store",
+        });
 
         if (!response.ok) throw new Error("Erro na resposta");
 
@@ -463,8 +465,9 @@ export default function UnifiedProntuarioPage() {
       setRecords((prev) => {
         let updatedRecords = [...prev];
 
+        const scheduleId = String((schedule as any)._id ?? "");
         const index = updatedRecords.findIndex(
-          (r) => r.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
+          (r) => String((r as any)._id ?? "") === scheduleId,
         );
 
         const isStatusSelecionado =
@@ -506,6 +509,10 @@ export default function UnifiedProntuarioPage() {
           updatedRecords[index] = newRecord;
         } else {
           updatedRecords.push(newRecord);
+        }
+
+        if (selectedRecord?._id === newRecord._id) {
+          setSelectedRecord(newRecord);
         }
 
         return updatedRecords.sort((a, b) =>

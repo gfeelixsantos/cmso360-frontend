@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { StatusBadge, StatusColor } from "@/components/shared/StatusBadge";
+import { ProviderIcon } from "@/components/shared/ProviderIcon";
 import { IPscAuthStatus, IUserInfoSettings } from "@/lib/user/interfaces/IUser";
 
 export interface PscProviderStatusProps {
@@ -166,17 +167,23 @@ export function PscProviderStatus({
   const Icon = config.icon;
   const isBryCloudActive =
     settings?.assinaturaProvider === "BRYKMS" && isBryKmsConfigured;
+  const isPscActive =
+    settings?.assinaturaProvider === "PSC" && pscAuthStatus.status === "ACTIVE";
   const providerLabel = getProviderLabel(settings, pscAuthStatus.pscName);
+  const showPscProviderAsStatus = isPscActive && !!providerLabel;
   const remainingTimeLabel = useMemo(
     () => formatRemainingTime(pscAuthStatus.expiresAt, now),
     [pscAuthStatus.expiresAt, now],
   );
   const badgeIcon =
-    isBryCloudActive && config.color === "green" ? (
+    showPscProviderAsStatus && providerLabel ? (
+      <ProviderIcon className="rounded-sm shadow-none" name={providerLabel} size={18} />
+    ) : isBryCloudActive && config.color === "green" ? (
       <Cloud className="w-3 h-3 text-white fill-white" />
     ) : (
       <Icon className="w-3 h-3" />
     );
+  const badgeLabel = showPscProviderAsStatus ? providerLabel : config.label;
   const signatureBadgeClass =
     config.color === "green"
       ? "!w-full justify-center !bg-[#AFCA07] !text-white !border-[#9AB406]"
@@ -215,7 +222,7 @@ export function PscProviderStatus({
         className={signatureBadgeClass}
         color={config.color}
         icon={badgeIcon}
-        label={config.label}
+        label={badgeLabel}
         onClick={isClickable ? onClick : undefined}
       />
       {/* Tempo de expiração - apenas para PSC, não para BRYKMS */}

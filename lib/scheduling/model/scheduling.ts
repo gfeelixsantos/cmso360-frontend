@@ -14,6 +14,7 @@ import {
 import { Ticket } from "@/lib/ticket/ticket";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import { TIPOS_EXAME } from "@/config/constants";
+import { getBrazilDateISO } from "@/lib/utils";
 
 export class SchedulingClass implements Scheduling {
   ANEXOS: FileUpload[] = [];
@@ -117,7 +118,7 @@ export class SchedulingClass implements Scheduling {
             codigoExame: codigo,
             nomeExame: exame.nome,
             status: ExamStatus.PENDENTE,
-            dataExame: new Date().toISOString().split("T")[0],
+            dataExame: getBrazilDateISO(),
             sequencialResultadoExame: "",
             preparacao: "",
             profissional: "",

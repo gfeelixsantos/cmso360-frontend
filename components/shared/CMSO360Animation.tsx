@@ -1,31 +1,31 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Database, Settings, Users, BarChart3 } from "lucide-react";
+import { Stethoscope, FileSignature, ShieldCheck, Monitor } from "lucide-react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
 // FEATURES — fora do componente (evita recriação)
 const features = [
   {
-    icon: Database,
-    title: "Gestão Centralizada",
-    description: "Todos os dados ocupacionais em um único sistema",
+    icon: Stethoscope,
+    title: "Atendimento 100% Digital",
+    description: "Prontuário eletrônico e exames integrados em tempo real.",
   },
   {
-    icon: Users,
-    title: "Controle de Acessos",
-    description: "Permissões segmentadas por departamento",
+    icon: FileSignature,
+    title: "Assinatura Digital ICP-Brasil",
+    description: "ASOs e laudos com validade jurídica e segurança total.",
   },
   {
-    icon: BarChart3,
-    title: "Relatórios Avançados",
-    description: "Business Intelligence para tomada de decisão",
+    icon: ShieldCheck,
+    title: "Integração SOC & eSocial",
+    description: "Sincronização automática para total conformidade legal.",
   },
   {
-    icon: Settings,
-    title: "Processos Otimizados",
-    description: "Workflows automatizados e eficientes",
+    icon: Monitor,
+    title: "Painel de Chamadas",
+    description: "Gestão inteligente do fluxo da recepção ao atendimento.",
   },
 ];
 
@@ -68,9 +68,8 @@ export default function CMSO360Animation() {
         {features.map((_, index) => (
           <motion.button
             key={index}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              currentFeature === index ? "bg-[#104e35] w-6" : "bg-gray-300"
-            }`}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${currentFeature === index ? "bg-[#104e35] w-6" : "bg-gray-300"
+              }`}
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setCurrentFeature(index)}
@@ -107,9 +106,8 @@ function FeatureCarousel({ current }: { current: number }) {
               opacity: current === index ? 1 : 0,
               x: current === index ? 0 : 15,
             }}
-            className={`absolute inset-0 flex items-center justify-center ${
-              current === index ? "pointer-events-auto" : "pointer-events-none"
-            }`}
+            className={`absolute inset-0 flex items-center justify-center ${current === index ? "pointer-events-auto" : "pointer-events-none"
+              }`}
             initial={{ opacity: 0, x: 15 }}
             transition={{ duration: 0.45 }}
           >

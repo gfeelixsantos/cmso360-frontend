@@ -17,6 +17,7 @@ export enum AtendimentoStatus {
 
 export enum ExamStatus {
   PENDENTE = "PENDENTE",
+  PROCESSANDO = "PROCESSANDO",
   AGUARDANDO_RESULTADO = "AGUARDANDO_RESULTADO",
   FINALIZADO = "FINALIZADO",
 }
