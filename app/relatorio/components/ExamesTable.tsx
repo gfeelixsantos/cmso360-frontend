@@ -42,7 +42,6 @@ import { SelectedFile } from "./SelectedFilesList";
 import {
   NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_EXAM_REISSUE,
-  NEST_SCHEDULINGS_EXAM_UPDATE,
 } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {
@@ -241,7 +240,7 @@ const ExamesTable: React.FC<{
       message: "Finalizar Ultrassom como NORMAL ?",
       onConfirm: async () => {
         try {
-          const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+          const response = await fetch("/api/schedulings/exame/update", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -254,7 +253,7 @@ const ExamesTable: React.FC<{
                 observacoes: "",
               },
               sala: "Emitido via relatorio",
-              profissional: currentUser ?? "Desconhecido",
+              profissional: currentUser ?? undefined,
               isEditing: true,
               dataExame: new Date(),
             }),

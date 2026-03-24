@@ -57,7 +57,6 @@ import {
   USER_PROFILE,
   NEST_URL,
 } from "@/config/constants";
-import { NEST_SCHEDULINGS_FINISH } from "@/config/constants";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
 import { addDaysToISODate, getBrazilDateISO } from "@/lib/utils";
 
@@ -1296,7 +1295,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
     setIsSavingOpinion(true);
     try {
-      const response = await fetch(NEST_SCHEDULINGS_FINISH, {
+      const response = await fetch("/api/schedulings/finish", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

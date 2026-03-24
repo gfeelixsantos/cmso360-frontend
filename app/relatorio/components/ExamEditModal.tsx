@@ -24,7 +24,6 @@ import FichaClinicaWhirlpool from "@/app/atendimento/components/exames/FichaClin
 import KitAtendimento from "@/app/atendimento/components/exames/KitAtendimento";
 import Psicossocial from "@/app/atendimento/components/exames/Psicossocial";
 import Ultrassom from "@/app/atendimento/components/exames/Ultrassom";
-import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import {
   ExamRegister,
@@ -172,7 +171,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
       setError("");
 
       try {
-        const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+        const response = await fetch("/api/schedulings/exame/update", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -182,7 +181,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
             codigoExame: [exame.codigoExame],
             formulario: data,
             sala: exame.sala,
-            profissional: exame.profissional || "Desconhecido",
+            profissional: user ?? undefined,
             isEditing: true, // Flag para indicar que é edição
           }),
         });
@@ -226,7 +225,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         setIsSaving(false);
       }
     },
-    [atendimento, exame, onClose],
+    [atendimento, exame, onClose, user],
   );
 
   // Renderizar loading

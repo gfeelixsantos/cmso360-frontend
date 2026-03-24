@@ -377,18 +377,11 @@ const AtendimentoPage: React.FC = () => {
       `[PSC Auth] Iniciando com provedor: ${provider || "Nenhum/Padrão"}`,
     );
     try {
-      if (!user) return;
-
       const payload = {
-        user: user,
         provider: provider,
       };
 
-      const safeNestUrl = NEST_URL || "";
-      const baseUrl = safeNestUrl.endsWith("/")
-        ? safeNestUrl.slice(0, -1)
-        : safeNestUrl;
-      const finalUrl = `${baseUrl}/psc/auth/start`;
+      const finalUrl = "/api/psc/auth/start";
 
       console.log(`[PSC Auth] URL chamada: ${finalUrl}`);
       console.log("[PSC Auth] Payload enviada:", JSON.stringify(payload));

@@ -110,7 +110,6 @@ const ExamUploadModal: React.FC<{
       formData.append("schedulingid", atendimento._id);
       formData.append("grupo", exame.grupo || "");
       formData.append("codigoExame", exame.codigoExame);
-      formData.append("origemUpload", "RELATORIO");
 
       selectedFiles.forEach((file) => {
         formData.append("files", file.file);
@@ -122,9 +121,6 @@ const ExamUploadModal: React.FC<{
 
       const response = await fetch(NEST_SCHEDULINGS_UPDATE_EXAM_RESULT, {
         method: "POST",
-        headers: {
-          "x-cmso-upload-origin": "RELATORIO_UI",
-        },
         body: formData,
       });
 

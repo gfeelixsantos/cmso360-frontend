@@ -25,7 +25,6 @@ import { AtendimentoRules } from "./AtendimentoRules";
 
 import { IPscAuthStatus } from "@/lib/user/interfaces/IUser";
 import { TicketActionType } from "@/lib/ticket/ticket";
-import { NEST_SCHEDULINGS_EXAM_UPDATE } from "@/config/constants";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useUser } from "@/hooks/useUser";
 import {
@@ -168,7 +167,7 @@ const AtendimentoModalExames = ({
       setNotificationModal((prev) => ({ ...prev, isLoading: true }));
 
       try {
-        const response = await fetch(NEST_SCHEDULINGS_EXAM_UPDATE, {
+        const response = await fetch("/api/schedulings/exame/update", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -178,7 +177,7 @@ const AtendimentoModalExames = ({
             codigoExame: exameParaAtualizar.map((e) => e.codigoExame),
             formulario: data,
             sala: sala,
-            profissional: user || { nome: "Desconhecido", codigo: "" },
+            profissional: user ?? undefined,
           }),
         });
 

@@ -35,32 +35,177 @@ interface ProviderMetrics {
 
 const POLLING_INTERVAL_MS = 60000;
 const WS_CONNECTION_TIMEOUT_MS = 10000;
+const SCRAPER_METRICS_CACHE_KEY = "dashboard_scraper_metrics_cache_v1";
+const SCRAPER_METRICS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+interface ScraperMetricsCache {
+  updatedAt: string;
+  metrics: ProviderMetrics[];
+}
+
+const isToday = (date: Date) => {
+  const now = new Date();
+
+  return (
+    date.getFullYear() === now.getFullYear() &&
+    date.getMonth() === now.getMonth() &&
+    date.getDate() === now.getDate()
+  );
+};
+
+const loadCachedMetrics = (): ScraperMetricsCache | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = localStorage.getItem(SCRAPER_METRICS_CACHE_KEY);
+
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as ScraperMetricsCache;
+
+    if (!parsed?.updatedAt || !Array.isArray(parsed.metrics)) return null;
+
+    const updatedAt = new Date(parsed.updatedAt);
+    const isExpired =
+      Number.isNaN(updatedAt.getTime()) ||
+      Date.now() - updatedAt.getTime() > SCRAPER_METRICS_CACHE_TTL_MS;
+
+    if (isExpired) {
+      localStorage.removeItem(SCRAPER_METRICS_CACHE_KEY);
+
+      return null;
+    }
+
+    return parsed;
+  } catch {
+    return null;
+  }
+};
+
+const saveCachedMetrics = (metrics: ProviderMetrics[]) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    const payload: ScraperMetricsCache = {
+      updatedAt: new Date().toISOString(),
+      metrics,
+    };
+
+    localStorage.setItem(SCRAPER_METRICS_CACHE_KEY, JSON.stringify(payload));
+  } catch {
+    // No-op when storage is unavailable.
+  }
+};
+
+const mergeProviderMetrics = (
+  incoming: ProviderMetrics,
+  cached?: ProviderMetrics,
+): ProviderMetrics => {
+  if (!cached) return incoming;
+
+  const waitingForNextProcessing =
+    incoming.status === "Aguardando" &&
+    (incoming.analyzedToday || 0) === 0 &&
+    (incoming.receivedToday || 0) === 0;
+
+  const cachedLastProcessedDate = cached.lastProcessed
+    ? new Date(cached.lastProcessed)
+    : null;
+  const canUseCachedCounters =
+    waitingForNextProcessing &&
+    !!cachedLastProcessedDate &&
+    !Number.isNaN(cachedLastProcessedDate.getTime()) &&
+    isToday(cachedLastProcessedDate);
+
+  return {
+    ...incoming,
+    lastProcessed: incoming.lastProcessed || cached.lastProcessed,
+    intervalMinutes: incoming.intervalMinutes || cached.intervalMinutes || 60,
+    countToday:
+      canUseCachedCounters && !incoming.countToday
+        ? cached.countToday
+        : incoming.countToday,
+    analyzedToday:
+      canUseCachedCounters && !incoming.analyzedToday
+        ? cached.analyzedToday
+        : incoming.analyzedToday,
+    receivedToday:
+      canUseCachedCounters && !incoming.receivedToday
+        ? cached.receivedToday
+        : incoming.receivedToday,
+  };
+};
+
+const mergeIncomingWithCache = (
+  incoming: ProviderMetrics[],
+  cached: ProviderMetrics[],
+) => {
+  if (!incoming.length) return cached;
+
+  const cachedByProvider = new Map(cached.map((item) => [item.provider, item]));
+  const incomingByProvider = new Set(incoming.map((item) => item.provider));
+
+  const merged = incoming.map((item) =>
+    mergeProviderMetrics(item, cachedByProvider.get(item.provider)),
+  );
+
+  cached.forEach((cachedItem) => {
+    if (!incomingByProvider.has(cachedItem.provider)) {
+      merged.push(cachedItem);
+    }
+  });
+
+  return merged.sort((a, b) => a.provider.localeCompare(b.provider));
+};
 
 export const ScraperMonitor: React.FC = () => {
   const [metrics, setMetrics] = useState<ProviderMetrics[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  const [cachedSnapshotAt, setCachedSnapshotAt] = useState<string | null>(null);
+  const [isShowingCachedSnapshot, setIsShowingCachedSnapshot] = useState(false);
   const [, setTick] = useState(0);
   const wsFailedRef = useRef(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
+
+  const applyIncomingMetrics = (incomingData: ProviderMetrics[]) => {
+    const cache = loadCachedMetrics();
+    const merged = mergeIncomingWithCache(incomingData, cache?.metrics || []);
+
+    setMetrics(merged);
+    setCachedSnapshotAt(new Date().toISOString());
+    setIsShowingCachedSnapshot(false);
+    saveCachedMetrics(merged);
+  };
 
   const fetchMetrics = async () => {
     try {
       const response = await fetch(WORKER_SCRAPER_STATUS);
 
       if (response.ok) {
-        const data = await response.json();
-        const sortedData = [...data].sort((a, b) =>
-          a.provider.localeCompare(b.provider),
-        );
+        const data = (await response.json()) as ProviderMetrics[];
 
-        setMetrics(sortedData);
+        applyIncomingMetrics(data);
       }
     } catch {
       // Silently fail - WebSocket will provide data if available
     }
   };
+
+  useEffect(() => {
+    const cache = loadCachedMetrics();
+
+    if (cache?.metrics?.length) {
+      const sortedData = [...cache.metrics].sort((a, b) =>
+        a.provider.localeCompare(b.provider),
+      );
+
+      setMetrics(sortedData);
+      setCachedSnapshotAt(cache.updatedAt);
+      setIsShowingCachedSnapshot(true);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -103,11 +248,7 @@ export const ScraperMonitor: React.FC = () => {
     });
 
     socket.on("SCRAPER_STATUS_UPDATE", (data: ProviderMetrics[]) => {
-      const sortedData = [...data].sort((a, b) =>
-        a.provider.localeCompare(b.provider),
-      );
-
-      setMetrics(sortedData);
+      applyIncomingMetrics(data);
     });
 
     socket.on("connect_error", () => {
@@ -182,13 +323,32 @@ export const ScraperMonitor: React.FC = () => {
     lastProcessed?: string,
     intervalMinutes: number = 60,
   ) => {
-    if (!lastProcessed) return 0;
+    if (!lastProcessed) return null;
     const last = new Date(lastProcessed).getTime();
+
+    if (Number.isNaN(last)) return null;
     const now = new Date().getTime();
     const elapsedMinutes = Math.floor((now - last) / 60000);
     const remaining = Math.max(0, intervalMinutes - elapsedMinutes);
 
     return remaining;
+  };
+
+  const calculateNextRunTime = (
+    lastProcessed?: string,
+    intervalMinutes: number = 60,
+  ) => {
+    if (!lastProcessed) return "-";
+    const last = new Date(lastProcessed).getTime();
+
+    if (Number.isNaN(last)) return "-";
+
+    const nextRun = new Date(last + intervalMinutes * 60000);
+
+    return nextRun.toLocaleTimeString("pt-BR", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
   };
 
   return (
@@ -216,6 +376,13 @@ export const ScraperMonitor: React.FC = () => {
                   ? "Atualização automática (1min)"
                   : "Conectando..."}
             </p>
+            {cachedSnapshotAt && (
+              <p className="text-xs text-gray-500 mt-1">
+                Ultima sincronizacao: {formatDate(cachedSnapshotAt)}
+                {isShowingCachedSnapshot &&
+                  " (exibindo ultimo processamento salvo)"}
+              </p>
+            )}
           </div>
         </div>
         {metrics.some((m) => m.status === "Processando") && (
@@ -264,6 +431,10 @@ export const ScraperMonitor: React.FC = () => {
                 row.lastProcessed,
                 row.intervalMinutes,
               );
+              const nextRunTime = calculateNextRunTime(
+                row.lastProcessed,
+                row.intervalMinutes,
+              );
 
               return (
                 <TableRow
@@ -292,7 +463,16 @@ export const ScraperMonitor: React.FC = () => {
                     {formatDate(row.lastProcessed)}
                   </TableCell>
                   <TableCell className="text-gray-600 text-sm">
-                    {minutesRemaining} min
+                    {minutesRemaining === null ? (
+                      "-"
+                    ) : (
+                      <div className="leading-tight">
+                        <div>{minutesRemaining} min</div>
+                        <div className="text-xs text-gray-500">
+                          as {nextRunTime}
+                        </div>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-center font-bold text-blue-600">
                     {row.analyzedToday || 0}

@@ -1,4 +1,4 @@
-import {
+﻿import {
   Modal,
   ModalContent,
   ModalHeader,
@@ -25,6 +25,17 @@ interface DeleteAttachmentModalProps {
   atendimentoId: string;
   onSuccess: (updatedScheduling?: Scheduling) => void;
 }
+
+const fixMojibake = (text: string): string => {
+  if (!text || !/[ÃÂ]/.test(text)) return text;
+
+  try {
+    const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0));
+    return new TextDecoder("utf-8").decode(bytes);
+  } catch {
+    return text;
+  }
+};
 
 const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
   isOpen,
@@ -75,7 +86,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Erro ao excluir resultado");
+        throw new Error(fixMojibake(errorData.message || "Erro ao excluir resultado"));
       }
 
       const result = await response.json();
@@ -91,7 +102,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
     } catch (err: any) {
       console.error("Erro ao excluir anexo:", err);
       setStatus("error");
-      setErrorMessage(err.message || "Erro ao excluir resultado");
+      setErrorMessage(fixMojibake(err.message || "Erro ao excluir resultado"));
     }
   };
 
@@ -317,3 +328,4 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
 };
 
 export default React.memo(DeleteAttachmentModal);
+
