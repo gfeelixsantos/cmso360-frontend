@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Evita conflito com locks em ".next" quando há processo de dev em paralelo.
-  distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
+  // 1. Remova ou comente a linha abaixo para voltar ao padrão ".next"
+  // distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
+
+  // 2. Adicione isso para que seu Dockerfile funcione (standalone mode)
+  output: 'standalone', 
+
   images: {
     unoptimized: true,
   },
