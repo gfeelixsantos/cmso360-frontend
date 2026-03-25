@@ -303,12 +303,14 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
+
         throw new Error(errorData.message || "Erro ao excluir atendimento");
       }
 
       return Promise.resolve();
     } catch (error: any) {
       console.error("Erro ao excluir:", error);
+
       return Promise.reject(error);
     }
   };
@@ -348,8 +350,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       <DeleteConfirmationModal
         isOpenModalDelete={deleteModalOpen}
         onCloseModalDelete={() => setDeleteModalOpen(false)}
-        onDeleteSuccess={onClose}
         onConfirm={handleDeleteScheduling}
+        onDeleteSuccess={onClose}
       />
 
       <SyncSocConfirmationModal

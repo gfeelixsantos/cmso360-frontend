@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { motion } from "framer-motion";
-import { Button, Card, CardBody, CardHeader, Divider } from "@heroui/react";
+import { Button, Card, CardBody } from "@heroui/react";
 import { RefreshCw, Home, AlertCircle, ChevronDown } from "lucide-react";
 import Link from "next/link";
 
@@ -26,78 +26,79 @@ export default function Error({
       <div className="absolute right-1/2 bottom-1/2 -z-10 h-[400px] w-[400px] translate-x-1/2 translate-y-1/2 rounded-full bg-danger/5 blur-[120px]" />
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
         className="w-full max-w-lg text-center"
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.5 }}
       >
         <div className="flex justify-center mb-8">
           <motion.div
-            initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
+            className="flex items-center justify-center w-20 h-20 rounded-2xl bg-danger/10 text-danger"
+            initial={{ scale: 0.8 }}
             transition={{
               type: "spring",
               stiffness: 260,
               damping: 20,
-              delay: 0.2
+              delay: 0.2,
             }}
-            className="flex items-center justify-center w-20 h-20 rounded-2xl bg-danger/10 text-danger"
           >
             <AlertCircle className="w-10 h-10" />
           </motion.div>
         </div>
 
         <motion.p
-          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
           className="text-base font-semibold text-danger"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.3 }}
         >
           Ops! Algo deu errado
         </motion.p>
 
         <motion.h1
-          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
           className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.4 }}
         >
           Erro Inesperado
         </motion.h1>
 
         <motion.p
-          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
           className="mt-6 text-base leading-7 text-muted-foreground mx-auto"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.5 }}
         >
-          Lamentamos o inconveniente. Ocorreu um erro ao processar sua solicitação.
+          Lamentamos o inconveniente. Ocorreu um erro ao processar sua
+          solicitação.
         </motion.p>
 
         <motion.div
-          initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.6 }}
         >
           <Button
-            onPress={() => reset()}
+            className="font-medium shadow-lg shadow-primary/20 w-full sm:w-auto"
             color="primary"
-            variant="solid"
             size="lg"
             startContent={<RefreshCw className="w-4 h-4" />}
-            className="font-medium shadow-lg shadow-primary/20 w-full sm:w-auto"
+            variant="solid"
+            onPress={() => reset()}
           >
             Tentar Novamente
           </Button>
 
           <Button
             as={Link}
+            className="font-medium w-full sm:w-auto"
             href="/"
-            variant="flat"
             size="lg"
             startContent={<Home className="w-4 h-4" />}
-            className="font-medium w-full sm:w-auto"
+            variant="flat"
           >
             Página Inicial
           </Button>
@@ -105,10 +106,10 @@ export default function Error({
 
         {process.env.NODE_ENV === "development" && (
           <motion.div
-            initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
             className="mt-12 text-left"
+            initial={{ opacity: 0 }}
+            transition={{ delay: 0.8 }}
           >
             <Card className="bg-muted/50 border-none shadow-none">
               <CardBody className="py-2">
@@ -129,14 +130,13 @@ export default function Error({
       </motion.div>
 
       <motion.div
-        initial={{ opacity: 0 }}
         animate={{ opacity: 0.5 }}
-        transition={{ delay: 1 }}
         className="absolute bottom-8 text-xs text-muted-foreground"
+        initial={{ opacity: 0 }}
+        transition={{ delay: 1 }}
       >
         ID do Erro: {error.digest || "N/A"}
       </motion.div>
     </div>
   );
 }
-

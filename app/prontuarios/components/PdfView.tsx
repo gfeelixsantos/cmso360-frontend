@@ -26,6 +26,7 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const iframeSrc = useMemo(() => {
     if (!currentPdfUrl) return "";
     const separator = currentPdfUrl.includes("?") ? "&" : "?";
+
     return `${currentPdfUrl}${separator}cb=${cacheBust}`;
   }, [currentPdfUrl, cacheBust]);
 

@@ -208,7 +208,18 @@ const ExamesTable: React.FC<{
       const result: Scheduling = await response.json();
 
       if (result) {
-        await fetchUpdatedExames();
+        setReemitModal({ isOpen: false, exame: null });
+
+        setAlertModal({
+          open: true,
+          type: "success",
+          message:
+            "PDF sendo gerado. Atualize a página em alguns segundos para ver o resultado.",
+        });
+
+        setTimeout(async () => {
+          await fetchUpdatedExames();
+        }, 5000);
 
         return Promise.resolve();
       } else {
@@ -303,8 +314,6 @@ const ExamesTable: React.FC<{
     switch (status) {
       case ExamStatus.FINALIZADO:
         return "success";
-      case ExamStatus.PROCESSANDO:
-        return "primary";
       case ExamStatus.PENDENTE:
         return "warning";
       case ExamStatus.AGUARDANDO_RESULTADO:
@@ -318,8 +327,6 @@ const ExamesTable: React.FC<{
     switch (status) {
       case ExamStatus.FINALIZADO:
         return <CheckCircle size={14} />;
-      case ExamStatus.PROCESSANDO:
-        return <Clock size={14} />;
       case ExamStatus.PENDENTE:
         return <Clock size={14} />;
       case ExamStatus.AGUARDANDO_RESULTADO:
@@ -330,12 +337,11 @@ const ExamesTable: React.FC<{
   };
 
   const getSignatureStatusMeta = (exame: ExamRegister) => {
-    const signatureStatus = normalizeSignatureStatus(exame.signatureInfo?.status);
+    const signatureStatus = normalizeSignatureStatus(
+      exame.signatureInfo?.status,
+    );
 
-    if (
-      !signatureStatus ||
-      signatureStatus === "NAO_REQUER_ASSINATURA"
-    ) {
+    if (!signatureStatus || signatureStatus === "NAO_REQUER_ASSINATURA") {
       return null;
     }
 
@@ -651,7 +657,7 @@ const ExamesTable: React.FC<{
                           Enviar
                         </Button>
                       </div>
-                      {exame.url && exame.status === ExamStatus.FINALIZADO && (
+                      {exame.url && (
                         <div className="flex flex-col gap-1">
                           <Button
                             className="w-full"

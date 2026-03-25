@@ -27,6 +27,7 @@ export async function POST(req: Request): Promise<NextResponse> {
 
       if (payload) {
         const { exp, iat, ...authUser } = payload;
+
         headers.set("x-auth-user", JSON.stringify(authUser));
 
         requestBody = {
@@ -47,7 +48,8 @@ export async function POST(req: Request): Promise<NextResponse> {
     return new NextResponse(text, {
       status: response.status,
       headers: {
-        "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+        "Content-Type":
+          response.headers.get("Content-Type") ?? "application/json",
       },
     });
   } catch (error) {

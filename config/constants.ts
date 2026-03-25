@@ -4,10 +4,11 @@
 const PORT = 3333;
 const NEST_URL_DEVELOP = `http://127.0.0.1:${PORT}/`;
 
-export const NEST_URL = process.env.NODE_ENV.includes("dev")
-  ? NEST_URL_DEVELOP
-  : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
-    "https://cmso360-backend-production.up.railway.app/";
+export const NEST_URL =
+  process.env.NODE_ENV === "development"
+    ? NEST_URL_DEVELOP
+    : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
+      "https://cmso360-backend-production.up.railway.app/";
 console.log(NEST_URL);
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
@@ -21,10 +22,11 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
 const WORKER_PORT = 3334;
 const WORKER_URL_DEVELOP = `http://127.0.0.1:${WORKER_PORT}/`;
 
-export const WORKER_URL = process.env.NODE_ENV.includes("dev")
-  ? WORKER_URL_DEVELOP
-  : process.env.NEXT_PUBLIC_WORKER_URL_PRODUCTION ||
-    "https://cmso360-worker.fly.dev/";
+export const WORKER_URL =
+  process.env.NODE_ENV === "development"
+    ? WORKER_URL_DEVELOP
+    : process.env.NEXT_PUBLIC_WORKER_URL_PRODUCTION ||
+      "https://cmso360-worker.fly.dev/";
 
 export const WORKER_WS_URL = WORKER_URL?.replace("http", "ws").replace(
   "https",

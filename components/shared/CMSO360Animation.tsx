@@ -68,8 +68,9 @@ export default function CMSO360Animation() {
         {features.map((_, index) => (
           <motion.button
             key={index}
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${currentFeature === index ? "bg-[#104e35] w-6" : "bg-gray-300"
-              }`}
+            className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              currentFeature === index ? "bg-[#104e35] w-6" : "bg-gray-300"
+            }`}
             whileHover={{ scale: 1.15 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setCurrentFeature(index)}
@@ -106,8 +107,9 @@ function FeatureCarousel({ current }: { current: number }) {
               opacity: current === index ? 1 : 0,
               x: current === index ? 0 : 15,
             }}
-            className={`absolute inset-0 flex items-center justify-center ${current === index ? "pointer-events-auto" : "pointer-events-none"
-              }`}
+            className={`absolute inset-0 flex items-center justify-center ${
+              current === index ? "pointer-events-auto" : "pointer-events-none"
+            }`}
             initial={{ opacity: 0, x: 15 }}
             transition={{ duration: 0.45 }}
           >

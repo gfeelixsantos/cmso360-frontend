@@ -342,8 +342,9 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
         {DIVULGACAO_CONFIG.items.map((_, index) => (
           <div
             key={index}
-            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${index === itemAtual ? "bg-white scale-125" : "bg-white/50"
-              }`}
+            className={`w-1.5 h-1.5 sm:w-2 sm:h-2 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
+              index === itemAtual ? "bg-white scale-125" : "bg-white/50"
+            }`}
           />
         ))}
       </div>
@@ -558,15 +559,17 @@ const ConfigModal = ({
               Áudio
             </span>
             <button
-              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${audioHabilitado ? "bg-green-500" : "bg-gray-300"
-                }`}
+              className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
+                audioHabilitado ? "bg-green-500" : "bg-gray-300"
+              }`}
               onClick={() => setAudioHabilitado(!audioHabilitado)}
             >
               <span
-                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${audioHabilitado
-                  ? "translate-x-5 sm:translate-x-6"
-                  : "translate-x-0.5 sm:translate-x-1"
-                  }`}
+                className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
+                  audioHabilitado
+                    ? "translate-x-5 sm:translate-x-6"
+                    : "translate-x-0.5 sm:translate-x-1"
+                }`}
               />
             </button>
           </div>
@@ -825,7 +828,12 @@ export default function PainelPage() {
             // Chave única baseada na URL + Sala + Exame para evitar confusão se o paciente mudar de sala
             const cacheKey = `${fullAudioUrl}|${call.sala}|${call.exame}`;
 
-            console.log("Tentando reproduzir áudio:", fullAudioUrl, "Sala:", call.sala);
+            console.log(
+              "Tentando reproduzir áudio:",
+              fullAudioUrl,
+              "Sala:",
+              call.sala,
+            );
 
             let audioSrc = fullAudioUrl;
 
@@ -833,6 +841,7 @@ export default function PainelPage() {
             if (audioCacheRef.current.has(cacheKey)) {
               console.log("✅ Usando áudio sincronizado do cache (Blob)");
               const blob = audioCacheRef.current.get(cacheKey)!;
+
               if (audioUrlCacheRef.current.has(cacheKey)) {
                 audioSrc = audioUrlCacheRef.current.get(cacheKey)!;
               } else {
@@ -846,6 +855,7 @@ export default function PainelPage() {
             }
 
             const audio = mainAudioRef.current;
+
             audio.src = audioSrc;
             audio.preload = "auto";
 
@@ -1082,10 +1092,15 @@ export default function PainelPage() {
         const fullUrl = `${NEST_URL}${call.audio}`;
         const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
 
-        console.log("📥 Iniciando pre-fetch do áudio:", fullUrl, "Sala:", call.sala);
+        console.log(
+          "📥 Iniciando pre-fetch do áudio:",
+          fullUrl,
+          "Sala:",
+          call.sala,
+        );
         fetch(fullUrl)
-          .then(res => res.blob())
-          .then(blob => {
+          .then((res) => res.blob())
+          .then((blob) => {
             // Se já existia uma URL de objeto para esta chave, revogamos para liberar memória
             if (audioUrlCacheRef.current.has(cacheKey)) {
               URL.revokeObjectURL(audioUrlCacheRef.current.get(cacheKey)!);
@@ -1094,7 +1109,7 @@ export default function PainelPage() {
             audioCacheRef.current.set(cacheKey, blob);
             console.log("✨ Áudio cacheado e sincronizado:", cacheKey);
           })
-          .catch(err => console.error("❌ Falha no pre-fetch:", err));
+          .catch((err) => console.error("❌ Falha no pre-fetch:", err));
       }
       // ----------------------------
 
@@ -1566,12 +1581,12 @@ export default function PainelPage() {
                         <div
                           className={
                             chamadaAtual.name
-                              ? (chamadaAtual.exame === "RECEPCAO"
+                              ? chamadaAtual.exame === "RECEPCAO"
                                 ? "text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl 2xl:text-8xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1"
-                                : "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1")
-                              : (chamadaAtual.exame === "RECEPCAO"
+                                : "text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl 2xl:text-6xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider break-words px-1"
+                              : chamadaAtual.exame === "RECEPCAO"
                                 ? "text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-black mb-1 sm:mb-2 md:mb-4 uppercase tracking-wider px-1"
-                                : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider px-1")
+                                : "text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl 2xl:text-7xl font-black mb-1 sm:mb-2 md:mb-3 uppercase tracking-wider px-1"
                           }
                           style={{ color: currentExamColors.primary }}
                         >

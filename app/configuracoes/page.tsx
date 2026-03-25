@@ -414,8 +414,9 @@ export default function ConfiguracoesPage() {
 
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-sm text-blue-700">
-                          <strong>Atenção:</strong> O PIN será criptografado e armazenado com segurança. Não compartilhe
-                          suas credenciais com terceiros.
+                          <strong>Atenção:</strong> O PIN será criptografado e
+                          armazenado com segurança. Não compartilhe suas
+                          credenciais com terceiros.
                         </p>
                       </div>
                     </div>

@@ -66,7 +66,8 @@ export async function proxySchedulingRequest(
     return new NextResponse(text, {
       status: response.status,
       headers: {
-        "Content-Type": response.headers.get("Content-Type") ?? "application/json",
+        "Content-Type":
+          response.headers.get("Content-Type") ?? "application/json",
       },
     });
   } catch (error) {

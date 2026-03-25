@@ -68,7 +68,8 @@ export default function HeaderExame({
         )}
         {formularioPreCarregado && (
           <div className="p-4 m-4 rounded-lg border border-blue-200 bg-blue-50 text-blue-800 text-sm">
-            Formulario ja carregado com dados previamente registrados deste exame.
+            Formulario ja carregado com dados previamente registrados deste
+            exame.
           </div>
         )}
         <div className="flex items-center gap-3 mb-4">

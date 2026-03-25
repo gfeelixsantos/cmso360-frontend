@@ -192,7 +192,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       exames: codigoExames.length > 0,
       preferencial: ticketSelecionado?.preferencialTipo
         ? preferencialTipo.length > 0 ||
-        ticketSelecionado.preferencialTipo?.length > 0
+          ticketSelecionado.preferencialTipo?.length > 0
         : null,
       all:
         empresa.trim().length > 0 &&
@@ -202,10 +202,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         codigoExames.length > 0 &&
         (ticketSelecionado?.preferencialTipo
           ? preferencialTipo.length > 0 ||
-          ticketSelecionado.preferencialTipo?.length > 0
+            ticketSelecionado.preferencialTipo?.length > 0
           : true) &&
         funcionarioSelecionado?.ATENDIMENTOSTATUS ===
-        AtendimentoStatus.AGENDADO,
+          AtendimentoStatus.AGENDADO,
     };
   }, [
     empresa,
@@ -352,7 +352,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
         if (!updateSerivce) return;
 
-        const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&manterExamesRealizados=${updateSerivce}`;
+        const today = new Date();
+        const day = String(today.getDate()).padStart(2, "0");
+        const month = String(today.getMonth() + 1).padStart(2, "0");
+        const year = today.getFullYear();
+        const currentDate = `${day}/${month}/${year}`;
+
+        const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&data=${currentDate}&manterExamesRealizados=${updateSerivce}`;
 
         const response = await fetch(url);
         const prontuario: Scheduling = await response.json();
@@ -1197,8 +1203,9 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
             {/* Conteúdo do modal (fica desabilitado durante o loading) */}
             <div
-              className={`max-w-3xl mx-auto space-y-3 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"
-                }`}
+              className={`max-w-3xl mx-auto space-y-3 transition-opacity duration-300 ${
+                isLoading ? "opacity-50 pointer-events-none" : "opacity-100"
+              }`}
             >
               {/* Indicador de agendamento selecionado */}
               {selectedSchedulingId && (
@@ -1448,10 +1455,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                       <Button
                         key={key}
                         aria-checked={active}
-                        className={`px-3 py-1.5 rounded-md text-xs border transition  ${active
+                        className={`px-3 py-1.5 rounded-md text-xs border transition  ${
+                          active
                             ? "bg-[#6AA84F] text-white border-[#6AA84F]"
                             : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         disableAnimation={true}
                         disabled={isLoading}
                         role="radio"
@@ -1553,25 +1561,26 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                         content={
                           exame == "Laboratório"
                             ? laboratorialExames?.map((e, i) => (
-                              <span key={`lab-${i}`} className="text-xs">
-                                {e}
-                              </span>
-                            ))
+                                <span key={`lab-${i}`} className="text-xs">
+                                  {e}
+                                </span>
+                              ))
                             : examesImagem?.map((e, i) => (
-                              <span key={`img-${i}`} className="text-xs">
-                                {e}
-                              </span>
-                            ))
+                                <span key={`img-${i}`} className="text-xs">
+                                  {e}
+                                </span>
+                              ))
                         }
                         disableAnimation={true}
                       >
                         <Button
                           key={exame}
                           aria-checked={isSelected}
-                          className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${isSelected
+                          className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${
+                            isSelected
                               ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
                               : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                            } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                           disableAnimation={true}
                           disabled={isLoading}
                           role="radio"
@@ -1586,10 +1595,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                       <Button
                         key={exame}
                         aria-checked={isSelected}
-                        className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${isSelected
+                        className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${
+                          isSelected
                             ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
                             : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         disableAnimation={true}
                         disabled={isLoading}
                         role="radio"
@@ -1687,10 +1697,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                     onChange={handleFileUpload}
                   />
                   <label
-                    className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${isLoading
+                    className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${
+                      isLoading
                         ? "bg-gray-400 text-gray-200 cursor-not-allowed"
                         : "bg-gray-500 text-white hover:bg-gray-600"
-                      }`}
+                    }`}
                     htmlFor="file-upload"
                   >
                     Anexos {filesUpload.length > 0 ? filesUpload.length : ""}
@@ -1711,70 +1722,71 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               {/* Atendimento Preferencial - Modificado */}
               {(ticketSelecionado?.preferencial ||
                 ticketSelecionado == null) && (
-                  <div>
-                    <label className="text-sm font-medium text-gray-700">
-                      Atendimento Preferencial
-                      {ticketSelecionado?.preferencialTipo && (
-                        <span className="ml-2 text-xs text-green-600 font-semibold">
-                          (Tipo já definido: {ticketSelecionado.preferencialTipo})
-                        </span>
-                      )}
-                    </label>
+                <div>
+                  <label className="text-sm font-medium text-gray-700">
+                    Atendimento Preferencial
+                    {ticketSelecionado?.preferencialTipo && (
+                      <span className="ml-2 text-xs text-green-600 font-semibold">
+                        (Tipo já definido: {ticketSelecionado.preferencialTipo})
+                      </span>
+                    )}
+                  </label>
 
-                    <div className="mt-2 flex gap-2 flex-wrap">
-                      {PREFERENCIAL_OPTIONS.map((pref) => {
-                        const active = preferencialTipo === pref;
-                        const isDisabled =
-                          ticketSelecionado?.preferencialTipo &&
-                          ticketSelecionado.preferencialTipo !== "Outros" &&
-                          pref !== "Outros";
+                  <div className="mt-2 flex gap-2 flex-wrap">
+                    {PREFERENCIAL_OPTIONS.map((pref) => {
+                      const active = preferencialTipo === pref;
+                      const isDisabled =
+                        ticketSelecionado?.preferencialTipo &&
+                        ticketSelecionado.preferencialTipo !== "Outros" &&
+                        pref !== "Outros";
 
-                        return (
-                          <Button
-                            key={pref}
-                            className={`px-3 py-1 rounded-md text-sm border transition ${active
-                                ? "bg-[#6AA84F] text-white border-[#6AA84F]"
-                                : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                              } ${isLoading || isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                            disabled={isLoading}
-                            type="button"
-                            value={pref}
-                            onPress={(e: any) => {
-                              // Se já tem tipo definido, só permite alterar para "Outros"
-                              if (
-                                ticketSelecionado?.preferencialTipo &&
-                                ticketSelecionado.preferencialTipo !== "Outros" &&
-                                pref !== "Outros"
-                              ) {
-                                return;
-                              }
-                              togglePreferencial(e.target.value);
-                            }}
-                          >
-                            {pref}
-                            {pref === "Outros" &&
-                              ticketSelecionado?.preferencialTipo && (
-                                <span className="ml-1 text-xs">(Alterar)</span>
-                              )}
-                          </Button>
-                        );
-                      })}
-                    </div>
-
-                    {ticketSelecionado?.preferencialTipo &&
-                      ticketSelecionado.preferencialTipo !== "Outros" && (
-                        <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                          <p className="text-xs text-blue-700">
-                            <Info className="h-3 w-3 inline mr-1" />O tipo
-                            preferencial{" "}
-                            <strong>{ticketSelecionado.preferencialTipo}</strong>{" "}
-                            foi definido no totem. Você pode alterar para "Outros"
-                            se necessário.
-                          </p>
-                        </div>
-                      )}
+                      return (
+                        <Button
+                          key={pref}
+                          className={`px-3 py-1 rounded-md text-sm border transition ${
+                            active
+                              ? "bg-[#6AA84F] text-white border-[#6AA84F]"
+                              : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
+                          } ${isLoading || isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                          disabled={isLoading}
+                          type="button"
+                          value={pref}
+                          onPress={(e: any) => {
+                            // Se já tem tipo definido, só permite alterar para "Outros"
+                            if (
+                              ticketSelecionado?.preferencialTipo &&
+                              ticketSelecionado.preferencialTipo !== "Outros" &&
+                              pref !== "Outros"
+                            ) {
+                              return;
+                            }
+                            togglePreferencial(e.target.value);
+                          }}
+                        >
+                          {pref}
+                          {pref === "Outros" &&
+                            ticketSelecionado?.preferencialTipo && (
+                              <span className="ml-1 text-xs">(Alterar)</span>
+                            )}
+                        </Button>
+                      );
+                    })}
                   </div>
-                )}
+
+                  {ticketSelecionado?.preferencialTipo &&
+                    ticketSelecionado.preferencialTipo !== "Outros" && (
+                      <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                        <p className="text-xs text-blue-700">
+                          <Info className="h-3 w-3 inline mr-1" />O tipo
+                          preferencial{" "}
+                          <strong>{ticketSelecionado.preferencialTipo}</strong>{" "}
+                          foi definido no totem. Você pode alterar para "Outros"
+                          se necessário.
+                        </p>
+                      </div>
+                    )}
+                </div>
+              )}
             </div>
           </main>
 

@@ -8,7 +8,13 @@ import {
   Button,
   Spinner,
 } from "@heroui/react";
-import { AlertCircle, AlertTriangle, CheckCircle, Key, Trash } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Key,
+  Trash,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 type DeleteStatus = "confirm" | "loading" | "success" | "error";
@@ -56,13 +62,16 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     };
   }, [status, onCloseModalDelete, onDeleteSuccess]);
 
-  const handleCapsLockCheck = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleCapsLockCheck = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     setIsCapsLockOn(event.getModifierState("CapsLock"));
   };
 
   const handleConfirm = async () => {
     if (!password.trim()) {
       setError("A senha é obrigatória");
+
       return;
     }
 
@@ -103,7 +112,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             <ModalBody className="py-5">
               <div className="mt-2 text-sm text-gray-700">
                 <p className="flex items-center gap-2">
-                  <AlertCircle size={18} className="text-red-500" />
+                  <AlertCircle className="text-red-500" size={18} />
                   <span>
                     Esta ação irá excluir <strong>permanentemente</strong> o
                     atendimento e todos os dados associados.
@@ -124,13 +133,13 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                   placeholder="Senha de exclusão"
                   type="password"
                   value={password}
+                  onBlur={() => setIsCapsLockOn(false)}
                   onChange={(e) => {
                     setPassword(e.target.value);
                     setError("");
                   }}
                   onKeyDown={handleCapsLockCheck}
                   onKeyUp={handleCapsLockCheck}
-                  onBlur={() => setIsCapsLockOn(false)}
                 />
                 {isCapsLockOn ? (
                   <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -197,7 +206,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
-                <CheckCircle size={48} className="text-green-500" />
+                <CheckCircle className="text-green-500" size={48} />
                 <p className="text-sm text-gray-700 text-center font-medium">
                   Atendimento excluido com sucesso!
                 </p>
@@ -221,7 +230,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
-                <AlertCircle size={48} className="text-red-500" />
+                <AlertCircle className="text-red-500" size={48} />
                 <p className="text-sm text-gray-700 text-center font-medium">
                   Ocorreu um erro ao excluir o atendimento
                 </p>
@@ -263,8 +272,8 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
         wrapper: "z-[1000]",
         backdrop: "z-[1000] bg-black/50 backdrop-blur-sm",
       }}
-      isOpen={isOpenModalDelete}
       isDismissable={status === "confirm"}
+      isOpen={isOpenModalDelete}
       motionProps={{
         variants: {
           enter: {
@@ -300,4 +309,3 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
 };
 
 export default React.memo(DeleteConfirmationModal);
-

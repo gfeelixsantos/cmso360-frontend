@@ -8,7 +8,13 @@
   Input,
   Spinner,
 } from "@heroui/react";
-import { AlertCircle, AlertTriangle, CheckCircle, Key, Trash } from "lucide-react";
+import {
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Key,
+  Trash,
+} from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
@@ -31,6 +37,7 @@ const fixMojibake = (text: string): string => {
 
   try {
     const bytes = Uint8Array.from(text, (char) => char.charCodeAt(0));
+
     return new TextDecoder("utf-8").decode(bytes);
   } catch {
     return text;
@@ -62,7 +69,9 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
     }
   }, [isOpen]);
 
-  const handleCapsLockCheck = (event: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleCapsLockCheck = (
+    event: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     setIsCapsLockOn(event.getModifierState("CapsLock"));
   };
 
@@ -86,7 +95,10 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(fixMojibake(errorData.message || "Erro ao excluir resultado"));
+
+        throw new Error(
+          fixMojibake(errorData.message || "Erro ao excluir resultado"),
+        );
       }
 
       const result = await response.json();
@@ -129,7 +141,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
             <ModalBody className="py-5">
               <div className="mt-2 text-sm text-gray-700">
                 <p className="flex items-center gap-2">
-                  <AlertCircle size={18} className="text-red-500" />
+                  <AlertCircle className="text-red-500" size={18} />
                   <span>
                     Tem certeza que deseja remover o resultado do exame{" "}
                     <strong>{examName}</strong>?
@@ -151,13 +163,13 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
                   placeholder="Senha de exclusão"
                   type="password"
                   value={removePassword}
+                  onBlur={() => setIsCapsLockOn(false)}
                   onChange={(e) => {
                     setRemovePassword(e.target.value);
                     setError("");
                   }}
                   onKeyDown={handleCapsLockCheck}
                   onKeyUp={handleCapsLockCheck}
-                  onBlur={() => setIsCapsLockOn(false)}
                 />
                 {isCapsLockOn ? (
                   <div className="mt-2 flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
@@ -194,7 +206,9 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
             <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
               <div className="flex items-center gap-2">
                 <Trash size={20} />
-                <span className="text-lg font-semibold">Removendo Resultado</span>
+                <span className="text-lg font-semibold">
+                  Removendo Resultado
+                </span>
               </div>
             </ModalHeader>
             <ModalBody className="py-8">
@@ -220,7 +234,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
-                <CheckCircle size={48} className="text-green-500" />
+                <CheckCircle className="text-green-500" size={48} />
                 <p className="text-sm text-gray-700 text-center font-medium">
                   Resultado removido com sucesso!
                 </p>
@@ -252,7 +266,7 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
-                <AlertCircle size={48} className="text-red-500" />
+                <AlertCircle className="text-red-500" size={48} />
                 <p className="text-sm text-gray-700 text-center font-medium">
                   Ocorreu um erro ao remover o resultado
                 </p>
@@ -294,8 +308,8 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
         wrapper: "z-[1000]",
         backdrop: "z-[1000] bg-black/50 backdrop-blur-sm",
       }}
-      isOpen={isOpen}
       isDismissable={status === "confirm"}
+      isOpen={isOpen}
       motionProps={{
         variants: {
           enter: {
@@ -328,4 +342,3 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
 };
 
 export default React.memo(DeleteAttachmentModal);
-

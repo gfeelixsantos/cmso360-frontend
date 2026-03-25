@@ -17,35 +17,39 @@ const SIGNATURE_STATUS_LABELS: Record<string, string> = {
 };
 
 const ASO_STATUS_MAP: Record<string, string> = {
-  PROCESSING: "PROCESSANDO",
   SIGNED: "ASSINADO",
   FAILED: "FALHA_ASSINATURA",
 };
 
 const ASO_STATUS_LABELS: Record<string, string> = {
-  PROCESSANDO: "Processando",
+  PENDENTE: "Aguardando Geração",
+  GERADO: "Aguardando Assinatura",
+  ASSINADO: "Assinado - Enriquecimento",
   LIBERADO: "Liberado",
-  ASSINADO: "Assinado",
+  ERRO: "Erro",
   FALHA_ASSINATURA: "Falha na assinatura",
 };
 
 export function normalizeSignatureStatus(status?: string | null): string {
   if (!status) return "";
+
   return SIGNATURE_STATUS_MAP[status] || status;
 }
 
 export function normalizeAsoStatus(status?: string | null): string {
   if (!status) return "";
+
   return ASO_STATUS_MAP[status] || status;
 }
 
 export function getSignatureStatusLabel(status?: string | null): string {
   const normalized = normalizeSignatureStatus(status);
+
   return SIGNATURE_STATUS_LABELS[normalized] || normalized.replace(/_/g, " ");
 }
 
 export function getAsoStatusLabel(status?: string | null): string {
   const normalized = normalizeAsoStatus(status);
+
   return ASO_STATUS_LABELS[normalized] || normalized.replace(/_/g, " ");
 }
-

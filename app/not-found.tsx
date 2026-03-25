@@ -13,22 +13,22 @@ export default function NotFound() {
       <div className="absolute left-1/2 top-1/2 -z-10 h-[400px] w-[400px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/5 blur-[120px]" />
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
         className="text-center"
+        initial={{ opacity: 0, y: 20 }}
+        transition={{ duration: 0.5 }}
       >
         <div className="flex justify-center mb-8">
           <motion.div
-            initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
-            transition={{ 
+            className="relative"
+            initial={{ scale: 0.8 }}
+            transition={{
               type: "spring",
               stiffness: 260,
               damping: 20,
-              delay: 0.2 
+              delay: 0.2,
             }}
-            className="relative"
           >
             <div className="absolute inset-0 animate-ping rounded-full bg-primary/20" />
             <div className="relative flex items-center justify-center w-24 h-24 rounded-2xl bg-primary/10 text-primary">
@@ -37,59 +37,60 @@ export default function NotFound() {
           </motion.div>
         </div>
 
-        <motion.p 
-          initial={{ opacity: 0 }}
+        <motion.p
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.3 }}
           className="text-base font-semibold text-primary"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.3 }}
         >
           404 - Página não encontrada
         </motion.p>
-        
-        <motion.h1 
-          initial={{ opacity: 0 }}
+
+        <motion.h1
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
           className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-5xl"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.4 }}
         >
           Ops! Onde estamos?
         </motion.h1>
-        
-        <motion.p 
-          initial={{ opacity: 0 }}
+
+        <motion.p
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
           className="mt-6 text-base leading-7 text-muted-foreground max-w-md mx-auto"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.5 }}
         >
-          Lamentamos, mas não conseguimos encontrar a página que você está procurando. 
-          Pode ser que o endereço tenha mudado ou a página tenha sido removida.
+          Lamentamos, mas não conseguimos encontrar a página que você está
+          procurando. Pode ser que o endereço tenha mudado ou a página tenha
+          sido removida.
         </motion.p>
 
-        <motion.div 
-          initial={{ opacity: 0 }}
+        <motion.div
           animate={{ opacity: 1 }}
-          transition={{ delay: 0.6 }}
           className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+          initial={{ opacity: 0 }}
+          transition={{ delay: 0.6 }}
         >
           <Button
             as={Link}
-            href="/"
+            className="font-medium shadow-lg shadow-primary/20 w-full sm:w-auto"
             color="primary"
-            variant="solid"
+            href="/"
             size="lg"
             startContent={<Home className="w-4 h-4" />}
-            className="font-medium shadow-lg shadow-primary/20 w-full sm:w-auto"
+            variant="solid"
           >
             Voltar ao Início
           </Button>
-          
+
           <Button
             as="button"
-            onClick={() => window.history.back()}
-            variant="flat"
+            className="font-medium w-full sm:w-auto"
             size="lg"
             startContent={<ArrowLeft className="w-4 h-4" />}
-            className="font-medium w-full sm:w-auto"
+            variant="flat"
+            onClick={() => window.history.back()}
           >
             Voltar Página
           </Button>
@@ -97,11 +98,11 @@ export default function NotFound() {
       </motion.div>
 
       {/* Subtle bottom text or links */}
-      <motion.div 
-        initial={{ opacity: 0 }}
+      <motion.div
         animate={{ opacity: 0.5 }}
-        transition={{ delay: 1 }}
         className="absolute bottom-8 text-xs text-muted-foreground"
+        initial={{ opacity: 0 }}
+        transition={{ delay: 1 }}
       >
         © {new Date().getFullYear()} CMSO 360 - Sistema Médico Integrado
       </motion.div>

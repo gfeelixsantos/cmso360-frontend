@@ -11,7 +11,10 @@ import {
 import React, { useState } from "react";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { getAsoStatusLabel, normalizeAsoStatus } from "@/lib/scheduling/status.helper";
+import {
+  getAsoStatusLabel,
+  normalizeAsoStatus,
+} from "@/lib/scheduling/status.helper";
 import { formatCPF, getStatusColor } from "@/lib/utils";
 
 // ============================================
@@ -340,11 +343,13 @@ const InformacoesGerais: React.FC<{
                           className="font-medium h-5"
                           color={
                             normalizeAsoStatus(atendimento.ASOINFO.status) ===
-                              "ASSINADO" ||
-                            normalizeAsoStatus(atendimento.ASOINFO.status) ===
-                              "LIBERADO"
+                            "LIBERADO"
                               ? "success"
-                              : "warning"
+                              : normalizeAsoStatus(
+                                    atendimento.ASOINFO.status,
+                                  ) === "ERRO"
+                                ? "danger"
+                                : "warning"
                           }
                           size="sm"
                           variant="flat"

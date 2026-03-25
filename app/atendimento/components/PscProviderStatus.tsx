@@ -177,7 +177,11 @@ export function PscProviderStatus({
   );
   const badgeIcon =
     showPscProviderAsStatus && providerLabel ? (
-      <ProviderIcon className="rounded-sm shadow-none" name={providerLabel} size={18} />
+      <ProviderIcon
+        className="rounded-sm shadow-none"
+        name={providerLabel}
+        size={18}
+      />
     ) : isBryCloudActive && config.color === "green" ? (
       <Cloud className="w-3 h-3 text-white fill-white" />
     ) : (
