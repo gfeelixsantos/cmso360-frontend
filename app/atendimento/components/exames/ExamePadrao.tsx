@@ -123,7 +123,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
             {examesFiltrados.map((exameItem, index) => (
               <div
                 key={
-                  exameItem.id || exameItem.sequencialResultadoExame || index
+                  exameItem.codigoExame || index.toString()
                 }
                 className="rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors"
               >

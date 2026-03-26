@@ -22,6 +22,7 @@ import {
 } from "@heroui/react";
 
 import { WORKER_WS_URL, WORKER_SCRAPER_STATUS } from "@/config/constants";
+import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 
 interface ProviderMetrics {
   provider: string;
@@ -224,6 +225,9 @@ export const ScraperMonitor: React.FC = () => {
     }
 
     const socket: Socket = io(WORKER_WS_URL, {
+      auth: {
+        type: WebsocketType.SCRAPER,
+      },
       transports: ["websocket"],
       reconnection: true,
       timeout: WS_CONNECTION_TIMEOUT_MS,

@@ -388,7 +388,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 
               return (
                 <TableRow
-                  key={exame.id || `${exame.codigoExame}_${index}`}
+                  key={exame.codigoExame || index.toString()}
                   className="hover:bg-gray-50 transition-colors"
                 >
                   <TableCell>
@@ -470,7 +470,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 
           return (
             <div
-              key={exame.id || `${exame.codigoExame}_${index}`}
+              key={exame.codigoExame || index.toString()}
               className="p-3 bg-gray-50 rounded-lg border border-gray-200"
             >
               <div className="grid grid-cols-2 gap-2 text-sm">

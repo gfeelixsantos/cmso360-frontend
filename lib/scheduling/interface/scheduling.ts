@@ -105,7 +105,6 @@ export interface AsoInfo {
 }
 
 export class ExamRegister {
-  id?: string;
   codigoExame: string;
   nomeExame: string;
   status: string;
@@ -124,12 +123,10 @@ export class ExamRegister {
     codigoExame: string,
     nomeExame: string,
     status: string,
-    id?: string,
   ) {
     this.codigoExame = codigoExame;
     this.nomeExame = nomeExame;
     this.status = status;
-    if (id) this.id = id;
   }
 }
 

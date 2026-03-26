@@ -5,6 +5,7 @@ export enum WebsocketType {
   TICKET = "TICKET",
   PAINEL = "PAINEL",
   PRONTUARIO = "PRONTUARIO",
+  SCRAPER = "SCRAPER",
 }
 
 export enum PreparationRequestTypes {
