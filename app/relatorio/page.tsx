@@ -45,16 +45,25 @@ import {
   DownloadIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { io, Socket } from "socket.io-client";
 
 import { LightModalSkeleton } from "./ModalSkeleton";
 
-import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
+import {
+  ExamRegister,
+  Scheduling,
+  SchedulingChange,
+} from "@/lib/scheduling/interface/scheduling";
+import {
+  AtendimentoStatus,
+  MongoOperationTypes,
+} from "@/lib/scheduling/enum/scheduling.enum";
 import {
   NEST_RELATORIO_CSV_DOWNLOAD,
   NEST_RELATORIO_FILTROS,
   NEST_RELATORIO_FUNCIONARIO,
   NEST_RELATORIO_PARAMETROS,
+  NEST_URL,
 } from "@/config/constants";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import {
@@ -66,7 +75,9 @@ import {
 } from "@/lib/utils";
 import { useModalOptimizer } from "@/hooks/useModalOptimizer";
 import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
-import { IUserInfo } from "@/hooks/useUser";
+import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
+import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
+import { EventType } from "@/lib/websocket/events/events";
 
 function normalizeString(str: string): string {
   return str
@@ -186,6 +197,10 @@ export default function RelatoriosPage() {
     Scheduling[]
   >([]);
 
+  // Estados para WebSocket
+  const [socketState, setSocketState] = useState<Socket | null>(null);
+  const [conectado, setConectado] = useState(false);
+
   useEffect(() => {
     const currentUser = getCurrentUser();
 
@@ -266,6 +281,115 @@ export default function RelatoriosPage() {
   useEffect(() => {
     getParamsReport();
   }, [getParamsReport]);
+
+  // Efeito para configurar WebSocket
+  useEffect(() => {
+    const currentUser = getCurrentUser();
+
+    if (!currentUser) return;
+
+    const conectionType = WebsocketType.PRONTUARIO;
+    const user: IUserWebsocket = {
+      nome: currentUser.nome!,
+      sala: "relatorio",
+      type: conectionType,
+      unidade: "",
+    };
+
+    const s: Socket = io(NEST_URL, {
+      auth: user,
+      transports: ["websocket"],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      forceNew: false,
+    });
+
+    setSocketState(s);
+
+    s.on("connect", () => {
+      console.log("✅ Relatório conectado via WebSocket:", s.id);
+      setConectado(true);
+    });
+
+    s.on("disconnect", (reason) => {
+      console.warn("⚠️ Relatório desconectado do WebSocket:", reason);
+      setConectado(false);
+    });
+
+    s.on("connect_error", (err) => {
+      console.error("❌ Erro ao conectar WebSocket no Relatório:", err);
+    });
+
+    return () => {
+      console.log("🔌 Desconectando WebSocket do Relatório");
+      s.off("connect");
+      s.off("disconnect");
+      s.off("connect_error");
+      s.disconnect();
+      setSocketState(null);
+    };
+  }, []);
+
+  // Registro handle de eventos WebSocket
+  useEffect(() => {
+    if (!socketState) return;
+
+    const handleUpdateRecord = ({ operation, schedule }: SchedulingChange) => {
+      console.log(`🔄 [Relatorio] UPDATE_RECORD: ${operation}`, schedule.NOME);
+
+      // Atualizar lista principal
+      setFilteredAtendimentos((prev) => {
+        const updatedList = [...prev];
+        const scheduleId = String((schedule as any)._id ?? "");
+        const index = updatedList.findIndex(
+          (r) => String((r as any)._id ?? "") === scheduleId,
+        );
+
+        if (operation === MongoOperationTypes.DELETE) {
+          if (index > -1) {
+            updatedList.splice(index, 1);
+          }
+
+          return updatedList;
+        }
+
+        if (index > -1) {
+          updatedList[index] = schedule;
+        } else {
+          // Se não estiver na lista, talvez devesse ser inserido?
+          // No relatório, geralmente só atualizamos o que já está visível
+          // (devido aos filtros de data/empresa).
+          // Por simplicidade e segurança (filtros), apenas atualizamos.
+        }
+
+        return updatedList;
+      });
+
+      // Atualizar modal selecionado
+      setSelectedAtendimento((current) => {
+        if (!current) return null;
+        const currentId = String((current as any)._id ?? "");
+        const updateId = String((schedule as any)._id ?? "");
+
+        if (currentId === updateId) {
+          console.log("✅ Atualizando modal selecionado via WebSocket");
+
+          return schedule;
+        }
+
+        return current;
+      });
+    };
+
+    socketState.on(EventType.UPDATE_RECORD, handleUpdateRecord);
+
+    return () => {
+      socketState.off(EventType.UPDATE_RECORD, handleUpdateRecord);
+    };
+  }, [socketState]);
 
   // Função para preparar os filtros para envio ao backend
   const prepareFiltersForBackend = useCallback(

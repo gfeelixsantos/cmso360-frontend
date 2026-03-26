@@ -150,7 +150,7 @@ const mapSchedulingToMedicalRecord = (
 
 const getStatusColor = (status: AtendimentoStatus) => {
   switch (status) {
-    case AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA:
+    case AtendimentoStatus.AVALIACAO_MEDICA:
       return "warning";
     case AtendimentoStatus.FINALIZADO:
       return "success";

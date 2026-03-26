@@ -17,16 +17,9 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
 );
 
 // ---------------------------------------------------------
-// WORKER (Scraping Metrics)
+// WORKER (Scraping Metrics) - Agora integrado ao NestJS
 // ---------------------------------------------------------
-const WORKER_PORT = 3334;
-const WORKER_URL_DEVELOP = `http://127.0.0.1:${WORKER_PORT}/`;
-
-export const WORKER_URL =
-  process.env.NODE_ENV === "development"
-    ? WORKER_URL_DEVELOP
-    : process.env.NEXT_PUBLIC_WORKER_URL_PRODUCTION ||
-      "https://cmso360-worker.fly.dev/";
+export const WORKER_URL = NEST_URL;
 
 export const WORKER_WS_URL = WORKER_URL?.replace("http", "ws").replace(
   "https",

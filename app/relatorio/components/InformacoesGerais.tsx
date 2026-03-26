@@ -359,18 +359,17 @@ const InformacoesGerais: React.FC<{
                       </div>
                     )}
 
-                    {(atendimento.ASOINFO.tipoAssinatura ||
-                      atendimento.ASOINFO.assinatura) && (
+                    {atendimento.ASOINFO.signature?.provider && (
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-gray-400 uppercase">
                           Assinatura:
                         </span>
                         <span className="text-xs font-semibold text-gray-600">
-                          {atendimento.ASOINFO.tipoAssinatura ||
-                            atendimento.ASOINFO.assinatura}
+                          {atendimento.ASOINFO.signature.provider}
                         </span>
                       </div>
                     )}
+
 
                     {atendimento.ASOINFO.updatedAt && (
                       <div className="flex items-center gap-2">
@@ -389,16 +388,17 @@ const InformacoesGerais: React.FC<{
                       </div>
                     )}
 
-                    {atendimento.ASOINFO.error && (
+                    {(atendimento.ASOINFO.signature?.error || atendimento.ASOINFO.error) && (
                       <div className="flex items-start gap-2 max-w-xs">
                         <span className="text-[10px] font-bold text-red-400 uppercase whitespace-nowrap">
                           Erro:
                         </span>
                         <span className="text-[10px] text-red-600 font-medium">
-                          {atendimento.ASOINFO.error}
+                          {atendimento.ASOINFO.signature?.error || atendimento.ASOINFO.error}
                         </span>
                       </div>
                     )}
+
                   </div>
                 )}
               </div>

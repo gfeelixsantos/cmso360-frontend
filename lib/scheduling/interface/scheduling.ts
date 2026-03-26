@@ -40,50 +40,69 @@ export type RiscosAso = {
   grupo: string;
 };
 
+export type DocumentType = "EXAME" | "ASO";
+
 export type SignatureStatus =
-  // Padrão Final PT-BR
+  | "DIGITALIZADA"
+  | "PENDENTE"
+  | "PROCESSANDO"
+  | "ASSINADO"
+  | "LIBERADO"
+  | "FALHA";
+
+export type SignatureProvider = "DIGITALIZADA" | "PSC" | "BRYKMS";
+
+export type SignatureRetry = {
+  pending: boolean;
+  count: number;
+  nextRetryAt?: Date;
+};
+
+export interface DocumentSignatureInfo {
+  documentType: DocumentType;
+  documentId?: string;
+  documentName?: string;
+  requiresSignature: boolean;
+  status: SignatureStatus;
+  provider?: SignatureProvider;
+  signedAt?: Date;
+  signedUrl?: string;
+  validacao?: string;
+  retry?: SignatureRetry;
+  error?: string;
+
+  lastCommandId?: string;
+  codigoProfissional?: string;
+  emailSent?: boolean;
+  observacoesParecer?: string[];
+  credentials?: {
+    pin?: string;
+  };
+}
+
+/** @deprecated Use DocumentSignatureInfo */
+export type SignatureInfo = DocumentSignatureInfo;
+
+/** @deprecated Use SignatureStatus */
+export type LegacySignatureStatus =
   | "NAO_REQUER_ASSINATURA"
   | "AGUARDANDO_AUTENTICACAO"
   | "AGUARDANDO_REPROCESSAMENTO"
   | "PROCESSANDO_ASSINATURA"
   | "ASSINADO"
-  | "FALHA_ASSINATURA"
-  // Transitório EN (Compatibilidade)
-  | "NOT_REQUIRED"
-  | "WAITING_AUTH"
-  | "PENDING_RETRY"
-  | "PROCESSING"
-  | "SIGNED"
-  | "FAILED";
+  | "FALHA_ASSINATURA";
 
-export type SignatureInfo = {
-  status: SignatureStatus;
-  provider?: string;
-  lastAttempt?: Date;
-  nextRetryAt?: Date;
-  retryCount: number;
-  lastError?: string;
-  lastErrorCategory?: string;
-  signedAt?: Date;
-};
-
-export type AsoInfo = {
-  asoUrl?: string;
-  validacaoUrl?: string;
+export interface AsoInfo {
+  status?: SignatureStatus;
+  signature?: DocumentSignatureInfo;
   url?: string;
+  asoUrl?: string;
   validacao?: string;
-  status?: string;
-  tipoAssinatura?: string;
-  assinatura?: string;
-  updatedAt?: { $date: string } | string;
+  validacaoUrl?: string;
+  emailSent?: boolean;
   error?: string | null;
-  retry?: {
-    retryCount: number;
-    lastAttempt: Date;
-    nextRetryAt: Date;
-    lastError: string;
-  };
-};
+  updatedAt?: { $date: string } | string;
+}
 
 export class ExamRegister {
   id?: string;
@@ -99,7 +118,7 @@ export class ExamRegister {
   url: string = "";
   formulario: any;
   grupo: string = "";
-  signatureInfo?: SignatureInfo;
+  signature?: DocumentSignatureInfo;
 
   constructor(
     codigoExame: string,

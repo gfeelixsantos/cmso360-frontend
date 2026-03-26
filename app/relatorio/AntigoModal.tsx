@@ -71,7 +71,7 @@
 //         return "primary";
 //       case AtendimentoStatus.AGUARDANDO_RESULTADOS:
 //         return "secondary";
-//       case AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA:
+//       case AtendimentoStatus.AVALIACAO_MEDICA:
 //         return "default";
 //       case AtendimentoStatus.FINALIZADO:
 //         return "success";

@@ -46,7 +46,7 @@ const COLORS = {
 // 🏷️ Mapeamento de status para exibição amigável
 const STATUS_LABELS: Record<string, string> = {
   AGUARDANDO_RESULTADOS: "Aguardando Resultados",
-  AGUARDANDO_AVALIACAO_MEDICA: "Avaliação Médica",
+  AVALIACAO_MEDICA: "Avaliação Médica",
   AGUARDANDO_RESULTADO: "Aguardando Resultado",
   PENDENTE: "Pendente",
   PENDENTE_LABORATORIO: "Pendente Lab",

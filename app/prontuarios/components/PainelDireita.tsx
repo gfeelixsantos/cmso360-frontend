@@ -1402,7 +1402,13 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     user.perfil === USER_PROFILE.MEDICO || user.perfil === USER_PROFILE.MASTER;
   const isAwaitingMedical =
     selectedRecord.ATENDIMENTOSTATUS ===
-    AtendimentoStatus.AGUARDANDO_AVALIACAO_MEDICA;
+    AtendimentoStatus.AVALIACAO_MEDICA;
+
+  const hasPendentes = selectedRecord.EXAMES?.some(
+    (e: { status: string }) => e.status === "PENDENTE"
+  ) ?? false;
+
+  const canFinish = isAwaitingMedical && opinion?.opinionType && !hasPendentes;
 
   return (
     <aside className="w-full sm:w-82 lg:w-[26rem] bg-content1 flex-shrink-0 flex flex-col overflow-y-auto">
@@ -1839,11 +1845,21 @@ const PainelDireita: React.FC<RightPanelProps> = ({
               )}
 
               {/* Botões de Ação */}
+              {hasPendentes && (
+                <Alert
+                  className="text-[0.65rem]"
+                  color="warning"
+                  title="Atenção: existem exames pendentes"
+                  variant="flat"
+                >
+                  O atendimento só pode ser finalizado após todos os exames serem realizados.
+                </Alert>
+              )}
               <div className="flex flex-col sm:flex-row gap-2 pt-2">
                 <Button
                   className="flex-1 text-xs sm:text-sm text-white font-bold"
                   color="success"
-                  isDisabled={isSavingOpinion || !opinion?.opinionType}
+                  isDisabled={isSavingOpinion || !canFinish}
                   size="md"
                   startContent={<CheckCircle2 className="w-4 h-4" />}
                   onPress={handleOpenConfirmacaoWithAuth}

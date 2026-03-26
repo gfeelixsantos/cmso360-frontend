@@ -214,9 +214,10 @@ const ExamesTable: React.FC<{
           open: true,
           type: "success",
           message:
-            "PDF sendo gerado. Atualize a página em alguns segundos para ver o resultado.",
+            "Pedido de reemissão enviado. O resultado aparecerá automaticamente nesta tela em alguns segundos.",
         });
 
+        // O fallback de fetch continua como garantia, mas o WebSocket deve agir antes.
         setTimeout(async () => {
           await fetchUpdatedExames();
         }, 5000);
@@ -337,9 +338,8 @@ const ExamesTable: React.FC<{
   };
 
   const getSignatureStatusMeta = (exame: ExamRegister) => {
-    const signatureStatus = normalizeSignatureStatus(
-      exame.signatureInfo?.status,
-    );
+    const sig = exame.signature;
+    const signatureStatus = normalizeSignatureStatus(sig?.status);
 
     if (!signatureStatus || signatureStatus === "NAO_REQUER_ASSINATURA") {
       return null;
@@ -356,9 +356,8 @@ const ExamesTable: React.FC<{
             ? "Processando assinatura digital"
             : "Aguardando assinatura digital",
         labelClassName: "text-amber-700",
-        detail:
-          exame.signatureInfo?.provider &&
-          `via ${exame.signatureInfo.provider.toUpperCase()}`,
+        detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
+
         detailClassName: "text-amber-600/80",
       };
     }
@@ -375,9 +374,8 @@ const ExamesTable: React.FC<{
             : "Aguardando reprocessamento da assinatura",
         labelClassName: "text-rose-700",
         detail:
-          exame.signatureInfo?.lastError ||
-          (exame.signatureInfo?.provider &&
-            `via ${exame.signatureInfo.provider.toUpperCase()}`),
+          sig?.error || (sig?.provider && `via ${sig.provider.toUpperCase()}`),
+
         detailClassName: "text-rose-600/80",
       };
     }
@@ -387,9 +385,8 @@ const ExamesTable: React.FC<{
         icon: <CheckCircle className="text-emerald-600" size={12} />,
         label: "Assinado digitalmente",
         labelClassName: "text-emerald-700",
-        detail:
-          exame.signatureInfo?.provider &&
-          `via ${exame.signatureInfo.provider.toUpperCase()}`,
+        detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
+
         detailClassName: "text-emerald-600/80",
       };
     }
