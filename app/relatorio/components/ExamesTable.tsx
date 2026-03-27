@@ -347,18 +347,38 @@ const ExamesTable: React.FC<{
 
     if (
       signatureStatus === "AGUARDANDO_AUTENTICACAO" ||
-      signatureStatus === "PROCESSANDO_ASSINATURA"
+      signatureStatus === "PROCESSANDO_ASSINATURA" ||
+      signatureStatus === "PENDENTE" ||
+      signatureStatus === "PROCESSANDO"
     ) {
       return {
         icon: <Clock className="text-amber-600" size={12} />,
         label:
-          signatureStatus === "PROCESSANDO_ASSINATURA"
+          signatureStatus === "PROCESSANDO_ASSINATURA" || signatureStatus === 'PROCESSANDO'
             ? "Processando assinatura digital"
             : "Aguardando assinatura digital",
         labelClassName: "text-amber-700",
         detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
-
         detailClassName: "text-amber-600/80",
+      };
+    }
+
+    if (signatureStatus === "DIGITALIZADA") {
+      return {
+        icon: <FileText className="text-blue-600" size={12} />,
+        label: "Digitalizada (Sem Assinatura Digital)",
+        labelClassName: "text-blue-700",
+        detailClassName: "text-blue-600/80",
+      };
+    }
+
+    if (signatureStatus === "ASSINADO" || signatureStatus === "LIBERADO") {
+      return {
+        icon: <CheckCircle className="text-green-600" size={12} />,
+        label: "Assinada digitalmente",
+        labelClassName: "text-green-700",
+        detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
+        detailClassName: "text-green-600/80",
       };
     }
 
@@ -654,7 +674,7 @@ const ExamesTable: React.FC<{
                           Enviar
                         </Button>
                       </div>
-                      {exame.url && (
+                      {exame.url && exame.status !== ExamStatus.AGUARDANDO_RESULTADO && (
                         <div className="flex flex-col gap-1">
                           <Button
                             className="w-full"

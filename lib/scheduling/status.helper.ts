@@ -1,24 +1,11 @@
-const SIGNATURE_STATUS_MAP: Record<string, string> = {
-  NOT_REQUIRED: "NAO_REQUER_ASSINATURA",
-  WAITING_AUTH: "AGUARDANDO_AUTENTICACAO",
-  PENDING_RETRY: "AGUARDANDO_REPROCESSAMENTO",
-  PROCESSING: "PROCESSANDO_ASSINATURA",
-  SIGNED: "ASSINADO",
-  FAILED: "FALHA_ASSINATURA",
-};
-
 const SIGNATURE_STATUS_LABELS: Record<string, string> = {
-  NAO_REQUER_ASSINATURA: "Não requer assinatura",
-  AGUARDANDO_AUTENTICACAO: "Aguardando autenticação",
-  AGUARDANDO_REPROCESSAMENTO: "Aguardando reprocessamento",
-  PROCESSANDO_ASSINATURA: "Processando assinatura",
-  ASSINADO: "Assinado",
-  FALHA_ASSINATURA: "Falha na assinatura",
-};
-
-const ASO_STATUS_MAP: Record<string, string> = {
-  SIGNED: "ASSINADO",
-  FAILED: "FALHA_ASSINATURA",
+  PENDENTE: 'Pendente Assinatura',
+  PROCESSANDO: 'Processando Assinatura',
+  ASSINADO: 'Assinado Digitalmente',
+  LIBERADO: 'Assinado Digitalmente',
+  DIGITALIZADA: 'Digitalizada',
+  FALHA: 'Falha na Assinatura',
+  AGUARDANDO_AVALIACAO: 'Aguardando Avaliação',
 };
 
 const ASO_STATUS_LABELS: Record<string, string> = {
@@ -28,28 +15,25 @@ const ASO_STATUS_LABELS: Record<string, string> = {
   LIBERADO: "Liberado",
   ERRO: "Erro",
   FALHA_ASSINATURA: "Falha na assinatura",
+  DIGITALIZADA: "Digitalizada",
 };
 
 export function normalizeSignatureStatus(status?: string | null): string {
   if (!status) return "";
-
-  return SIGNATURE_STATUS_MAP[status] || status;
+  return status;
 }
 
 export function normalizeAsoStatus(status?: string | null): string {
   if (!status) return "";
-
-  return ASO_STATUS_MAP[status] || status;
+  return status;
 }
 
 export function getSignatureStatusLabel(status?: string | null): string {
-  const normalized = normalizeSignatureStatus(status);
-
-  return SIGNATURE_STATUS_LABELS[normalized] || normalized.replace(/_/g, " ");
+  if (!status) return "";
+  return SIGNATURE_STATUS_LABELS[status] || status.replace(/_/g, " ");
 }
 
 export function getAsoStatusLabel(status?: string | null): string {
-  const normalized = normalizeAsoStatus(status);
-
-  return ASO_STATUS_LABELS[normalized] || normalized.replace(/_/g, " ");
+  if (!status) return "";
+  return ASO_STATUS_LABELS[status] || status.replace(/_/g, " ");
 }
