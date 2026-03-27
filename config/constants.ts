@@ -8,7 +8,7 @@ export const NEST_URL =
   process.env.NODE_ENV === "development"
     ? NEST_URL_DEVELOP
     : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
-      "https://cmso360-backend.fly.dev/";
+      "https://cmso360-backend-production.up.railway.app/";
 console.log(NEST_URL);
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
@@ -17,7 +17,7 @@ export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
 );
 
 // ---------------------------------------------------------
-// WORKER (Scraping Metrics) - Agora integrado ao NestJS
+// WORKER (Scraping Metrics)
 // ---------------------------------------------------------
 export const WORKER_URL = NEST_URL;
 
