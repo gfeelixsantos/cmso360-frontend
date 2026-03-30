@@ -14,7 +14,7 @@ const features = [
   },
   {
     icon: FileSignature,
-    title: "Assinatura Digital ICP-Brasil",
+    title: "Assinatura Eletrônica Avançada",
     description: "ASOs e laudos com validade jurídica e segurança total.",
   },
   {

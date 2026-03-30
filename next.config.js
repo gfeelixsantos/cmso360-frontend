@@ -1,11 +1,13 @@
 /** @type {import('next').NextConfig} */
+const isWindows = process.platform === "win32";
+
 const nextConfig = {
   // 1. Remova ou comente a linha abaixo para voltar ao padrão ".next"
   // distDir: process.env.NODE_ENV === "production" ? ".next-prod" : ".next",
 
-  // 2. Adicione isso para que seu Dockerfile funcione (standalone mode)
-  // Nota: Se o build falhar localmente no Windows com EPERM, ative o 'Modo de Desenvolvedor' no Windows.
-  output: 'standalone', 
+  // Em Linux/CI mantemos standalone para Docker.
+  // Em Windows local evitamos erro EPERM de symlink durante o build.
+  output: isWindows ? undefined : "standalone",
 
   images: {
     unoptimized: true,

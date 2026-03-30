@@ -276,6 +276,7 @@ const formatExamTime = (dateString: string | null): string => {
 
   try {
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return "";
 
     return date.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -430,7 +431,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                           <span className="text-xs">{formattedTime}</span>
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">—</span>
+                        <span className="text-gray-400 text-xs">-</span>
                       )}
                     </div>
                   </TableCell>

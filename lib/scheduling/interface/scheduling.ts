@@ -55,8 +55,18 @@ export type SignatureProvider = "DIGITALIZADA" | "PSC" | "BRYKMS";
 export type SignatureRetry = {
   pending: boolean;
   count: number;
-  nextRetryAt?: Date;
+  nextRetryAt?: Date | { $date: string } | string;
 };
+
+export type MongoDateLike = Date | { $date: string } | string;
+
+export interface AsoProfessionalInfo {
+  codigo?: string;
+  nome?: string;
+  cpf?: string;
+  conselho?: string;
+  ufconselho?: string;
+}
 
 export interface DocumentSignatureInfo {
   documentType: DocumentType;
@@ -65,7 +75,7 @@ export interface DocumentSignatureInfo {
   requiresSignature: boolean;
   status: SignatureStatus;
   provider?: SignatureProvider;
-  signedAt?: Date;
+  signedAt?: MongoDateLike;
   signedUrl?: string;
   validacao?: string;
   retry?: SignatureRetry;
@@ -85,14 +95,21 @@ export type SignatureInfo = DocumentSignatureInfo;
 
 export interface AsoInfo {
   status?: SignatureStatus;
+  updatedAt?: MongoDateLike;
+  observacoesParecer?: string[];
+  codigoProfissional?: string;
+  professional?: AsoProfessionalInfo;
   signature?: DocumentSignatureInfo;
+  credentials?: {
+    pin?: string;
+  } | null;
+  lastCommandId?: string | null;
   url?: string;
   asoUrl?: string;
   validacao?: string;
   validacaoUrl?: string;
   emailSent?: boolean;
   error?: string | null;
-  updatedAt?: { $date: string } | string;
 }
 
 export class ExamRegister {
@@ -110,11 +127,7 @@ export class ExamRegister {
   grupo: string = "";
   signature?: DocumentSignatureInfo;
 
-  constructor(
-    codigoExame: string,
-    nomeExame: string,
-    status: string,
-  ) {
+  constructor(codigoExame: string, nomeExame: string, status: string) {
     this.codigoExame = codigoExame;
     this.nomeExame = nomeExame;
     this.status = status;
