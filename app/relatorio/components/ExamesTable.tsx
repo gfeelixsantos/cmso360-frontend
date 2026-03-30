@@ -341,20 +341,15 @@ const ExamesTable: React.FC<{
     const sig = exame.signature;
     const signatureStatus = normalizeSignatureStatus(sig?.status);
 
-    if (!signatureStatus || signatureStatus === "NAO_REQUER_ASSINATURA") {
+    if (!signatureStatus) {
       return null;
     }
 
-    if (
-      signatureStatus === "AGUARDANDO_AUTENTICACAO" ||
-      signatureStatus === "PROCESSANDO_ASSINATURA" ||
-      signatureStatus === "PENDENTE" ||
-      signatureStatus === "PROCESSANDO"
-    ) {
+    if (signatureStatus === "PENDENTE" || signatureStatus === "PROCESSANDO") {
       return {
         icon: <Clock className="text-amber-600" size={12} />,
         label:
-          signatureStatus === "PROCESSANDO_ASSINATURA" || signatureStatus === 'PROCESSANDO'
+          signatureStatus === "PROCESSANDO"
             ? "Processando assinatura digital"
             : "Aguardando assinatura digital",
         labelClassName: "text-amber-700",
@@ -382,32 +377,14 @@ const ExamesTable: React.FC<{
       };
     }
 
-    if (
-      signatureStatus === "AGUARDANDO_REPROCESSAMENTO" ||
-      signatureStatus === "FALHA_ASSINATURA"
-    ) {
+    if (signatureStatus === "FALHA") {
       return {
         icon: <AlertCircle className="text-rose-600" size={12} />,
-        label:
-          signatureStatus === "FALHA_ASSINATURA"
-            ? "Falha na assinatura digital"
-            : "Aguardando reprocessamento da assinatura",
+        label: "Falha na assinatura digital",
         labelClassName: "text-rose-700",
         detail:
           sig?.error || (sig?.provider && `via ${sig.provider.toUpperCase()}`),
-
         detailClassName: "text-rose-600/80",
-      };
-    }
-
-    if (signatureStatus === "ASSINADO") {
-      return {
-        icon: <CheckCircle className="text-emerald-600" size={12} />,
-        label: "Assinado digitalmente",
-        labelClassName: "text-emerald-700",
-        detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
-
-        detailClassName: "text-emerald-600/80",
       };
     }
 
@@ -586,7 +563,12 @@ const ExamesTable: React.FC<{
           </TableHeader>
           <TableBody>
             {filteredExames.map((exame, index) => {
-              const examKey = exame.codigoExame || index.toString();
+              const examKey = [
+                exame.codigoExame || "sem-codigo",
+                exame.dataExame || "sem-data",
+                exame.status || "sem-status",
+                index,
+              ].join("-");
               const waitTime = calculateWaitTime(
                 atendimento.TICKET?.emissao,
                 exame,
@@ -600,8 +582,24 @@ const ExamesTable: React.FC<{
                 <TableRow key={examKey}>
                   <TableCell>
                     <div className="flex flex-col">
-                      <div className="text-sm font-medium text-gray-900">
-                        {exame.nomeExame}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium text-gray-900">
+                        <span>{exame.nomeExame}</span>
+                        {signatureMeta && (
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-medium ${signatureMeta.labelClassName}`}
+                          >
+                            {signatureMeta.icon}
+                            <span>{signatureMeta.label}</span>
+                            {signatureMeta.detail && (
+                              <span
+                                className={`max-w-[220px] truncate ${signatureMeta.detailClassName}`}
+                                title={signatureMeta.detail}
+                              >
+                                {signatureMeta.detail}
+                              </span>
+                            )}
+                          </span>
+                        )}
                       </div>
                       {hasExecutionData ? (
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
@@ -618,24 +616,6 @@ const ExamesTable: React.FC<{
                       ) : (
                         <div className="text-xs text-gray-500">
                           Sem detalhes registrados para este exame.
-                        </div>
-                      )}
-                      {signatureMeta && (
-                        <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
-                          <div
-                            className={`inline-flex items-center gap-1 font-medium ${signatureMeta.labelClassName}`}
-                          >
-                            {signatureMeta.icon}
-                            <span>{signatureMeta.label}</span>
-                          </div>
-                          {signatureMeta.detail && (
-                            <span
-                              className={`max-w-full truncate ${signatureMeta.detailClassName}`}
-                              title={signatureMeta.detail}
-                            >
-                              {signatureMeta.detail}
-                            </span>
-                          )}
                         </div>
                       )}
                     </div>
@@ -674,20 +654,21 @@ const ExamesTable: React.FC<{
                           Enviar
                         </Button>
                       </div>
-                      {exame.url && exame.status !== ExamStatus.AGUARDANDO_RESULTADO && (
-                        <div className="flex flex-col gap-1">
-                          <Button
-                            className="w-full"
-                            color="primary"
-                            size="sm"
-                            startContent={<Eye size={14} />}
-                            variant="light"
-                            onPress={() => window.open(exame.url, "_blank")}
-                          >
-                            Visualizar
-                          </Button>
-                        </div>
-                      )}
+                      {exame.url &&
+                        exame.status !== ExamStatus.AGUARDANDO_RESULTADO && (
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              className="w-full"
+                              color="primary"
+                              size="sm"
+                              startContent={<Eye size={14} />}
+                              variant="light"
+                              onPress={() => window.open(exame.url, "_blank")}
+                            >
+                              Visualizar
+                            </Button>
+                          </div>
+                        )}
                     </div>
                   </TableCell>
                   <TableCell>

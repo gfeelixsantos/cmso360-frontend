@@ -347,7 +347,7 @@ const InformacoesGerais: React.FC<{
                               ? "success"
                               : normalizeAsoStatus(
                                     atendimento.ASOINFO.status,
-                                  ) === "ERRO"
+                                  ) === "FALHA"
                                 ? "danger"
                                 : "warning"
                           }

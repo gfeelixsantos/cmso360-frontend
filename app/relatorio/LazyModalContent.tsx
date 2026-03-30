@@ -26,7 +26,7 @@ import {
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
   NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
-  NEST_SOC_PEDIDOEXAME,
+  NEST_SOC_SINCRONIZAR_PRONTUARIO,
   NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
 import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // função de geração de relatório
@@ -38,6 +38,17 @@ interface LazyModalContentProps {
   userApp: IUserInfo | null;
   onClose: () => void;
   onUpdateScheduling?: (updated: Scheduling) => void;
+}
+
+interface SyncProntuarioPayload {
+  success?: boolean;
+  message?: string;
+  data?: Scheduling;
+  resumo?: {
+    preservados?: number;
+    adicionados?: number;
+    removidos?: number;
+  };
 }
 
 // ============================================
@@ -250,30 +261,49 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     }
   };
 
-  const handleSyncWithSOC = async (manterExamesRealizados: boolean) => {
+  const handleSyncWithSOC = async (_manterExamesRealizados: boolean) => {
     try {
       setLoadingSyncSoc(true);
 
-      const response = await fetch(
-        `${NEST_SOC_PEDIDOEXAME}codempresa=${atendimento.CODIGOEMPRESA}&codfuncionario=${atendimento.CODIGO}&data=${atendimento.DATAAGENDAMENTO}&manterExamesRealizados=${manterExamesRealizados}`,
-      );
+      const response = await fetch(NEST_SOC_SINCRONIZAR_PRONTUARIO, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          schedulingId: atendimento._id,
+          empresa: atendimento.CODIGOEMPRESA,
+          funcionario: atendimento.CODIGO,
+        }),
+      });
 
       if (!response.ok) {
         throw new Error("Erro ao sincronizar com SOC");
       }
 
-      const updatedScheduling = await response.json();
+      const payload: SyncProntuarioPayload = await response.json();
 
-      console.log("Scheduling atualizado após sync:", updatedScheduling);
+      if (!payload?.success || !payload?.data) {
+        throw new Error(payload?.message || "Falha na sincronizacao");
+      }
+
+      const updatedScheduling = payload.data as Scheduling;
+
+      console.log("Scheduling atualizado apos sync exclusivo:", payload);
 
       if (onUpdateScheduling) {
         onUpdateScheduling(updatedScheduling);
       }
 
+      const resumo = payload.resumo;
+      const resumoMessage = resumo
+        ? `\n\nResumo da sincronizacao:\n- Preservados: ${resumo.preservados ?? 0}\n- Adicionados: ${resumo.adicionados ?? 0}\n- Removidos: ${resumo.removidos ?? 0}`
+        : "";
+
       setAlertModal({
         open: true,
         type: "success",
-        message: "Sincronização realizada com sucesso!",
+        message: `Sincronizacao do prontuario realizada com sucesso!${resumoMessage}`,
       });
       setSyncSocModalOpen(false);
     } catch (error) {
@@ -281,7 +311,10 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       setAlertModal({
         open: true,
         type: "error",
-        message: "Erro ao sincronizar com SOC",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Erro ao sincronizar prontuario com SOC",
       });
     } finally {
       setLoadingSyncSoc(false);
@@ -497,7 +530,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                 : "Atenção"}
           </ModalHeader>
           <ModalBody>
-            <p>{alertModal.message}</p>
+            <p className="whitespace-pre-line">{alertModal.message}</p>
           </ModalBody>
           <ModalFooter>
             {alertModal.onConfirm ? (

@@ -35,6 +35,7 @@ interface ProviderMetrics {
 }
 
 const POLLING_INTERVAL_MS = 60000;
+const RECONCILIATION_INTERVAL_MS = 5 * 60000;
 const WS_CONNECTION_TIMEOUT_MS = 10000;
 const SCRAPER_METRICS_CACHE_KEY = "dashboard_scraper_metrics_cache_v1";
 const SCRAPER_METRICS_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -206,6 +207,8 @@ export const ScraperMonitor: React.FC = () => {
       setCachedSnapshotAt(cache.updatedAt);
       setIsShowingCachedSnapshot(true);
     }
+
+    fetchMetrics();
   }, []);
 
   useEffect(() => {
@@ -241,14 +244,18 @@ export const ScraperMonitor: React.FC = () => {
     }, WS_CONNECTION_TIMEOUT_MS);
 
     socket.on("connect", () => {
+      wsFailedRef.current = false;
       isConnectedRef.current = true;
       setIsConnected(true);
+      setIsPolling(false);
       clearTimeout(connectionTimeout);
+      fetchMetrics();
     });
 
     socket.on("disconnect", () => {
       isConnectedRef.current = false;
       setIsConnected(false);
+      setIsPolling(true);
     });
 
     socket.on("SCRAPER_STATUS_UPDATE", (data: ProviderMetrics[]) => {
@@ -282,6 +289,14 @@ export const ScraperMonitor: React.FC = () => {
       }
     };
   }, [isPolling]);
+
+  useEffect(() => {
+    if (!isConnected) return;
+
+    const interval = setInterval(fetchMetrics, RECONCILIATION_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [isConnected]);
 
   const getStatusConfig = (status: ProviderMetrics["status"]) => {
     switch (status) {

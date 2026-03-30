@@ -83,15 +83,6 @@ export interface DocumentSignatureInfo {
 /** @deprecated Use DocumentSignatureInfo */
 export type SignatureInfo = DocumentSignatureInfo;
 
-/** @deprecated Use SignatureStatus */
-export type LegacySignatureStatus =
-  | "NAO_REQUER_ASSINATURA"
-  | "AGUARDANDO_AUTENTICACAO"
-  | "AGUARDANDO_REPROCESSAMENTO"
-  | "PROCESSANDO_ASSINATURA"
-  | "ASSINADO"
-  | "FALHA_ASSINATURA";
-
 export interface AsoInfo {
   status?: SignatureStatus;
   signature?: DocumentSignatureInfo;
