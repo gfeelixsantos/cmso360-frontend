@@ -361,7 +361,7 @@ const ExamesTable: React.FC<{
     if (signatureStatus === "DIGITALIZADA") {
       return {
         icon: <FileText className="text-blue-600" size={12} />,
-        label: "Digitalizada (Sem Assinatura Digital)",
+        label: "Assinatura Digitalizada",
         labelClassName: "text-blue-700",
         detailClassName: "text-blue-600/80",
       };
@@ -370,7 +370,7 @@ const ExamesTable: React.FC<{
     if (signatureStatus === "ASSINADO" || signatureStatus === "LIBERADO") {
       return {
         icon: <CheckCircle className="text-green-600" size={12} />,
-        label: "Assinada digitalmente",
+        label: "Assinatura Eletrônica",
         labelClassName: "text-green-700",
         detail: sig?.provider && `via ${sig.provider.toUpperCase()}`,
         detailClassName: "text-green-600/80",

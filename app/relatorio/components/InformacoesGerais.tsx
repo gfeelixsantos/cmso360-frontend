@@ -1,19 +1,8 @@
-import { Chip, Divider, Input, Tooltip } from "@heroui/react";
-import {
-  Building,
-  Calendar,
-  Stethoscope,
-  User,
-  UserCheck,
-  ShieldCheck,
-  FileText,
-  Mail,
-  Clock3,
-  IdCard,
-  AlertTriangle,
-} from "lucide-react";
+import { Divider, Input } from "@heroui/react";
+import { Building, Calendar, User } from "lucide-react";
 import React, { useState } from "react";
 
+import AtendimentoStatusCard from "@/app/relatorio/components/AtendimentoStatusCard";
 import {
   MongoDateLike,
   Scheduling,
@@ -60,6 +49,26 @@ const getAsoStatusColor = (status?: string | null) => {
   if (normalizedStatus === "ASSINADO") return "primary";
 
   return "warning";
+};
+
+const formatStatusLabel = (status?: string | null): string => {
+  if (!status) return "Nao informado";
+
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter: string) => letter.toUpperCase());
+};
+
+const getSignatureDisplayLabel = (
+  provider?: string | null,
+  status?: string | null,
+): string => {
+  if (provider === "PSC" || provider === "BRYKMS") return "DIGITAL";
+  if (provider) return provider.replace(/_/g, " ").toUpperCase();
+  if (status) return getSignatureStatusLabel(status).toUpperCase();
+
+  return "Nao informado";
 };
 
 const InformacoesGerais: React.FC<{
@@ -140,12 +149,27 @@ const InformacoesGerais: React.FC<{
   const hasAsoError = Boolean(
     atendimento.ASOINFO?.signature?.error || atendimento.ASOINFO?.error,
   );
-  const conselhoProfissional = [
-    atendimento.ASOINFO?.professional?.conselho,
-    atendimento.ASOINFO?.professional?.ufconselho,
-  ]
-    .filter(Boolean)
-    .join("/");
+  const atendimentoStatusLabel = formatStatusLabel(
+    atendimento.ATENDIMENTOSTATUS,
+  );
+  const signatureLabel = getSignatureDisplayLabel(
+    providerAssinatura,
+    statusAssinatura,
+  );
+  const signatureDate = formatDateTime(
+    atendimento.ASOINFO?.signature?.signedAt || atendimento.ASOINFO?.updatedAt,
+  );
+  const emailLabel = atendimento.ASOINFO?.emailSent ? "ENVIADO" : "PENDENTE";
+  const asoUrl = atendimento.ASOINFO?.url || atendimento.ASOINFO?.asoUrl;
+  const validacaoUrl =
+    atendimento.ASOINFO?.validacao || atendimento.ASOINFO?.validacaoUrl;
+  const asoStatusLabel = (
+    getAsoStatusLabel(asoStatus) || "Nao informado"
+  ).toUpperCase();
+  const asoStatusColor = getAsoStatusColor(asoStatus);
+  const atendimentoStatusColor = getStatusColor(atendimento.ATENDIMENTOSTATUS);
+  const asoErrorMessage =
+    atendimento.ASOINFO?.signature?.error || atendimento.ASOINFO?.error;
 
   return (
     <div className="space-y-6">
@@ -324,214 +348,24 @@ const InformacoesGerais: React.FC<{
 
         <Divider className="my-6" />
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          <div className="space-y-3">
-            <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
-              <UserCheck size={16} />
-              Status do Atendimento
-            </h4>
-            <Chip
-              className="text-white"
-              color={getStatusColor(atendimento.ATENDIMENTOSTATUS)}
-              size="lg"
-            >
-              {atendimento.ATENDIMENTOSTATUS.replace(/_/g, " ")
-                .toLowerCase()
-                .replace(/\b\w/g, (l: string) => l.toUpperCase())}
-            </Chip>
-          </div>
-
-          {hasAsoData && (
-            <div className="md:col-span-2 space-y-3">
-              <div className="border border-gray-200 rounded-xl bg-gradient-to-br from-white to-slate-50 p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <h4 className="font-medium text-sm text-gray-600">
-                      Parecer ASO
-                    </h4>
-                    <p className="text-lg font-bold text-gray-900">
-                      {parecerAso}
-                    </p>
-                    <p className="text-xs text-gray-600 flex items-center gap-1.5">
-                      <Stethoscope className="text-[#44735e]" size={14} />
-                      Liberado por{" "}
-                      <span className="font-semibold text-gray-800">
-                        {profissionalAso || "Não informado"}
-                      </span>
-                    </p>
-                  </div>
-
-                  <div className="flex gap-2">
-                    {(atendimento.ASOINFO?.url ||
-                      atendimento.ASOINFO?.asoUrl) && (
-                      <Tooltip
-                        closeDelay={0}
-                        content="Visualizar ASO"
-                        delay={0}
-                      >
-                        <a
-                          className="text-[#44735e] hover:bg-green-50 p-1.5 rounded-full transition-colors"
-                          href={
-                            atendimento.ASOINFO?.url ||
-                            atendimento.ASOINFO?.asoUrl
-                          }
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <FileText size={16} />
-                        </a>
-                      </Tooltip>
-                    )}
-                    {(atendimento.ASOINFO?.validacao ||
-                      atendimento.ASOINFO?.validacaoUrl) && (
-                      <Tooltip
-                        closeDelay={0}
-                        content="Relatório de Validação"
-                        delay={0}
-                      >
-                        <a
-                          className="text-[#44735e] hover:bg-green-50 p-1.5 rounded-full transition-colors"
-                          href={
-                            atendimento.ASOINFO?.validacao ||
-                            atendimento.ASOINFO?.validacaoUrl
-                          }
-                          rel="noopener noreferrer"
-                          target="_blank"
-                        >
-                          <ShieldCheck size={16} />
-                        </a>
-                      </Tooltip>
-                    )}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Status ASO
-                    </p>
-                    <div className="mt-1">
-                      <Chip
-                        className="font-medium h-5"
-                        color={getAsoStatusColor(asoStatus)}
-                        size="sm"
-                        variant="flat"
-                      >
-                        {getAsoStatusLabel(asoStatus) || "Não informado"}
-                      </Chip>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Assinatura
-                    </p>
-                    <div className="mt-1 flex flex-col gap-1">
-                      <span className="text-xs font-semibold text-gray-800">
-                        {providerAssinatura || "Não informado"}
-                      </span>
-                      {statusAssinatura && (
-                        <Chip
-                          className="w-fit h-5"
-                          color="primary"
-                          size="sm"
-                          variant="flat"
-                        >
-                          {getSignatureStatusLabel(statusAssinatura)}
-                        </Chip>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Email
-                    </p>
-                    <div className="mt-1 flex items-center gap-2">
-                      <Mail className="text-gray-500" size={13} />
-                      <Chip
-                        className="h-5"
-                        color={
-                          atendimento.ASOINFO?.emailSent ? "success" : "warning"
-                        }
-                        size="sm"
-                        variant="flat"
-                      >
-                        {atendimento.ASOINFO?.emailSent
-                          ? "Enviado"
-                          : "Pendente"}
-                      </Chip>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Atualização
-                    </p>
-                    <div className="mt-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                      <Clock3 className="text-gray-500" size={13} />
-                      <span>
-                        {formatDateTime(atendimento.ASOINFO?.updatedAt)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Assinado em
-                    </p>
-                    <div className="mt-1 flex items-center gap-2 text-xs font-medium text-gray-700">
-                      <Clock3 className="text-gray-500" size={13} />
-                      <span>
-                        {formatDateTime(
-                          atendimento.ASOINFO?.signature?.signedAt,
-                        )}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg border border-gray-100 bg-white px-3 py-2">
-                    <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
-                      Código/Conselho
-                    </p>
-                    <div className="mt-1 text-xs font-medium text-gray-700 space-y-1">
-                      <p className="flex items-center gap-1.5">
-                        <IdCard className="text-gray-500" size={13} />
-                        {atendimento.ASOINFO?.codigoProfissional ||
-                          "Não informado"}
-                      </p>
-                      <p>{conselhoProfissional || "Não informado"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {observacoesParecer.length > 0 && (
-                  <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                    <p className="text-[10px] font-semibold text-amber-700 uppercase tracking-wide mb-1">
-                      Observações do parecer
-                    </p>
-                    <p className="text-xs text-amber-900">
-                      {observacoesParecer.join(" | ")}
-                    </p>
-                  </div>
-                )}
-
-                {hasAsoError && (
-                  <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2">
-                    <p className="text-[10px] font-semibold text-red-700 uppercase tracking-wide mb-1 flex items-center gap-1.5">
-                      <AlertTriangle size={12} />
-                      Erro no fluxo ASO
-                    </p>
-                    <p className="text-xs text-red-900 font-medium">
-                      {atendimento.ASOINFO?.signature?.error ||
-                        atendimento.ASOINFO?.error}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
+        <AtendimentoStatusCard
+          asoErrorMessage={asoErrorMessage}
+          asoStatusColor={asoStatusColor}
+          asoStatusLabel={asoStatusLabel}
+          asoUrl={asoUrl}
+          atendimentoStatusColor={atendimentoStatusColor}
+          atendimentoStatusLabel={atendimentoStatusLabel}
+          emailLabel={emailLabel}
+          emailSent={atendimento.ASOINFO?.emailSent}
+          hasAsoData={hasAsoData}
+          hasAsoError={hasAsoError}
+          observacoesParecer={observacoesParecer}
+          parecerAso={parecerAso.toUpperCase()}
+          profissionalAso={profissionalAso}
+          signatureDate={signatureDate}
+          signatureLabel={signatureLabel}
+          validacaoUrl={validacaoUrl}
+        />
 
         {(atendimento.OBSERVACOES ||
           atendimento.ANOTACOES ||
