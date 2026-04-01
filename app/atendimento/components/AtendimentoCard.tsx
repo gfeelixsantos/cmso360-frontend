@@ -816,15 +816,32 @@ const TicketActions: React.FC<{
 
   const handleDisabledStatus = (ticket: Ticket) => {
     const currentUser = getCurrentUser();
+    const ticketSala = (ticket.sala || "").trim();
+    const ticketProfissional = (ticket.profissional || "").trim();
+    const userNome = (currentUser?.nome || "").trim();
 
-    // // 1. Se o ticket estiver em atendimento / chamada / finalizado - desabilita botões
-    // if ((ticket.status === TicketStatus.EM_ATENDIMENTO || ticket.status === TicketStatus.EM_CHAMADA || ticket.status === TicketStatus.FINALIZADO)
-    //   && (ticket.sala != salaSelecionada || ticket.profissional !== currentUser?.nome)
-    // ) {
-    //   return true;
-    // }
+    // FINALIZADO sempre bloqueado
+    if (ticket.status === TicketStatus.FINALIZADO) {
+      return true;
+    }
 
-    // 5. Para qualquer outra situação, o botão deve estar habilitado.
+    // Para CHAMADA/ATENDIMENTO, bloqueia apenas quando houver conflito explícito
+    // com sala/profissional já vinculados no ticket.
+    if (
+      ticket.status === TicketStatus.EM_ATENDIMENTO ||
+      ticket.status === TicketStatus.EM_CHAMADA
+    ) {
+      const conflitoSala = ticketSala !== "" && ticketSala !== salaSelecionada;
+      const conflitoProfissional =
+        ticketProfissional !== "" &&
+        userNome !== "" &&
+        ticketProfissional !== userNome;
+
+      if (conflitoSala || conflitoProfissional) {
+        return true;
+      }
+    }
+
     return false;
   };
 
