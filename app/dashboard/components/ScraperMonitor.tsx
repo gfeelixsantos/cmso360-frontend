@@ -28,6 +28,8 @@ interface ProviderMetrics {
   provider: string;
   status: "Aguardando" | "Processando" | "Finalizado" | "Erro";
   lastProcessed?: string;
+  nextRunAt?: string;
+  scheduleLabel?: string;
   countToday: number;
   analyzedToday: number; // ✨ Nova Propriedade
   receivedToday: number; // ✨ Nova Propriedade
@@ -122,6 +124,8 @@ const mergeProviderMetrics = (
   return {
     ...incoming,
     lastProcessed: incoming.lastProcessed || cached.lastProcessed,
+    nextRunAt: incoming.nextRunAt || cached.nextRunAt,
+    scheduleLabel: incoming.scheduleLabel || cached.scheduleLabel,
     intervalMinutes: incoming.intervalMinutes || cached.intervalMinutes || 60,
     countToday:
       canUseCachedCounters && !incoming.countToday
@@ -338,31 +342,22 @@ export const ScraperMonitor: React.FC = () => {
     );
   };
 
-  const calculateMinutesRemaining = (
-    lastProcessed?: string,
-    intervalMinutes: number = 60,
-  ) => {
-    if (!lastProcessed) return null;
-    const last = new Date(lastProcessed).getTime();
+  const calculateMinutesRemaining = (nextRunAt?: string) => {
+    if (!nextRunAt) return null;
+    const nextRun = new Date(nextRunAt).getTime();
 
-    if (Number.isNaN(last)) return null;
+    if (Number.isNaN(nextRun)) return null;
     const now = new Date().getTime();
-    const elapsedMinutes = Math.floor((now - last) / 60000);
-    const remaining = Math.max(0, intervalMinutes - elapsedMinutes);
+    const remaining = Math.max(0, Math.ceil((nextRun - now) / 60000));
 
     return remaining;
   };
 
-  const calculateNextRunTime = (
-    lastProcessed?: string,
-    intervalMinutes: number = 60,
-  ) => {
-    if (!lastProcessed) return "-";
-    const last = new Date(lastProcessed).getTime();
+  const formatTime = (isoStr?: string) => {
+    if (!isoStr) return "-";
+    const nextRun = new Date(isoStr);
 
-    if (Number.isNaN(last)) return "-";
-
-    const nextRun = new Date(last + intervalMinutes * 60000);
+    if (Number.isNaN(nextRun.getTime())) return "-";
 
     return nextRun.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
@@ -400,6 +395,11 @@ export const ScraperMonitor: React.FC = () => {
                 Ultima sincronizacao: {formatDate(cachedSnapshotAt)}
                 {isShowingCachedSnapshot &&
                   " (exibindo ultimo processamento salvo)"}
+              </p>
+            )}
+            {metrics[0]?.scheduleLabel && (
+              <p className="text-xs text-gray-500 mt-1">
+                Ciclos programados: {metrics[0].scheduleLabel}
               </p>
             )}
           </div>
@@ -446,14 +446,8 @@ export const ScraperMonitor: React.FC = () => {
           >
             {metrics.map((row) => {
               const config = getStatusConfig(row.status);
-              const minutesRemaining = calculateMinutesRemaining(
-                row.lastProcessed,
-                row.intervalMinutes,
-              );
-              const nextRunTime = calculateNextRunTime(
-                row.lastProcessed,
-                row.intervalMinutes,
-              );
+              const minutesRemaining = calculateMinutesRemaining(row.nextRunAt);
+              const nextRunTime = formatTime(row.nextRunAt);
 
               return (
                 <TableRow
