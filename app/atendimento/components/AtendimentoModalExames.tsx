@@ -32,6 +32,8 @@ import {
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
+import { IUserInfo } from "@/lib/user/interfaces/IUser";
+import { getCurrentUser } from "@/lib/utils";
 
 interface AtendimentoModalExamesProps {
   isOpen: boolean;
@@ -41,6 +43,7 @@ interface AtendimentoModalExamesProps {
   sala: string;
   codigosAtendimento: Set<string>;
   socket: Socket;
+  operationalUser?: IUserInfo | null;
   assinaDigitalmente?: boolean;
   pscAuthStatus?: IPscAuthStatus;
   onPscAuth?: (provider?: string) => void;
@@ -68,11 +71,13 @@ const AtendimentoModalExames = ({
   codigosAtendimento,
   funcionarioSelecionado,
   socket,
+  operationalUser,
   assinaDigitalmente,
   pscAuthStatus,
   onPscAuth,
 }: AtendimentoModalExamesProps) => {
   const user = useUser();
+  const effectiveUser = operationalUser ?? getCurrentUser() ?? user;
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
   const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>(
     [],
@@ -177,7 +182,7 @@ const AtendimentoModalExames = ({
             codigoExame: exameParaAtualizar.map((e) => e.codigoExame),
             formulario: data,
             sala: sala,
-            profissional: user ?? undefined,
+            profissional: effectiveUser ?? undefined,
           }),
         });
 
@@ -234,7 +239,7 @@ const AtendimentoModalExames = ({
       funcionarioSelecionado,
       exameParaAtualizar,
       sala,
-      user,
+      effectiveUser,
       executarAtendimentoAcao,
       socket,
       verificarExamesPendentes,
@@ -450,6 +455,7 @@ const AtendimentoModalExames = ({
             formulario={exameParaAtualizar[0]?.formulario}
             onClose={onClose}
             onSave={handleSaveExam}
+            operationalUser={effectiveUser}
           />
         </ModalContent>
       </Modal>

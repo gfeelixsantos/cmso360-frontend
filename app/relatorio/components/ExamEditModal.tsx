@@ -29,7 +29,7 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
-import { useUser } from "@/hooks/useUser";
+import { IUserInfo, useUser } from "@/hooks/useUser";
 
 // ============================================
 interface ExamEditModalProps {
@@ -37,14 +37,17 @@ interface ExamEditModalProps {
   onClose: () => void;
   exame: ExamRegister;
   atendimento: Scheduling;
+  operationalUser?: IUserInfo | null;
 }
 const ExamEditModal: React.FC<ExamEditModalProps> = ({
   isOpen,
   onClose,
   exame,
   atendimento,
+  operationalUser,
 }) => {
   const user = useUser();
+  const effectiveUser = operationalUser ?? user;
   const [formData, setFormData] = useState<any>(null);
   const [isLoadingForm, setIsLoadingForm] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -181,7 +184,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
             codigoExame: [exame.codigoExame],
             formulario: data,
             sala: exame.sala,
-            profissional: user ?? undefined,
+            profissional: effectiveUser ?? undefined,
             isEditing: true, // Flag para indicar que é edição
           }),
         });
@@ -225,7 +228,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         setIsSaving(false);
       }
     },
-    [atendimento, exame, onClose, user],
+    [atendimento, effectiveUser, exame, onClose],
   );
 
   // Renderizar loading
@@ -306,6 +309,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
             isEditing={true}
             onClose={onClose}
             onSave={handleSaveExam}
+            operationalUser={effectiveUser}
           />
         </ModalContent>
       </Modal>

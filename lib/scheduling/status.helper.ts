@@ -4,6 +4,7 @@ const SIGNATURE_STATUS_LABELS: Record<string, string> = {
   ASSINADO: 'Assinado Digitalmente',
   LIBERADO: 'Assinado Digitalmente',
   DIGITALIZADA: 'Digitalizada',
+  ERRO_IDENTIDADE_PROFISSIONAL: 'Erro de Identidade Profissional',
   FALHA: 'Falha na Assinatura',
 };
 

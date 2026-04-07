@@ -52,7 +52,6 @@ import {
   getSignatureStatusLabel,
   normalizeSignatureStatus,
 } from "@/lib/scheduling/status.helper";
-import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/hooks/useUser";
 
 interface UploadExamModalState {
@@ -97,8 +96,6 @@ const ExamesTable: React.FC<{
     isOpen: boolean;
     exame: ExamRegister | null;
   }>({ isOpen: false, exame: null });
-  const currentUser = getCurrentUser();
-
   // Estado para modal de alerta
   const [alertModal, setAlertModal] = useState<{
     open: boolean;
@@ -265,7 +262,7 @@ const ExamesTable: React.FC<{
                 observacoes: "",
               },
               sala: "Emitido via relatorio",
-              profissional: currentUser ?? undefined,
+              profissional: userApp ?? undefined,
               isEditing: true,
               dataExame: new Date(),
             }),
@@ -364,6 +361,17 @@ const ExamesTable: React.FC<{
         label: "Assinatura Digitalizada",
         labelClassName: "text-blue-700",
         detailClassName: "text-blue-600/80",
+      };
+    }
+
+    if (signatureStatus === "ERRO_IDENTIDADE_PROFISSIONAL") {
+      return {
+        icon: <AlertCircle className="text-rose-600" size={12} />,
+        label: "Erro de identidade profissional",
+        labelClassName: "text-rose-700",
+        detail:
+          sig?.error || "Profissional responsavel ausente ou inconsistente",
+        detailClassName: "text-rose-600/80",
       };
     }
 
@@ -487,6 +495,7 @@ const ExamesTable: React.FC<{
           exame={editExamModal.exam}
           isOpen={editExamModal.isOpen}
           onClose={handleEditModalClose}
+          operationalUser={userApp}
         />
       )}
 

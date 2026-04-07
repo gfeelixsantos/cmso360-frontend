@@ -12,13 +12,14 @@ import { FileText } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
 
-import { useUser } from "@/hooks/useUser";
+import { IUserInfo, useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface DinamometriaProps {
   atendimento: any;
   exame: string;
   formulario: any;
+  operationalUser?: IUserInfo | null;
   onSave?: (data: any) => void;
   onClose?: () => void;
 }
@@ -75,10 +76,12 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   atendimento,
   exame,
   formulario,
+  operationalUser,
   onSave,
   onClose,
 }) => {
   const user = useUser();
+  const effectiveUser = operationalUser ?? user;
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [formErrors, setFormErrors] = useState<{
     ladoDominante?: string;
@@ -148,13 +151,13 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
 
   // Preencher profissional responsável automaticamente
   useEffect(() => {
-    if (user?.nome && !formData.profissional) {
+    if (effectiveUser?.nome && !formData.profissional) {
       setFormData((prev) => ({
         ...prev,
-        profissional: user.nome,
+        profissional: effectiveUser.nome,
       }));
     }
-  }, [user, formData.profissional]);
+  }, [effectiveUser?.nome, formData.profissional]);
 
   // Verificar quais tipos de dinamometria foram preenchidos
   useEffect(() => {

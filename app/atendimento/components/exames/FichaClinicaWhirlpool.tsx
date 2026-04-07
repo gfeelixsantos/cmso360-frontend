@@ -14,13 +14,15 @@ import { FileText, TriangleAlert } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
 
-import { useUser } from "@/hooks/useUser";
+import { IUserInfo, useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { getCurrentUser } from "@/lib/utils";
 
 interface FichaClinicaProps {
   atendimento: any;
   exame: string;
   formulario: any;
+  operationalUser?: IUserInfo | null;
   onSave?: (data: any) => void;
   onClose?: () => void;
 }
@@ -430,10 +432,12 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
   atendimento,
   exame,
   formulario,
+  operationalUser,
   onSave,
   onClose,
 }) => {
   const user = useUser();
+  const effectiveUser = operationalUser ?? getCurrentUser() ?? user;
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [tipoAdmissional, setTipoAdmissional] = useState<boolean>(false);
   const [pressaoAlterada, setPressaoAlterada] = useState<boolean>(false);
@@ -450,8 +454,17 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
     useState<boolean>(false);
   const [showMedicoWarning, setShowMedicoWarning] = useState(false);
 
-  const codigoMedicoFinal = formulario?.codigoMedico || user?.codigo || "";
-  const medicoFinal = formulario?.medico || user?.nome || "";
+  const codigoMedicoFinal =
+    formData.codigoMedico ||
+    formulario?.codigoMedico ||
+    effectiveUser?.codigo ||
+    "";
+  const medicoFinal =
+    formData.medico ||
+    formulario?.medico ||
+    effectiveUser?.nome ||
+    atendimento?.MEDICO ||
+    "";
   const missingMedicoData = !codigoMedicoFinal || !medicoFinal;
   const formularioPreCarregado =
     !!formulario &&
@@ -638,11 +651,11 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
             hour: "2-digit",
             minute: "2-digit",
           }),
-          profissional: user?.nome ?? "",
+          profissional: effectiveUser?.nome ?? "",
         },
       ],
     }));
-  }, [atendimento, formulario]);
+  }, [effectiveUser?.nome]);
 
   const handleRemovePressaoArterial = useCallback((index: number) => {
     setFormData((prev) => {

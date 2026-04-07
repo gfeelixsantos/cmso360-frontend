@@ -81,7 +81,7 @@ export async function POST(
 
 export async function GET() {
   const ck = await cookies();
-  const token = ck.get("auth_token")?.value;
+  const token = ck.get("auth_token")?.value ?? ck.get("refresh_token")?.value;
 
   if (!token) return NextResponse.json({ user: null }, { status: 401 });
 

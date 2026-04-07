@@ -21,13 +21,14 @@ import {
 
 import HeaderExame from "./HeaderExame";
 
-import { useUser } from "@/hooks/useUser";
+import { IUserInfo, useUser } from "@/hooks/useUser";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 interface AcuidadeVisualProps {
   atendimento: any;
   exame: string;
   formulario: any;
+  operationalUser?: IUserInfo | null;
   onSave?: (data: any) => void;
   onClose?: () => void;
 }
@@ -306,10 +307,12 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
   atendimento,
   exame,
   formulario,
+  operationalUser,
   onSave,
   onClose,
 }) => {
   const user = useUser();
+  const effectiveUser = operationalUser ?? user;
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [isAcuidadeConcluida, setIsAcuidadeConcluida] = useState(false);
 
@@ -404,13 +407,13 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
   // Preencher profissional responsável automaticamente
   useEffect(() => {
-    if (user?.nome && !formData.profissional) {
+    if (effectiveUser?.nome && !formData.profissional) {
       setFormData((prev) => ({
         ...prev,
-        profissional: user.nome,
+        profissional: effectiveUser.nome,
       }));
     }
-  }, [user, formData.profissional]);
+  }, [effectiveUser?.nome, formData.profissional]);
 
   // Verificar se a acuidade visual está concluída (apenas OD e OE para longe são obrigatórios)
   useEffect(() => {

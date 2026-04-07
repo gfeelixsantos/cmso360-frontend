@@ -42,6 +42,7 @@ export async function proxySchedulingRequest(
   try {
     const body = await req.json();
     const { authToken, authUser } = await resolveAuthContext();
+    let requestBody = body;
 
     const headers = new Headers({
       "Content-Type": "application/json",
@@ -53,12 +54,28 @@ export async function proxySchedulingRequest(
 
     if (authUser) {
       headers.set("x-auth-user", JSON.stringify(authUser));
+
+      if (body && typeof body === "object") {
+        if (endpoint === "schedulings/exame/update" && !body?.profissional) {
+          requestBody = {
+            ...body,
+            profissional: authUser,
+          };
+        }
+
+        if (endpoint === "schedulings/finish" && !body?.user) {
+          requestBody = {
+            ...body,
+            user: authUser,
+          };
+        }
+      }
     }
 
     const response = await fetch(`${NEST_URL}${endpoint}`, {
       method: "POST",
       headers,
-      body: JSON.stringify(body),
+      body: JSON.stringify(requestBody),
     });
 
     const text = await response.text();

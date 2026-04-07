@@ -222,7 +222,7 @@ function registerHandlers(
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
 const AtendimentoPage: React.FC = () => {
-  const [user, setUser] = useState<IUserInfo | null>(null);
+  const [user, setUser] = useState<IUserInfo | null>(() => getCurrentUser());
   const [conectado, setConectado] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
@@ -1035,6 +1035,7 @@ const AtendimentoPage: React.FC = () => {
         exame={exameSelecionado}
         funcionarioSelecionado={funcionarioSelecionado}
         isOpen={modalAtendimentoAberto}
+        operationalUser={user}
         pscAuthStatus={pscAuthStatus}
         sala={salaSelecionada}
         socket={socketRef.current!}

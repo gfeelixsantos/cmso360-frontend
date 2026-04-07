@@ -48,6 +48,7 @@ export type SignatureStatus =
   | "PROCESSANDO"
   | "ASSINADO"
   | "LIBERADO"
+  | "ERRO_IDENTIDADE_PROFISSIONAL"
   | "FALHA";
 
 export type SignatureProvider = "DIGITALIZADA" | "PSC" | "BRYKMS";
