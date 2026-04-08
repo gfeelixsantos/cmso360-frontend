@@ -60,6 +60,7 @@ import SenhasEstatisticas, {
 import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
 import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
 import CmsoLoading from "@/components/shared/CmsoLoading";
+import { UserLock } from "lucide-react";
 
 // =================================================================================
 // Socket singleton & helpers
@@ -1146,7 +1147,7 @@ const AtendimentoPage: React.FC = () => {
         <ModalContent className="border border-[#44735e]/20">
           <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
             <div className="flex items-center gap-2">
-              <span className="text-xl">??</span>
+              <UserLock className="h-8 w-8" />
               <span className="text-lg font-semibold">
                 Autenticação Necessária
               </span>

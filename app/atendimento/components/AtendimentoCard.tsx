@@ -287,6 +287,14 @@ const formatExamTime = (dateString: string | null): string => {
   }
 };
 
+const shouldShowCompletedTime = (exame: ExamRegister): boolean => {
+  return (
+    !!exame.dataExame &&
+    (exame.status === ExamStatus.FINALIZADO ||
+      exame.status === ExamStatus.AGUARDANDO_RESULTADO)
+  );
+};
+
 // Função para obter a cor do status
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -385,7 +393,9 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
             {sortedExams.map((exame, index) => {
               const statusColors = getStatusColor(exame.status);
               const examName = getExamNameByCode(exame.codigoExame);
-              const formattedTime = formatExamTime(exame.dataExame);
+              const formattedTime = shouldShowCompletedTime(exame)
+                ? formatExamTime(exame.dataExame)
+                : "";
 
               return (
                 <TableRow
@@ -467,7 +477,9 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
         {sortedExams.map((exame, index) => {
           const statusColors = getStatusColor(exame.status);
           const examName = getExamNameByCode(exame.codigoExame);
-          const formattedTime = formatExamTime(exame.dataExame);
+          const formattedTime = shouldShowCompletedTime(exame)
+            ? formatExamTime(exame.dataExame)
+            : "";
 
           return (
             <div
