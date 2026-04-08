@@ -555,8 +555,8 @@ export function StatisticsSection() {
         </div>
 
         {/* 🏥 MÉTRICAS DE FLUXO & MONITORAMENTO - Lado a Lado */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="flex flex-col gap-6">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
+          <div className="flex flex-col gap-6 lg:col-span-2">
             <MetricCard
               description=""
               icon={Clock}
@@ -572,7 +572,7 @@ export function StatisticsSection() {
             />
           </div>
 
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-4">
             <ScraperMonitor />
           </div>
         </div>

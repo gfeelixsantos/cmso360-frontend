@@ -1156,7 +1156,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col overflow-hidden"
       >
         {/* HEADER */}
-        <header className="flex items-center justify-between gap-4 p-2 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
+        <header className="flex items-center justify-between gap-4 p-2 bg-[#114E34] text-white">
           <div className="flex items-center gap-4">
             {/* Senha/Ticket em destaque */}
             {ticketSelecionado ? (
@@ -1918,7 +1918,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             </Button>
 
             <Button
-              className="px-4 py-2 rounded bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white hover:shadow-lg transition-all duration-200"
+              className="px-4 py-2 rounded bg-[#114E34] text-white hover:bg-[#0b3523] hover:shadow-lg transition-all duration-200"
               isDisabled={!validation.all || isSubmitting}
               isLoading={isSubmitting}
               onPress={handleSubmit}
@@ -1949,15 +1949,15 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
       {/* Modal de Alerta */}
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
-        <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="text-[#2a4a3a]">
-            <ExclamationCircleIcon className="h-6 w-6 text-[#44735e]" />{" "}
+        <ModalContent className="border border-[#114E34]/20">
+          <ModalHeader className="text-[#114E34]">
+            <ExclamationCircleIcon className="h-6 w-6 text-[#114E34]" />{" "}
             {isSuccessModal ? "Sucesso" : "Atenção"}
           </ModalHeader>
           <ModalBody>{modalText}</ModalBody>
           <ModalFooter className="flex justify-end gap-2">
             <Button
-              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+              className="bg-[#114E34] text-white hover:bg-[#0b3523] focus-visible:ring-2 focus-visible:ring-[#114E34]/40"
               size="sm"
               onPress={() => {
                 setModalAlert(false);

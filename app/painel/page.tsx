@@ -33,6 +33,23 @@ type PainelCall = {
   unidade: string;
 };
 
+type SchedulingSnapshot = {
+  _id: string;
+  NOME?: string;
+  UNIDADEATENDIMENTO?: string;
+  TICKET?: {
+    id?: number;
+    numero?: number;
+    prefixo?: string;
+    sala?: string;
+    exame?: string;
+    unidade?: string;
+    status?: string;
+    emissao?: string | Date;
+    updatedAt?: string | Date;
+  } | null;
+};
+
 // Configurações do painel
 const PAINEL_CONFIG = {
   tempoChamada: 2500,
@@ -118,6 +135,12 @@ const examesColors: Record<string, { primary: string; text: string }> = {
   Ultrassom: { primary: "#2a9d8f", text: "#ffffff" },
 };
 
+const RECEPCAO_PREFIX_COLORS = {
+  default: examesColors.RECEPCAO,
+  priority: { primary: "#C62828", text: "#ffffff" },
+  other: { primary: "#0F766E", text: "#ffffff" },
+};
+
 const COLOR_PALETTE = {
   primary: "#44735e",
   accent: "#5a8c7a",
@@ -128,6 +151,31 @@ const COLOR_PALETTE = {
   text: "#2a4a3a",
   textLight: "#6b7f76",
   dark: "#1a2a1f",
+};
+
+const extractTicketPrefix = (ticket?: string) => {
+  if (!ticket) return "";
+
+  const match = ticket.trim().match(/^([A-Za-z]+)/);
+
+  return match?.[1]?.toUpperCase() || "";
+};
+
+const getCallColors = (call?: PainelCall) => {
+  if (!call) {
+    return { primary: COLOR_PALETTE.primary, text: COLOR_PALETTE.white };
+  }
+
+  if (call.exame !== "RECEPCAO") {
+    return examesColors[call.exame] || examesColors["Raio-X"];
+  }
+
+  const prefix = extractTicketPrefix(call.ticket);
+
+  if (!prefix) return RECEPCAO_PREFIX_COLORS.default;
+  if (prefix === "P") return RECEPCAO_PREFIX_COLORS.priority;
+
+  return RECEPCAO_PREFIX_COLORS.other;
 };
 
 const diaSemana = (date: Date): string => {
@@ -189,10 +237,7 @@ const CounterCard = ({ label, value }: { label: string; value: number }) => (
 );
 
 const PreviousCallCard = ({ c }: { c: PainelCall }) => {
-  const colors = useMemo(
-    () => examesColors[c.exame] || examesColors["Raio-X"],
-    [c.exame],
-  );
+  const colors = useMemo(() => getCallColors(c), [c]);
 
   return (
     <motion.div
@@ -650,6 +695,7 @@ export default function PainelPage() {
 
   const ativasRef = useRef<PainelCall[]>([]);
   const esperaRef = useRef<PainelCall[]>([]);
+  const chamadaAtualRef = useRef<PainelCall | undefined>(undefined);
   const loopRodando = useRef<boolean>(false);
   const cancelLoop = useRef<boolean>(false);
 
@@ -789,6 +835,108 @@ export default function PainelPage() {
     [],
   );
 
+  const setChamadaAtualSync = useCallback((call?: PainelCall) => {
+    chamadaAtualRef.current = call;
+    setChamadaAtual(call);
+  }, []);
+
+  const shouldIncludeCallByFilter = useCallback((call: PainelCall) => {
+    const isRecepcao = call.exame === "RECEPCAO";
+    const isAtendimento = !isRecepcao && call.exame !== "";
+    const filtro = localStorage.getItem("painel_filtro") || "CONJUNTO";
+
+    if (filtro === "RECEPÇÃO") {
+      return isRecepcao;
+    }
+
+    if (filtro === "ATENDIMENTO") {
+      return isAtendimento;
+    }
+
+    return true;
+  }, []);
+
+  const enqueuePainelCall = useCallback(
+    (call: PainelCall) => {
+      if (!shouldIncludeCallByFilter(call)) {
+        return;
+      }
+
+      const jaExiste =
+        ativasRef.current.some((c) => c.id === call.id) ||
+        esperaRef.current.some((c) => c.id === call.id);
+
+      if (jaExiste) {
+        return;
+      }
+
+      if (call.audio) {
+        const fullUrl = `${NEST_URL}${call.audio}`;
+        const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
+
+        fetch(fullUrl)
+          .then((res) => res.blob())
+          .then((blob) => {
+            if (audioUrlCacheRef.current.has(cacheKey)) {
+              URL.revokeObjectURL(audioUrlCacheRef.current.get(cacheKey)!);
+              audioUrlCacheRef.current.delete(cacheKey);
+            }
+            audioCacheRef.current.set(cacheKey, blob);
+          })
+          .catch((err) => console.error("❌ Falha no pre-fetch:", err));
+      }
+
+      if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
+        setAtivasSync((prev) => [...prev, call]);
+      } else {
+        setEsperaSync((prev) => [...prev, call]);
+      }
+    },
+    [setAtivasSync, setEsperaSync, shouldIncludeCallByFilter],
+  );
+
+  const hydrateInitialCalls = useCallback(
+    (schedules: SchedulingSnapshot[] = []) => {
+      const activeCalls = schedules
+        .filter((schedule) => schedule?.TICKET?.status === "EM CHAMADA")
+        .map((schedule) => ({
+          id: Number(schedule.TICKET?.id),
+          name: schedule.NOME || "",
+          ticket: `${schedule.TICKET?.prefixo || ""}${schedule.TICKET?.numero || ""}`,
+          sala: schedule.TICKET?.sala || "",
+          exame: schedule.TICKET?.exame || "ATENDIMENTO",
+          unidade:
+            schedule.TICKET?.unidade || schedule.UNIDADEATENDIMENTO || "",
+        }))
+        .filter((call) => Number.isFinite(call.id) && shouldIncludeCallByFilter(call))
+        .sort((a, b) => {
+          const dateA = new Date(
+            schedules.find((schedule) => schedule.TICKET?.id === a.id)?.TICKET
+              ?.updatedAt ||
+              schedules.find((schedule) => schedule.TICKET?.id === a.id)?.TICKET
+                ?.emissao ||
+              0,
+          ).getTime();
+          const dateB = new Date(
+            schedules.find((schedule) => schedule.TICKET?.id === b.id)?.TICKET
+              ?.updatedAt ||
+              schedules.find((schedule) => schedule.TICKET?.id === b.id)?.TICKET
+                ?.emissao ||
+              0,
+          ).getTime();
+
+          return dateA - dateB;
+        });
+
+      const nextAtivas = activeCalls.slice(0, PAINEL_CONFIG.qtdFilaPainel);
+      const nextEspera = activeCalls.slice(PAINEL_CONFIG.qtdFilaPainel);
+
+      setAtivasSync(() => nextAtivas);
+      setEsperaSync(() => nextEspera);
+    },
+    [setAtivasSync, setEsperaSync, shouldIncludeCallByFilter],
+  );
+
   const tocarSomNotificacao = useCallback(() => {
     if (!audioHabilitado) return;
     try {
@@ -807,13 +955,21 @@ export default function PainelPage() {
     (call: PainelCall): Promise<void> =>
       new Promise<void>((resolve) => {
         tocarSomNotificacao();
-        setChamadaAtual(call);
         console.log("Chamada recebida:", call);
-        setAnteriores((prev) => {
-          const nova = [call, ...prev];
 
-          return nova.slice(0, 4);
-        });
+        const chamadaAnterior = chamadaAtualRef.current;
+        const mudouChamadaPrincipal = chamadaAnterior?.id !== call.id;
+
+        if (mudouChamadaPrincipal) {
+          if (chamadaAnterior) {
+            setAnteriores((prev) =>
+              [chamadaAnterior, ...prev.filter((item) => item.id !== chamadaAnterior.id)].slice(0, 2),
+            );
+          }
+
+          setChamadaAtualSync(call);
+        }
+
         atualizarUltimaChamada();
 
         if (!audioHabilitado || !call.audio) {
@@ -906,17 +1062,22 @@ export default function PainelPage() {
               audio.addEventListener("ended", onEnd);
             });
 
-            await new Promise((r) => setTimeout(r, 2000));
+            await new Promise((r) => setTimeout(r, 1000));
             resolve();
           } catch (err) {
             console.error("Erro no áudio:", err);
-            setTimeout(() => resolve(), 2000);
+            setTimeout(() => resolve(), 1000);
           }
         };
 
         executar();
       }),
-    [audioHabilitado, tocarSomNotificacao, atualizarUltimaChamada],
+    [
+      audioHabilitado,
+      tocarSomNotificacao,
+      atualizarUltimaChamada,
+      setChamadaAtualSync,
+    ],
   );
 
   const iniciarLoop = useCallback(async () => {
@@ -932,13 +1093,13 @@ export default function PainelPage() {
           if (!ativasRef.current.some((c) => c.id === call.id)) continue;
           await tocarAudioDaChamada(call);
           if (!cancelLoop.current) {
-            await new Promise((r) => setTimeout(r, 3000));
+            await new Promise((r) => setTimeout(r, 2000));
           }
           if (cancelLoop.current) break;
         }
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 1000));
       } else {
-        await new Promise((r) => setTimeout(r, 2000));
+        await new Promise((r) => setTimeout(r, 1000));
       }
     }
 
@@ -960,7 +1121,7 @@ export default function PainelPage() {
         enterFullscreen(containerRef.current);
         setIsFullscreen(true);
       }
-    }, 100);
+    }, 300);
   };
 
   // Ativar modal de áudio após liberação
@@ -1054,72 +1215,18 @@ export default function PainelPage() {
       console.error("❌ Erro de conexão WebSocket:", error);
     });
 
+    socket.on("CONNECTION_REQUEST", (schedules: SchedulingSnapshot[]) => {
+      console.log(
+        `📥 Snapshot inicial recebido com ${schedules?.length || 0} agendamentos`,
+      );
+      hydrateInitialCalls(Array.isArray(schedules) ? schedules : []);
+    });
+
     socket.on("chamar funcionario", (call: PainelCall) => {
       console.log(
         `📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala} - Exame: ${call.exame}`,
       );
-
-      // Lógica de filtragem baseada na configuração do painel
-      const isRecepcao = call.exame === "RECEPCAO";
-      const isAtendimento = !isRecepcao && call.exame !== "";
-
-      const filtro = localStorage.getItem("painel_filtro") || "CONJUNTO";
-
-      if (filtro === "RECEPÇÃO" && !isRecepcao) {
-        console.log("🚫 Chamada ignorada: filtro RECEPÇÃO ativo");
-
-        return;
-      }
-
-      if (filtro === "ATENDIMENTO" && !isAtendimento) {
-        console.log("🚫 Chamada ignorada: filtro ATENDIMENTO ativo");
-
-        return;
-      }
-
-      const jaExiste =
-        ativasRef.current.some((c) => c.id === call.id) ||
-        esperaRef.current.some((c) => c.id === call.id);
-
-      if (jaExiste) {
-        console.log("🔄 Chamada já existe, ignorando...");
-
-        return;
-      }
-
-      // --- SISTEMA DE PRE-FETCH ---
-      if (call.audio) {
-        const fullUrl = `${NEST_URL}${call.audio}`;
-        const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
-
-        console.log(
-          "📥 Iniciando pre-fetch do áudio:",
-          fullUrl,
-          "Sala:",
-          call.sala,
-        );
-        fetch(fullUrl)
-          .then((res) => res.blob())
-          .then((blob) => {
-            // Se já existia uma URL de objeto para esta chave, revogamos para liberar memória
-            if (audioUrlCacheRef.current.has(cacheKey)) {
-              URL.revokeObjectURL(audioUrlCacheRef.current.get(cacheKey)!);
-              audioUrlCacheRef.current.delete(cacheKey);
-            }
-            audioCacheRef.current.set(cacheKey, blob);
-            console.log("✨ Áudio cacheado e sincronizado:", cacheKey);
-          })
-          .catch((err) => console.error("❌ Falha no pre-fetch:", err));
-      }
-      // ----------------------------
-
-      if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
-        // console.log("➕ Adicionando chamada às ativas");
-        setAtivasSync((prev) => [...prev, call]);
-      } else {
-        // console.log("⏳ Adicionando chamada à espera");
-        setEsperaSync((prev) => [...prev, call]);
-      }
+      enqueuePainelCall(call);
     });
 
     socket.on("atendimento finalizado", (call: PainelCall) => {
@@ -1191,6 +1298,8 @@ export default function PainelPage() {
   }, [
     isLiberado,
     unidadeSelecionada,
+    enqueuePainelCall,
+    hydrateInitialCalls,
     setAtivasSync,
     setEsperaSync,
     resetarIdleTimer,
@@ -1244,10 +1353,7 @@ export default function PainelPage() {
   }, []);
 
   const currentExamColors = useMemo(
-    () =>
-      chamadaAtual
-        ? examesColors[chamadaAtual.exame] || examesColors["Raio-X"]
-        : { primary: COLOR_PALETTE.primary, text: COLOR_PALETTE.white },
+    () => getCallColors(chamadaAtual),
     [chamadaAtual],
   );
 
