@@ -8,10 +8,6 @@ const borderColor = "#E5E7EB";
 const subtleText = "#6B7280";
 
 export function reportInternal(employee: Scheduling): string {
-  const ticketId = employee.TICKET
-    ? `${employee.TICKET.prefixo || ""}${employee.TICKET.numero || ""}`
-    : employee.CODIGO;
-
   const dataAgendamento = employee.DATAAGENDAMENTO || "N/A";
   const horaAgendamento = employee.HORARIO || "N/A";
 
@@ -38,52 +34,6 @@ export function reportInternal(employee: Scheduling): string {
     });
   }
 
-  function extractTimeFromDateTime(dateStr: string): string {
-    const date = parseDateTime(dateStr);
-
-    if (!date) return "--:--";
-
-    return date.toLocaleString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  }
-
-  function getTimeFromString(timeStr: string): Date | null {
-    if (!timeStr || typeof timeStr !== "string") return null;
-    const [h, m] = timeStr.split(":");
-    const date = new Date();
-
-    date.setHours(+h || 0, +m || 0);
-
-    return date;
-  }
-
-  function computeDuration(start: string, end: string): string {
-    const startDate = getTimeFromString(start);
-    const endDate = getTimeFromString(end);
-
-    if (!startDate || !endDate) return "";
-    const diff = (endDate.getTime() - startDate.getTime()) / 60000;
-
-    return diff >= 0 ? `${Math.round(diff)} min` : "";
-  }
-
-  function getStatusColor(status: string): string {
-    const s = (status || "").toLowerCase();
-
-    if (
-      s.includes("finalizado") ||
-      s.includes("concluído") ||
-      s.includes("realizado")
-    )
-      return "#16a34a";
-    if (s.includes("aguardando") || s.includes("pendente")) return "#f59e0b";
-    if (s.includes("alterado") || s.includes("anormalidade")) return "#dc2626";
-
-    return "#6b7280";
-  }
-
   const examesFiltrados =
     employee.EXAMES?.filter(
       (exame) =>
@@ -97,26 +47,13 @@ export function reportInternal(employee: Scheduling): string {
 
   examesFiltrados.forEach((exame) => {
     const examDate = formatExamDate(exame.dataExame);
-    const examTime = extractTimeFromDateTime(exame.dataExame);
-
-    const duration = exame.dataExame
-      ? computeDuration(horaAgendamento, examTime)
-      : "";
-
-    const statusColor = getStatusColor(exame.status);
 
     examsTable += `
       <tr>
         <td class="td">${exame.nomeExame}</td>
-        <td class="td">${exame.sala || "—"}</td>
-        <td class="td">${exame.profissional || "—"}</td>
+        <td class="td">${exame.sala || "â€”"}</td>
+        <td class="td">${exame.profissional || "â€”"}</td>
         <td class="td">${examDate}</td>
-        <td class="td">${duration || "—"}</td>
-        <td class="td">
-          <span class="status" style="background:${statusColor}">
-            ${exame.status || "Desconhecido"}
-          </span>
-        </td>
       </tr>
     `;
   });
@@ -141,7 +78,7 @@ export function reportInternal(employee: Scheduling): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Relatório - ${employee.NOME}</title>
+<title>RelatÃ³rio - ${employee.NOME}</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -280,14 +217,6 @@ padding:6px;
 border-bottom:1px solid ${borderColor};
 }
 
-.status{
-color:white;
-padding:2px 7px;
-border-radius:12px;
-font-size:9px;
-font-weight:500;
-}
-
 .observations{
 border:1px solid ${borderColor};
 padding:8px;
@@ -318,8 +247,8 @@ text-align:center;
 <div class="employee-name">${employee.NOME}</div>
 
 <div class="employee-meta">
-CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"} • 
-Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
+CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"} â€¢ 
+MatrÃ­cula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 </div>
 
 <div class="employee-meta">
@@ -335,7 +264,7 @@ Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 
 <div class="section">
 
-<div class="section-title">Informações Gerais</div>
+<div class="section-title">InformaÃ§Ãµes Gerais</div>
 
 <div class="info-grid">
 
@@ -375,7 +304,7 @@ Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 
 <tr>
 <td class="meta-label">Data e hora</td>
-<td>${dataAgendamento} às ${horaAgendamento}</td>
+<td>${dataAgendamento} Ã s ${horaAgendamento}</td>
 </tr>
 
 <tr>
@@ -414,7 +343,7 @@ ${
   recomendacaoMedica
     ? `
 <div class="section">
-<div class="section-title">Recomendação Médica</div>
+<div class="section-title">RecomendaÃ§Ã£o MÃ©dica</div>
 <div class="observations">${recomendacaoMedica}</div>
 </div>`
     : ""
@@ -424,7 +353,7 @@ ${
   observacoes
     ? `
 <div class="section">
-<div class="section-title">Observações</div>
+<div class="section-title">ObservaÃ§Ãµes</div>
 <div class="observations">${observacoes.replace(/\\n/g, "<br>")}</div>
 </div>`
     : ""
@@ -445,8 +374,6 @@ ${
 <th>Sala</th>
 <th>Profissional</th>
 <th>Data/Hora</th>
-<th>Duração</th>
-<th>Status</th>
 </tr>
 </thead>
 
@@ -466,7 +393,7 @@ Nenhum exame com profissional e sala designados
 </div>
 
 <div class="footer">
-Relatório gerado em ${new Date().toLocaleString("pt-BR")} <br>
+RelatÃ³rio gerado em ${new Date().toLocaleString("pt-BR")} <br>
 Documento confidencial
 </div>
 
