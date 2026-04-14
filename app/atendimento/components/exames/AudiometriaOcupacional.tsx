@@ -367,8 +367,8 @@ const VALOR_INICIAL: AudiometriaData = {
 
   entalhe4000HzOD: false,
   entalhe4000HzOE: false,
-  tipoPerdaOD: "",
-  tipoPerdaOE: "",
+  tipoPerdaOD: "Neurossensorial",
+  tipoPerdaOE: "Neurossensorial",
   audiometriaReferenciaDisponivel: false,
   limiaresRAOD: {},
   limiaresRAOE: {},
@@ -695,34 +695,6 @@ export class AudiometriaCalculator {
   }
 
   // === CRITÉRIO PCD (Decreto 5.296/2004 e Lei 14.768/2023) ===
-  static possuiAlteracaoNasFrequenciasTestadas(vaLimiares: {
-    [key: number]: string;
-  }): boolean {
-    return Object.keys(vaLimiares)
-      .map(Number)
-      .some((freq) => {
-        const raw = vaLimiares[freq];
-
-        if (raw === "--" || raw === "---") return true;
-
-        const valor = this.parseValor(raw);
-
-        return valor === null || valor > 25;
-      });
-  }
-
-  static estaDentroDosPadroesDeNormalidade(vaLimiares: {
-    [key: number]: string;
-  }): boolean {
-    return Object.keys(vaLimiares)
-      .map(Number)
-      .every((freq) => {
-        const valor = this.parseValor(vaLimiares[freq]);
-
-        return valor !== null && valor <= 25;
-      });
-  }
-
   static verificarCriterioPCD(
     mediaOD: number | null,
     mediaOE: number | null,
@@ -809,13 +781,12 @@ export class AudiometriaCalculator {
   static determinarTipoPerda(
     mediaVA: number | null,
     mediaVO: number | null,
-    possuiAlteracao: boolean,
   ): string {
     // 1. Ausência de resposta
     if (mediaVA === null) return "Neurossensorial";
 
     // 2. Audição normal
-    if (mediaVA <= 25) return possuiAlteracao ? "Neurossensorial" : "Sem perda auditiva";
+    if (mediaVA <= 25) return "-";
 
     // 3. Se não tem VO registrada, assume Neurossensorial (conservador)
     if (mediaVO === null) return "Neurossensorial";
@@ -908,27 +879,18 @@ export class AudiometriaCalculator {
 
     // Tipo/grau: '-' quando dentro da normalidade (profissionais pediram esse comportamento)
     // isNormal: null nunca é normal
-    const isNormalOD = this.estaDentroDosPadroesDeNormalidade(vaLimiaresOD);
-    const isNormalOE = this.estaDentroDosPadroesDeNormalidade(vaLimiaresOE);
+    const isNormalOD = mediaTonalOD !== null && classificacaoOD === "Normal";
+    const isNormalOE = mediaTonalOE !== null && classificacaoOE === "Normal";
 
-    const tipoPerdaOD = this.determinarTipoPerda(
-      mediaTonalOD,
-      mediaOsseaOD,
-      this.possuiAlteracaoNasFrequenciasTestadas(vaLimiaresOD),
-    );
-    const tipoPerdaOE = this.determinarTipoPerda(
-      mediaTonalOE,
-      mediaOsseaOE,
-      this.possuiAlteracaoNasFrequenciasTestadas(vaLimiaresOE),
-    );
+    const tipoPerdaOD = this.determinarTipoPerda(mediaTonalOD, mediaOsseaOD);
+    const tipoPerdaOE = this.determinarTipoPerda(mediaTonalOE, mediaOsseaOE);
 
     // Para exibição: null → "SR" (Sem Resposta)
     const perdaAuditivaOD = mediaTonalOD !== null ? `${mediaTonalOD} dB` : "SR";
     const perdaAuditivaOE = mediaTonalOE !== null ? `${mediaTonalOE} dB` : "SR";
-    const grauPerdaOD =
-      classificacaoOD === "Normal" ? "Perda auditiva" : classificacaoOD;
-    const grauPerdaOE =
-      classificacaoOE === "Normal" ? "Perda auditiva" : classificacaoOE;
+
+    const grauPerdaOD = isNormalOD ? "-" : classificacaoOD;
+    const grauPerdaOE = isNormalOE ? "-" : classificacaoOE;
 
     // Resultados textuais:
     const resultadoOD = isNormalOD
@@ -1996,7 +1958,6 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     </label>
                     <div
                       className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOD === "Normal" ||
                         formData.classificacaoOD.includes("normalidade") ||
                         formData.classificacaoOD === "-"
                           ? "bg-green-100 text-green-800"
@@ -2029,9 +1990,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         Tipo de Perda
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.tipoPerdaOD === "Sem perda auditiva"
-                          ? "-"
-                          : formData.tipoPerdaOD}
+                        {formData.tipoPerdaOD}
                       </div>
                     </div>
                     <div className="text-center">
@@ -2064,7 +2023,6 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                     </label>
                     <div
                       className={`text-center font-bold text-sm p-2 rounded ${
-                        formData.classificacaoOE === "Normal" ||
                         formData.classificacaoOE.includes("normalidade") ||
                         formData.classificacaoOE === "-"
                           ? "bg-green-100 text-green-800"
@@ -2097,9 +2055,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                         Tipo de Perda
                       </div>
                       <div className="font-bold text-gray-800">
-                        {formData.tipoPerdaOE === "Sem perda auditiva"
-                          ? "-"
-                          : formData.tipoPerdaOE}
+                        {formData.tipoPerdaOE}
                       </div>
                     </div>
                     <div className="text-center">
