@@ -139,11 +139,33 @@ const ExamesTable: React.FC<{
     setLocalExames(exames || []);
   }, [exames]);
 
+  const buildFreshPdfUrl = (url?: string) => {
+    const normalizedUrl = String(url || "").trim();
+
+    if (!normalizedUrl) return "";
+
+    const separator = normalizedUrl.includes("?") ? "&" : "?";
+
+    return `${normalizedUrl}${separator}t=${Date.now()}`;
+  };
+
+  const handleOpenExamResult = (url?: string) => {
+    const freshUrl = buildFreshPdfUrl(url);
+
+    if (!freshUrl) return;
+
+    window.open(freshUrl, "_blank", "noopener,noreferrer");
+  };
+
   const handleUploadSuccess = (updatedScheduling: Scheduling) => {
     setLocalExames(updatedScheduling.EXAMES || []);
     if (onUpdateScheduling) {
       onUpdateScheduling(updatedScheduling);
     }
+
+    setTimeout(() => {
+      fetchUpdatedExames();
+    }, 1200);
   };
 
   const handleDeleteSuccess = (updatedScheduling?: Scheduling) => {
@@ -537,9 +559,7 @@ const ExamesTable: React.FC<{
             <span className="flex items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
               {
-                localExames.filter(
-                  (e) => e.url && e.status === ExamStatus.FINALIZADO,
-                ).length
+                localExames.filter((e) => Boolean(e.url)).length
               }{" "}
               Com resultado
             </span>
@@ -663,21 +683,20 @@ const ExamesTable: React.FC<{
                           Enviar
                         </Button>
                       </div>
-                      {exame.url &&
-                        exame.status !== ExamStatus.AGUARDANDO_RESULTADO && (
-                          <div className="flex flex-col gap-1">
-                            <Button
-                              className="w-full"
-                              color="primary"
-                              size="sm"
-                              startContent={<Eye size={14} />}
-                              variant="light"
-                              onPress={() => window.open(exame.url, "_blank")}
-                            >
-                              Visualizar
-                            </Button>
-                          </div>
-                        )}
+                      {exame.url && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            className="w-full"
+                            color="primary"
+                            size="sm"
+                            startContent={<Eye size={14} />}
+                            variant="light"
+                            onPress={() => handleOpenExamResult(exame.url)}
+                          >
+                            Visualizar
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
