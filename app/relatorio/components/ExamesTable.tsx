@@ -217,6 +217,10 @@ const ExamesTable: React.FC<{
         body: JSON.stringify({
           funcionarioId: atendimento._id,
           codigoExame: exame.codigoExame,
+          profissional: {
+            nome: exame.profissional,
+            codigo: exame.codigoProfissional,
+          },
         }),
       });
 
