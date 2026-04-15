@@ -996,6 +996,8 @@ export class AudiometriaCalculator {
       classificacaoOD === "Normal" ? "Perda auditiva" : classificacaoOD;
     const grauPerdaOE =
       classificacaoOE === "Normal" ? "Perda auditiva" : classificacaoOE;
+    const classificacaoExibicaoOD = isNormalOD ? "Normal" : "Alterado";
+    const classificacaoExibicaoOE = isNormalOE ? "Normal" : "Alterado";
 
     // Resultados textuais:
     const resultadoOD = isNormalOD
@@ -1039,8 +1041,8 @@ export class AudiometriaCalculator {
       perdaAuditivaOE,
 
       // === Classificação / Tipo ===
-      classificacaoOD: isNormalOD ? "Normal" : classificacaoOD,
-      classificacaoOE: isNormalOE ? "Normal" : classificacaoOE,
+      classificacaoOD: classificacaoExibicaoOD,
+      classificacaoOE: classificacaoExibicaoOE,
       tipoPerdaOD,
       tipoPerdaOE,
 
