@@ -218,7 +218,7 @@ export function openHistoricoHTML(
 
           <!-- Classificação NR-7 -->
           <div class="nr7-container mt-4">
-            <h5 class="nr7-title">Classificação NR-7 (Referência)</h5>
+            <h5 class="nr7-title">Classificação NR-7</h5>
             <div class="grid grid-cols-2 gap-4 mt-2">
               <div class="nr7-box">
                 <span class="label">OD:</span>
