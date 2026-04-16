@@ -158,6 +158,8 @@ export class SchedulingClass implements Scheduling {
     scheduling.CODIGOEMPRESA = formData.empresa;
     scheduling.NOMEEMPRESA = empresaSelecionada?.RAZAOSOCIAL || "";
     scheduling.CNPJEMPRESA = empresaSelecionada?.CNPJ || "";
+    scheduling.CODIGOINTERNOEMPRESA =
+      empresaSelecionada?.["CÓD. CLIENTE (INT.)"] || null;
     scheduling.NOME = formData.nome;
     scheduling.TIPOEXAME = formData.tipoExame;
     scheduling.TIPOEXAMENOME =
