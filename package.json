@@ -6,7 +6,8 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint --fix"
+    "lint": "eslint --fix",
+    "test:painel-fallback": "node --test tests/painel-fallback.spec.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

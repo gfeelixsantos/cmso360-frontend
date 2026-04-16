@@ -21,6 +21,7 @@ import {
   SERVICES_KEY,
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
+import painelAudioFallback from "@/lib/painel/painel-audio-fallback";
 
 type PainelCall = {
   id: number;
@@ -140,6 +141,12 @@ const RECEPCAO_PREFIX_COLORS = {
   priority: { primary: "#C62828", text: "#ffffff" },
   other: { primary: "#0F766E", text: "#ffffff" },
 };
+
+const {
+  buildSpeechFallbackText,
+  playNativeSpeechFallback,
+  playPreparedAudioWithFallback,
+} = painelAudioFallback;
 
 const COLOR_PALETTE = {
   primary: "#44735e",
@@ -703,6 +710,7 @@ export default function PainelPage() {
   const audioCacheRef = useRef<Map<string, Blob>>(new Map());
   const audioUrlCacheRef = useRef<Map<string, string>>(new Map());
   const mainAudioRef = useRef<HTMLAudioElement | null>(null);
+  const nativeSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const [isLiberado, setIsLiberado] = useState(false);
   const [audioHabilitado, setAudioHabilitado] = useState(false);
@@ -951,6 +959,33 @@ export default function PainelPage() {
     }
   }, [audioHabilitado]);
 
+  const tocarFallbackDeVoz = useCallback(
+    (call: PainelCall): Promise<void> => {
+      if (typeof window === "undefined") {
+        return Promise.resolve();
+      }
+
+      return playNativeSpeechFallback({
+        call,
+        speechSynthesis:
+          "speechSynthesis" in window ? window.speechSynthesis : undefined,
+        SpeechSynthesisUtterance:
+          typeof SpeechSynthesisUtterance === "undefined"
+            ? undefined
+            : SpeechSynthesisUtterance,
+        setUtterance: (utterance: SpeechSynthesisUtterance | null) => {
+          nativeSpeechRef.current = utterance;
+        },
+        timeoutMs: 10000,
+        setTimeoutFn: window.setTimeout.bind(window),
+        clearTimeoutFn: window.clearTimeout.bind(window),
+      }).catch((err: unknown) => {
+        console.warn("Nao foi possivel iniciar fallback nativo de voz:", err);
+      });
+    },
+    [],
+  );
+
   const tocarAudioDaChamada = useCallback(
     (call: PainelCall): Promise<void> =>
       new Promise<void>((resolve) => {
@@ -972,102 +1007,83 @@ export default function PainelPage() {
 
         atualizarUltimaChamada();
 
-        if (!audioHabilitado || !call.audio) {
-          setTimeout(() => resolve(), PAINEL_CONFIG.tempoChamada);
-
-          return;
-        }
-
         const executar = async () => {
-          try {
-            const fullAudioUrl = `${NEST_URL}${call.audio}`;
-            // Chave única baseada na URL + Sala + Exame para evitar confusão se o paciente mudar de sala
-            const cacheKey = `${fullAudioUrl}|${call.sala}|${call.exame}`;
+          await playPreparedAudioWithFallback({
+            call,
+            audioEnabled: audioHabilitado,
+            playFallback: tocarFallbackDeVoz,
+            disabledDelayMs: PAINEL_CONFIG.tempoChamada,
+            afterPlayDelayMs: 1000,
+            playbackTimeoutMs: 10000,
+            setTimeoutFn:
+              typeof window === "undefined"
+                ? setTimeout
+                : window.setTimeout.bind(window),
+            clearTimeoutFn:
+              typeof window === "undefined"
+                ? clearTimeout
+                : window.clearTimeout.bind(window),
+            logger: console,
+            prepareAudio: async () => {
+              const fullAudioUrl = `${NEST_URL}${call.audio}`;
+              const cacheKey = `${fullAudioUrl}|${call.sala}|${call.exame}`;
 
-            console.log(
-              "Tentando reproduzir áudio:",
-              fullAudioUrl,
-              "Sala:",
-              call.sala,
-            );
+              console.log(
+                "Tentando reproduzir áudio:",
+                fullAudioUrl,
+                "Sala:",
+                call.sala,
+              );
 
-            let audioSrc = fullAudioUrl;
+              let audioSrc = fullAudioUrl;
 
-            // Verificar se temos no cache específico para esta chamada
-            if (audioCacheRef.current.has(cacheKey)) {
-              console.log("✅ Usando áudio sincronizado do cache (Blob)");
-              const blob = audioCacheRef.current.get(cacheKey)!;
+              if (audioCacheRef.current.has(cacheKey)) {
+                console.log("✅ Usando áudio sincronizado do cache (Blob)");
+                const blob = audioCacheRef.current.get(cacheKey)!;
 
-              if (audioUrlCacheRef.current.has(cacheKey)) {
-                audioSrc = audioUrlCacheRef.current.get(cacheKey)!;
-              } else {
-                audioSrc = URL.createObjectURL(blob);
-                audioUrlCacheRef.current.set(cacheKey, audioSrc);
+                if (audioUrlCacheRef.current.has(cacheKey)) {
+                  audioSrc = audioUrlCacheRef.current.get(cacheKey)!;
+                } else {
+                  audioSrc = URL.createObjectURL(blob);
+                  audioUrlCacheRef.current.set(cacheKey, audioSrc);
+                }
               }
-            }
 
-            if (!mainAudioRef.current) {
-              mainAudioRef.current = new Audio();
-            }
+              if (!mainAudioRef.current) {
+                mainAudioRef.current = new Audio();
+              }
 
-            const audio = mainAudioRef.current;
+              const audio = mainAudioRef.current;
 
-            audio.src = audioSrc;
-            audio.preload = "auto";
+              audio.src = audioSrc;
+              audio.preload = "auto";
 
-            await new Promise<void>((res, rej) => {
-              let carregado = false;
-              const onCanPlay = () => {
-                carregado = true;
-                res();
-                audio.removeEventListener("canplaythrough", onCanPlay);
-              };
-
-              audio.addEventListener("canplaythrough", onCanPlay);
-              audio.onerror = () => {
-                audio.removeEventListener("canplaythrough", onCanPlay);
-                rej(new Error("Erro ao carregar áudio"));
-              };
-
-              setTimeout(() => {
-                if (!carregado) {
-                  audio.removeEventListener("canplaythrough", onCanPlay);
-                  rej(new Error("Timeout ao carregar áudio"));
-                }
-              }, 15000); // 15 segundos de timeout para redes lentas
-            });
-
-            await audio.play();
-
-            await new Promise<void>((res) => {
-              let settled = false;
-              let timeout: NodeJS.Timeout;
-
-              const onEnd = () => {
-                if (!settled) {
-                  settled = true;
-                  clearTimeout(timeout);
-                  audio.removeEventListener("ended", onEnd);
+              await new Promise<void>((res, rej) => {
+                let carregado = false;
+                const onCanPlay = () => {
+                  carregado = true;
                   res();
-                }
-              };
+                  audio.removeEventListener("canplaythrough", onCanPlay);
+                };
 
-              timeout = setTimeout(() => {
-                console.warn(
-                  "Timeout de fallback na reprodução do áudio acionado",
-                );
-                onEnd();
-              }, 10000);
+                audio.addEventListener("canplaythrough", onCanPlay);
+                audio.onerror = () => {
+                  audio.removeEventListener("canplaythrough", onCanPlay);
+                  rej(new Error("Erro ao carregar áudio"));
+                };
 
-              audio.addEventListener("ended", onEnd);
-            });
+                setTimeout(() => {
+                  if (!carregado) {
+                    audio.removeEventListener("canplaythrough", onCanPlay);
+                    rej(new Error("Timeout ao carregar áudio"));
+                  }
+                }, 15000);
+              });
 
-            await new Promise((r) => setTimeout(r, 1000));
-            resolve();
-          } catch (err) {
-            console.error("Erro no áudio:", err);
-            setTimeout(() => resolve(), 1000);
-          }
+              return audio;
+            },
+          });
+          resolve();
         };
 
         executar();
@@ -1075,6 +1091,7 @@ export default function PainelPage() {
     [
       audioHabilitado,
       tocarSomNotificacao,
+      tocarFallbackDeVoz,
       atualizarUltimaChamada,
       setChamadaAtualSync,
     ],
@@ -1140,6 +1157,9 @@ export default function PainelPage() {
     }
 
     return () => {
+      if (typeof window !== "undefined" && "speechSynthesis" in window) {
+        window.speechSynthesis.cancel();
+      }
       if (idleTimeoutRef.current) clearTimeout(idleTimeoutRef.current);
       if (returnTimeoutRef.current) clearTimeout(returnTimeoutRef.current);
     };
