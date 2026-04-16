@@ -66,7 +66,7 @@ import { UserLock } from "lucide-react";
 // Socket singleton & helpers
 // - garante apenas 1 conexão ativa por cliente
 // - registra handlers de forma idempotente
-// - expÃµe connect/disconnect limpos
+// - expõe connect/disconnect limpos
 // =================================================================================
 
 let SINGLETON_SOCKET: Socket | null = null;
@@ -100,7 +100,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 
   const { auth, onConnect, onDisconnect, onConnectError } = opts;
 
-  // ConfiguraçÃµes socket
+  // Configurações socket
   const s = io(NEST_URL, {
     auth,
     transports: ["websocket"], // Apenas WebSocket, sem polling
@@ -131,7 +131,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     s.on("disconnect", (reason: string) => {
       console.warn("?? Socket desconectado:", reason);
 
-      // ? NOVO: Distinguir desconexÃµes normais de erros
+      // ? NOVO: Distinguir desconexões normais de erros
       if (reason === "io server disconnect") {
         // Servidor forçou desconexão - reconectar manualmente
         console.log("?? Servidor desconectou - tentando reconectar...");
@@ -149,7 +149,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
       onConnectError?.(err);
     });
 
-    // Monitorar reconexÃµes
+    // Monitorar reconexões
     s.on("reconnect", (attemptNumber: number) => {
       console.log(`? Reconectado após ${attemptNumber} tentativas`);
     });
@@ -493,7 +493,7 @@ const AtendimentoPage: React.FC = () => {
   };
 
   // ---------------------------------------------------------
-  // Carrega tickets e solicitaçÃµes de preparo ao conectar
+  // Carrega tickets e solicitações de preparo ao conectar
   // ---------------------------------------------------------
   type initialTicketsRequest = {
     tickets: Ticket[];
@@ -705,6 +705,79 @@ const AtendimentoPage: React.FC = () => {
     executeConnection();
   };
 
+  const handleTicketError = (message: string) => {
+    let parsedMessage: {
+      ticketId?: number;
+      action?: string;
+      message?: string;
+      stack?: string;
+      conflict?: {
+        funcionarioId?: string;
+        nome?: string;
+        ticketId?: number | null;
+        profissional?: string;
+      };
+    } | null = null;
+
+    try {
+      parsedMessage = JSON.parse(message);
+    } catch (error) {
+      console.error("Falha ao interpretar TICKET_ERROR:", error, message);
+    }
+
+    const backendMessage =
+      parsedMessage?.message?.trim() ||
+      "A ação foi recusada pelo servidor e não foi efetivada.";
+    const isConflict =
+      backendMessage.includes("Conflito de posse ativa") ||
+      backendMessage.includes("já está ocupada por outro atendimento ativo");
+    const conflictName = parsedMessage?.conflict?.nome?.trim();
+    const conflictProfessional = parsedMessage?.conflict?.profissional?.trim();
+
+    addToast({
+      title: isConflict ? "Chamada não efetivada" : "Falha ao executar ação",
+      description: backendMessage,
+      severity: "warning",
+      color: "foreground",
+      variant: "flat",
+    });
+
+    if (!isConflict) {
+      return;
+    }
+
+    setModalText(
+      <div className="space-y-3 text-sm text-gray-700">
+        <p>
+          A chamada não foi efetivada para esta sala. O backend retornou um
+          conflito operacional ao processar a ação.
+        </p>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="font-medium text-amber-900">{backendMessage}</p>
+          <p className="mt-2 text-amber-900">
+            Sala selecionada: <strong>{salaSelecionada || "Não informada"}</strong>
+          </p>
+          {conflictName && (
+            <p className="text-amber-900">
+              Atendimento concorrente identificado: <strong>{conflictName}</strong>
+            </p>
+          )}
+          {conflictProfessional && (
+            <p className="text-amber-900">
+              Profissional vinculado no conflito:{" "}
+              <strong>{conflictProfessional}</strong>
+            </p>
+          )}
+        </div>
+        <p className="text-xs text-gray-500">
+          Essa validação visual ajuda a confirmar o cenário em que o botão fica
+          clicável, mas a chamada é recusada por sala ou posse ativa.
+        </p>
+      </div>,
+    );
+    setModalAlert(true);
+  };
+
   // Este effect só observa a flag `conectado` e efetua a conexão uma vez.
   useEffect(() => {
     if (!conectado) return;
@@ -855,12 +928,13 @@ const AtendimentoPage: React.FC = () => {
     const unregister = registerHandlers(s, {
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
+      [EventType.TICKET_ERROR]: handleTicketError,
     } as any);
 
     // ? Cleanup
     return () => {
       unregister();
-      // NÃƒO fecha o socket aqui - deixa o singleton gerenciar
+      // NÃO fecha o socket aqui - deixa o singleton gerenciar
       // closeSocket();
       // socketRef.current = null;
     };
