@@ -710,6 +710,7 @@ const AtendimentoPage: React.FC = () => {
       ticketId?: number;
       action?: string;
       message?: string;
+      status?: number;
       stack?: string;
       conflict?: {
         funcionarioId?: string;
@@ -777,6 +778,18 @@ const AtendimentoPage: React.FC = () => {
     );
     setModalAlert(true);
   };
+
+  const findSchedulingIndex = useCallback(
+    (list: Scheduling[], schedule: Scheduling) =>
+      list.findIndex(
+        (item) =>
+          (item._id && schedule._id && item._id === schedule._id) ||
+          (item.CODIGOPRONTUARIO &&
+            schedule.CODIGOPRONTUARIO &&
+            item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO),
+      ),
+    [],
+  );
 
   // Este effect só observa a flag `conectado` e efetua a conexão uma vez.
   useEffect(() => {
@@ -893,9 +906,7 @@ const AtendimentoPage: React.FC = () => {
 
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral((prev) => {
-            const idx = prev.findIndex(
-              (p) => p.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO,
-            );
+            const idx = findSchedulingIndex(prev, schedule);
 
             if (idx !== -1) {
               const updated = [...prev];
@@ -907,10 +918,11 @@ const AtendimentoPage: React.FC = () => {
 
             console.warn(
               "?? Agendamento não encontrado para UPDATE:",
+              schedule._id,
               schedule.CODIGOPRONTUARIO,
             );
 
-            return prev;
+            return [...prev, schedule];
           });
           break;
 
@@ -918,7 +930,9 @@ const AtendimentoPage: React.FC = () => {
           console.log("delete recebido", schedule.NOME);
           setAgendamentosGeral((prev) =>
             prev.filter(
-              (ag) => ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
+              (ag) =>
+                ag._id !== schedule._id &&
+                ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
             ),
           );
           break;
@@ -938,7 +952,13 @@ const AtendimentoPage: React.FC = () => {
       // closeSocket();
       // socketRef.current = null;
     };
-  }, [conectado, unidadeSelecionada, salaSelecionada, exameSelecionado]);
+  }, [
+    conectado,
+    unidadeSelecionada,
+    salaSelecionada,
+    exameSelecionado,
+    findSchedulingIndex,
+  ]);
 
   // Cleanup ao desmontar componente
   useEffect(() => {
