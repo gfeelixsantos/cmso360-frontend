@@ -51,7 +51,15 @@ interface AtendimentoCardProps {
   // setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
+  pendingAction?: {
+    action: string;
+    startedAt: number;
+    phase: "pending" | "resync";
+  };
+  startPendingAction: (ticketId: number, action: string) => void;
 }
+
+type PendingActionInfo = NonNullable<AtendimentoCardProps["pendingAction"]>;
 
 // Hook para cálculo de progresso dos exames (memorizado para performance)
 const useExamProgress = (exames: ExamRegister[]) => {
@@ -276,6 +284,7 @@ const formatExamTime = (dateString: string | null): string => {
 
   try {
     const date = new Date(dateString);
+
     if (Number.isNaN(date.getTime())) return "";
 
     return date.toLocaleTimeString("pt-BR", {
@@ -720,6 +729,23 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
   );
 };
 
+const getPendingActionLabel = (pendingAction: PendingActionInfo) => {
+  if (pendingAction.phase === "resync") {
+    return "Sincronizando estado...";
+  }
+
+  switch (pendingAction.action) {
+    case TicketActionType.CHAMAR:
+      return "Processando chamada...";
+    case TicketActionType.ATENDER:
+      return "Iniciando atendimento...";
+    case TicketActionType.RETORNAR:
+      return "Retornando para a fila...";
+    default:
+      return "Processando ação...";
+  }
+};
+
 // Componente para as ações do ticket (com cores do SenhaCard)
 const TicketActions: React.FC<{
   ticket: Ticket;
@@ -731,6 +757,8 @@ const TicketActions: React.FC<{
   // setTicketSelecionado: (ticket: Ticket) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
+  pendingAction?: PendingActionInfo;
+  startPendingAction: (ticketId: number, action: string) => void;
 }> = ({
   ticket,
   salaSelecionada,
@@ -741,10 +769,11 @@ const TicketActions: React.FC<{
   // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
+  pendingAction,
+  startPendingAction,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
-  // 🔹 Armazena IDs que já tiveram o primeiro clique
-  const [firstClickMap, setFirstClickMap] = useState<Record<string, boolean>>(
+  const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>(
     {},
   );
 
@@ -755,6 +784,7 @@ const TicketActions: React.FC<{
   ) => {
     const currentUser = getCurrentUser();
 
+    startPendingAction(ticket.id, action);
     executarAtendimentoAcao(
       atendimento._id,
       ticket.id,
@@ -775,8 +805,26 @@ const TicketActions: React.FC<{
   ) => {
     const currentUser = getCurrentUser();
 
-    if (!firstClickMap[ticket.id]) {
-      // Primeiro clique: executa ação, mas não abre o modal
+    if (
+      ticket.status === TicketStatus.EM_ATENDIMENTO &&
+      firstClickMap[ticket.id]
+    ) {
+      setFuncionarioSelecionado(funcionario);
+      onHandleModal(true);
+
+      setFirstClickMap((prev) => {
+        const updated = { ...prev };
+
+        delete updated[ticket.id];
+
+        return updated;
+      });
+
+      return;
+    }
+
+    startPendingAction(ticket.id, action);
+    if (!firstClickMap[ticket.id] || ticket.status !== TicketStatus.EM_ATENDIMENTO) {
       executarAtendimentoAcao(
         atendimento._id,
         ticket.id,
@@ -788,19 +836,6 @@ const TicketActions: React.FC<{
         currentUser?.nome,
       );
       setFirstClickMap((prev) => ({ ...prev, [ticket.id]: true }));
-    } else {
-      // Segundo clique: abre o modal de atendimento
-      setFuncionarioSelecionado(funcionario);
-      onHandleModal(true);
-
-      // Reseta o clique para permitir novo ciclo
-      setFirstClickMap((prev) => {
-        const updated = { ...prev };
-
-        delete updated[ticket.id];
-
-        return updated;
-      });
     }
   };
 
@@ -817,6 +852,7 @@ const TicketActions: React.FC<{
       return updated;
     });
 
+    startPendingAction(ticket.id, action);
     return executarAtendimentoAcao(
       atendimento._id,
       ticket.id,
@@ -858,6 +894,8 @@ const TicketActions: React.FC<{
   };
 
   const isDisabled = handleDisabledStatus(ticket);
+  const isPending = !!pendingAction;
+  const isButtonDisabled = isDisabled || isPending;
 
   return (
     <div
@@ -871,7 +909,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Chamar paciente"
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isDisabled}
+          disabled={isButtonDisabled}
           size="md"
           onPress={() =>
             handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
@@ -887,7 +925,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Atender paciente"
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isDisabled}
+          disabled={isButtonDisabled}
           size="md"
           onPress={() =>
             handleAtender(ticket, TicketActionType.ATENDER, atendimento)
@@ -903,6 +941,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Retornar paciente à fila"
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
+          disabled={isButtonDisabled}
           size="md"
           onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
         >
@@ -922,6 +961,8 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   onHandleModal,
   setFuncionarioSelecionado,
   exameSelecionado,
+  pendingAction,
+  startPendingAction,
 }) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg } = getStatusVisual(
@@ -953,6 +994,11 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           {/* Ações do ticket */}
           <div className="flex flex-col gap-2">
             <StatusBadge status={atendimento.TICKET?.status} />
+            {pendingAction && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+                {getPendingActionLabel(pendingAction)}
+              </div>
+            )}
             <TicketActions
               atendimento={atendimento}
               exameSelecionado={exameSelecionado}
@@ -962,6 +1008,8 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
               ticket={atendimento.TICKET}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              pendingAction={pendingAction}
+              startPendingAction={startPendingAction}
             />
           </div>
         </div>

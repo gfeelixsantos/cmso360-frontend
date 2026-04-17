@@ -22,8 +22,17 @@ interface MainContentProps {
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  onHandleModal: (state: boolean) => void; // Corrigido: boolean em vez de Boolean
+  onHandleModal: (state: boolean) => void;
   exameSelecionado: string;
+  pendingActions: Record<
+    number,
+    {
+      action: string;
+      startedAt: number;
+      phase: "pending" | "resync";
+    }
+  >;
+  startPendingAction: (ticketId: number, action: string) => void;
 }
 
 const AtendimentoContent: React.FC<MainContentProps> = ({
@@ -36,6 +45,8 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   onHandleModal,
   setFuncionarioSelecionado,
   exameSelecionado,
+  pendingActions,
+  startPendingAction,
 }) => {
   const [estaCarregando, setEstaCarregando] = useState(true);
   const [dadosIniciaisCarregados, setDadosIniciaisCarregados] = useState(false);
@@ -68,7 +79,6 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         return () => clearTimeout(timer);
       };
 
-      // Escuta eventos de atualização do socket
       socket.on("ticketAtualizado", handleAtualizacao);
       socket.on("novoTicket", handleAtualizacao);
       socket.on("atendimentoIniciado", handleAtualizacao);
@@ -89,32 +99,12 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       }, 0);
   };
 
-  /*
-JANELA DE TOLERÂNCIA
-Até quantos minutos de diferença eu aceito reorganizar a fila sem quebrar a sensação de justiça
-
-Paciente A chegou 08:00
-Paciente B chegou 08:07
-Janela de tolerância = 10 minutos
-
-👉 A diferença é 7 minutos, então o sistema pode:
-Avaliar tempo estimado
-Encaixar quem termina mais rápido
-
-Agora outro caso:
-Paciente C chegou 08:20
-Diferença para A = 20 minutos
-
-👉 Está fora da janela
-FIFO puro
-Ninguém “passa na frente”
-*/
   const AtendimentosOrdenados = useMemo(() => {
     if (!Array.isArray(agendamentos) || agendamentos.length === 0) {
       return [];
     }
 
-    const JANELA_TOLERANCIA = 10 * 60 * 1000; // 10 minutos
+    const JANELA_TOLERANCIA = 10 * 60 * 1000;
 
     return agendamentos
       .map((a) => {
@@ -135,17 +125,14 @@ Ninguém “passa na frente”
       .sort((a, b) => {
         const deltaTicket = a.ticketTime - b.ticketTime;
 
-        // 1️⃣ Fora da janela → FIFO puro
         if (Math.abs(deltaTicket) > JANELA_TOLERANCIA) {
           return deltaTicket;
         }
 
-        // 2️⃣ Dentro da janela → prioriza quem termina mais rápido
         if (a.tempoEstimado !== b.tempoEstimado) {
           return a.tempoEstimado - b.tempoEstimado;
         }
 
-        // 3️⃣ Desempate final → quem chegou primeiro
         return deltaTicket;
       });
   }, [agendamentos]);
@@ -237,18 +224,16 @@ Ninguém “passa na frente”
     return <ContentLoading />;
   }
 
-  // Calcular estatísticas para aria-label
   const totalAtendimentos = AtendimentosOrdenados.length;
   const totalPreferenciais = senhasPreferenciais.length;
   const totalComPrefixo = senhasComPrefixo.length;
   const totalNormais = senhasNormais.length;
   const totalOutrasSalas = atendimentoOutrasSalas.length;
 
-  const ariaLabelMain = `Sistema de atendimento médico - ${totalAtendimentos} pacientes aguardando: ${totalPreferenciais} preferenciais, ${totalComPrefixo} com prioridade, ${totalNormais} normais. ${totalOutrasSalas} em atendimento em outras salas.`;
+  const ariaLabelMain = `Sistema de atendimento medico - ${totalAtendimentos} pacientes aguardando: ${totalPreferenciais} preferenciais, ${totalComPrefixo} com prioridade, ${totalNormais} normais. ${totalOutrasSalas} em atendimento em outras salas.`;
 
   return (
     <main aria-label={ariaLabelMain} className="min-h-screen" role="main">
-      {/* Anúncio de atualizações para leitores de tela */}
       <div
         aria-atomic="true"
         aria-live="polite"
@@ -273,6 +258,8 @@ Ninguém “passa na frente”
         socket={socket}
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
+        pendingActions={pendingActions}
+        startPendingAction={startPendingAction}
       />
     </main>
   );

@@ -21,6 +21,15 @@ interface SenhasListProps {
   unidadeSelecionada: string;
   onHandleModal: (state: boolean) => void;
   exameSelecionado: string;
+  pendingActions: Record<
+    number,
+    {
+      action: string;
+      startedAt: number;
+      phase: "pending" | "resync";
+    }
+  >;
+  startPendingAction: (ticketId: number, action: string) => void;
 }
 
 // Componente para o estado vazio - CORRIGIDO
@@ -65,6 +74,8 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   setFuncionarioSelecionado,
   onHandleModal,
   exameSelecionado,
+  pendingActions,
+  startPendingAction,
 }) => {
   // Correção: Verificar todas as listas, não apenas a principal
   const todasSenhasVazias =
@@ -106,6 +117,8 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Preferencial (${senhasPreferenciais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              pendingActions={pendingActions}
+              startPendingAction={startPendingAction}
             />
           )}
 
@@ -122,6 +135,8 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Prioridade (${senhasComPrefixo.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              pendingActions={pendingActions}
+              startPendingAction={startPendingAction}
             />
           )}
 
@@ -138,6 +153,8 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Atendimento (${senhasNormais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              pendingActions={pendingActions}
+              startPendingAction={startPendingAction}
             />
           )}
         </div>

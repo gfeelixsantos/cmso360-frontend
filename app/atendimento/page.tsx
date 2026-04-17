@@ -14,6 +14,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { UserLock } from "lucide-react";
 
 import { PscProviderStatus } from "./components/PscProviderStatus";
 import { PscProviderSelector } from "./components/PscProviderSelector";
@@ -46,6 +47,7 @@ import {
 import {
   EXAMES_LIST,
   NEST_SOC_COMPANIES,
+  NEST_SCHEDULINGS_TODAY,
   NEST_TICKET_QUERY,
   NEST_URL,
 } from "@/config/constants";
@@ -60,7 +62,6 @@ import SenhasEstatisticas, {
 import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
 import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
 import CmsoLoading from "@/components/shared/CmsoLoading";
-import { UserLock } from "lucide-react";
 
 // =================================================================================
 // Socket singleton & helpers
@@ -222,6 +223,12 @@ function registerHandlers(
 
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
 
+type PendingActionInfo = {
+  action: string;
+  startedAt: number;
+  phase: "pending" | "resync";
+};
+
 const AtendimentoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(() => getCurrentUser());
   const [conectado, setConectado] = useState(false);
@@ -246,6 +253,9 @@ const AtendimentoPage: React.FC = () => {
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [pendingActions, setPendingActions] = useState<
+    Record<number, PendingActionInfo>
+  >({});
   const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(
     null,
   );
@@ -288,11 +298,15 @@ const AtendimentoPage: React.FC = () => {
   const [pscAuthWindowUrl, setPscAuthWindowUrl] = useState<string>("");
   const pscWindowRef = useRef<Window | null>(null);
   const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingTimeoutsRef = useRef<Record<number, NodeJS.Timeout>>({});
 
   // Limpar os intervalos ao sair
   useEffect(() => {
     return () => {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
+      Object.values(pendingTimeoutsRef.current).forEach((timer) =>
+        clearTimeout(timer),
+      );
     };
   }, []);
 
@@ -550,6 +564,112 @@ const AtendimentoPage: React.FC = () => {
     }
   }, []);
 
+  const clearPendingAction = useCallback((ticketId?: number | null) => {
+    if (!ticketId || Number.isNaN(Number(ticketId))) return;
+
+    const numericTicketId = Number(ticketId);
+    const timer = pendingTimeoutsRef.current[numericTicketId];
+
+    if (timer) {
+      clearTimeout(timer);
+      delete pendingTimeoutsRef.current[numericTicketId];
+    }
+
+    setPendingActions((prev) => {
+      if (!(numericTicketId in prev)) {
+        return prev;
+      }
+
+      const updated = { ...prev };
+      delete updated[numericTicketId];
+      return updated;
+    });
+  }, []);
+
+  const resyncAttendimentos = useCallback(
+    async (reason: string, targetTicketId?: number) => {
+      if (!unidadeSelecionada) return;
+
+      try {
+        const response = await fetch(NEST_SCHEDULINGS_TODAY, {
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          throw new Error(`Falha ao recarregar atendimentos (${response.status})`);
+        }
+
+        const schedules: Scheduling[] = await response.json();
+        const unidadeNormalizada = unidadeSelecionada.trim().toUpperCase();
+        const filtered = Array.isArray(schedules)
+          ? schedules.filter(
+              (schedule) =>
+                schedule.UNIDADEATENDIMENTO?.trim().toUpperCase() ===
+                  unidadeNormalizada || schedule.UNIDADEATENDIMENTO === "",
+            )
+          : [];
+
+        setAgendamentosGeral(filtered);
+
+        if (targetTicketId) {
+          clearPendingAction(targetTicketId);
+        }
+
+        console.log(
+          `[ATENDIMENTO_RESYNC] motivo=${reason} unidade=${unidadeNormalizada} ticket=${targetTicketId ?? "n/a"} itens=${filtered.length}`,
+        );
+      } catch (error) {
+        console.error("[ATENDIMENTO_RESYNC] falha ao sincronizar estado:", error);
+        if (targetTicketId) {
+          clearPendingAction(targetTicketId);
+        }
+      }
+    },
+    [clearPendingAction, unidadeSelecionada],
+  );
+
+  const startPendingAction = useCallback(
+    (ticketId: number, action: string) => {
+      clearPendingAction(ticketId);
+
+      setPendingActions((prev) => ({
+        ...prev,
+        [ticketId]: {
+          action,
+          startedAt: Date.now(),
+          phase: "pending",
+        },
+      }));
+
+      pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
+        setPendingActions((prev) => {
+          const current = prev[ticketId];
+          if (!current) return prev;
+
+          return {
+            ...prev,
+            [ticketId]: {
+              ...current,
+              phase: "resync",
+            },
+          };
+        });
+
+        addToast({
+          title: "Verificando atualização",
+          description:
+            "A ação demorou para refletir na tela. Vamos recarregar o atendimento.",
+          severity: "warning",
+          color: "foreground",
+          variant: "flat",
+        });
+
+        void resyncAttendimentos("timeout", ticketId);
+      }, 4000);
+    },
+    [clearPendingAction, resyncAttendimentos],
+  );
+
   // ---------------------------------------------------------
   // Filtragem de atendimentos
   // ---------------------------------------------------------
@@ -732,8 +852,11 @@ const AtendimentoPage: React.FC = () => {
     const isConflict =
       backendMessage.includes("Conflito de posse ativa") ||
       backendMessage.includes("já está ocupada por outro atendimento ativo");
+    const ticketId = parsedMessage?.ticketId ? Number(parsedMessage.ticketId) : null;
     const conflictName = parsedMessage?.conflict?.nome?.trim();
     const conflictProfessional = parsedMessage?.conflict?.profissional?.trim();
+
+    clearPendingAction(ticketId);
 
     addToast({
       title: isConflict ? "Chamada não efetivada" : "Falha ao executar ação",
@@ -747,6 +870,8 @@ const AtendimentoPage: React.FC = () => {
       return;
     }
 
+    void resyncAttendimentos("conflict", ticketId ?? undefined);
+
     setModalText(
       <div className="space-y-3 text-sm text-gray-700">
         <p>
@@ -756,11 +881,13 @@ const AtendimentoPage: React.FC = () => {
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
           <p className="font-medium text-amber-900">{backendMessage}</p>
           <p className="mt-2 text-amber-900">
-            Sala selecionada: <strong>{salaSelecionada || "Não informada"}</strong>
+            Sala selecionada:{" "}
+            <strong>{salaSelecionada || "Não informada"}</strong>
           </p>
           {conflictName && (
             <p className="text-amber-900">
-              Atendimento concorrente identificado: <strong>{conflictName}</strong>
+              Atendimento concorrente identificado:{" "}
+              <strong>{conflictName}</strong>
             </p>
           )}
           {conflictProfessional && (
@@ -871,6 +998,7 @@ const AtendimentoPage: React.FC = () => {
     // Handlers de eventos otimizados
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
+        schedules.forEach((schedule) => clearPendingAction(schedule.TICKET?.id));
         console.log(`?? Recebidos ${schedules.length} agendamentos iniciais`);
 
         setAgendamentosGeral((prev) => {
@@ -893,6 +1021,7 @@ const AtendimentoPage: React.FC = () => {
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => {
+            clearPendingAction(schedule.TICKET?.id);
             // Evita duplicatas
             if (prev.some((p) => p._id === schedule._id)) {
               console.warn("?? Agendamento duplicado ignorado:", schedule._id);
@@ -906,6 +1035,7 @@ const AtendimentoPage: React.FC = () => {
 
         case MongoOperationTypes.UPDATE:
           setAgendamentosGeral((prev) => {
+            clearPendingAction(schedule.TICKET?.id);
             const idx = findSchedulingIndex(prev, schedule);
 
             if (idx !== -1) {
@@ -928,6 +1058,7 @@ const AtendimentoPage: React.FC = () => {
 
         case MongoOperationTypes.DELETE:
           console.log("delete recebido", schedule.NOME);
+          clearPendingAction(schedule.TICKET?.id);
           setAgendamentosGeral((prev) =>
             prev.filter(
               (ag) =>
@@ -954,10 +1085,12 @@ const AtendimentoPage: React.FC = () => {
     };
   }, [
     conectado,
+    clearPendingAction,
     unidadeSelecionada,
     salaSelecionada,
     exameSelecionado,
     findSchedulingIndex,
+    resyncAttendimentos,
   ]);
 
   // Cleanup ao desmontar componente
@@ -1106,10 +1239,12 @@ const AtendimentoPage: React.FC = () => {
               codigosDeAtendimento={codigosDeAtendimento}
               conectado={conectado}
               exameSelecionado={exameSelecionado}
+              pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               // setTicketSelecionado={setTicketSelecionado}
               socket={socketRef.current}
+              startPendingAction={startPendingAction}
               // tickets={tickets}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={() => setModalAtendimentoAberto(true)}

@@ -18,6 +18,15 @@ interface SenhasSectionProps {
   onHandleModal: (state: boolean) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
+  pendingActions: Record<
+    number,
+    {
+      action: string;
+      startedAt: number;
+      phase: "pending" | "resync";
+    }
+  >;
+  startPendingAction: (ticketId: number, action: string) => void;
 }
 
 // Helper para determinar ícone e cor baseado no tipo de seção
@@ -103,6 +112,8 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   onHandleModal,
   setFuncionarioSelecionado,
   exameSelecionado,
+  pendingActions,
+  startPendingAction,
 }) => {
   const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
   const style = getSectionStyle(title);
@@ -161,6 +172,8 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
                 socket={socket}
                 unidadeSelecionada={unidadeSelecionada}
                 onHandleModal={onHandleModal}
+                pendingAction={pendingActions[atendimento.TICKET.id]}
+                startPendingAction={startPendingAction}
               />
             </div>
           );
