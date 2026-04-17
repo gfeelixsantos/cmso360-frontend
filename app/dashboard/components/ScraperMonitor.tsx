@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { io, Socket } from "socket.io-client";
 import { Database, Search } from "lucide-react";
-import { Badge } from "@heroui/react";
 
 import { WORKER_SCRAPER_STATUS, WORKER_WS_URL } from "@/config/constants";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
@@ -151,17 +150,6 @@ const mergeIncomingWithCache = (
   return merged.sort((a, b) => a.provider.localeCompare(b.provider));
 };
 
-const formatDate = (isoStr?: string) => {
-  if (!isoStr) return "-";
-  const date = new Date(isoStr);
-
-  return (
-    date.toLocaleDateString("pt-BR") +
-    " " +
-    date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-  );
-};
-
 const getStatusConfig = (status: ProviderStatus) => {
   switch (status) {
     case "Processando":
@@ -187,8 +175,6 @@ export const ScraperMonitor: React.FC = () => {
   const [metrics, setMetrics] = useState<ProviderMetrics[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
-  const [cachedSnapshotAt, setCachedSnapshotAt] = useState<string | null>(null);
-  const [isShowingCachedSnapshot, setIsShowingCachedSnapshot] = useState(false);
   const wsFailedRef = useRef(false);
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const isConnectedRef = useRef(false);
@@ -198,8 +184,6 @@ export const ScraperMonitor: React.FC = () => {
     const merged = mergeIncomingWithCache(incomingData, cache?.metrics || []);
 
     setMetrics(merged);
-    setCachedSnapshotAt(new Date().toISOString());
-    setIsShowingCachedSnapshot(false);
     saveCachedMetrics(merged);
   };
 
@@ -226,8 +210,6 @@ export const ScraperMonitor: React.FC = () => {
       );
 
       setMetrics(sortedData);
-      setCachedSnapshotAt(cache.updatedAt);
-      setIsShowingCachedSnapshot(true);
     }
 
     fetchMetrics();
@@ -337,18 +319,6 @@ export const ScraperMonitor: React.FC = () => {
           </div>
         </div>
 
-        {cachedSnapshotAt && (
-          <div className="text-right">
-            <p className="text-[10px] font-medium uppercase tracking-wide text-gray-400">
-              Ultima sincronizacao
-            </p>
-            <p className="mt-0.5 text-xs text-gray-500">
-              {formatDate(cachedSnapshotAt)}
-              {isShowingCachedSnapshot &&
-                " (exibindo ultimo processamento salvo)"}
-            </p>
-          </div>
-        )}
       </div>
 
       <div className="p-4">
@@ -364,7 +334,7 @@ export const ScraperMonitor: React.FC = () => {
               return (
                 <article
                   key={row.provider}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-3"
+                  className="rounded-xl bg-white px-3 py-3"
                 >
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="min-w-0 flex-1">
