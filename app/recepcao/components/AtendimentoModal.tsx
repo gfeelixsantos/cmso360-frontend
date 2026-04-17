@@ -95,6 +95,14 @@ function normalizeString(str: string): string {
     .toLowerCase();
 }
 
+function formatAtendimentoStatusLabel(status?: string): string {
+  if (!status) return "";
+
+  return status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l: string) => l.toUpperCase());
+}
+
 interface AtendimentoModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -1049,22 +1057,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 </div>
               </div>
             </div>
-            {/* Chip do ASOSTATUS fixo no canto inferior direito */}
-            {paciente.ASOSTATUS === AsoStatus.GERADO && (
-              <div className=" bottom-2 right-4 text-green-400">
+            {paciente.ATENDIMENTOSTATUS && (
+              <div className="mt-1">
                 <span
                   className={`text-left text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
                 >
-                  {paciente.ATENDIMENTOSTATUS.replace(/_/g, " ").replace(
-                    /\b\w/g,
-                    (l: string) => l.toUpperCase(),
-                  )}
+                  {formatAtendimentoStatusLabel(paciente.ATENDIMENTOSTATUS)}
                 </span>
               </div>
             )}
 
             {paciente.ASOSTATUS === AsoStatus.KIT_CREDENCIADA && (
-              <div className=" bottom-2 right-2 text-yellow-400">
+              <div className="mt-1 text-yellow-400">
                 <span className="text-xs">{paciente.ASOSTATUS}</span>
               </div>
             )}
@@ -1134,12 +1138,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 </div>
               </div>
             </div>
-            {/* Chip do ASOSTATUS fixo no canto inferior direito */}
-            {paciente.ASOSTATUS === AsoStatus.GERADO && (
-              <div className="absolute bottom-2 right-2  text-green-400">
-                <span className="text-xs">ASO OK</span>
-              </div>
-            )}
+            <div className="mt-1 flex flex-col items-end">
+              {paciente.ASOSTATUS === AsoStatus.GERADO && (
+                <span className="text-xs text-green-400">ASO OK</span>
+              )}
+              {paciente.ATENDIMENTOSTATUS && (
+                <span
+                  className={`text-right text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
+                >
+                  {formatAtendimentoStatusLabel(paciente.ATENDIMENTOSTATUS)}
+                </span>
+              )}
+            </div>
           </div>
         </Tooltip>
       </div>
