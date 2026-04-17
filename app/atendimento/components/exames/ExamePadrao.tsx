@@ -122,9 +122,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
           <div className="space-y-4">
             {examesFiltrados.map((exameItem, index) => (
               <div
-                key={
-                  exameItem.codigoExame || index.toString()
-                }
+                key={exameItem.codigoExame || index.toString()}
                 className="rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">

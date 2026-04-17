@@ -916,7 +916,9 @@ export default function PainelPage() {
           unidade:
             schedule.TICKET?.unidade || schedule.UNIDADEATENDIMENTO || "",
         }))
-        .filter((call) => Number.isFinite(call.id) && shouldIncludeCallByFilter(call))
+        .filter(
+          (call) => Number.isFinite(call.id) && shouldIncludeCallByFilter(call),
+        )
         .sort((a, b) => {
           const dateA = new Date(
             schedules.find((schedule) => schedule.TICKET?.id === a.id)?.TICKET
@@ -959,32 +961,29 @@ export default function PainelPage() {
     }
   }, [audioHabilitado]);
 
-  const tocarFallbackDeVoz = useCallback(
-    (call: PainelCall): Promise<void> => {
-      if (typeof window === "undefined") {
-        return Promise.resolve();
-      }
+  const tocarFallbackDeVoz = useCallback((call: PainelCall): Promise<void> => {
+    if (typeof window === "undefined") {
+      return Promise.resolve();
+    }
 
-      return playNativeSpeechFallback({
-        call,
-        speechSynthesis:
-          "speechSynthesis" in window ? window.speechSynthesis : undefined,
-        SpeechSynthesisUtterance:
-          typeof SpeechSynthesisUtterance === "undefined"
-            ? undefined
-            : SpeechSynthesisUtterance,
-        setUtterance: (utterance: SpeechSynthesisUtterance | null) => {
-          nativeSpeechRef.current = utterance;
-        },
-        timeoutMs: 10000,
-        setTimeoutFn: window.setTimeout.bind(window),
-        clearTimeoutFn: window.clearTimeout.bind(window),
-      }).catch((err: unknown) => {
-        console.warn("Nao foi possivel iniciar fallback nativo de voz:", err);
-      });
-    },
-    [],
-  );
+    return playNativeSpeechFallback({
+      call,
+      speechSynthesis:
+        "speechSynthesis" in window ? window.speechSynthesis : undefined,
+      SpeechSynthesisUtterance:
+        typeof SpeechSynthesisUtterance === "undefined"
+          ? undefined
+          : SpeechSynthesisUtterance,
+      setUtterance: (utterance: SpeechSynthesisUtterance | null) => {
+        nativeSpeechRef.current = utterance;
+      },
+      timeoutMs: 10000,
+      setTimeoutFn: window.setTimeout.bind(window),
+      clearTimeoutFn: window.clearTimeout.bind(window),
+    }).catch((err: unknown) => {
+      console.warn("Nao foi possivel iniciar fallback nativo de voz:", err);
+    });
+  }, []);
 
   const tocarAudioDaChamada = useCallback(
     (call: PainelCall): Promise<void> =>
@@ -998,7 +997,10 @@ export default function PainelPage() {
         if (mudouChamadaPrincipal) {
           if (chamadaAnterior) {
             setAnteriores((prev) =>
-              [chamadaAnterior, ...prev.filter((item) => item.id !== chamadaAnterior.id)].slice(0, 2),
+              [
+                chamadaAnterior,
+                ...prev.filter((item) => item.id !== chamadaAnterior.id),
+              ].slice(0, 2),
             );
           }
 

@@ -37,7 +37,7 @@ interface SidebarRecepcaoProps {
   isReconnecting?: boolean;
 }
 
-/* ðŸ”¹ SelectField CMSO */
+/* SelectField CMSO */
 const SelectField = ({
   id,
   label,
@@ -100,7 +100,7 @@ const SelectField = ({
   </div>
 );
 
-/* ðŸ”¹ BotÃ£o Novo Atendimento */
+/* Botão Novo Atendimento */
 const ActionButtonGroup = ({
   onAddAtendimento,
 }: {
@@ -139,7 +139,7 @@ export function SidebarRecepcao({
   const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO);
   const [examesAtendimento, setExamesAtendimento] = useState<string[]>([]);
 
-  /* Atualiza opÃ§Ãµes de sala + lista de exames */
+  /* Atualiza opções de sala + lista de exames */
   useEffect(() => {
     if (!pathname) return;
 
@@ -242,7 +242,7 @@ export function SidebarRecepcao({
             onChange={setSalaSelecionada}
           />
 
-          {/* Exames â€” aparece sÃ³ no atendimento */}
+          {/* Exames - aparece só no atendimento */}
           {pathname && pathname.includes("atendimento") && (
             <SelectField
               conectado={conectado}
@@ -254,14 +254,14 @@ export function SidebarRecepcao({
               ]}
               value={exameSelecionado}
               onChange={(value) => {
-                console.log("Sidebar selecionou exame:", value); // â† Adicione este log
+                console.log("Sidebar selecionou exame:", value);
                 onHandleExameSelecionado(value);
               }}
             />
           )}
         </section>
 
-        {/* BotÃ£o Conectar */}
+        {/* Botão Conectar */}
         <div className="mb-6">
           <Button
             aria-pressed={conectado}
@@ -293,7 +293,7 @@ export function SidebarRecepcao({
           </Button>
         </div>
 
-        {/* BotÃ£o Novo Atendimento â€” sÃ³ na recepÃ§Ã£o */}
+        {/* Botão Novo Atendimento - só na recepção */}
         {conectado && pathname?.includes("recepcao") && (
           <ActionButtonGroup onAddAtendimento={handleAddAtendimento} />
         )}
@@ -312,7 +312,7 @@ export function SidebarRecepcao({
         {/* Footer */}
         <footer className="mt-10 pt-4 border-t border-gray-200 mb-8">
           <p className="text-xs text-gray-500 text-center font-medium">
-            Sistema <span className="text-[#104e35] font-bold">CMSO 360Â°</span>
+            Sistema <span className="text-[#104e35] font-bold">CMSO 360°</span>
           </p>
         </footer>
       </main>

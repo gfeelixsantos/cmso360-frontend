@@ -1,4 +1,4 @@
-import { Scheduling } from "../interface/scheduling";
+﻿import { Scheduling } from "../interface/scheduling";
 
 import { formatCPF } from "@/lib/utils";
 
@@ -51,8 +51,8 @@ export function reportInternal(employee: Scheduling): string {
     examsTable += `
       <tr>
         <td class="td">${exame.nomeExame}</td>
-        <td class="td">${exame.sala || "â€”"}</td>
-        <td class="td">${exame.profissional || "â€”"}</td>
+        <td class="td">${exame.sala || "—"}</td>
+        <td class="td">${exame.profissional || "—"}</td>
         <td class="td">${examDate}</td>
       </tr>
     `;
@@ -78,7 +78,7 @@ export function reportInternal(employee: Scheduling): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>RelatÃ³rio - ${employee.NOME}</title>
+<title>Relatório - ${employee.NOME}</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -247,8 +247,8 @@ text-align:center;
 <div class="employee-name">${employee.NOME}</div>
 
 <div class="employee-meta">
-CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"} â€¢ 
-MatrÃ­cula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
+CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"} • 
+Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 </div>
 
 <div class="employee-meta">
@@ -264,7 +264,7 @@ MatrÃ­cula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 
 <div class="section">
 
-<div class="section-title">InformaÃ§Ãµes Gerais</div>
+<div class="section-title">Informações Gerais</div>
 
 <div class="info-grid">
 
@@ -304,7 +304,7 @@ MatrÃ­cula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
 
 <tr>
 <td class="meta-label">Data e hora</td>
-<td>${dataAgendamento} Ã s ${horaAgendamento}</td>
+<td>${dataAgendamento} às ${horaAgendamento}</td>
 </tr>
 
 <tr>
@@ -343,7 +343,7 @@ ${
   recomendacaoMedica
     ? `
 <div class="section">
-<div class="section-title">RecomendaÃ§Ã£o MÃ©dica</div>
+<div class="section-title">Recomendação Médica</div>
 <div class="observations">${recomendacaoMedica}</div>
 </div>`
     : ""
@@ -353,7 +353,7 @@ ${
   observacoes
     ? `
 <div class="section">
-<div class="section-title">ObservaÃ§Ãµes</div>
+<div class="section-title">Observações</div>
 <div class="observations">${observacoes.replace(/\\n/g, "<br>")}</div>
 </div>`
     : ""
@@ -393,7 +393,7 @@ Nenhum exame com profissional e sala designados
 </div>
 
 <div class="footer">
-RelatÃ³rio gerado em ${new Date().toLocaleString("pt-BR")} <br>
+Relatório gerado em ${new Date().toLocaleString("pt-BR")} <br>
 Documento confidencial
 </div>
 

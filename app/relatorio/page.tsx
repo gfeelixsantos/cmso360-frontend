@@ -36,19 +36,13 @@ import {
   Autocomplete,
   AutocompleteItem,
 } from "@heroui/react";
-import {
-  SearchIcon,
-  FilterIcon,
-  EyeIcon,
-  XIcon,
-} from "lucide-react";
+import { SearchIcon, FilterIcon, EyeIcon, XIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 
 import { LightModalSkeleton } from "./ModalSkeleton";
 
 import {
-  ExamRegister,
   Scheduling,
   SchedulingChange,
 } from "@/lib/scheduling/interface/scheduling";
@@ -63,12 +57,7 @@ import {
   NEST_URL,
 } from "@/config/constants";
 import { HeaderApp } from "@/components/shared/HeaderApp";
-import {
-  formatCPF,
-  getCurrentUser,
-  getStatusColor,
-  logout,
-} from "@/lib/utils";
+import { formatCPF, getCurrentUser, getStatusColor, logout } from "@/lib/utils";
 import { useModalOptimizer } from "@/hooks/useModalOptimizer";
 import { useOptimizedDebounce } from "@/hooks/useDebounceOptimizer";
 import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";

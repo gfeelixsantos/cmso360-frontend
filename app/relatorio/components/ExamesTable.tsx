@@ -520,8 +520,8 @@ const ExamesTable: React.FC<{
           atendimento={atendimento}
           exame={editExamModal.exam}
           isOpen={editExamModal.isOpen}
-          onClose={handleEditModalClose}
           operationalUser={userApp}
+          onClose={handleEditModalClose}
         />
       )}
 
@@ -562,10 +562,7 @@ const ExamesTable: React.FC<{
             </span>
             <span className="flex items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-blue-500" />
-              {
-                localExames.filter((e) => Boolean(e.url)).length
-              }{" "}
-              Com resultado
+              {localExames.filter((e) => Boolean(e.url)).length} Com resultado
             </span>
           </div>
         </div>

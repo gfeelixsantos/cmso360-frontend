@@ -835,9 +835,12 @@ export class AudiometriaCalculator {
     });
   }
 
-  static possuiViaOsseaAlterada(voLimiares: { [key: number]: string }): boolean {
+  static possuiViaOsseaAlterada(voLimiares: {
+    [key: number]: string;
+  }): boolean {
     return [500, 1000, 2000, 3000, 4000].some((freq) => {
       const vo = this.parseValor(voLimiares[freq]);
+
       return vo !== null && vo > 25;
     });
   }
@@ -854,7 +857,8 @@ export class AudiometriaCalculator {
     if (mediaVA === null) return "Neurossensorial";
 
     // 2. Audição normal
-    if (mediaVA <= 25) return possuiAlteracao ? "Neurossensorial" : "Sem perda auditiva";
+    if (mediaVA <= 25)
+      return possuiAlteracao ? "Neurossensorial" : "Sem perda auditiva";
 
     // 3. Se não tem VO registrada, assume Neurossensorial (conservador)
     if (mediaVO === null) return "Neurossensorial";
@@ -914,17 +918,13 @@ export class AudiometriaCalculator {
     const mediaTonalOD = this.calcularMediaTonal(
       this.getFrequenciasMediaTonal().map(
         (freq) =>
-          formData[
-            `viaAereaOD${freq}` as keyof AudiometriaData
-          ] as string,
+          formData[`viaAereaOD${freq}` as keyof AudiometriaData] as string,
       ),
     );
     const mediaTonalOE = this.calcularMediaTonal(
       this.getFrequenciasMediaTonal().map(
         (freq) =>
-          formData[
-            `viaAereaOE${freq}` as keyof AudiometriaData
-          ] as string,
+          formData[`viaAereaOE${freq}` as keyof AudiometriaData] as string,
       ),
     );
 
@@ -1133,6 +1133,7 @@ const possuiLimiarAudiometricoPreenchido = (
 
   return camposViaAerea.some((campo) => {
     const valor = data[campo];
+
     return valor !== undefined && String(valor).trim() !== "";
   });
 };
@@ -1188,9 +1189,9 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
     }
 
     if (possuiLimiarAudiometricoPreenchido(nextFormData)) {
-      const recalculatedData = AudiometriaCalculator.calcularTodosResultados(
-        nextFormData,
-      );
+      const recalculatedData =
+        AudiometriaCalculator.calcularTodosResultados(nextFormData);
+
       nextFormData = { ...nextFormData, ...recalculatedData };
       setAudiogramSVG(generateAudiogramSVG(nextFormData));
       setResultadosCalculados(
@@ -1390,8 +1391,8 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       className?: string;
     }) => (
       <button
-        type="button"
         className={`flex w-full justify-center py-1 cursor-pointer ${className}`}
+        type="button"
         onClick={() => handleBooleanChange(field, !Boolean(formData[field]))}
       >
         <Checkbox

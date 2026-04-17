@@ -147,7 +147,7 @@ export function openHistoricoHTML(
                 </div>
                 <div class="metric">
                   <div class="metric-label">Tipo</div>
-                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOD === "Sem perda auditiva" ? "-" : (dadosCompletos.tipoPerdaOD || "-")}</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOD === "Sem perda auditiva" ? "-" : dadosCompletos.tipoPerdaOD || "-"}</div>
                 </div>
                 <div class="metric">
                   <div class="metric-label">Configuração</div>
@@ -190,7 +190,7 @@ export function openHistoricoHTML(
                 </div>
                 <div class="metric">
                   <div class="metric-label">Tipo</div>
-                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOE === "Sem perda auditiva" ? "-" : (dadosCompletos.tipoPerdaOE || "-")}</div>
+                  <div class="metric-value-sm whitespace-nowrap">${dadosCompletos.tipoPerdaOE === "Sem perda auditiva" ? "-" : dadosCompletos.tipoPerdaOE || "-"}</div>
                 </div>
                 <div class="metric">
                   <div class="metric-label">Configuração</div>

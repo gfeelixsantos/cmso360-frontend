@@ -307,9 +307,9 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
             exame={exame.grupo || exame.nomeExame || "Exame"}
             formulario={formData || {}}
             isEditing={true}
+            operationalUser={effectiveUser}
             onClose={onClose}
             onSave={handleSaveExam}
-            operationalUser={effectiveUser}
           />
         </ModalContent>
       </Modal>

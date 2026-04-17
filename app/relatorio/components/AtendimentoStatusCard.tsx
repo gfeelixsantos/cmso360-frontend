@@ -1,11 +1,5 @@
 import { Chip } from "@heroui/react";
-import {
-  AlertTriangle,
-  FileText,
-  ShieldCheck,
-  Stethoscope,
-  UserCheck,
-} from "lucide-react";
+import { AlertTriangle, FileText, ShieldCheck, UserCheck } from "lucide-react";
 import React from "react";
 
 type StatusColor =
@@ -96,7 +90,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                       rel="noopener noreferrer"
                       target="_blank"
                     >
-                      <FileText  size={16} />
+                      <FileText size={16} />
                     </a>
                   )}
                   {validacaoUrl && (
@@ -112,17 +106,13 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-gray-900">
-                {parecerAso}
-              </p>
+              <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
 
               <div className="space-y-2">
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
                   Situação
                 </h4>
-                  <p className="text-xs text-gray-900">
-                    {asoStatusLabel}
-                  </p>
+                <p className="text-xs text-gray-900">{asoStatusLabel}</p>
               </div>
             </section>
           )}
@@ -139,9 +129,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
                   Tipo de assinatura
                 </h4>
-                <p className="text-xs text-gray-900">
-                  {signatureLabel}
-                </p>
+                <p className="text-xs text-gray-900">{signatureLabel}</p>
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
                   Atualização
                 </h4>

@@ -1402,12 +1402,12 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const isMedicoOrMaster =
     user.perfil === USER_PROFILE.MEDICO || user.perfil === USER_PROFILE.MASTER;
   const isAwaitingMedical =
-    selectedRecord.ATENDIMENTOSTATUS ===
-    AtendimentoStatus.AVALIACAO_MEDICA;
+    selectedRecord.ATENDIMENTOSTATUS === AtendimentoStatus.AVALIACAO_MEDICA;
 
-  const hasPendentes = selectedRecord.EXAMES?.some(
-    (e: { status: string }) => e.status === "PENDENTE"
-  ) ?? false;
+  const hasPendentes =
+    selectedRecord.EXAMES?.some(
+      (e: { status: string }) => e.status === "PENDENTE",
+    ) ?? false;
 
   const canFinish = isAwaitingMedical && opinion?.opinionType && !hasPendentes;
 
@@ -1853,7 +1853,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                   title="Atenção: existem exames pendentes"
                   variant="flat"
                 >
-                  O atendimento só pode ser finalizado após todos os exames serem realizados.
+                  O atendimento só pode ser finalizado após todos os exames
+                  serem realizados.
                 </Alert>
               )}
               <div className="flex flex-col sm:flex-row gap-2 pt-2">

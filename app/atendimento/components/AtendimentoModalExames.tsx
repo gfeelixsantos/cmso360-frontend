@@ -453,9 +453,9 @@ const AtendimentoModalExames = ({
             atendimento={funcionarioSelecionado}
             exame={exame}
             formulario={exameParaAtualizar[0]?.formulario}
+            operationalUser={effectiveUser}
             onClose={onClose}
             onSave={handleSaveExam}
-            operationalUser={effectiveUser}
           />
         </ModalContent>
       </Modal>
