@@ -54,7 +54,7 @@ interface AtendimentoCardProps {
   pendingAction?: {
     action: string;
     startedAt: number;
-    phase: "pending" | "resync";
+    phase: "pending" | "acknowledged" | "resync";
   };
   startPendingAction: (ticketId: number, action: string) => void;
 }
@@ -132,7 +132,7 @@ const getAvatarColor = (ticket: Ticket): string => {
 };
 
 // Função para determinar a cor do texto do avatar
-const getAvatarTextColor = (ticket: Ticket): string => {
+const getAvatarTextColor = (_ticket: Ticket): string => {
   return "text-white"; // Texto branco para todos os casos (bom contraste)
 };
 
@@ -291,7 +291,7 @@ const formatExamTime = (dateString: string | null): string => {
       hour: "2-digit",
       minute: "2-digit",
     });
-  } catch (error) {
+  } catch {
     return "";
   }
 };
@@ -400,7 +400,6 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
           </TableHeader>
           <TableBody>
             {sortedExams.map((exame, index) => {
-              const statusColors = getStatusColor(exame.status);
               const examName = getExamNameByCode(exame.codigoExame);
               const formattedTime = shouldShowCompletedTime(exame)
                 ? formatExamTime(exame.dataExame)
@@ -570,7 +569,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 const Anexos: React.FC<{ anexos: any[] }> = ({ anexos }) => {
   if (!anexos || anexos.length === 0) return null;
 
-  const handleOpenAnexo = (url: string, nome: string) => {
+  const handleOpenAnexo = (url: string, _nome: string) => {
     if (url) {
       window.open(url, "_blank", "noopener,noreferrer");
     }
@@ -580,6 +579,7 @@ const Anexos: React.FC<{ anexos: any[] }> = ({ anexos }) => {
     <div className="flex flex-wrap gap-2">
       {anexos.map((anexo, index) => (
         <Chip
+          key={`${anexo.Name}-${index}`}
           className="text-gray-700 hover:text-blue-600 hover:bg-blue-50 border border-gray-300 text-xs hover:cursor-pointer"
           color="warning"
           size="sm"
@@ -708,8 +708,51 @@ const getStatusVisual = (status: string) => {
   }
 };
 
+const getPendingActionVisual = (pendingAction: PendingActionInfo) => {
+  switch (pendingAction.action) {
+    case TicketActionType.CHAMAR:
+      return {
+        label: "CHAMANDO",
+        className: "border border-amber-500 bg-white text-amber-600",
+      };
+    case TicketActionType.ATENDER:
+      return {
+        label: "ATENDENDO",
+        className: "border border-red-500 bg-white text-red-600",
+      };
+    case TicketActionType.RETORNAR:
+      return {
+        label: "RETORNANDO",
+        className: "border border-gray-500 bg-white text-gray-600",
+      };
+    default:
+      return {
+        label: "PROCESSANDO",
+        className: "border border-gray-400 bg-white text-gray-600",
+      };
+  }
+};
+
 // Componente para o badge de status
-const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
+const StatusBadge: React.FC<{
+  status: string;
+  pendingAction?: PendingActionInfo;
+}> = ({ status, pendingAction }) => {
+  if (pendingAction) {
+    const pendingVisual = getPendingActionVisual(pendingAction);
+
+    return (
+      <div
+        className={`${pendingVisual.className} px-3 py-1 rounded-full flex items-center justify-center`}
+      >
+        <Spinner className="mr-2" color="current" size="sm" variant="simple" />
+        <span className="text-xs font-semibold uppercase truncate">
+          {pendingVisual.label}
+        </span>
+      </div>
+    );
+  }
+
   const { pillBg, pillClass } = getStatusVisual(status);
 
   return (
@@ -727,23 +770,6 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
       <span className="text-xs font-semibold uppercase truncate">{status}</span>
     </div>
   );
-};
-
-const getPendingActionLabel = (pendingAction: PendingActionInfo) => {
-  if (pendingAction.phase === "resync") {
-    return "Sincronizando estado...";
-  }
-
-  switch (pendingAction.action) {
-    case TicketActionType.CHAMAR:
-      return "Processando chamada...";
-    case TicketActionType.ATENDER:
-      return "Iniciando atendimento...";
-    case TicketActionType.RETORNAR:
-      return "Retornando para a fila...";
-    default:
-      return "Processando ação...";
-  }
 };
 
 // Componente para as ações do ticket (com cores do SenhaCard)
@@ -824,7 +850,10 @@ const TicketActions: React.FC<{
     }
 
     startPendingAction(ticket.id, action);
-    if (!firstClickMap[ticket.id] || ticket.status !== TicketStatus.EM_ATENDIMENTO) {
+    if (
+      !firstClickMap[ticket.id] ||
+      ticket.status !== TicketStatus.EM_ATENDIMENTO
+    ) {
       executarAtendimentoAcao(
         atendimento._id,
         ticket.id,
@@ -853,6 +882,7 @@ const TicketActions: React.FC<{
     });
 
     startPendingAction(ticket.id, action);
+
     return executarAtendimentoAcao(
       atendimento._id,
       ticket.id,
@@ -895,6 +925,7 @@ const TicketActions: React.FC<{
 
   const isDisabled = handleDisabledStatus(ticket);
   const isPending = !!pendingAction;
+
   const isButtonDisabled = isDisabled || isPending;
 
   return (
@@ -993,23 +1024,21 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
 
           {/* Ações do ticket */}
           <div className="flex flex-col gap-2">
-            <StatusBadge status={atendimento.TICKET?.status} />
-            {pendingAction && (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
-                {getPendingActionLabel(pendingAction)}
-              </div>
-            )}
+            <StatusBadge
+              pendingAction={pendingAction}
+              status={atendimento.TICKET?.status}
+            />
             <TicketActions
               atendimento={atendimento}
               exameSelecionado={exameSelecionado}
+              pendingAction={pendingAction}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               socket={socket}
+              startPendingAction={startPendingAction}
               ticket={atendimento.TICKET}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
-              pendingAction={pendingAction}
-              startPendingAction={startPendingAction}
             />
           </div>
         </div>

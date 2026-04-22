@@ -29,7 +29,7 @@ interface MainContentProps {
     {
       action: string;
       startedAt: number;
-      phase: "pending" | "resync";
+      phase: "pending" | "acknowledged" | "resync";
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
@@ -248,6 +248,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       <AtendimentoList
         codigosDeAtendimento={codigosDeAtendimento}
         exameSelecionado={exameSelecionado}
+        pendingActions={pendingActions}
         salaSelecionada={salaSelecionada}
         senhasComPrefixo={senhasComPrefixo}
         senhasEmAtendimento={atendimentoOutrasSalas}
@@ -256,10 +257,9 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         senhasPreferenciais={senhasPreferenciais}
         setFuncionarioSelecionado={setFuncionarioSelecionado}
         socket={socket}
+        startPendingAction={startPendingAction}
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
-        pendingActions={pendingActions}
-        startPendingAction={startPendingAction}
       />
     </main>
   );

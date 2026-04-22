@@ -2,11 +2,23 @@
 import { Socket } from "socket.io-client";
 
 import { PainelCall } from "@/lib/painel/interfaces/paniel.interface";
-import { PreparationRequestModel, Ticket } from "@/lib/ticket/ticket";
+import {
+  PreparationRequestModel,
+  Ticket,
+  TicketActionType,
+  TicketStatus,
+} from "@/lib/ticket/ticket";
 import {
   Scheduling,
   SchedulingChange,
 } from "@/lib/scheduling/interface/scheduling";
+
+interface TicketActionSuccessPayload {
+  ticketId: number;
+  action: TicketActionType;
+  statusFinal: TicketStatus;
+  timestamp: string;
+}
 
 enum EventType {
   // Ticket
@@ -38,7 +50,7 @@ interface EventPayloadMap {
   [EventType.CONNECTION_REQUEST]: Scheduling[];
   [EventType.TICKET_EMITED]: Ticket;
   [EventType.TICKET_UPDATED]: Ticket;
-  [EventType.TICKET_ACTION_SUCCESS]: Ticket;
+  [EventType.TICKET_ACTION_SUCCESS]: TicketActionSuccessPayload;
   [EventType.TICKET_ERROR]: string;
   [EventType.TICKET_INFO]: string;
   [EventType.TICKET_DELETE]: number;
@@ -55,7 +67,9 @@ interface CustomEventMap {
   [EventType.CONNECTION_REQUEST]: (payload: String) => void;
   [EventType.TICKET_EMITED]: (payload: Ticket) => void;
   [EventType.TICKET_UPDATED]: (payload: Ticket) => void;
-  [EventType.TICKET_ACTION_SUCCESS]: (payload: Ticket) => void;
+  [EventType.TICKET_ACTION_SUCCESS]: (
+    payload: TicketActionSuccessPayload,
+  ) => void;
   [EventType.TICKET_ERROR]: (payload: string) => void;
   [EventType.TICKET_INFO]: (payload: string) => void;
   [EventType.TICKET_DELETE]: (payload: number) => void;
@@ -86,4 +100,4 @@ function onEvent<T extends EventType>(
 }
 
 export { EventType, emitEvent, onEvent };
-export type { EventPayloadMap, CustomEventMap };
+export type { EventPayloadMap, CustomEventMap, TicketActionSuccessPayload };

@@ -23,7 +23,7 @@ interface SenhasSectionProps {
     {
       action: string;
       startedAt: number;
-      phase: "pending" | "resync";
+      phase: "pending" | "acknowledged" | "resync";
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
@@ -66,12 +66,7 @@ const EmptySection: React.FC<{ title: string; emptyMessage: string }> = ({
   const style = getSectionStyle(title);
 
   return (
-    <section
-      aria-atomic="true"
-      aria-labelledby={sectionId}
-      aria-live="polite"
-      role="region"
-    >
+    <section aria-atomic="true" aria-labelledby={sectionId} aria-live="polite">
       {/* Título melhorado com estilo corporativo */}
       <div className="flex items-center justify-center gap-2 mb-3">
         <span className={`${style.color}`}>{style.icon}</span>
@@ -107,7 +102,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   emptyMessage,
   socket,
   salaSelecionada,
-  codigosDeAtendimento,
+  codigosDeAtendimento: _codigosDeAtendimento,
   unidadeSelecionada,
   onHandleModal,
   setFuncionarioSelecionado,
@@ -128,7 +123,6 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
       aria-labelledby={sectionId}
       aria-live="polite"
       className="space-y-4"
-      role="region"
     >
       {/* Título melhorado com estilo corporativo */}
       <div className="flex items-center justify-center gap-2 pb-2 border-b border-gray-200">
@@ -167,13 +161,13 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
                 key={key}
                 atendimento={atendimento}
                 exameSelecionado={exameSelecionado}
+                pendingAction={pendingActions[atendimento.TICKET.id]}
                 salaSelecionada={salaSelecionada}
                 setFuncionarioSelecionado={setFuncionarioSelecionado}
                 socket={socket}
+                startPendingAction={startPendingAction}
                 unidadeSelecionada={unidadeSelecionada}
                 onHandleModal={onHandleModal}
-                pendingAction={pendingActions[atendimento.TICKET.id]}
-                startPendingAction={startPendingAction}
               />
             </div>
           );

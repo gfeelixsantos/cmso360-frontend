@@ -25,6 +25,7 @@ import {
   CustomEventMap,
   emitEvent,
   EventType,
+  TicketActionSuccessPayload,
 } from "@/lib/websocket/events/events";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
@@ -83,8 +84,6 @@ type ConnectOptions = {
 function createSocketIfNeeded(opts: ConnectOptions): Socket {
   // ? Se já existe socket conectado, reutiliza
   if (SINGLETON_SOCKET?.connected) {
-    console.log("?? Reutilizando socket existente:", SINGLETON_SOCKET.id);
-
     return SINGLETON_SOCKET;
   }
 
@@ -93,9 +92,7 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
     try {
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
-    } catch (err) {
-      console.warn("Erro ao limpar socket anterior:", err);
-    }
+    } catch {}
     SINGLETON_SOCKET = null;
   }
 
@@ -122,58 +119,22 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 
   // Registrar handlers apenas uma vez
   if (!registeredOnce) {
-    let lastActivity = Date.now();
-
     s.on("connect", () => {
-      console.log("? Socket conectado:", s.id);
       onConnect?.(s);
     });
 
     s.on("disconnect", (reason: string) => {
-      console.warn("?? Socket desconectado:", reason);
-
       // ? NOVO: Distinguir desconexões normais de erros
       if (reason === "io server disconnect") {
         // Servidor forçou desconexão - reconectar manualmente
-        console.log("?? Servidor desconectou - tentando reconectar...");
         s.connect();
-      } else if (reason === "transport close") {
-        // Conexão caiu - reconectar automático
-        console.log("?? Conexão perdida - reconexão automática...");
       }
 
       onDisconnect?.(reason);
     });
 
     s.on("connect_error", (err: any) => {
-      console.error("? Erro de conexão:", err.message);
       onConnectError?.(err);
-    });
-
-    // Monitorar reconexões
-    s.on("reconnect", (attemptNumber: number) => {
-      console.log(`? Reconectado após ${attemptNumber} tentativas`);
-    });
-
-    s.on("reconnect_attempt", (attemptNumber: number) => {
-      console.log(`?? Tentativa de reconexão #${attemptNumber}`);
-    });
-
-    s.on("reconnect_error", (err: any) => {
-      console.error("? Erro ao reconectar:", err.message);
-    });
-
-    s.on("reconnect_failed", () => {
-      console.error("? Falha ao reconectar após múltiplas tentativas");
-    });
-
-    // Monitorar ping/pong para detectar problemas
-    s.on("ping", () => {
-      console.debug("?? Ping enviado ao servidor");
-    });
-
-    s.on("pong", (latency: number) => {
-      console.debug(`?? Pong recebido (${latency}ms)`);
     });
 
     registeredOnce = true;
@@ -185,12 +146,9 @@ function createSocketIfNeeded(opts: ConnectOptions): Socket {
 function closeSocket() {
   if (SINGLETON_SOCKET) {
     try {
-      console.log("?? Fechando socket:", SINGLETON_SOCKET.id);
       SINGLETON_SOCKET.removeAllListeners();
       SINGLETON_SOCKET.disconnect();
-    } catch (err) {
-      console.warn("Erro ao fechar socket:", err);
-    }
+    } catch {}
   }
   SINGLETON_SOCKET = null;
   registeredOnce = false;
@@ -214,19 +172,15 @@ function registerHandlers(
       if (!fn) return;
       try {
         s.off(event as any, fn as any);
-      } catch (err) {
-        console.warn(`Erro ao remover handler ${event}:`, err);
-      }
+      } catch {}
     });
   };
 }
 
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
-
 type PendingActionInfo = {
   action: string;
   startedAt: number;
-  phase: "pending" | "resync";
+  phase: "pending" | "acknowledged" | "resync";
 };
 
 const AtendimentoPage: React.FC = () => {
@@ -245,9 +199,6 @@ const AtendimentoPage: React.FC = () => {
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Scheduling[]>([]);
   const [empreparacao, setEmPreparacao] = useState<PreparationRequest[]>([]);
-  const [preparacaoFinalizada, setPreparacaoFinalizada] = useState<
-    PreparationRequest[]
-  >([]);
   const [modalAtendimentoAberto, setModalAtendimentoAberto] = useState(false);
   const [modalAlert, setModalAlert] = useState<boolean>(false);
   const [modalText, setModalText] = useState<React.ReactNode>("");
@@ -256,20 +207,14 @@ const AtendimentoPage: React.FC = () => {
   const [pendingActions, setPendingActions] = useState<
     Record<number, PendingActionInfo>
   >({});
-  const [ticketSelecionado, setTicketSelecionado] = useState<Ticket | null>(
-    null,
-  );
   const [funcionarioSelecionado, setFuncionarioSelecionado] =
     useState<Scheduling | null>(null);
-  const [socCompanies, setSocCompanies] = useState<CadastroEmpresa[]>([]);
   const router = useRouter();
   const {
     entities: tickets,
     setAll,
-    addOrUpdate,
     getAll,
     clear,
-    executarAcao,
   } = useEntityManager<Ticket>([]);
   const [estatisticas, setEstatisticas] = useState({
     recepcaoAguardando: 0,
@@ -334,9 +279,7 @@ const AtendimentoPage: React.FC = () => {
         try {
           // Precisamos acessar a função refetch diretamente do hook atualizada, então apenas chamamos ela.
           await refetchPscStatus();
-        } catch (error) {
-          console.error("[PSC Auth] Erro no polling de status:", error);
-        }
+        } catch {}
       }, 3000);
     } else {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
@@ -388,18 +331,12 @@ const AtendimentoPage: React.FC = () => {
   }, [router]);
 
   const handlePscAuth = async (provider?: string) => {
-    console.log(
-      `[PSC Auth] Iniciando com provedor: ${provider || "Nenhum/Padrão"}`,
-    );
     try {
       const payload = {
         provider: provider,
       };
 
       const finalUrl = "/api/psc/auth/start";
-
-      console.log(`[PSC Auth] URL chamada: ${finalUrl}`);
-      console.log("[PSC Auth] Payload enviada:", JSON.stringify(payload));
 
       const response = await fetch(finalUrl, {
         method: "POST",
@@ -412,18 +349,12 @@ const AtendimentoPage: React.FC = () => {
       if (!response.ok) {
         const errorText = await response.text();
 
-        console.error(
-          `[PSC Auth] Falha HTTP Status ${response.status} na URL ${finalUrl}:`,
-          errorText,
-        );
         throw new Error(errorText || "Falha ao iniciar autenticação");
       }
 
       const data = await response.json();
 
       if (data.url) {
-        console.log("[PSC Auth] Abrindo janela popup para URL retornada");
-
         setPscAuthWindowUrl(data.url);
         setIsPscAuthenticating(true);
 
@@ -445,16 +376,9 @@ const AtendimentoPage: React.FC = () => {
         if (newWindow) {
           pscWindowRef.current = newWindow;
           newWindow.focus();
-        } else {
-          console.warn("[PSC Auth] O navegador bloqueou o popup.");
         }
-      } else {
-        console.warn(
-          "[PSC Auth] Callback bem sucedido mas sem URL de redirecionamento.",
-        );
       }
     } catch (error: any) {
-      console.error("[PSC Auth] Erro capturado:", error);
       addToast({
         title: "Erro de Autenticação",
         description: `Falha ao conectar com provedor: ${error.message || "Erro desconhecido"}`,
@@ -521,18 +445,14 @@ const AtendimentoPage: React.FC = () => {
       const response = await fetch(url);
 
       if (!response.ok) {
-        return console.info(
-          `Não há tickets para a unidade ${unidadeSelecionada}`,
-        );
+        return;
       }
       const data: initialTicketsRequest = await response.json();
 
       if (Array.isArray(data.tickets)) setAll(data.tickets);
       if (Array.isArray(data.preparationRequests))
         setEmPreparacao(data.preparationRequests);
-    } catch (error) {
-      console.error("Erro ao carregar tickets:", error);
-    }
+    } catch {}
   };
 
   // ---------------------------------------------------------
@@ -543,8 +463,6 @@ const AtendimentoPage: React.FC = () => {
       const response = await fetch(NEST_SOC_COMPANIES);
 
       if (!response.ok) {
-        console.error("Não foi possível carregar as empresas SOC");
-
         return await IndexDb.getCompanies();
       }
 
@@ -552,14 +470,10 @@ const AtendimentoPage: React.FC = () => {
 
       if (Array.isArray(data)) {
         await IndexDb.saveCompanies(data);
-        setSocCompanies(data);
-        console.log("Empresas SOC carregadas da API:", data.length);
       }
 
       return [];
-    } catch (error) {
-      console.error("Erro ao carregar empresas SOC:", error);
-
+    } catch {
       return await IndexDb.getCompanies();
     }
   }, []);
@@ -581,7 +495,9 @@ const AtendimentoPage: React.FC = () => {
       }
 
       const updated = { ...prev };
+
       delete updated[numericTicketId];
+
       return updated;
     });
   }, []);
@@ -596,7 +512,9 @@ const AtendimentoPage: React.FC = () => {
         });
 
         if (!response.ok) {
-          throw new Error(`Falha ao recarregar atendimentos (${response.status})`);
+          throw new Error(
+            `Falha ao recarregar atendimentos (${response.status})`,
+          );
         }
 
         const schedules: Scheduling[] = await response.json();
@@ -614,12 +532,7 @@ const AtendimentoPage: React.FC = () => {
         if (targetTicketId) {
           clearPendingAction(targetTicketId);
         }
-
-        console.log(
-          `[ATENDIMENTO_RESYNC] motivo=${reason} unidade=${unidadeNormalizada} ticket=${targetTicketId ?? "n/a"} itens=${filtered.length}`,
-        );
-      } catch (error) {
-        console.error("[ATENDIMENTO_RESYNC] falha ao sincronizar estado:", error);
+      } catch {
         if (targetTicketId) {
           clearPendingAction(targetTicketId);
         }
@@ -644,6 +557,7 @@ const AtendimentoPage: React.FC = () => {
       pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
         setPendingActions((prev) => {
           const current = prev[ticketId];
+
           if (!current) return prev;
 
           return {
@@ -668,6 +582,53 @@ const AtendimentoPage: React.FC = () => {
       }, 4000);
     },
     [clearPendingAction, resyncAttendimentos],
+  );
+
+  const acknowledgePendingAction = useCallback(
+    (payload: TicketActionSuccessPayload) => {
+      const ticketId = Number(payload.ticketId);
+      const timer = pendingTimeoutsRef.current[ticketId];
+
+      if (timer) {
+        clearTimeout(timer);
+        delete pendingTimeoutsRef.current[ticketId];
+      }
+
+      setPendingActions((prev) => {
+        if (!(ticketId in prev)) {
+          return prev;
+        }
+
+        return {
+          ...prev,
+          [ticketId]: {
+            ...prev[ticketId],
+            phase: "acknowledged",
+          },
+        };
+      });
+
+      pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
+        setPendingActions((prev) => {
+          const current = prev[ticketId];
+
+          if (!current || current.phase !== "acknowledged") {
+            return prev;
+          }
+
+          return {
+            ...prev,
+            [ticketId]: {
+              ...current,
+              phase: "resync",
+            },
+          };
+        });
+
+        void resyncAttendimentos("acknowledged_without_update", ticketId);
+      }, 2500);
+    },
+    [resyncAttendimentos],
   );
 
   // ---------------------------------------------------------
@@ -700,7 +661,6 @@ const AtendimentoPage: React.FC = () => {
         ),
     );
 
-    console.log("meus atendimentos", meusAtendimentos);
     setAgendamentos(meusAtendimentos);
   }, [agendamentosGeral, codigosDeAtendimento, exameSelecionado]);
 
@@ -717,10 +677,7 @@ const AtendimentoPage: React.FC = () => {
 
     // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
     if (conectado) {
-      console.log("?? Mudança de contexto detectada - agendando reconexão...");
-
       reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("?? Executando reconexão...");
         closeSocket();
         setConectado(false);
 
@@ -842,9 +799,7 @@ const AtendimentoPage: React.FC = () => {
 
     try {
       parsedMessage = JSON.parse(message);
-    } catch (error) {
-      console.error("Falha ao interpretar TICKET_ERROR:", error, message);
-    }
+    } catch {}
 
     const backendMessage =
       parsedMessage?.message?.trim() ||
@@ -852,7 +807,9 @@ const AtendimentoPage: React.FC = () => {
     const isConflict =
       backendMessage.includes("Conflito de posse ativa") ||
       backendMessage.includes("já está ocupada por outro atendimento ativo");
-    const ticketId = parsedMessage?.ticketId ? Number(parsedMessage.ticketId) : null;
+    const ticketId = parsedMessage?.ticketId
+      ? Number(parsedMessage.ticketId)
+      : null;
     const conflictName = parsedMessage?.conflict?.nome?.trim();
     const conflictProfessional = parsedMessage?.conflict?.profissional?.trim();
 
@@ -934,7 +891,6 @@ const AtendimentoPage: React.FC = () => {
     const s = createSocketIfNeeded({
       auth,
       onConnect: async (socket) => {
-        console.log("? Conectado ao WebSocket:", socket.id);
         socketRef.current = socket;
         setIsReconnecting(false);
 
@@ -949,15 +905,12 @@ const AtendimentoPage: React.FC = () => {
             color: "foreground",
             variant: "flat",
           });
-        } catch (err) {
-          console.warn("Erro ao carregar dados iniciais:", err);
+        } catch {
         } finally {
           setIsLoading(false);
         }
       },
       onDisconnect: (reason) => {
-        console.log("?? Socket desconectado, reason=", reason);
-
         // Só mostra alerta se não foi desconexão intencional
         if (reason !== "io client disconnect") {
           setIsReconnecting(true);
@@ -980,8 +933,7 @@ const AtendimentoPage: React.FC = () => {
 
         setIsLoading(false);
       },
-      onConnectError: (err) => {
-        console.error("? Erro ao conectar:", err);
+      onConnectError: () => {
         setIsLoading(false);
         setIsReconnecting(false);
 
@@ -998,8 +950,9 @@ const AtendimentoPage: React.FC = () => {
     // Handlers de eventos otimizados
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
-        schedules.forEach((schedule) => clearPendingAction(schedule.TICKET?.id));
-        console.log(`?? Recebidos ${schedules.length} agendamentos iniciais`);
+        schedules.forEach((schedule) =>
+          clearPendingAction(schedule.TICKET?.id),
+        );
 
         setAgendamentosGeral((prev) => {
           // Usa Map para merge eficiente
@@ -1016,16 +969,12 @@ const AtendimentoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
-      console.log(`?? UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
-
       switch (operation) {
         case MongoOperationTypes.INSERT:
           setAgendamentosGeral((prev) => {
             clearPendingAction(schedule.TICKET?.id);
             // Evita duplicatas
             if (prev.some((p) => p._id === schedule._id)) {
-              console.warn("?? Agendamento duplicado ignorado:", schedule._id);
-
               return prev;
             }
 
@@ -1046,18 +995,11 @@ const AtendimentoPage: React.FC = () => {
               return updated;
             }
 
-            console.warn(
-              "?? Agendamento não encontrado para UPDATE:",
-              schedule._id,
-              schedule.CODIGOPRONTUARIO,
-            );
-
             return [...prev, schedule];
           });
           break;
 
         case MongoOperationTypes.DELETE:
-          console.log("delete recebido", schedule.NOME);
           clearPendingAction(schedule.TICKET?.id);
           setAgendamentosGeral((prev) =>
             prev.filter(
@@ -1070,8 +1012,13 @@ const AtendimentoPage: React.FC = () => {
       }
     };
 
+    const handleTicketActionSuccess = (payload: TicketActionSuccessPayload) => {
+      acknowledgePendingAction(payload);
+    };
+
     const unregister = registerHandlers(s, {
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
+      [EventType.TICKET_ACTION_SUCCESS]: handleTicketActionSuccess,
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
       [EventType.TICKET_ERROR]: handleTicketError,
     } as any);
@@ -1084,6 +1031,7 @@ const AtendimentoPage: React.FC = () => {
       // socketRef.current = null;
     };
   }, [
+    acknowledgePendingAction,
     conectado,
     clearPendingAction,
     unidadeSelecionada,
@@ -1212,7 +1160,7 @@ const AtendimentoPage: React.FC = () => {
             salaSelecionada={salaSelecionada}
             setSalaSelecionada={setSalaSelecionada}
             setStatusSelecionado={setStatusSelecionado}
-            setTicketSelecionado={setTicketSelecionado}
+            setTicketSelecionado={() => {}}
             setUnidadeSelecionada={setUnidadeSelecionada}
             statusSelecionado={statusSelecionado}
             unidadeSelecionada={unidadeSelecionada}
@@ -1330,7 +1278,7 @@ const AtendimentoPage: React.FC = () => {
                   href={pscAuthWindowUrl}
                   rel="noopener noreferrer"
                   target="_blank"
-                  onClick={(e) => {
+                  onClick={(_e) => {
                     // Atualizar a ref se abrir manualmente
                     setTimeout(() => {
                       if (
@@ -1338,7 +1286,6 @@ const AtendimentoPage: React.FC = () => {
                         pscWindowRef.current.closed
                       ) {
                         // Sem ref segura p/ verificar fechar, mas polling ainda continua
-                        console.log("Aberto via aba manual");
                       }
                     }, 500);
                   }}

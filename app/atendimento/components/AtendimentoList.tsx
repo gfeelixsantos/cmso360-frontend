@@ -26,7 +26,7 @@ interface SenhasListProps {
     {
       action: string;
       startedAt: number;
-      phase: "pending" | "resync";
+      phase: "pending" | "acknowledged" | "resync";
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
@@ -110,15 +110,15 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha preferencial"
               exameSelecionado={exameSelecionado}
+              pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasPreferenciais}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               socket={socket}
+              startPendingAction={startPendingAction}
               title={`Preferencial (${senhasPreferenciais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
-              pendingActions={pendingActions}
-              startPendingAction={startPendingAction}
             />
           )}
 
@@ -128,15 +128,15 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha com prioridade"
               exameSelecionado={exameSelecionado}
+              pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasComPrefixo}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               socket={socket}
+              startPendingAction={startPendingAction}
               title={`Prioridade (${senhasComPrefixo.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
-              pendingActions={pendingActions}
-              startPendingAction={startPendingAction}
             />
           )}
 
@@ -146,15 +146,15 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha normal"
               exameSelecionado={exameSelecionado}
+              pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasNormais}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
               socket={socket}
+              startPendingAction={startPendingAction}
               title={`Atendimento (${senhasNormais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
-              pendingActions={pendingActions}
-              startPendingAction={startPendingAction}
             />
           )}
         </div>
