@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 import { useRouter } from "next/navigation";
 import { io, Socket } from "socket.io-client";
 import React, { useState, useEffect, useRef, useCallback } from "react";
@@ -15,6 +15,7 @@ import {
 } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { UserLock } from "lucide-react";
+import dynamic from "next/dynamic";
 
 import { PscProviderStatus } from "./components/PscProviderStatus";
 import { PscProviderSelector } from "./components/PscProviderSelector";
@@ -57,9 +58,18 @@ import {
   ExamStatus,
   MongoOperationTypes,
 } from "@/lib/scheduling/enum/scheduling.enum";
-import SenhasEstatisticas, {
-  StatsModal,
-} from "@/app/recepcao/components/SenhasEstatisticas";
+import { StatsModal } from "@/app/recepcao/components/SenhasEstatisticas";
+
+const SenhasEstatisticas = dynamic(
+  () => import("@/app/recepcao/components/SenhasEstatisticas"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-16 w-full animate-pulse bg-gray-200/40 rounded-lg" />
+    ),
+  },
+);
+
 import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
 import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
 import CmsoLoading from "@/components/shared/CmsoLoading";
@@ -757,8 +767,9 @@ const AtendimentoPage: React.FC = () => {
       }
     }
 
-    // Se precisa autenticar -> Abre Modal (apenas para PSC)
+    // Se precisa autenticar -> Abre Modal (apenas para PSC) mas não bloqueia rede
     if (requiresPscAuth && settings?.assinaturaProvider !== "BRYKMS") {
+      executeConnection();
       setModalPscAvisoOpen(true);
 
       return;
