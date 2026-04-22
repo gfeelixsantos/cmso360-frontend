@@ -22,6 +22,7 @@ import {
   UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 import painelAudioFallback from "@/lib/painel/painel-audio-fallback";
+import { getReceptionToneByTicket } from "@/lib/ticket/ticket-colors";
 
 type PainelCall = {
   id: number;
@@ -136,17 +137,8 @@ const examesColors: Record<string, { primary: string; text: string }> = {
   Ultrassom: { primary: "#2a9d8f", text: "#ffffff" },
 };
 
-const RECEPCAO_PREFIX_COLORS = {
-  default: examesColors.RECEPCAO,
-  priority: { primary: "#C62828", text: "#ffffff" },
-  other: { primary: "#0F766E", text: "#ffffff" },
-};
-
-const {
-  buildSpeechFallbackText,
-  playNativeSpeechFallback,
-  playPreparedAudioWithFallback,
-} = painelAudioFallback;
+const { playNativeSpeechFallback, playPreparedAudioWithFallback } =
+  painelAudioFallback;
 
 const COLOR_PALETTE = {
   primary: "#44735e",
@@ -160,14 +152,6 @@ const COLOR_PALETTE = {
   dark: "#1a2a1f",
 };
 
-const extractTicketPrefix = (ticket?: string) => {
-  if (!ticket) return "";
-
-  const match = ticket.trim().match(/^([A-Za-z]+)/);
-
-  return match?.[1]?.toUpperCase() || "";
-};
-
 const getCallColors = (call?: PainelCall) => {
   if (!call) {
     return { primary: COLOR_PALETTE.primary, text: COLOR_PALETTE.white };
@@ -177,12 +161,7 @@ const getCallColors = (call?: PainelCall) => {
     return examesColors[call.exame] || examesColors["Raio-X"];
   }
 
-  const prefix = extractTicketPrefix(call.ticket);
-
-  if (!prefix) return RECEPCAO_PREFIX_COLORS.default;
-  if (prefix === "P") return RECEPCAO_PREFIX_COLORS.priority;
-
-  return RECEPCAO_PREFIX_COLORS.other;
+  return getReceptionToneByTicket(call.ticket);
 };
 
 const diaSemana = (date: Date): string => {
@@ -418,7 +397,8 @@ const IdleScreen = ({ unidadeSelecionada }: IdleProps) => {
               src={item.src}
             />
           ) : (
-            <img
+            <Image
+              removeWrapper
               alt={item.titulo}
               className="w-full h-full object-cover"
               src={item.src}
@@ -558,12 +538,14 @@ const ConfigModal = ({
           <div>
             <label
               className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2"
+              htmlFor="config-unidade"
               style={{ color: COLOR_PALETTE.text }}
             >
               Unidade
             </label>
             <select
               className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-xs sm:text-sm md:text-base"
+              id="config-unidade"
               style={{
                 borderColor: COLOR_PALETTE.border,
                 color: COLOR_PALETTE.text,
@@ -583,12 +565,14 @@ const ConfigModal = ({
           <div>
             <label
               className="block text-xs sm:text-sm font-medium mb-1 sm:mb-2"
+              htmlFor="config-chamada"
               style={{ color: COLOR_PALETTE.text }}
             >
               Chamada
             </label>
             <select
               className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 transition-all text-xs sm:text-sm md:text-base"
+              id="config-chamada"
               style={{
                 borderColor: COLOR_PALETTE.border,
                 color: COLOR_PALETTE.text,
@@ -891,7 +875,7 @@ export default function PainelPage() {
             }
             audioCacheRef.current.set(cacheKey, blob);
           })
-          .catch((err) => console.error("❌ Falha no pre-fetch:", err));
+          .catch(() => undefined);
       }
 
       if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
@@ -950,15 +934,10 @@ export default function PainelPage() {
   const tocarSomNotificacao = useCallback(() => {
     if (!audioHabilitado) return;
     try {
-      const notificacaoUrl = `${NEST_URL}${PAINEL_CONFIG.audioUrls.notificacao}`;
       const audio = new Audio(PAINEL_CONFIG.audioUrls.notificacao);
 
-      audio
-        .play()
-        .catch(() => console.log("Som de notificação não disponível"));
-    } catch (e) {
-      console.log("Erro ao tocar notificação:", e);
-    }
+      audio.play().catch(() => undefined);
+    } catch {}
   }, [audioHabilitado]);
 
   const tocarFallbackDeVoz = useCallback((call: PainelCall): Promise<void> => {
@@ -980,16 +959,13 @@ export default function PainelPage() {
       timeoutMs: 10000,
       setTimeoutFn: window.setTimeout.bind(window),
       clearTimeoutFn: window.clearTimeout.bind(window),
-    }).catch((err: unknown) => {
-      console.warn("Nao foi possivel iniciar fallback nativo de voz:", err);
-    });
+    }).catch(() => undefined);
   }, []);
 
   const tocarAudioDaChamada = useCallback(
     (call: PainelCall): Promise<void> =>
       new Promise<void>((resolve) => {
         tocarSomNotificacao();
-        console.log("Chamada recebida:", call);
 
         const chamadaAnterior = chamadaAtualRef.current;
         const mudouChamadaPrincipal = chamadaAnterior?.id !== call.id;
@@ -1030,17 +1006,9 @@ export default function PainelPage() {
               const fullAudioUrl = `${NEST_URL}${call.audio}`;
               const cacheKey = `${fullAudioUrl}|${call.sala}|${call.exame}`;
 
-              console.log(
-                "Tentando reproduzir áudio:",
-                fullAudioUrl,
-                "Sala:",
-                call.sala,
-              );
-
               let audioSrc = fullAudioUrl;
 
               if (audioCacheRef.current.has(cacheKey)) {
-                console.log("✅ Usando áudio sincronizado do cache (Blob)");
                 const blob = audioCacheRef.current.get(cacheKey)!;
 
                 if (audioUrlCacheRef.current.has(cacheKey)) {
@@ -1195,7 +1163,6 @@ export default function PainelPage() {
     if (!isLiberado || !unidadeSelecionada || socketInitializedRef.current)
       return;
 
-    console.log("🔄 Inicializando conexão WebSocket...");
     socketInitializedRef.current = true;
 
     socket = io(NEXT_WS_URL, {
@@ -1219,40 +1186,27 @@ export default function PainelPage() {
     });
 
     socket.on("connect", () => {
-      console.log("✅ Conectado ao WebSocket - ID:", socket?.id);
       socket?.emit("painel disponível", socket?.id);
       resetarIdleTimer();
     });
 
-    socket.on("disconnect", (reason) => {
-      console.log("❌ Desconectado do WebSocket:", reason);
-    });
+    socket.on("disconnect", () => undefined);
 
     socket.on("reconnect", () => {
-      console.log("🔁 Reconectado, reentrando na sala");
       socket?.emit("painel disponível", socket.id);
     });
 
-    socket.on("connect_error", (error) => {
-      console.error("❌ Erro de conexão WebSocket:", error);
-    });
+    socket.on("connect_error", () => undefined);
 
     socket.on("CONNECTION_REQUEST", (schedules: SchedulingSnapshot[]) => {
-      console.log(
-        `📥 Snapshot inicial recebido com ${schedules?.length || 0} agendamentos`,
-      );
       hydrateInitialCalls(Array.isArray(schedules) ? schedules : []);
     });
 
     socket.on("chamar funcionario", (call: PainelCall) => {
-      console.log(
-        `📞 Chamada recebida via WebSocket: ${call.name} - ${call.sala} - Exame: ${call.exame}`,
-      );
       enqueuePainelCall(call);
     });
 
     socket.on("atendimento finalizado", (call: PainelCall) => {
-      console.log(`Atendimento finalizado:  ${call.name} - ${call.sala}`);
       let liberouVaga = false;
 
       setAtivasSync((prev) => {
@@ -1267,39 +1221,33 @@ export default function PainelPage() {
       if (liberouVaga && esperaRef.current.length > 0) {
         const [proxima, ...resto] = esperaRef.current;
 
-        console.log("🔄 Promovendo chamada da espera:", proxima);
         setEsperaSync(() => resto);
         setAtivasSync((prev) => [...prev, proxima]);
       }
     });
 
     socket.on("funcionario em atendimento", (call: PainelCall) => {
-      console.log("👨‍⚕️ Funcionário em atendimento:", call);
       setAtivasSync((prev) => prev.filter((c) => c.id !== call.id));
       setEsperaSync((prev) => prev.filter((c) => c.id !== call.id));
     });
 
     socket.on("atendimento retornado", (call: PainelCall) => {
-      console.log("🔄 Atendimento retornado:", call);
       setAtivasSync((prev) => prev.filter((c) => c.id !== call.id));
       setEsperaSync((prev) => prev.filter((c) => c.id !== call.id));
     });
 
     socket.on("pagina fechada", (socketId: string) => {
-      console.log("🚪 Página fechada:", socketId);
       setAtivasSync((prev) => prev.filter((c) => c.socketId !== socketId));
       setEsperaSync((prev) => prev.filter((c) => c.socketId !== socketId));
     });
 
     const handleBeforeUnload = () => {
-      console.log("🔌 Desconectando WebSocket antes de fechar...");
       socket?.emit("painel desconectado", socket?.id);
     };
 
     window.addEventListener("beforeunload", handleBeforeUnload);
 
     return () => {
-      console.log("🧹 Limpando WebSocket...");
       window.removeEventListener("beforeunload", handleBeforeUnload);
 
       // Não desconecta o socket aqui para manter a conexão
@@ -1336,13 +1284,9 @@ export default function PainelPage() {
         if (audioHabilitado) {
           const bemVindo = new Audio(PAINEL_CONFIG.audioUrls.bemvindo);
 
-          await bemVindo.play().catch(() => {
-            console.log("Áudio de boas-vindas não disponível");
-          });
+          await bemVindo.play().catch(() => undefined);
         }
-      } catch (e) {
-        console.log("Erro ao tocar boas-vindas:", e);
-      }
+      } catch {}
     };
 
     inicializarPainel();
@@ -1434,12 +1378,12 @@ export default function PainelPage() {
               <div>
                 <label
                   className="text-xs sm:text-sm font-semibold"
+                  htmlFor="serialInput"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   Chave de Acesso
                 </label>
                 <input
-                  autoFocus
                   className="w-full rounded-xl border px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 md:py-3 focus:outline-none focus:ring-2 focus:ring-offset-1 mt-1 text-sm sm:text-base md:text-lg transition-all"
                   id="serialInput"
                   placeholder="Digite a chave..."
@@ -1455,6 +1399,7 @@ export default function PainelPage() {
               <div>
                 <label
                   className="text-xs sm:text-sm font-semibold"
+                  htmlFor="unidadeSelect"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   Unidade
@@ -1483,6 +1428,7 @@ export default function PainelPage() {
               <div>
                 <label
                   className="text-xs sm:text-sm font-semibold"
+                  htmlFor="filtroSelect"
                   style={{ color: COLOR_PALETTE.text }}
                 >
                   Chamada

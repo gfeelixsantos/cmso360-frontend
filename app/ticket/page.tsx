@@ -28,6 +28,11 @@ import {
   TicketStatus,
   TicketTypes,
 } from "@/lib/ticket/ticket";
+import {
+  getTicketButtonGradient,
+  getTicketCardSurface,
+  getTicketTypeTone,
+} from "@/lib/ticket/ticket-colors";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import {
   COLOR_PALETTE,
@@ -52,9 +57,7 @@ const useFullscreen = () => {
 
     try {
       if (docElement.requestFullscreen) {
-        docElement.requestFullscreen().catch(() => {
-          console.log("Fullscreen não suportado ou bloqueado pelo navegador");
-        });
+        docElement.requestFullscreen().catch(() => undefined);
       } else if (docElement.mozRequestFullScreen) {
         docElement.mozRequestFullScreen();
       } else if (docElement.webkitRequestFullscreen) {
@@ -62,9 +65,7 @@ const useFullscreen = () => {
       } else if (docElement.msRequestFullscreen) {
         docElement.msRequestFullscreen();
       }
-    } catch (error) {
-      console.log("Erro ao tentar entrar em fullscreen:", error);
-    }
+    } catch {}
   }, []);
 
   const exitFullscreen = useCallback(() => {
@@ -173,7 +174,6 @@ const useBrazilTime = () => {
     return date.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
-      second: "2-digit",
       timeZone: "America/Sao_Paulo",
     });
   };
@@ -301,7 +301,7 @@ const InitialScreen = ({
       setTimeout(() => {
         onConnect(unidade);
       }, 1000);
-    } catch (err) {
+    } catch {
       setError("Não foi possível conectar ao servidor. Tente novamente.");
       setIsLoading(false);
     }
@@ -434,11 +434,13 @@ const FullScreenFeedback = ({
   type,
   message,
   ticketNumber,
+  ticketTheme,
   onClose,
 }: {
   type: "success" | "error";
   message: string;
   ticketNumber?: string;
+  ticketTheme?: TicketTypes;
   onClose: () => void;
 }) => {
   useEffect(() => {
@@ -449,7 +451,10 @@ const FullScreenFeedback = ({
     return () => clearTimeout(timer);
   }, [onClose]);
 
-  const successGradient = `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`;
+  const themeTone = ticketTheme ? getTicketTypeTone(ticketTheme) : null;
+  const successGradient = themeTone
+    ? `linear-gradient(135deg, ${themeTone.primary} 0%, ${themeTone.secondary} 100%)`
+    : `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`;
   const errorGradient = `linear-gradient(135deg, #e53e3e 0%, #c53030 100%)`;
 
   return (
@@ -459,7 +464,10 @@ const FullScreenFeedback = ({
       exit={{ opacity: 0 }}
       initial={{ opacity: 0 }}
       style={{
-        backgroundColor: type === "success" ? COLOR_PALETTE.light : "#fed7d7",
+        backgroundColor:
+          type === "success"
+            ? themeTone?.soft || COLOR_PALETTE.light
+            : "#fed7d7",
       }}
     >
       <div
@@ -536,7 +544,7 @@ const FullScreenFeedback = ({
 
 // Botão para ativar/desativar fullscreen
 const FullscreenToggle = ({
-  isFullscreen,
+  isFullscreen: _isFullscreen,
   onToggle,
 }: {
   isFullscreen: boolean;
@@ -559,26 +567,18 @@ const TicketOptionsScreen = ({
 }) => {
   const [subOptions, setSubOptions] = useState<TicketTypes[] | null>(null);
   const [showPreferencialTypes, setShowPreferencialTypes] = useState(false);
-  const [selectedPreferencialType, setSelectedPreferencialType] = useState<
-    string | null
-  >(null);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
     message: string;
     ticketNumber?: string;
+    ticketTheme?: TicketTypes;
   } | null>(null);
   const { isFullscreen, enterFullscreen, exitFullscreen } = useFullscreen();
 
   // Sugerir fullscreen após um breve delay, mas não forçar
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!isFullscreen) {
-        console.log(
-          "Modo tela cheia disponível - clique no botão no canto superior direito",
-        );
-      }
-    }, 1000);
+    const timer = setTimeout(() => undefined, 1000);
 
     return () => clearTimeout(timer);
   }, [isFullscreen]);
@@ -637,12 +637,9 @@ const TicketOptionsScreen = ({
         type: "success",
         message: `Aguarde ser chamado.${tipoPreferencial ? ` (${tipoPreferencial})` : ""}`,
         ticketNumber: formattedTicket,
+        ticketTheme: tipo,
       });
-
-      setSelectedPreferencialType(null);
-    } catch (error) {
-      console.error("Erro na emissão do ticket:", error);
-
+    } catch {
       setFeedback({
         type: "error",
         message:
@@ -666,17 +663,15 @@ const TicketOptionsScreen = ({
   };
 
   const handlePreferencialTypeSelect = (tipoPreferencial: string) => {
-    setSelectedPreferencialType(tipoPreferencial);
     emitirTicket(TicketTypes.PREFERENCIAL, tipoPreferencial);
   };
 
   const handleBackFromPreferencial = () => {
     setShowPreferencialTypes(false);
-    setSelectedPreferencialType(null);
   };
 
   const getIcon = (tipo: TicketTypes) => {
-    const iconClass = "w-10 h-10 md:w-12 md:h-12 lg:w-14 lg:h-14";
+    const iconClass = "w-9 h-9 md:w-10 md:h-10 lg:w-12 lg:h-12";
 
     switch (tipo) {
       case TicketTypes.ATENDIMENTO:
@@ -689,19 +684,6 @@ const TicketOptionsScreen = ({
         return <BuildingOfficeIcon className={iconClass} />;
       default:
         return <UserIcon className={iconClass} />;
-    }
-  };
-
-  const getButtonColor = (tipo: TicketTypes) => {
-    switch (tipo) {
-      case TicketTypes.PREFERENCIAL:
-        return `linear-gradient(135deg, ${COLOR_PALETTE.accent} 0%, #7a9c8a 100%)`;
-      case TicketTypes.RETIRADA_EXAMES:
-        return `linear-gradient(135deg, #5a8c7a 0%, ${COLOR_PALETTE.accent} 100%)`;
-      case TicketTypes.WHIRLPOOL:
-        return `linear-gradient(135deg, #6b7f76 0%, ${COLOR_PALETTE.gray} 100%)`;
-      default:
-        return `linear-gradient(135deg, ${COLOR_PALETTE.primary} 0%, ${COLOR_PALETTE.accent} 100%)`;
     }
   };
 
@@ -751,57 +733,66 @@ const TicketOptionsScreen = ({
       >
         <motion.div
           animate={{ opacity: 1 }}
-          className="text-center mb-6 md:mb-8 lg:mb-10"
+          className="text-center mb-5 md:mb-7 lg:mb-8"
           initial={{ opacity: 0 }}
           transition={{ delay: 0.2 }}
         >
           <h2
-            className="text-2xl md:text-3xl lg:text-4xl font-bold mb-2 md:mb-3"
-            style={{ color: COLOR_PALETTE.text }}
+            className="text-2xl md:text-3xl lg:text-4xl font-bold"
+            style={{ color: COLOR_PALETTE.primary }}
           >
             Selecione o tipo de atendimento
           </h2>
-          <p
-            className="text-base md:text-lg"
-            style={{ color: COLOR_PALETTE.gray }}
-          >
+          <p className="hidden" style={{ color: COLOR_PALETTE.gray }}>
             Escolha abaixo uma opção de atendimento
           </p>
         </motion.div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mb-6 md:mb-8 lg:mb-10">
           <AnimatePresence mode="wait">
-            {buttonsToRender?.map(({ type, label }) => (
-              <motion.div
-                key={type}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex"
-                exit={{ opacity: 0, scale: 0.9 }}
-                initial={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  className="flex flex-col items-center justify-center p-4 md:p-5 lg:p-6 h-40 md:h-48 lg:h-56 w-full text-lg md:text-xl lg:text-2xl font-bold text-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300"
-                  disabled={isLoading}
-                  style={{ background: getButtonColor(type as TicketTypes) }}
-                  onClick={() => handleTicketOption(type as TicketTypes)}
+            {buttonsToRender?.map(({ type, label }) => {
+              const cardSurface = getTicketCardSurface(type as TicketTypes);
+
+              return (
+                <motion.div
+                  key={type}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="flex"
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  transition={{ duration: 0.24, ease: "easeOut" }}
+                  whileHover={{ scale: 1.02, y: -4 }}
+                  whileTap={{ scale: 0.985 }}
                 >
-                  <motion.div
-                    animate={{ scale: 1 }}
-                    className="mb-3 md:mb-4"
-                    initial={{ scale: 0.8 }}
-                    transition={{ type: "spring", stiffness: 300 }}
+                  <Button
+                    className="flex flex-col items-center justify-center p-4 md:p-5 lg:p-6 h-40 md:h-44 lg:h-52 w-full text-lg md:text-xl lg:text-2xl font-bold rounded-2xl border transition-all duration-200 relative overflow-hidden"
+                    disabled={isLoading}
+                    style={{
+                      background: getTicketButtonGradient(type as TicketTypes),
+                      borderColor: cardSurface.borderColor,
+                      color: cardSurface.textColor,
+                      boxShadow: cardSurface.boxShadow,
+                    }}
+                    onClick={() => handleTicketOption(type as TicketTypes)}
                   >
-                    {getIcon(type as TicketTypes)}
-                  </motion.div>
-                  <span className="text-center leading-tight px-2">
-                    {label}
-                  </span>
-                </Button>
-              </motion.div>
-            ))}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_58%)]" />
+                    <div className="absolute inset-[1px] rounded-[calc(1rem-1px)] border border-white/10" />
+
+                    <motion.div
+                      animate={{ scale: 1 }}
+                      className="mb-3 md:mb-4 relative z-10"
+                      initial={{ scale: 0.92 }}
+                      transition={{ duration: 0.22, ease: "easeOut" }}
+                    >
+                      {getIcon(type as TicketTypes)}
+                    </motion.div>
+                    <span className="text-center leading-tight px-2 relative z-10">
+                      {label}
+                    </span>
+                  </Button>
+                </motion.div>
+              );
+            })}
           </AnimatePresence>
         </div>
 
@@ -830,6 +821,7 @@ const TicketOptionsScreen = ({
             <FullScreenFeedback
               message={feedback.message}
               ticketNumber={feedback.ticketNumber}
+              ticketTheme={feedback.ticketTheme}
               type={feedback.type}
               onClose={() => setFeedback(null)}
             />
