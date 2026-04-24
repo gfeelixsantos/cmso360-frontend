@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Button } from "@heroui/react";
 import {
   AlertCircle,
   CheckCircle,
@@ -197,6 +198,7 @@ export function PscProviderStatus({
     !!onClick &&
     settings?.assinaturaProvider !== "BRYKMS" &&
     pscAuthStatus.status !== "ACTIVE";
+  const showReconnectButton = isClickable;
 
   useEffect(() => {
     if (!pscAuthStatus.expiresAt || !pscAuthStatus.isActive) return;
@@ -229,6 +231,19 @@ export function PscProviderStatus({
         label={badgeLabel}
         onClick={isClickable ? onClick : undefined}
       />
+      {showReconnectButton && onClick && (
+        <Button
+          className="w-full"
+          color={pscAuthStatus.status === "EXPIRED" ? "warning" : "default"}
+          size="sm"
+          variant="flat"
+          onPress={onClick}
+        >
+          {pscAuthStatus.status === "EXPIRED"
+            ? "Renovar autenticação"
+            : "Autenticar assinatura"}
+        </Button>
+      )}
       {/* Tempo de expiração - apenas para PSC, não para BRYKMS */}
       {pscAuthStatus.expiresAt &&
         pscAuthStatus.isActive &&

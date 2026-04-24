@@ -254,6 +254,7 @@ const AtendimentoPage: React.FC = () => {
   const pscWindowRef = useRef<Window | null>(null);
   const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
   const pendingTimeoutsRef = useRef<Record<number, NodeJS.Timeout>>({});
+  const previousPscStatusRef = useRef(pscAuthStatus.status);
 
   // Limpar os intervalos ao sair
   useEffect(() => {
@@ -329,6 +330,24 @@ const AtendimentoPage: React.FC = () => {
     isWaitingForAuthToConnect,
     refetchPscStatus,
   ]);
+
+  useEffect(() => {
+    const previousStatus = previousPscStatusRef.current;
+    const currentStatus = pscAuthStatus.status;
+
+    if (previousStatus !== currentStatus && currentStatus === "EXPIRED") {
+      addToast({
+        title: "Sessão PSC expirada",
+        description:
+          "Sua autenticação de assinatura expirou. Reautentique-se para continuar assinando digitalmente.",
+        severity: "warning",
+        color: "foreground",
+        variant: "flat",
+      });
+    }
+
+    previousPscStatusRef.current = currentStatus;
+  }, [pscAuthStatus.status]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
