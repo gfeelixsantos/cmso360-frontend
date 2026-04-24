@@ -159,7 +159,7 @@ const InformacoesGerais: React.FC<{
   const signatureDate = formatDateTime(
     atendimento.ASOINFO?.signature?.signedAt || atendimento.ASOINFO?.updatedAt,
   );
-  const emailLabel = atendimento.ASOINFO?.emailSent ? "ENVIADO" : "PENDENTE";
+  const emailLabel = atendimento.ASOINFO?.emailSent ? "ENVIADO" : "NAO ENVIADO";
   const asoUrl = atendimento.ASOINFO?.url || atendimento.ASOINFO?.asoUrl;
   const validacaoUrl =
     atendimento.ASOINFO?.validacao || atendimento.ASOINFO?.validacaoUrl;

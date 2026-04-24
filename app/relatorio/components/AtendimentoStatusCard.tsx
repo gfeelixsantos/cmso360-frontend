@@ -1,5 +1,13 @@
-import { Chip } from "@heroui/react";
-import { AlertTriangle, FileText, ShieldCheck, UserCheck } from "lucide-react";
+import { Chip, Tooltip } from "@heroui/react";
+import {
+  AlertTriangle,
+  CircleHelp,
+  FileText,
+  MailCheck,
+  MailX,
+  ShieldCheck,
+  UserCheck,
+} from "lucide-react";
 import React from "react";
 
 type StatusColor =
@@ -36,6 +44,15 @@ const getAsoStatusTextColor = (statusColor: string) => {
   return "text-gray-900";
 };
 
+const ASO_PHASES_TOOLTIP = [
+  "Aguardando Geracao: backend reconheceu que o ASO precisa ser emitido.",
+  "Aguardando Assinatura: PDF base foi gerado e aguarda assinatura/enriquecimento.",
+  "Assinado - Enriquecimento: assinatura iniciou e o documento esta sendo finalizado.",
+  "Digitalizada: PDF existe, mas sem assinatura digital concluida.",
+  "Liberado: ASO concluido e pronto para consulta/envio.",
+  "Falha na assinatura: fluxo encontrou erro e precisa intervencao.",
+].join("\n");
+
 const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   hasAsoData,
   parecerAso,
@@ -68,7 +85,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
               Status do Atendimento
             </h4>
             <Chip
-              className="text-white font-semibold"
+              className="font-semibold text-white"
               color={atendimentoStatusColor}
               size="lg"
             >
@@ -84,35 +101,96 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                 </h4>
                 <div className="flex items-center gap-2">
                   {asoUrl && (
-                    <a
-                      className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                      href={asoUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
+                    <Tooltip
+                      color="foreground"
+                      content="Ver ASO"
+                      disableAnimation={true}
                     >
-                      <FileText size={16} />
-                    </a>
+                      <a
+                        className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
+                        href={asoUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <FileText size={16} />
+                      </a>
+                    </Tooltip>
                   )}
                   {validacaoUrl && (
-                    <a
-                      className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                      href={validacaoUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
+                    <Tooltip
+                      color="foreground"
+                      content="Validar assinatura"
+                      disableAnimation={true}
                     >
-                      <ShieldCheck size={16} />
-                    </a>
+                      <a
+                        className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
+                        href={validacaoUrl}
+                        rel="noopener noreferrer"
+                        target="_blank"
+                      >
+                        <ShieldCheck size={16} />
+                      </a>
+                    </Tooltip>
                   )}
                 </div>
               </div>
 
-              <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
+                {asoUrl && (
+                  <Tooltip
+                    color="foreground"
+                    content="Ver ASO"
+                    disableAnimation={true}
+                  >
+                    <a
+                      className="rounded-full p-1 text-[#44735e] transition-colors hover:bg-green-50"
+                      href={asoUrl}
+                      rel="noopener noreferrer"
+                      target="_blank"
+                    >
+                      <FileText size={15} />
+                    </a>
+                  </Tooltip>
+                )}
+              </div>
 
               <div className="space-y-2">
                 <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
                   Situação
+                  <Tooltip
+                    color="foreground"
+                    content={
+                      <div className="max-w-xs whitespace-pre-line text-xs">
+                        {ASO_PHASES_TOOLTIP}
+                      </div>
+                    }
+                    disableAnimation={true}
+                  >
+                    <span className="inline-flex cursor-help text-gray-400 transition-colors hover:text-gray-600">
+                      <CircleHelp size={14} />
+                    </span>
+                  </Tooltip>
                 </h4>
-                <p className="text-xs text-gray-900">{asoStatusLabel}</p>
+                <p
+                  className={`text-xs font-medium ${getAsoStatusTextColor(asoStatusColor)}`}
+                >
+                  {asoStatusLabel}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                  E-mail
+                </h4>
+                <div className="flex items-center gap-2">
+                  {emailSent ? (
+                    <MailCheck className="text-emerald-600" size={14} />
+                  ) : (
+                    <MailX className="text-amber-600" size={14} />
+                  )}
+                  <p className="text-xs font-medium text-gray-900">{emailLabel}</p>
+                </div>
               </div>
             </section>
           )}
