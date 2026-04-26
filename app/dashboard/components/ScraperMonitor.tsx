@@ -1,9 +1,19 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
 import { io, Socket } from "socket.io-client";
-import { Database, Search } from "lucide-react";
+import { motion } from "framer-motion";
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Database,
+  RefreshCw,
+  XCircle,
+} from "lucide-react";
+
+import { AsoTrackingSection } from "./AsoTrackingSection";
 
 import { WORKER_SCRAPER_STATUS, WORKER_WS_URL } from "@/config/constants";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
@@ -300,24 +310,21 @@ export const ScraperMonitor: React.FC = () => {
       className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
       initial={{ opacity: 0, y: 20 }}
     >
-      <div className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3">
-        <div className="flex items-center gap-3">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 p-2">
-            <Search className="h-4 w-4 text-gray-500" />
-          </div>
-
-          <div>
-            <h3 className="text-base font-semibold text-gray-900">
-              Coleta de Resultados
-            </h3>
-
-            {metrics[0]?.scheduleLabel && (
-              <p className="mt-1 text-xs text-gray-500">
-                Ciclos programados: {metrics[0].scheduleLabel}
-              </p>
-            )}
-          </div>
+      <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-5 py-4">
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Monitoramento
+          </h3>
+          <p className="text-xs font-medium text-gray-500 mt-1">
+            Inativação em massa: Todo dia 24 às 18:30
+          </p>
         </div>
+
+        {metrics[0]?.scheduleLabel && (
+          <p className="text-sm text-gray-600">
+            Horários de coleta: {metrics[0].scheduleLabel}
+          </p>
+        )}
       </div>
 
       <div className="p-4">
@@ -326,52 +333,40 @@ export const ScraperMonitor: React.FC = () => {
             Aguardando dados...
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
             {metrics.map((row) => {
               const config = getStatusConfig(row.status);
 
               return (
                 <article
                   key={row.provider}
-                  className="rounded-xl bg-white px-3 py-3"
+                  className="rounded-xl bg-white px-4 py-3 border border-gray-200"
                 >
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 text-gray-800">
-                        <Database className="h-4 w-4 shrink-0 text-gray-400" />
-                        <h4 className="truncate text-base font-semibold">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Database className="h-4 w-4 shrink-0 text-gray-400" />
+                      <div>
+                        <h4 className="text-base font-semibold text-gray-800">
                           {row.provider}
                         </h4>
-                      </div>
-
-                      <div className="mt-2 flex items-center gap-2">
-                        <span
-                          className={`h-2.5 w-2.5 rounded-full ${config.dotClass}`}
-                        />
-                        <span className="text-sm font-medium text-gray-600">
-                          {row.status}
-                        </span>
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span
+                            className={`h-2 w-2 rounded-full ${config.dotClass}`}
+                          />
+                          <span className="text-xs text-gray-600">
+                            {row.status}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="grid shrink-0 grid-cols-2 overflow-hidden rounded-xl bg-white sm:w-[170px]">
-                      <div className="px-3 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                          Analisados
-                        </p>
-                        <p className="mt-1 text-2xl font-semibold leading-none text-blue-600">
-                          {row.analyzedToday || 0}
-                        </p>
-                      </div>
-
-                      <div className="px-3 py-2">
-                        <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                          Recebidos
-                        </p>
-                        <p className="mt-1 text-2xl font-semibold leading-none text-[#44735E]">
-                          {row.receivedToday || 0}
-                        </p>
-                      </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                        Recebidos
+                      </p>
+                      <p className="text-xl font-semibold text-[#44735E]">
+                        {row.receivedToday || 0}
+                      </p>
                     </div>
                   </div>
                 </article>
@@ -379,6 +374,11 @@ export const ScraperMonitor: React.FC = () => {
             })}
           </div>
         )}
+
+        {/* 🔄 LIBERAÇÃO DE ASOs */}
+        <div className="mt-4">
+          <AsoTrackingSection />
+        </div>
       </div>
     </motion.div>
   );
