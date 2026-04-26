@@ -161,15 +161,15 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
     const ext = fileName.split(".").pop()?.toLowerCase();
 
     if (["jpg", "jpeg", "png", "svg", "gif"].includes(ext || "")) {
-      return <FileImage className={className || "text-green-500"} size={16} />;
+      return <FileImage className={className || "text-green-500"} size={20} />;
     }
 
     if (["pdf"].includes(ext || "")) {
-      return <FileText className={className || "text-green-600"} size={16} />;
+      return <FileText className={className || "text-green-600"} size={20} />;
     }
 
     return (
-      <FileIconLucide className={className || "text-gray-500"} size={16} />
+      <FileIconLucide className={className || "text-gray-500"} size={20} />
     );
   };
 
@@ -247,8 +247,8 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
         {/* LISTA DE DOCUMENTOS SALVOS */}
         <div className="md:col-span-2 flex flex-col bg-white border border-gray-100 rounded-xl shadow-sm h-full min-h-[140px] max-h-[220px]">
           <div className="flex items-center justify-between border-b border-gray-100 px-3 py-2 bg-gray-50/80 rounded-t-xl sticky top-0 z-10">
-            <h4 className="text-[11px] font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+            <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-green-500" />
               Documentos Salvos ({anexos.length})
             </h4>
             {isBusy && (
@@ -260,11 +260,11 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
 
           {anexos.length === 0 ? (
             <div className="flex flex-col items-center justify-center flex-1 py-6 text-center">
-              <Paperclip className="text-gray-300 mb-2" size={20} />
-              <p className="text-xs text-gray-400 font-medium tracking-tight">
+              <Paperclip className="text-gray-300 mb-2" size={24} />
+              <p className="text-sm text-gray-400 font-medium tracking-tight">
                 Atendimento sem anexos
               </p>
-              <p className="text-[10px] text-gray-300 mt-1">
+              <p className="text-xs text-gray-300 mt-1">
                 Os documentos enviados aparecerão aqui
               </p>
             </div>
@@ -282,18 +282,18 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                       </div>
                       <div className="flex flex-col min-w-0">
                         <p
-                          className="text-[11px] font-semibold text-gray-700 truncate leading-tight"
+                          className="text-sm font-semibold text-gray-700 truncate leading-tight"
                           title={anexo.Name}
                         >
                           {anexo.Name}
                         </p>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          <span className="flex items-center gap-0.5 text-[8px] leading-none text-green-700 font-bold bg-green-100 px-1 py-0.5 rounded uppercase">
-                            <CheckCircle2 size={8} />
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="flex items-center gap-1 text-xs leading-none text-green-700 font-bold bg-green-100 px-1.5 py-0.5 rounded uppercase">
+                            <CheckCircle2 size={10} />
                             Salvo
                           </span>
                           {anexo.StoragePath && (
-                            <span className="text-[9px] text-gray-400 truncate flex items-center gap-0.5">
+                            <span className="text-xs text-gray-400 truncate flex items-center gap-1">
                               • Nuvem
                             </span>
                           )}
@@ -310,12 +310,12 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                         >
                           <Button
                             isIconOnly
-                            className="w-6 h-6 min-w-min text-blue-600"
+                            className="w-7 h-7 min-w-min text-blue-600"
                             size="sm"
                             variant="light"
                             onClick={() => handleOpenAttachment(anexo)}
                           >
-                            <ExternalLink size={13} />
+                            <ExternalLink size={16} />
                           </Button>
                         </Tooltip>
                       )}
@@ -328,13 +328,13 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                       >
                         <Button
                           isIconOnly
-                          className="w-6 h-6 min-w-min"
+                          className="w-7 h-7 min-w-min"
                           color="danger"
                           size="sm"
                           variant="light"
                           onPress={() => onRemove(anexo.Name)}
                         >
-                          <Trash2 size={13} />
+                          <Trash2 size={16} />
                         </Button>
                       </Tooltip>
                     </div>

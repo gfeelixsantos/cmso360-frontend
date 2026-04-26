@@ -446,17 +446,10 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
               <Button
                 color="default"
-                disabled={loadingSyncSoc}
+                isDisabled={true}
                 size="sm"
-                startContent={
-                  loadingSyncSoc ? (
-                    <Spinner size={"sm"} />
-                  ) : (
-                    <RefreshCw size={16} />
-                  )
-                }
+                startContent={<RefreshCw size={16} />}
                 variant="light"
-                onPress={() => setSyncSocModalOpen(true)}
               >
                 Sincronizar SOC
               </Button>

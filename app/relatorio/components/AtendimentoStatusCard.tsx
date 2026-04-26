@@ -95,11 +95,13 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
 
           {hasAsoData && (
             <section className="space-y-3">
-              <div className="flex items-center justify-between gap-3">
-                <h4 className="text-sm font-medium text-gray-600">
-                  Parecer ASO
-                </h4>
-                <div className="flex items-center gap-2">
+              <h4 className="text-sm font-medium text-gray-600">
+                Parecer ASO
+              </h4>
+
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
+                <div className="flex items-center gap-1">
                   {asoUrl && (
                     <Tooltip
                       color="foreground"
@@ -133,26 +135,6 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                     </Tooltip>
                   )}
                 </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
-                {asoUrl && (
-                  <Tooltip
-                    color="foreground"
-                    content="Ver ASO"
-                    disableAnimation={true}
-                  >
-                    <a
-                      className="rounded-full p-1 text-[#44735e] transition-colors hover:bg-green-50"
-                      href={asoUrl}
-                      rel="noopener noreferrer"
-                      target="_blank"
-                    >
-                      <FileText size={15} />
-                    </a>
-                  </Tooltip>
-                )}
               </div>
 
               <div className="space-y-2">
