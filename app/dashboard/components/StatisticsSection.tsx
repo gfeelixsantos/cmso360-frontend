@@ -60,14 +60,12 @@ const STATUS_LABELS: Record<string, string> = {
 const KpiCard = ({
   title,
   value,
-  subtitle,
   icon: Icon,
   gradient = false,
   delay = 0,
 }: {
   title: string;
   value: number | string;
-  subtitle?: string;
   icon: any;
   gradient?: boolean;
   delay?: number;
@@ -84,34 +82,24 @@ const KpiCard = ({
   >
     <div className="flex items-center justify-between">
       <div className="flex-1">
-        <div className="flex items-center gap-2 mb-2">
-          <Icon
-            className={`h-5 w-5 ${gradient ? "text-white/90" : "text-[#44735E]"}`}
-          />
-          <p
-            className={`text-sm font-medium ${gradient ? "text-white/90" : "text-gray-700"}`}
-          >
-            {title}
-          </p>
-        </div>
+        <p
+          className={`text-sm font-medium mb-1 ${gradient ? "text-white/90" : "text-gray-700"}`}
+        >
+          {title}
+        </p>
         <p
           className={`text-3xl font-bold ${gradient ? "text-white" : "text-gray-900"}`}
         >
           {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
         </p>
-        {subtitle && (
-          <p
-            className={`text-xs mt-2 ${gradient ? "text-white/70" : "text-gray-600"}`}
-          >
-            {subtitle}
-          </p>
-        )}
       </div>
-      {gradient && (
-        <div className="w-12 h-12 bg-white/10 backdrop-blur-sm rounded-xl flex items-center justify-center">
-          <Icon className="h-6 w-6 text-white" />
-        </div>
-      )}
+      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+        gradient
+          ? "bg-white/10 backdrop-blur-sm"
+          : "bg-[#44735E]/12 border border-[#44735E]/20"
+      }`}>
+        <Icon className={`h-6 w-6 ${gradient ? "text-white" : "text-[#44735E]"}`} />
+      </div>
     </div>
   </motion.div>
 );
@@ -121,12 +109,10 @@ const MetricCard = ({
   title,
   value,
   icon: Icon,
-  description,
 }: {
   title: string;
   value: number;
   icon: any;
-  description?: string;
 }) => (
   <article className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
     <div className="p-6">
@@ -136,9 +122,6 @@ const MetricCard = ({
           <p className="text-2xl font-bold text-gray-900">
             {value.toLocaleString("pt-BR")}
           </p>
-          {description && (
-            <p className="text-xs text-gray-500 mt-1">{description}</p>
-          )}
         </div>
         <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#44735E]/12 text-[#44735E] border border-[#44735E]/20 shadow-sm">
           <Icon className="h-6 w-6" />
@@ -518,13 +501,12 @@ export function StatisticsSection() {
           </Button>
         </div>
 
-        {/* 📈 KPIs PRINCIPAIS - Dados do totaisGerais */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* 📈 LINHA 1: 3 CARDS PRINCIPAIS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <KpiCard
             gradient
             delay={0}
             icon={Users}
-            subtitle={`${statisticsData?.porUnidade?.length || 0} unidades ativas`}
             title="Atendimentos Totais"
             value={totais?.totalAgendamentos || 0}
           />
@@ -532,7 +514,6 @@ export function StatisticsSection() {
           <KpiCard
             delay={0.1}
             icon={Calendar}
-            subtitle="Agendamentos para hoje"
             title="Atendimentos Previstos"
             value={totais?.atendimentosPrevistos || 0}
           />
@@ -540,41 +521,35 @@ export function StatisticsSection() {
           <KpiCard
             delay={0.2}
             icon={FileText}
-            subtitle="Registros no sistema"
             title="Total de Prontuários"
             value={totais?.totalProntuarios || 0}
           />
+        </div>
 
-          <KpiCard
-            delay={0.3}
+        {/* 📊 LINHA 2: 3 CARDS DE EXAMES E STATUS */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <MetricCard
             icon={FlaskConical}
-            subtitle="Total de exames processados"
             title="Exames Realizados"
             value={totais?.totalExamesRealizados || 0}
           />
+
+          <MetricCard
+            icon={Clock}
+            title="Aguardando Resultados"
+            value={totais?.aguardandoResultados || 0}
+          />
+
+          <MetricCard
+            icon={Stethoscope}
+            title="Aguardando Avaliação Médica"
+            value={totais?.aguardandoAvaliacaoMedica || 0}
+          />
         </div>
 
-        {/* 🏥 MÉTRICAS DE FLUXO & MONITORAMENTO - Lado a Lado */}
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-6">
-          <div className="flex flex-col gap-6 lg:col-span-2">
-            <MetricCard
-              description=""
-              icon={Clock}
-              title="Aguardando Resultados"
-              value={totais?.aguardandoResultados || 0}
-            />
-
-            <MetricCard
-              description=""
-              icon={Stethoscope}
-              title="Aguardando Avaliação Médica"
-              value={totais?.aguardandoAvaliacaoMedica || 0}
-            />
-          </div>
-
-          <div className="lg:col-span-4">
-            <ScraperMonitor />
-          </div>
+        {/* 🏥 PAINEL COLETA DE RESULTADOS - Espaço maior com ASO tracking */}
+        <div className="grid grid-cols-1 gap-6">
+          <ScraperMonitor />
         </div>
 
         {/* 📊 STATUS E TIPOS DE EXAME */}
@@ -1018,13 +993,6 @@ export function StatisticsSection() {
           })}
         </div>
 
-        {/* ℹ️ Informações de performance */}
-        {statisticsData?.processingTimeMs && (
-          <div className="text-xs text-gray-500 text-right">
-            Tempo: {statisticsData.processingTimeMs}ms • Fonte:{" "}
-            {statisticsData.source === "cache" ? "Cache" : "Banco"}
-          </div>
-        )}
       </motion.section>
     </AnimatePresence>
   );

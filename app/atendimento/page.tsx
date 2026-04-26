@@ -1187,6 +1187,20 @@ const AtendimentoPage: React.FC = () => {
                 />
               ) : null
             }
+            pscAuthButtonElement={
+              assinaDigitalmente &&
+              settings?.assinaturaProvider !== "BRYKMS" &&
+              pscAuthStatus.status !== "ACTIVE" ? (
+                <Button
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-normal bg-white text-[#104e35] border border-gray-300 hover:bg-gray-50 transition-all"
+                  onPress={handlePscClick}
+                >
+                  {pscAuthStatus.status === "EXPIRED"
+                    ? "Renovar autenticação"
+                    : "Autenticar assinatura"}
+                </Button>
+              ) : null
+            }
             salaSelecionada={salaSelecionada}
             setSalaSelecionada={setSalaSelecionada}
             setStatusSelecionado={setStatusSelecionado}

@@ -34,6 +34,7 @@ interface SidebarRecepcaoProps {
   exameSelecionado: string;
   onHandleExameSelecionado: (exame: string) => void;
   pscStatusElement?: React.ReactNode;
+  pscAuthButtonElement?: React.ReactNode;
   isReconnecting?: boolean;
 }
 
@@ -134,6 +135,7 @@ export function SidebarRecepcao({
   onHandleExameSelecionado,
   pscStatusElement,
   isReconnecting = false,
+  pscAuthButtonElement,
 }: SidebarRecepcaoProps) {
   const pathname = usePathname();
   const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO);
@@ -213,6 +215,13 @@ export function SidebarRecepcao({
             )}
           </div>
         </header>
+
+        {/* Botão Autenticar Assinatura - abaixo da seção Assinatura */}
+        {pscAuthButtonElement && (
+          <div className="mb-4 w-full px-5">
+            {pscAuthButtonElement}
+          </div>
+        )}
 
         {/* Filtros */}
         <section className="space-y-4 mb-6">
