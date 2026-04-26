@@ -8,7 +8,7 @@ export const NEST_URL =
   process.env.NODE_ENV === "development"
     ? NEST_URL_DEVELOP
     : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
-      "https://cmso360-backend.up.railway.app/";
+      "https://cmso360-backend.fly.dev/";
 console.log(NEST_URL);
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
@@ -256,6 +256,10 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
       codigos: ["28032024"],
       nome: "Avaliação Acústica da Voz",
     },
+    {
+      codigos: ["0281"],
+      nome: "Audiometria tonal ocupacional",
+    },
   ],
   "Acuidade Visual": [
     {
@@ -265,6 +269,10 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
     {
       codigos: ["07072023"],
       nome: "Consulta Oftalmológica",
+    },
+    {
+      codigos: ["0298"],
+      nome: "Avaliação da acuidade visual com colorimetria (Ishihara)",
     },
   ],
   Laboratório: [
@@ -495,6 +503,18 @@ export const EXAMES_LIST: Record<string, ExamToogle[]> = {
     {
       codigos: ["28.01.141-4"],
       nome: "Uréia",
+    },
+    {
+      codigos: ["1427"],
+      nome: "Estireno na urina",
+    },
+    {
+      codigos: [],
+      nome: "Micológico de unha",
+    },
+    {
+      codigos: [],
+      nome: "Secreção Orofaringe e Nasal",
     },
   ],
   ECG: [
