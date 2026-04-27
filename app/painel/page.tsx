@@ -492,21 +492,33 @@ const ConfigModal = ({
   isOpen,
   onClose,
   audioHabilitado,
-  setAudioHabilitado,
   unidadeSelecionada,
-  onUnidadeChange,
   filtroChamada,
-  setFiltroChamada,
+  onSave,
 }: {
   isOpen: boolean;
   onClose: () => void;
   audioHabilitado: boolean;
-  setAudioHabilitado: (value: boolean) => void;
   unidadeSelecionada: string;
-  onUnidadeChange: (value: string) => void;
   filtroChamada: string;
-  setFiltroChamada: (value: any) => void;
+  onSave: (payload: {
+    unidade: string;
+    filtro: "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO";
+    audioHabilitado: boolean;
+  }) => void;
 }) => {
+  const [draftUnidade, setDraftUnidade] = useState(unidadeSelecionada);
+  const [draftFiltroChamada, setDraftFiltroChamada] = useState(filtroChamada);
+  const [draftAudioHabilitado, setDraftAudioHabilitado] =
+    useState(audioHabilitado);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setDraftUnidade(unidadeSelecionada);
+    setDraftFiltroChamada(filtroChamada);
+    setDraftAudioHabilitado(audioHabilitado);
+  }, [isOpen, unidadeSelecionada, filtroChamada, audioHabilitado]);
+
   if (!isOpen) return null;
 
   return (
@@ -551,8 +563,8 @@ const ConfigModal = ({
                 color: COLOR_PALETTE.text,
                 backgroundColor: COLOR_PALETTE.lightGray,
               }}
-              value={unidadeSelecionada}
-              onChange={(e) => onUnidadeChange(e.target.value)}
+              value={draftUnidade}
+              onChange={(e) => setDraftUnidade(e.target.value)}
             >
               {UNIDADES_ATENDIMENTO.map((unidade) => (
                 <option key={unidade} value={unidade}>
@@ -578,8 +590,12 @@ const ConfigModal = ({
                 color: COLOR_PALETTE.text,
                 backgroundColor: COLOR_PALETTE.lightGray,
               }}
-              value={filtroChamada}
-              onChange={(e) => setFiltroChamada(e.target.value)}
+              value={draftFiltroChamada}
+              onChange={(e) =>
+                setDraftFiltroChamada(
+                  e.target.value as "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO",
+                )
+              }
             >
               <option value="CONJUNTO">CONJUNTO</option>
               <option value="RECEPÇÃO">RECEPÇÃO</option>
@@ -596,13 +612,13 @@ const ConfigModal = ({
             </span>
             <button
               className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
-                audioHabilitado ? "bg-green-500" : "bg-gray-300"
+                draftAudioHabilitado ? "bg-green-500" : "bg-gray-300"
               }`}
-              onClick={() => setAudioHabilitado(!audioHabilitado)}
+              onClick={() => setDraftAudioHabilitado(!draftAudioHabilitado)}
             >
               <span
                 className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
-                  audioHabilitado
+                  draftAudioHabilitado
                     ? "translate-x-5 sm:translate-x-6"
                     : "translate-x-0.5 sm:translate-x-1"
                 }`}
@@ -614,8 +630,8 @@ const ConfigModal = ({
             className="flex items-center gap-2 text-xs sm:text-sm"
             style={{ color: COLOR_PALETTE.textLight }}
           >
-            {audioHabilitado ? <Volume2 size={14} /> : <VolumeX size={14} />}
-            {audioHabilitado ? "Áudio ativado" : "Áudio desativado"}
+            {draftAudioHabilitado ? <Volume2 size={14} /> : <VolumeX size={14} />}
+            {draftAudioHabilitado ? "Audio ativado" : "Audio desativado"}
           </div>
         </div>
 
@@ -637,9 +653,14 @@ const ConfigModal = ({
               backgroundColor: COLOR_PALETTE.primary,
             }}
             onClick={() => {
-              localStorage.setItem("painel_validate", unidadeSelecionada);
-              localStorage.setItem("painel_filtro", filtroChamada);
-              onClose();
+              onSave({
+                unidade: draftUnidade,
+                filtro: draftFiltroChamada as
+                  | "CONJUNTO"
+                  | "RECEPÇÃO"
+                  | "ATENDIMENTO",
+                audioHabilitado: draftAudioHabilitado,
+              });
             }}
           >
             Salvar
@@ -854,14 +875,53 @@ export default function PainelPage() {
         return;
       }
 
-      const jaExiste =
-        ativasRef.current.some((c) => c.id === call.id) ||
-        esperaRef.current.some((c) => c.id === call.id);
+      // Verifica se já existe chamada com mesmo ID
+      const jaExisteAtivas = ativasRef.current.find((c) => c.id === call.id);
+      const jaExisteEspera = esperaRef.current.find((c) => c.id === call.id);
+      const chamadaExistente = jaExisteAtivas || jaExisteEspera;
 
-      if (jaExiste) {
+      if (chamadaExistente) {
+        // Se mudou a sala ou o áudio, atualiza a chamada existente
+        const mudouSala = chamadaExistente.sala !== call.sala;
+        const mudouAudio = chamadaExistente.audio !== call.audio;
+
+        if (mudouSala || mudouAudio) {
+          // Atualiza no cache de áudio se necessário
+          if (call.audio && mudouAudio) {
+            const fullUrl = `${NEST_URL}${call.audio}`;
+            const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
+
+            fetch(fullUrl)
+              .then((res) => res.blob())
+              .then((blob) => {
+                if (audioUrlCacheRef.current.has(cacheKey)) {
+                  URL.revokeObjectURL(audioUrlCacheRef.current.get(cacheKey)!);
+                  audioUrlCacheRef.current.delete(cacheKey);
+                }
+                audioCacheRef.current.set(cacheKey, blob);
+              })
+              .catch(() => undefined);
+          }
+
+          // Atualiza a chamada na fila
+          if (jaExisteAtivas) {
+            setAtivasSync((prev) =>
+              prev.map((c) => (c.id === call.id ? call : c)),
+            );
+            // Se for a chamada atual sendo exibida, atualiza a UI imediatamente
+            if (chamadaAtualRef.current?.id === call.id) {
+              setChamadaAtualSync(call);
+            }
+          } else {
+            setEsperaSync((prev) =>
+              prev.map((c) => (c.id === call.id ? call : c)),
+            );
+          }
+        }
         return;
       }
 
+      // Nova chamada - carrega áudio
       if (call.audio) {
         const fullUrl = `${NEST_URL}${call.audio}`;
         const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
@@ -879,12 +939,13 @@ export default function PainelPage() {
       }
 
       if (ativasRef.current.length < PAINEL_CONFIG.qtdFilaPainel) {
-        setAtivasSync((prev) => [...prev, call]);
+        // Nova chamada vai para o início da fila para ser exibida imediatamente
+        setAtivasSync((prev) => [call, ...prev.filter((c) => c.id !== call.id)]);
       } else {
         setEsperaSync((prev) => [...prev, call]);
       }
     },
-    [setAtivasSync, setEsperaSync, shouldIncludeCallByFilter],
+    [setAtivasSync, setEsperaSync, shouldIncludeCallByFilter, setChamadaAtualSync],
   );
 
   const hydrateInitialCalls = useCallback(
@@ -1218,6 +1279,11 @@ export default function PainelPage() {
       });
       setEsperaSync((prev) => prev.filter((c) => c.id !== call.id));
 
+      // Limpa chamadaAtual se for a mesma chamada
+      if (chamadaAtualRef.current?.id === call.id) {
+        setChamadaAtualSync(undefined);
+      }
+
       if (liberouVaga && esperaRef.current.length > 0) {
         const [proxima, ...resto] = esperaRef.current;
 
@@ -1234,6 +1300,11 @@ export default function PainelPage() {
     socket.on("atendimento retornado", (call: PainelCall) => {
       setAtivasSync((prev) => prev.filter((c) => c.id !== call.id));
       setEsperaSync((prev) => prev.filter((c) => c.id !== call.id));
+
+      // Limpa chamadaAtual se for a mesma chamada
+      if (chamadaAtualRef.current?.id === call.id) {
+        setChamadaAtualSync(undefined);
+      }
     });
 
     socket.on("pagina fechada", (socketId: string) => {
@@ -1323,11 +1394,40 @@ export default function PainelPage() {
     [chamadaAtual],
   );
 
-  const handleUnidadeChange = (novaUnidade: string) => {
-    setUnidadeSelecionada(novaUnidade);
-    // Recarregar a página para reinicializar a conexão com a nova unidade
-    window.location.reload();
-  };
+  const handleSaveConfig = useCallback(
+    ({
+      unidade,
+      filtro,
+      audioHabilitado: novoAudioHabilitado,
+    }: {
+      unidade: string;
+      filtro: "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO";
+      audioHabilitado: boolean;
+    }) => {
+      const unidadeAnterior = unidadeSelecionada;
+
+      setAudioHabilitado(novoAudioHabilitado);
+      setFiltroChamada(filtro);
+      setUnidadeSelecionada(unidade);
+
+      localStorage.setItem("painel_validate", unidade);
+      localStorage.setItem("painel_filtro", filtro);
+
+      setShowConfig(false);
+
+      if (unidade !== unidadeAnterior) {
+        socket?.emit("painel desconectado", socket?.id);
+        socket?.disconnect();
+        socket = null;
+        socketInitializedRef.current = false;
+
+        setAtivasSync(() => []);
+        setEsperaSync(() => []);
+        setChamadaAtualSync(undefined);
+      }
+    },
+    [unidadeSelecionada, setAtivasSync, setEsperaSync, setChamadaAtualSync],
+  );
 
   // Verificar se deve exibir idle
   const deveExibirIdle = isIdle;
@@ -1548,11 +1648,9 @@ export default function PainelPage() {
         audioHabilitado={audioHabilitado}
         filtroChamada={filtroChamada}
         isOpen={showConfig}
-        setAudioHabilitado={setAudioHabilitado}
-        setFiltroChamada={setFiltroChamada}
+        onSave={handleSaveConfig}
         unidadeSelecionada={unidadeSelecionada}
         onClose={() => setShowConfig(false)}
-        onUnidadeChange={handleUnidadeChange}
       />
 
       {/* Idle Screen */}
