@@ -188,16 +188,6 @@ const ExamesTable: React.FC<{
   };
 
   const handleReemitirExame = async (exame: ExamRegister) => {
-    if (!exame.formulario || !exame.profissional || !exame.codigoProfissional) {
-      setAlertModal({
-        open: true,
-        type: "error",
-        message: "Dados incompletos para reemissao de exame",
-      });
-
-      return;
-    }
-
     setReemitModal({ isOpen: true, exame });
   };
 
@@ -225,7 +215,23 @@ const ExamesTable: React.FC<{
       });
 
       if (!response.ok) {
-        throw new Error("Erro ao reemitir exame");
+        let errorMessage = "Erro ao reemitir exame";
+
+        try {
+          const errorPayload = await response.json();
+
+          if (typeof errorPayload?.message === "string") {
+            errorMessage = errorPayload.message;
+          } else if (Array.isArray(errorPayload?.message)) {
+            errorMessage = errorPayload.message.join(", ");
+          } else if (typeof errorPayload?.error === "string") {
+            errorMessage = errorPayload.error;
+          }
+        } catch {
+          // Mantem a mensagem padrão quando a resposta não vem em JSON.
+        }
+
+        throw new Error(errorMessage);
       }
 
       const result: Scheduling = await response.json();
