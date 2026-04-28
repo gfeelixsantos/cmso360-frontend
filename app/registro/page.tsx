@@ -438,33 +438,6 @@ export default function RegistroPage(): JSX.Element {
               </motion.div>
             </form>
 
-            <motion.div
-              animate={{ opacity: 1 }}
-              className="mt-6 pt-6 border-t border-gray-200"
-              initial={{ opacity: 0 }}
-              transition={{ duration: 0.4, delay: 0.7 }}
-            >
-              <div className="flex justify-center gap-4 text-xs text-gray-500">
-                <Link
-                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
-                  href="#"
-                >
-                  Política de Segurança
-                </Link>
-                <Link
-                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
-                  href="#"
-                >
-                  Termos de Uso
-                </Link>
-                <Link
-                  className="text-[#104e35] hover:text-[#0d3d29] hover:underline transition-colors"
-                  href="#"
-                >
-                  Suporte
-                </Link>
-              </div>
-            </motion.div>
           </motion.div>
         </div>
       </div>

@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 
 import CMSO360Animation from "../shared/CMSO360Animation";
+import packageInfo from "@/package.json";
 
 import { fetchBodyJson, formatCPF, setCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -56,9 +57,9 @@ const InputField: React.FC<InputFieldProps> = ({
       <input
         aria-label={label}
         autoComplete={autoComplete}
-        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl 
-        focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35] 
-        disabled:bg-gray-100 disabled:cursor-not-allowed 
+        className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-xl
+        focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35]
+        disabled:bg-gray-100 disabled:cursor-not-allowed
         transition-all duration-200"
         disabled={disabled}
         name={name}
@@ -86,12 +87,12 @@ interface SubmitButtonProps {
 
 const SubmitButton: React.FC<SubmitButtonProps> = ({ isLoading, disabled }) => (
   <button
-    className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl 
-    hover:bg-[#0d3d29] 
-    focus:ring-2 focus:ring-[#104e35] focus:outline-none 
-    disabled:opacity-50 disabled:cursor-not-allowed 
-    flex items-center justify-center gap-2 
-    transition-all duration-300 shadow-md hover:shadow-lg"
+    className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl
+    hover:bg-[#0d3d29]
+    focus:ring-2 focus:ring-[#104e35] focus:outline-none
+    disabled:opacity-50 disabled:cursor-not-allowed
+    flex items-center justify-center gap-2
+    transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer"
     disabled={isLoading || disabled}
     type="submit"
   >
@@ -179,7 +180,7 @@ export default function LoginPage() {
 
       if (userLogged.data) {
         setCurrentUser(userLogged.data);
-
+        // Não resetar isLoading aqui - deixar o botão em loading até a navegação
         router.push("/dashboard");
 
         return;
@@ -188,7 +189,6 @@ export default function LoginPage() {
       throw new Error(userLogged.message || "Falha no login");
     } catch (err: any) {
       setError(err?.message || "Erro ao conectar");
-    } finally {
       setIsLoading(false);
     }
   };
@@ -485,10 +485,10 @@ export default function LoginPage() {
                 />
 
                 <button
-                  className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl 
-                  hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none 
-                  disabled:opacity-50 disabled:cursor-not-allowed 
-                  flex items-center justify-center gap-2 
+                  className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl
+                  hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center gap-2
                   transition-all duration-300 shadow-md hover:shadow-lg"
                   disabled={isLoading}
                   onClick={handleRecoveryValidate}
@@ -576,10 +576,10 @@ export default function LoginPage() {
                 />
 
                 <button
-                  className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl 
-                  hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none 
-                  disabled:opacity-50 disabled:cursor-not-allowed 
-                  flex items-center justify-center gap-2 
+                  className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl
+                  hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center gap-2
                   transition-all duration-300 shadow-md hover:shadow-lg"
                   disabled={isLoading}
                   onClick={handleRecoveryReset}
@@ -637,8 +637,9 @@ export default function LoginPage() {
             )}
 
             {/* FOOTER */}
-            <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
-              Centro Médico de Saúde Ocupacional {new Date().getFullYear()}
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500 space-y-1">
+              <div>Centro Médico de Saúde Ocupacional {new Date().getFullYear()}</div>
+              <div>Versão {packageInfo.version}</div>
             </div>
           </motion.div>
         </div>

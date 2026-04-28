@@ -119,7 +119,7 @@ const MetricCard = ({
   iconBgColor?: string;
   valueColor?: string;
 }) => (
-  <article className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
+  <article className="bg-white rounded-xl shadow-lg border border-gray-200/80 overflow-hidden">
     <div className="p-6">
       <div className="flex items-center justify-between">
         <div className="flex-1">
@@ -503,7 +503,7 @@ export function StatisticsSection() {
           </div>
 
           <Button
-            className="flex items-center gap-2 px-6 py-6 bg-[#44735E] hover:bg-[#356349] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+            className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200 border border-gray-200 cursor-pointer"
             disabled={loading || isRefreshing}
             onClick={handleRefresh}
           >
@@ -549,7 +549,6 @@ export function StatisticsSection() {
             iconColor="#10b981"
             title="Exames Realizados"
             value={totais?.totalExamesRealizados || 0}
-            valueColor="#10b981"
           />
 
           <MetricCard
@@ -558,7 +557,6 @@ export function StatisticsSection() {
             iconColor="#8b5cf6"
             title="Aguardando Resultados"
             value={totais?.aguardandoResultados || 0}
-            valueColor="#8b5cf6"
           />
 
           <MetricCard
@@ -567,7 +565,6 @@ export function StatisticsSection() {
             iconColor="#f59e0b"
             title="Aguardando Avaliação Médica"
             value={totais?.aguardandoAvaliacaoMedica || 0}
-            valueColor="#f59e0b"
           />
         </div>
 
@@ -602,7 +599,7 @@ export function StatisticsSection() {
               <div className="p-5">
                 <div className="space-y-4">
                   {Object.entries(totais.atendimentosPorStatus)
-                    .sort(([, a], [, b]) => (b as number) - (a as number))
+                    .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
                     .map(([status, count]) => {
                       const percentage =
                         ((count as number) / totais.totalAgendamentos) * 100;
