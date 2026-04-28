@@ -352,7 +352,7 @@ export const ScraperMonitor: React.FC = () => {
                           {row.provider}
                         </h4>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-xs text-gray-600">
+                          <span className={`text-xs ${row.status === "Processando" ? "text-blue-600" : "text-gray-600"}`}>
                             {row.status}
                           </span>
                         </div>

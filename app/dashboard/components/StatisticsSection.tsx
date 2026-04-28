@@ -18,7 +18,6 @@ import {
   Clock,
   Stethoscope,
   FlaskConical,
-  BadgeCheck,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
@@ -109,21 +108,37 @@ const MetricCard = ({
   title,
   value,
   icon: Icon,
+  iconColor,
+  iconBgColor,
+  valueColor,
 }: {
   title: string;
   value: number;
   icon: any;
+  iconColor?: string;
+  iconBgColor?: string;
+  valueColor?: string;
 }) => (
   <article className="bg-white rounded-2xl shadow-sm border border-gray-200/80 overflow-hidden">
     <div className="p-6">
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <p className="text-sm font-medium text-gray-600 mb-1">{title}</p>
-          <p className="text-2xl font-bold text-gray-900">
+          <p
+            className="text-2xl font-bold"
+            style={{ color: valueColor || "#111827" }}
+          >
             {value.toLocaleString("pt-BR")}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#B8D864]/20 text-[#9BC24E] border border-[#B8D864]/30 shadow-sm">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center shadow-sm"
+          style={{
+            backgroundColor: iconBgColor || "rgba(184, 216, 100, 0.2)",
+            color: iconColor || "#9BC24E",
+            border: `1px solid ${iconColor ? iconColor + "30" : "rgba(184, 216, 100, 0.3)"}`,
+          }}
+        >
           <Icon className="h-6 w-6" />
         </div>
       </div>
@@ -530,20 +545,29 @@ export function StatisticsSection() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           <MetricCard
             icon={FlaskConical}
+            iconBgColor="rgba(16, 185, 129, 0.15)"
+            iconColor="#10b981"
             title="Exames Realizados"
             value={totais?.totalExamesRealizados || 0}
+            valueColor="#10b981"
           />
 
           <MetricCard
             icon={Clock}
+            iconBgColor="rgba(139, 92, 246, 0.15)"
+            iconColor="#8b5cf6"
             title="Aguardando Resultados"
             value={totais?.aguardandoResultados || 0}
+            valueColor="#8b5cf6"
           />
 
           <MetricCard
             icon={Stethoscope}
+            iconBgColor="rgba(245, 158, 11, 0.15)"
+            iconColor="#f59e0b"
             title="Aguardando Avaliação Médica"
             value={totais?.aguardandoAvaliacaoMedica || 0}
+            valueColor="#f59e0b"
           />
         </div>
 
@@ -609,7 +633,8 @@ export function StatisticsSection() {
                                   ? COLORS.warning
                                   : status.includes("AGUARDANDO_RESULTADOS")
                                     ? COLORS.purple
-                                    : status.includes("EM_ATENDIMENTO")
+                                    : status.includes("EM_ATENDIMENTO") ||
+                                        status.includes("ATENDIMENTO")
                                       ? COLORS.danger
                                       : COLORS.primary
                             }
@@ -749,13 +774,12 @@ export function StatisticsSection() {
                       {unitSummary && (
                         <div className="text-right">
                           <div className="flex items-center gap-2">
-                            <BadgeCheck className="h-5 w-5 text-green-500" />
                             <span className="text-xl font-bold text-green-600">
                               {unitSummary.percentualFinalizados.toFixed(1)}%
                             </span>
                           </div>
                           <span className="text-xs text-gray-500">
-                            conclusão
+                            Concluídos
                           </span>
                         </div>
                       )}
