@@ -88,7 +88,7 @@ const KpiCard = ({
           {title}
         </p>
         <p
-          className={`text-3xl font-bold ${gradient ? "text-white" : "text-gray-900"}`}
+          className={`text-2xl font-bold ${gradient ? "text-white" : "text-gray-900"}`}
         >
           {typeof value === "number" ? value.toLocaleString("pt-BR") : value}
         </p>
@@ -96,9 +96,9 @@ const KpiCard = ({
       <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
         gradient
           ? "bg-white/10 backdrop-blur-sm"
-          : "bg-[#44735E]/12 border border-[#44735E]/20"
+          : "bg-[#B8D864]/20 border border-[#B8D864]/30"
       }`}>
-        <Icon className={`h-6 w-6 ${gradient ? "text-white" : "text-[#44735E]"}`} />
+        <Icon className={`h-6 w-6 ${gradient ? "text-white" : "text-[#9BC24E]"}`} />
       </div>
     </div>
   </motion.div>
@@ -123,7 +123,7 @@ const MetricCard = ({
             {value.toLocaleString("pt-BR")}
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#44735E]/12 text-[#44735E] border border-[#44735E]/20 shadow-sm">
+        <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-[#B8D864]/20 text-[#9BC24E] border border-[#B8D864]/30 shadow-sm">
           <Icon className="h-6 w-6" />
         </div>
       </div>
@@ -488,7 +488,7 @@ export function StatisticsSection() {
           </div>
 
           <Button
-            className="flex items-center gap-2 px-6 py-6 bg-[#44735E] hover:bg-[#356349] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+            className="flex items-center gap-2 px-6 py-6 bg-[#44735E] hover:bg-[#356349] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
             disabled={loading || isRefreshing}
             onClick={handleRefresh}
           >
@@ -563,9 +563,7 @@ export function StatisticsSection() {
             >
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#44735E]/12 border border-[#44735E]/20">
-                    <Activity className="h-5 w-5 text-[#44735E]" />
-                  </div>
+                  <Activity className="h-5 w-5 text-[#44735E]" />
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
                       Status dos Atendimentos
@@ -607,7 +605,13 @@ export function StatisticsSection() {
                               status.includes("FINALIZADO") ||
                               status.includes("CONCLUIDO")
                                 ? COLORS.success
-                                : COLORS.info
+                                : status.includes("AVALIACAO_MEDICA")
+                                  ? COLORS.warning
+                                  : status.includes("AGUARDANDO_RESULTADOS")
+                                    ? COLORS.purple
+                                    : status.includes("EM_ATENDIMENTO")
+                                      ? COLORS.danger
+                                      : COLORS.primary
                             }
                             max={totais.totalAgendamentos}
                             size="sm"
@@ -629,9 +633,7 @@ export function StatisticsSection() {
             >
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-[#44735E]/12 border border-[#44735E]/20">
-                    <Layers className="h-5 w-5 text-[#44735E]" />
-                  </div>
+                  <Layers className="h-5 w-5 text-[#44735E]" />
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900">
                       Tipos de Exame
@@ -669,7 +671,7 @@ export function StatisticsSection() {
                             </div>
                           </div>
                           <ProgressBar
-                            color={COLORS.primary}
+                            color="#B8D864"
                             max={totais.totalAgendamentos}
                             size="sm"
                             value={count as number}

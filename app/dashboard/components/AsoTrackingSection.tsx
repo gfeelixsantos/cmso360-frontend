@@ -6,6 +6,7 @@ import {
   Clock,
   AlertCircle,
   CheckCircle,
+  CheckCircle2,
   FileCheck,
   PenTool,
   AlertTriangle,
@@ -28,77 +29,38 @@ const COLORS = {
 
 // 🏷️ Labels de etapas
 const ETAPA_LABELS: Record<string, string> = {
-  GERACAO: "Aguardando Geração",
-  PDF_GERADO: "PDF Gerado",
+  PENDENTE: "Aguardando Geração",
+  PDF_GERADO: "PDF Digitalizado",
   ASSINATURA: "Assinando Digitalmente",
   ERRO: "Erro no Processo",
   FINALIZADO: "Concluído",
   DESCONHECIDO: "Desconhecido",
+  NA_FILA_AGUARDANDO: "Na Fila de Processamento",
+  GERACAO: "Geração",
+  NAO_APLICAVEL: "Não Aplicável",
 };
 
 // 🏷️ Labels de status
 const STATUS_LABELS: Record<string, string> = {
+  NA_FILA: "Na Fila",
   PENDENTE: "Pendente",
-  DIGITALIZADA: "Digitalizado",
-  PROCESSANDO: "Processando",
-  FALHA: "Falha",
-  LIBERADO: "Liberado",
+  PROCESSANDO: "Gerando PDF",
+  DIGITALIZADA: "Aguardando Assinatura",
+  LIBERADO: "ASO Liberado",
+  FALHA: "Erro",
+  NAO_APLICAVEL: "Não Aplicável",
 };
 
-// 📊 Componente de barra de progresso
-const ProgressBar = ({
-  progresso,
-  status,
-  size = "sm",
-}: {
-  progresso: number;
-  status: string;
-  size?: "sm" | "md";
-}) => {
-  const isError = progresso < 0 || status === "FALHA";
-  const isComplete = progresso >= 100 || status === "LIBERADO";
-
-  const displayProgress = isError ? 100 : Math.max(0, Math.min(100, progresso));
-
-  const color = isError
-    ? COLORS.danger
-    : isComplete
-      ? COLORS.success
-      : progresso >= 60
-        ? COLORS.info
-        : progresso >= 30
-          ? COLORS.warning
-          : COLORS.primary;
-
-  const heights = { sm: "h-1.5", md: "h-2" };
-
-  return (
-    <div className="w-full">
-      <div
-        className={`w-full bg-gray-200 rounded-full ${heights[size]} overflow-hidden`}
-      >
-        <motion.div
-          animate={{ width: `${displayProgress}%` }}
-          className={`${heights[size]} rounded-full transition-all duration-700 ease-out`}
-          initial={{ width: 0 }}
-          style={{ backgroundColor: color }}
-          transition={{ duration: 0.8 }}
-        />
-      </div>
-    </div>
-  );
-};
-
-// 🎨 Badge de status
+// 🎨 Badge de status - Cores harmonizadas com padrão da página de relatório
 const StatusBadge = ({ status, etapa }: { status: string; etapa: string }) => {
   const getStatusConfig = () => {
     switch (status) {
       case "LIBERADO":
       case "FINALIZADO":
         return {
-          bg: "bg-green-100",
-          border: "border-green-200",
-          text: "text-green-700",
+          bg: "bg-emerald-100",
+          border: "border-emerald-200",
+          text: "text-emerald-700",
           icon: CheckCircle,
           label: "Concluído",
         };
@@ -123,11 +85,35 @@ const StatusBadge = ({ status, etapa }: { status: string; etapa: string }) => {
       case "DIGITALIZADA":
       case "PDF_GERADO":
         return {
-          bg: "bg-yellow-100",
-          border: "border-yellow-200",
-          text: "text-yellow-700",
+          bg: "bg-amber-100",
+          border: "border-amber-200",
+          text: "text-amber-700",
           icon: FileCheck,
-          label: "PDF Gerado",
+          label: "PDF Digitalizado",
+        };
+      case "NA_FILA":
+        return {
+          bg: "bg-violet-100",
+          border: "border-violet-200",
+          text: "text-violet-700",
+          icon: Clock,
+          label: "Na Fila",
+        };
+      case "NAO_APLICAVEL":
+        return {
+          bg: "bg-slate-100",
+          border: "border-slate-200",
+          text: "text-slate-600",
+          icon: CheckCircle2,
+          label: "Não Aplicável",
+        };
+      case "PENDENTE":
+        return {
+          bg: "bg-orange-100",
+          border: "border-orange-200",
+          text: "text-orange-700",
+          icon: Clock,
+          label: "Pendente",
         };
       default:
         return {
@@ -163,35 +149,26 @@ const AsoItemCard = ({ item, index }: { item: AsoPendingItem; index: number }) =
       transition={{ delay: index * 0.05 }}
     >
       <div className="p-3">
-        {/* Linha 1: Nome, Empresa, Tipo, Data, Status, Progresso */}
+        {/* Linha 1: Nome, Empresa, Tipo, Data, Parecer, Status */}
         <div className="flex items-center justify-between gap-3">
-          {/* Esquerda: Nome, Empresa, Tipo */}
+          {/* Esquerda: Nome, Empresa, Tipo, Data, Parecer */}
           <div className="min-w-0 flex-1">
             <h4 className="font-semibold text-gray-900 truncate text-sm">
               {item.nomeFuncionario}
             </h4>
-            <div className="flex items-center gap-2 text-xs text-gray-600">
+            <div className="flex items-center gap-2 text-xs text-gray-600 flex-wrap">
               <span className="truncate">{item.nomeEmpresa}</span>
-              <span className="px-1.5 py-0.5 bg-gray-100 rounded text-[10px] shrink-0">
-                {item.tipoExame}
-              </span>
+              <span className="truncate">{item.tipoExame}</span>
+              <span className="text-gray-500">{item.dataAgendamento}</span>
+              {item.parecer && (
+                <span className="text-gray-600">{item.parecer.replace(/_/g, ' ')}</span>
+              )}
             </div>
           </div>
 
-          {/* Centro: Data */}
-          <div className="text-xs text-gray-500 shrink-0">
-            {item.dataAgendamento}
-          </div>
-
-          {/* Direita: Status + Progresso */}
+          {/* Direita: Status */}
           <div className="flex items-center gap-3 shrink-0">
             <StatusBadge etapa={item.etapa} status={item.status} />
-            <div className="text-right w-[70px]">
-              <div className="text-xs text-gray-500">
-                {item.progresso >= 0 ? `${item.progresso}%` : "Erro"}
-              </div>
-              <ProgressBar progresso={item.progresso} size="sm" status={item.status} />
-            </div>
           </div>
         </div>
 
@@ -202,6 +179,12 @@ const AsoItemCard = ({ item, index }: { item: AsoPendingItem; index: number }) =
             <span><strong className="text-gray-700">Etapa:</strong> {ETAPA_LABELS[item.etapa] || item.etapa}</span>
             <span><strong className="text-gray-700">Tempo:</strong> {item.tempoNaEtapa}</span>
             <span><strong className="text-gray-700">Assinatura:</strong> {item.assinaturaProvider}</span>
+            <span><strong className="text-gray-700">Médico:</strong> {item.nomeMedico || "N/A"}</span>
+            {item.fonte === "FILA_AZURE" && (
+              <span className="px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded text-[10px] font-medium">
+                🔄 Fila Azure
+              </span>
+            )}
           </div>
 
           {/* Erro (se houver) */}
@@ -237,7 +220,7 @@ export function AsoTrackingSection() {
   const { data, loading, error, refetch } = useAsoTracking({
     autoRefresh: true,
     refreshInterval: 30000,
-    limit: 20,
+    limit: 100,
   });
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -304,22 +287,57 @@ export function AsoTrackingSection() {
   return (
     <motion.div
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden"
+      className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden"
       initial={{ opacity: 0, y: 20 }}
       transition={{ duration: 0.4 }}
     >
       {/* Header clicável - Layout corporativo */}
       <div
-        className="px-5 py-4 border-b border-gray-200 bg-white cursor-pointer hover:bg-gray-50 transition-colors"
+        className="px-5 py-4 border-b border-gray-200 bg-[#B8D864]/20 cursor-pointer hover:bg-[#B8D864]/25 hover:shadow-md transition-all duration-200"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-gray-900 tracking-tight">
-              Liberação de ASOs
-            </h3>
-              <p className="text-xs text-gray-500">
-                {total} ASO{total !== 1 ? "s" : ""} em processamento
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
+              {isExpanded ? (
+                <ChevronUp className="h-6 w-6 text-[#44735E]" />
+              ) : (
+                <ChevronDown className="h-6 w-6 text-[#44735E]" />
+              )}
+            </div>
+            <div>
+              <h3 className="text-base font-semibold text-gray-800 tracking-tight">
+                Liberação de ASOs
+                {data?.janelaDias && (
+                  <span className="ml-2 text-xs font-normal text-gray-500">
+                    (últimos {data.janelaDias} dias)
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-gray-600">
+                {total} registro{total !== 1 ? "s" : ""}
+                {data?.stats && (
+                  <span className="ml-2">
+                    {data.stats.naFila > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.naFila} na fila </span>
+                    )}
+                    {data.stats.pendentes > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.pendentes} pendentes </span>
+                    )}
+                    {data.stats.processando > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.processando} processando </span>
+                    )}
+                    {data.stats.digitalizadas > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.digitalizadas} assinatura </span>
+                    )}
+                    {data.stats.falhas > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.falhas} erro </span>
+                    )}
+                    {data.stats.semAso > 0 && (
+                      <span className="text-gray-400 font-medium">• {data.stats.semAso} não aplicável </span>
+                    )}
+                  </span>
+                )}
                 {data?.lastUpdate && (
                   <span className="ml-2 text-gray-400">
                     • Atualizado {" "}
@@ -327,14 +345,7 @@ export function AsoTrackingSection() {
                   </span>
                 )}
               </p>
-          </div>
-
-          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors">
-            {isExpanded ? (
-              <ChevronUp className="h-4 w-4 text-gray-600" />
-            ) : (
-              <ChevronDown className="h-4 w-4 text-gray-600" />
-            )}
+            </div>
           </div>
         </div>
       </div>
@@ -365,10 +376,10 @@ export function AsoTrackingSection() {
                 <AsoItemCard index={index} item={item} key={item.schedulingId} />
               ))}
 
-              {items.length >= 20 && (
+              {items.length >= 100 && (
                 <div className="text-center pt-3 pb-1">
                   <p className="text-xs text-gray-500">
-                    Exibindo os {items.length} ASOs mais recentes
+                    Exibindo os {items.length} ASOs mais recentes (limite: 100)
                   </p>
                 </div>
               )}
@@ -377,40 +388,6 @@ export function AsoTrackingSection() {
         </motion.div>
       )}
 
-      {/* Footer com resumo - apenas quando expandido */}
-      {isExpanded && items.length > 0 && (
-        <div className="px-5 py-3 bg-gray-50 border-t border-gray-200">
-          <div className="flex flex-wrap gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-yellow-500" />
-              <span className="text-gray-600">
-                Gerando PDF:{" "}
-                <strong className="text-gray-900">
-                  {items.filter((i) => i.etapa === "GERACAO").length}
-                </strong>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-gray-600">
-                Assinando:{" "}
-                <strong className="text-gray-900">
-                  {items.filter((i) => i.etapa === "ASSINATURA").length}
-                </strong>
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500" />
-              <span className="text-gray-600">
-                Com Erro:{" "}
-                <strong className="text-gray-900">
-                  {items.filter((i) => i.etapa === "ERRO").length}
-                </strong>
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 }

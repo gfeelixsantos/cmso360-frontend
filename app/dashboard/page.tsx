@@ -251,12 +251,13 @@ const MenuCard: React.FC<MenuCardProps> = ({
     onKeyDown={(e) => e.key === "Enter" && onPress()}
   >
     <header aria-labelledby={`card-title-${index}`} className="text-center p-6">
-      <motion.div
-        className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-gray-50 mb-4"
-        whileHover={{ scale: 1.1 }}
+      <div
+        className="mx-auto w-16 h-16 rounded-full flex items-center justify-center bg-gray-50 mb-4 transition-all duration-300"
       >
-        {icon}
-      </motion.div>
+        <div className="group-hover:scale-110 group-hover:text-[#B8D864] transition-transform duration-300">
+          {icon}
+        </div>
+      </div>
       <h3
         className="text-xl font-semibold text-gray-900"
         id={`card-title-${index}`}
@@ -276,7 +277,7 @@ const MenuCard: React.FC<MenuCardProps> = ({
       </div>
       <button
         aria-label={`Acessar ${title}`}
-        className="w-full px-4 py-2 bg-[#44735E] text-white rounded-md hover:bg-[#B8D864] focus:outline-none focus:ring-2 focus:ring-[#3dbdb9] focus:ring-offset-2 transition-colors"
+        className="w-full px-4 py-2 bg-[#44735E] text-white rounded-md group-hover:bg-[#B8D864] focus:outline-none focus:ring-2 focus:ring-[#3dbdb9] focus:ring-offset-2 transition-colors cursor-pointer"
       >
         Acessar
       </button>

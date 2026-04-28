@@ -9,24 +9,42 @@ export interface AsoPendingItem {
   tipoExame: string;
   dataAgendamento: string;
   unidadeAtendimento: string;
-  status: "PENDENTE" | "PROCESSANDO" | "DIGITALIZADA" | "FALHA" | "LIBERADO";
+  status: "PENDENTE" | "PROCESSANDO" | "DIGITALIZADA" | "FALHA" | "LIBERADO" | "NA_FILA" | "NAO_APLICAVEL";
   etapa:
     | "GERACAO"
     | "PDF_GERADO"
     | "ASSINATURA"
     | "ERRO"
     | "FINALIZADO"
-    | "DESCONHECIDO";
+    | "DESCONHECIDO"
+    | "NA_FILA_AGUARDANDO"
+    | "NAO_APLICAVEL";
   progresso: number;
-  assinaturaProvider: "DIGITALIZADA" | "PSC" | "BRYKMS";
+  assinaturaProvider: "DIGITALIZADA" | "PSC" | "BRYKMS" | "N/A";
+  nomeMedico: string;
   updatedAt: string | null;
   tempoNaEtapa: string;
   error: string | null;
   url: string | null;
+  fonte?: "MONGODB" | "FILA_AZURE";
+  parecer?: string | null;
+}
+
+export interface AsoPendingStats {
+  naFila: number;
+  pendentes: number;
+  processando: number;
+  digitalizadas: number;
+  liberados: number;
+  falhas: number;
+  semAso: number;
 }
 
 export interface AsoPendingResponse {
   total: number;
+  totalNaFila?: number;
+  janelaDias?: number;
+  stats?: AsoPendingStats;
   items: AsoPendingItem[];
   lastUpdate: string;
 }
@@ -40,7 +58,7 @@ interface UseAsoTrackingOptions {
 
 export function useAsoTracking({
   unidade,
-  limit = 50,
+  limit = 100,
   autoRefresh = true,
   refreshInterval = 30000, // 30 segundos
 }: UseAsoTrackingOptions = {}) {

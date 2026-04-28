@@ -310,21 +310,23 @@ export const ScraperMonitor: React.FC = () => {
       className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
       initial={{ opacity: 0, y: 20 }}
     >
-      <div className="flex items-center justify-between border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white px-5 py-4">
+      <div className="flex items-center justify-between border-b border-[#44735E]/20 bg-gradient-to-br from-[#44735E] to-[#2a4d3d] px-5 py-4">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h3 className="text-lg font-semibold text-white">
             Monitoramento
           </h3>
-          <p className="text-xs font-medium text-gray-500 mt-1">
+        </div>
+
+        <div className="text-right">
+          {metrics[0]?.scheduleLabel && (
+            <p className="text-sm text-white/90">
+              Horários de coleta: {metrics[0].scheduleLabel}
+            </p>
+          )}
+          <p className="text-xs font-medium text-white/70 mt-1">
             Inativação em massa: Todo dia 24 às 18:30
           </p>
         </div>
-
-        {metrics[0]?.scheduleLabel && (
-          <p className="text-sm text-gray-600">
-            Horários de coleta: {metrics[0].scheduleLabel}
-          </p>
-        )}
       </div>
 
       <div className="p-4">
@@ -350,9 +352,6 @@ export const ScraperMonitor: React.FC = () => {
                           {row.provider}
                         </h4>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <span
-                            className={`h-2 w-2 rounded-full ${config.dotClass}`}
-                          />
                           <span className="text-xs text-gray-600">
                             {row.status}
                           </span>
