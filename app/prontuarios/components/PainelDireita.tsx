@@ -1257,12 +1257,33 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     return op?.opinionType === ParecerMedico.SOLICITAR_REPETICAO;
   }, []);
 
+  const opinionHasInvalidAptoDetails = useCallback(
+    (op: MedicalOpinionData | null) =>
+      op?.opinionType === ParecerMedico.APTO &&
+      Boolean(op.details && op.details.trim() !== ""),
+    [],
+  );
+
   const handleOpenConfirmacao = useCallback(() => {
     if (!opinion || !opinion.opinionType) {
       addToast({
         variant: "solid",
         title: "Parecer incompleto",
         description: "Selecione um parecer médico antes de salvar.",
+        color: "danger",
+      });
+
+      return;
+    }
+
+    if (
+      opinionHasInvalidAptoDetails(opinion)
+    ) {
+      addToast({
+        variant: "solid",
+        title: "Parecer inconsistente",
+        description:
+          "Parecer APTO não pode conter texto. Use APTO COM ORIENTAÇÃO quando houver recomendação médica.",
         color: "danger",
       });
 
@@ -1299,10 +1320,26 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     }
 
     setConfirmacaoModalOpen(true);
-  }, [opinion, opinionRequiresDetails, opinionRequiresExames]);
+  }, [
+    opinion,
+    opinionHasInvalidAptoDetails,
+    opinionRequiresDetails,
+    opinionRequiresExames,
+  ]);
 
   const saveOpinion = useCallback(async () => {
     if (!opinion || !opinion.opinionType || !selectedRecord) return;
+    if (opinionHasInvalidAptoDetails(opinion)) {
+      addToast({
+        variant: "solid",
+        title: "Parecer inconsistente",
+        description:
+          "Parecer APTO não pode conter texto. Use APTO COM ORIENTAÇÃO quando houver recomendação médica.",
+        color: "danger",
+      });
+
+      return;
+    }
 
     const pinFromSettings =
       typeof (settings as any)?.pin === "string"
@@ -1362,7 +1399,14 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     } finally {
       setIsSavingOpinion(false);
     }
-  }, [opinion, onRecordUpdate, selectedRecord, user, setSelectedRecord]);
+  }, [
+    opinion,
+    opinionHasInvalidAptoDetails,
+    onRecordUpdate,
+    selectedRecord,
+    user,
+    setSelectedRecord,
+  ]);
 
   const handleSaveExamesRepeticao = useCallback((exames: string[]) => {
     setOpinion((prev) => ({
