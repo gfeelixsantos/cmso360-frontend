@@ -185,7 +185,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
     <div className="flex items-start gap-3 w-full">
       <EmployeeAvatar atendimento={atendimento} />
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         <h3
           className="font-semibold text-gray-900 truncate text-md"
           title={atendimento.NOME}
@@ -201,7 +201,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           )}
 
           <div className="flex items-center gap-1">
-            <span title={atendimento.NOMECARGO}>{atendimento.NOMECARGO}</span>
+            <span className="truncate" title={atendimento.NOMECARGO}>{atendimento.NOMECARGO}</span>
           </div>
 
           {idade && (
@@ -214,8 +214,8 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-xs text-gray-600">
-          <span className="truncate" title={atendimento.NOMEEMPRESA}>
+        <div className="flex items-center gap-1 text-xs text-gray-600 overflow-hidden">
+          <span className="truncate block max-w-full" title={atendimento.NOMEEMPRESA}>
             {atendimento.NOMEEMPRESA}
           </span>
         </div>
@@ -1023,7 +1023,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           <EmployeeInfo atendimento={atendimento} />
 
           {/* Ações do ticket */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2 flex-shrink-0 ml-2">
             <StatusBadge
               pendingAction={pendingAction}
               status={atendimento.TICKET?.status}
