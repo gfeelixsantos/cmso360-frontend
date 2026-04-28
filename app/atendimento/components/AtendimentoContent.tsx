@@ -10,6 +10,7 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
+import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-context";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import ContentLoading from "@/app/atendimento/components/ContentLoading";
 import { ESTIMATIVA_EXAMES } from "@/config/constants";
@@ -21,6 +22,7 @@ interface MainContentProps {
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
+  operationalUserName?: string;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   onHandleModal: (state: boolean) => void;
   exameSelecionado: string;
@@ -42,6 +44,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   salaSelecionada,
   codigosDeAtendimento,
   unidadeSelecionada,
+  operationalUserName,
   onHandleModal,
   setFuncionarioSelecionado,
   exameSelecionado,
@@ -145,11 +148,11 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         .filter(
           (t) =>
             t.TICKET &&
-            (t.TICKET.status === TicketStatus.EM_ATENDIMENTO ||
-              t.TICKET.status === TicketStatus.EM_CHAMADA) &&
-            t.TICKET.sala !== salaSelecionada &&
-            t.TICKET.sala !== "" &&
-            t.TICKET.grupo === TicketGroups.EXAME,
+            t.TICKET.grupo === TicketGroups.EXAME &&
+            belongsToOtherOperationalContext(t.TICKET, {
+              sala: salaSelecionada,
+              profissional: operationalUserName,
+            }),
         )
         .map((t) => [
           t.TICKET.id,
@@ -159,7 +162,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
           },
         ]),
     );
-  }, [agendamentos, salaSelecionada]);
+  }, [agendamentos, operationalUserName, salaSelecionada]);
 
   const atendimentoOutrasSalas = useMemo(() => {
     return AtendimentosOrdenados.filter(

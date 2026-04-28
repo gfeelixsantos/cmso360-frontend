@@ -1231,6 +1231,7 @@ const AtendimentoPage: React.FC = () => {
               codigosDeAtendimento={codigosDeAtendimento}
               conectado={conectado}
               exameSelecionado={exameSelecionado}
+              operationalUserName={user?.nome}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}

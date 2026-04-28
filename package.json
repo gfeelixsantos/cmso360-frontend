@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint --fix",
-    "test:painel-fallback": "node --test tests/painel-fallback.spec.js"
+    "test:painel-fallback": "node --test tests/painel-fallback.spec.js",
+    "test:atendimento-context": "node --test tests/atendimento-operational-context.spec.js"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

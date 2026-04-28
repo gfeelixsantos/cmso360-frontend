@@ -39,6 +39,7 @@ import {
   ExamRegister,
 } from "@/lib/scheduling/interface/scheduling";
 import { EXAMES_LIST } from "@/config/constants";
+import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-context";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 
@@ -894,33 +895,16 @@ const TicketActions: React.FC<{
 
   const handleDisabledStatus = (ticket: Ticket) => {
     const currentUser = getCurrentUser();
-    const ticketSala = (ticket.sala || "").trim();
-    const ticketProfissional = (ticket.profissional || "").trim();
-    const userNome = (currentUser?.nome || "").trim();
 
     // FINALIZADO sempre bloqueado
     if (ticket.status === TicketStatus.FINALIZADO) {
       return true;
     }
 
-    // Para CHAMADA/ATENDIMENTO, bloqueia apenas quando houver conflito explícito
-    // com sala/profissional já vinculados no ticket.
-    if (
-      ticket.status === TicketStatus.EM_ATENDIMENTO ||
-      ticket.status === TicketStatus.EM_CHAMADA
-    ) {
-      const conflitoSala = ticketSala !== "" && ticketSala !== salaSelecionada;
-      const conflitoProfissional =
-        ticketProfissional !== "" &&
-        userNome !== "" &&
-        ticketProfissional !== userNome;
-
-      if (conflitoSala || conflitoProfissional) {
-        return true;
-      }
-    }
-
-    return false;
+    return belongsToOtherOperationalContext(ticket, {
+      sala: salaSelecionada,
+      profissional: currentUser?.nome,
+    });
   };
 
   const isDisabled = handleDisabledStatus(ticket);
