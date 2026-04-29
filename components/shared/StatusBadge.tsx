@@ -18,24 +18,24 @@ const colorStyles: Record<
   { bg: string; dot: string; text: string }
 > = {
   green: {
-    bg: "bg-gradient-to-r from-[#104e35] to-[#4CAF50]",
-    dot: "bg-lime-300",
-    text: "text-white",
+    bg: "bg-transparent",
+    dot: "bg-[#22c55e]",
+    text: "text-[#16a34a] font-extrabold",
   },
   yellow: {
-    bg: "bg-amber-100 border border-amber-300",
+    bg: "bg-transparent",
     dot: "bg-amber-500",
-    text: "text-amber-700",
+    text: "text-amber-600 font-extrabold",
   },
   red: {
-    bg: "bg-red-100 border border-red-300",
+    bg: "bg-transparent",
     dot: "bg-red-500",
-    text: "text-red-700",
+    text: "text-red-600 font-extrabold"
   },
   gray: {
-    bg: "bg-gray-100 border border-gray-300",
-    dot: "bg-gray-400",
-    text: "text-gray-600",
+    bg: "bg-transparent",
+    dot: "bg-red-500",
+    text: "text-red-600 font-extrabold"
   },
 };
 
@@ -51,7 +51,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
 
   return (
     <Chip
-      className={`font-semibold px-3 py-1 rounded-full shadow-sm transition-all ${styles.bg} ${styles.text} ${
+      className={`font-semibold text-sm px-3 py-1 rounded-full shadow-sm transition-all ${styles.bg} ${styles.text} ${
         isClickable ? "cursor-pointer hover:opacity-80 active:scale-95" : ""
       } ${className}`}
       size="sm"

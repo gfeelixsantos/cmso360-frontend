@@ -67,10 +67,10 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
       }}
       onClose={onClose}
     >
-      <ModalContent className="border border-[#44735e]/20">
+      <ModalContent className="border border-[#104e35]/20">
         {(onCloseModal) => (
           <>
-            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
+            <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white">
               Confirmar Sincronização SOC
             </ModalHeader>
             <ModalBody className="py-5">
@@ -88,9 +88,9 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter className="border-t border-[#44735e]/15">
+            <ModalFooter className="border-t border-[#104e35]/15">
               <Button
-                className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+                className="text-[#104e35] hover:bg-[#e8f4e3]"
                 color="default"
                 disabled={isLoading}
                 variant="light"
@@ -99,7 +99,7 @@ const SyncSocConfirmationModal: React.FC<SyncSocConfirmationModalProps> = ({
                 Cancelar
               </Button>
               <Button
-                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+                className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white focus-visible:ring-2 focus-visible:ring-[#104e35]/40"
                 isLoading={isLoading}
                 variant="solid"
                 onPress={handleConfirm}

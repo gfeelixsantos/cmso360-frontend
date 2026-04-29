@@ -108,6 +108,7 @@ export default function EmPreparacaoModal({
     atendente: "",
     sala: "",
   });
+  const [showConfirm, setShowConfirm] = useState(false);
 
   // ---------- Memoized Values ----------
   const tiposExames = useMemo(() => Object.values(TIPOS_EXAME), []);
@@ -233,41 +234,45 @@ export default function EmPreparacaoModal({
       return;
     }
 
-    if (window.confirm("Finalizar solicitação de documentação?")) {
-      setLoading(true);
-      const requestData: PreparationRequest = {
-        ...solicitacao,
-        ticketId: ticket?.id,
-        atendente: currentUser?.nome ?? "",
-        sala: salaSelecionada,
-        unidade: unidadeSelecionada,
-      };
+    setShowConfirm(true);
+  }, [socket]);
 
-      try {
-        emitEvent(socket, EventType.PREPARATION_REQUEST, {
-          type: PreparationRequestTypes.CREATE,
-          request: requestData,
-        });
-        addToast({
-          title: "Solicitação enviada",
-          description: "A solicitação de documentação foi enviada com sucesso.",
-          severity: "success",
-          color: "success",
-          variant: "flat",
-        });
-      } catch (err) {
-        console.error("Erro ao enviar solicitação:", err);
-        addToast({
-          title: "Erro ao enviar",
-          description: "Não foi possível enviar a solicitação de documentação.",
-          severity: "danger",
-          color: "danger",
-          variant: "flat",
-        });
-      } finally {
-        setLoading(false);
-        onOpenChange(false);
-      }
+  const handleConfirmEnvio = useCallback(async () => {
+    setShowConfirm(false);
+    setLoading(true);
+    const requestData: PreparationRequest = {
+      ...solicitacao,
+      ticketId: ticket?.id,
+      atendente: currentUser?.nome ?? "",
+      sala: salaSelecionada,
+      unidade: unidadeSelecionada,
+    };
+
+    try {
+      emitEvent(socket, EventType.PREPARATION_REQUEST, {
+        type: PreparationRequestTypes.CREATE,
+        request: requestData,
+      });
+      // Delay para sincronizar com resposta do servidor
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      addToast({
+        title: "Solicitação enviada",
+        description: "A solicitação de documentação foi enviada com sucesso.",
+        severity: "success",
+        color: "foreground",
+        variant: "flat",
+      });
+    } catch (err) {
+      console.error("Erro ao enviar solicitação:", err);
+      addToast({
+        title: "Erro ao enviar",
+        description: "Não foi possível enviar a solicitação de documentação.",
+        color: "danger",
+        variant: "solid",
+      });
+    } finally {
+      setLoading(false);
+      onOpenChange(false);
     }
   }, [
     solicitacao,
@@ -279,126 +284,167 @@ export default function EmPreparacaoModal({
     onOpenChange,
   ]);
 
+  const handleCancelConfirm = useCallback(() => {
+    setShowConfirm(false);
+  }, []);
+
   // ---------- Render ----------
   return (
-    <Modal
-      disableAnimation
-      backdrop="blur"
-      classNames={{
-        base: "rounded-xl shadow-xl bg-white border border-[#44735e]/20",
-        header: "border-b border-[#44735e]/15 px-5 py-3",
-        body: "px-5 py-4",
-        footer: "border-t border-[#44735e]/15 px-5 py-3",
-      }}
-      isOpen={isOpen}
-      size="md"
-      onOpenChange={onOpenChange}
-    >
-      <ModalContent>
-        {(onClose) => (
-          <>
-            <ModalHeader className="flex items-center justify-between gap-3 p-4">
-              <div className="flex items-center gap-2">
-                <FileClock className="text-[#44735e]" size={20} />
-                <span className="text-lg font-semibold text-gray-800">
-                  Solicitar Documentação
-                </span>
-              </div>
-              <button
-                aria-label="Fechar"
-                className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-1"
-                onClick={onClose}
-              />
-            </ModalHeader>
+    <>
+      <Modal
+        disableAnimation
+        backdrop="blur"
+        classNames={{
+          base: "rounded-xl shadow-xl bg-white border border-[#44735e]/20",
+          header: "border-b border-[#44735e]/15 px-5 py-3",
+          body: "px-5 py-4",
+          footer: "border-t border-[#44735e]/15 px-5 py-3",
+        }}
+        isOpen={isOpen}
+        size="md"
+        onOpenChange={onOpenChange}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex items-center justify-between gap-3 p-4">
+                <div className="flex items-center gap-2">
+                  <FileClock className="text-[#44735e]" size={20} />
+                  <span className="text-lg font-semibold text-gray-800">
+                    Solicitar Documentação
+                  </span>
+                </div>
+                <button
+                  aria-label="Fechar"
+                  className="text-gray-400 hover:text-gray-600 transition-colors rounded-full p-1"
+                  onClick={onClose}
+                />
+              </ModalHeader>
 
-            <ModalBody className="space-y-4">
-              {loadingData ? (
-                <div className="flex justify-center py-10">Carregando...</div>
-              ) : (
-                <>
-                  <Autocomplete
-                    label="Empresa"
-                    placeholder="Selecione a empresa"
-                    selectedKey={solicitacao.empresa}
-                    size="sm"
-                    onSelectionChange={(key) =>
-                      handleFieldChange("empresa", key as string)
-                    }
-                  >
-                    {empresaItems}
-                  </Autocomplete>
-
-                  <NomeInput
-                    value={solicitacao.nome}
-                    onChange={handleNomeChange}
-                  />
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <CpfInput
-                      errorMessage={
-                        solicitacao.cpf.length > 0 && !isCpfValid
-                          ? "CPF inválido"
-                          : ""
+              <ModalBody className="space-y-4">
+                {loadingData ? (
+                  <div className="flex justify-center py-10">Carregando...</div>
+                ) : (
+                  <>
+                    <Autocomplete
+                      label="Empresa"
+                      placeholder="Selecione a empresa"
+                      selectedKey={solicitacao.empresa}
+                      size="sm"
+                      onSelectionChange={(key) =>
+                        handleFieldChange("empresa", key as string)
                       }
-                      isInvalid={solicitacao.cpf.length > 0 && !isCpfValid}
-                      value={solicitacao.cpf}
-                      onChange={(e: any) => handleCpfChange(e.target.value)}
+                    >
+                      {empresaItems}
+                    </Autocomplete>
+
+                    <NomeInput
+                      value={solicitacao.nome}
+                      onChange={handleNomeChange}
                     />
-                    <DataNascimentoInput
-                      value={solicitacao.dataNascimento}
-                      onChange={handleDataNascimentoChange}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <CpfInput
+                        errorMessage={
+                          solicitacao.cpf.length > 0 && !isCpfValid
+                            ? "CPF inválido"
+                            : ""
+                        }
+                        isInvalid={solicitacao.cpf.length > 0 && !isCpfValid}
+                        value={solicitacao.cpf}
+                        onChange={(e: any) => handleCpfChange(e.target.value)}
+                      />
+                      <DataNascimentoInput
+                        value={solicitacao.dataNascimento}
+                        onChange={handleDataNascimentoChange}
+                      />
+                    </div>
+
+                    <Select
+                      label="Tipo de Exame"
+                      selectedKeys={
+                        solicitacao.tipoExame ? [solicitacao.tipoExame] : []
+                      }
+                      size="sm"
+                      onChange={(e) =>
+                        handleFieldChange("tipoExame", e.target.value)
+                      }
+                    >
+                      {exameItems}
+                    </Select>
+
+                    <Textarea
+                      label="Informações Adicionais"
+                      maxRows={4}
+                      minRows={2}
+                      size="sm"
+                      value={solicitacao.informacoes}
+                      onChange={(e) =>
+                        handleFieldChange("informacoes", e.target.value)
+                      }
                     />
-                  </div>
+                  </>
+                )}
+              </ModalBody>
 
-                  <Select
-                    label="Tipo de Exame"
-                    selectedKeys={
-                      solicitacao.tipoExame ? [solicitacao.tipoExame] : []
-                    }
-                    size="sm"
-                    onChange={(e) =>
-                      handleFieldChange("tipoExame", e.target.value)
-                    }
-                  >
-                    {exameItems}
-                  </Select>
+              <ModalFooter className="flex justify-end gap-2">
+                <Button
+                  className="text-[#2a4a3a] hover:bg-[#e8f4e3] px-4"
+                  size="sm"
+                  variant="light"
+                  onPress={onClose}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white font-medium shadow-sm hover:opacity-90 px-4 focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+                  isDisabled={!isFormValid}
+                  isLoading={loading}
+                  size="sm"
+                  onPress={handleFinalizarSolicitacao}
+                >
+                  {loading ? "Enviando..." : "Enviar"}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
 
-                  <Textarea
-                    label="Informações Adicionais"
-                    maxRows={4}
-                    minRows={2}
-                    size="sm"
-                    value={solicitacao.informacoes}
-                    onChange={(e) =>
-                      handleFieldChange("informacoes", e.target.value)
-                    }
-                  />
-                </>
-              )}
-            </ModalBody>
-
-            <ModalFooter className="flex justify-end gap-2">
-              <Button
-                className="text-[#2a4a3a] hover:bg-[#e8f4e3] px-4"
-                size="sm"
-                variant="light"
-                onPress={onClose}
-              >
-                Cancelar
-              </Button>
-              <Button
-                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white font-medium shadow-sm hover:opacity-90 px-4 focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
-                isDisabled={!isFormValid}
-                isLoading={loading}
-                size="sm"
-                onPress={handleFinalizarSolicitacao}
-              >
-                {loading ? "Enviando..." : "Enviar"}
-              </Button>
-            </ModalFooter>
-          </>
-        )}
-      </ModalContent>
-    </Modal>
+      {/* Modal de confirmação - substitui window.confirm */}
+      <Modal
+        disableAnimation
+        isDismissable={false}
+        isOpen={showConfirm}
+        onOpenChange={setShowConfirm}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="text-[#2a4a3a]">Confirmar</ModalHeader>
+          <ModalBody>
+            <p className="text-gray-700">
+              Finalizar solicitação de documentação?
+            </p>
+          </ModalBody>
+          <ModalFooter className="flex justify-end gap-2">
+            <Button
+              className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+              color="default"
+              size="sm"
+              variant="flat"
+              onPress={handleCancelConfirm}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+              size="sm"
+              onPress={handleConfirmEnvio}
+            >
+              Confirmar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </>
   );
 }

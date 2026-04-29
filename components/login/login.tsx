@@ -639,7 +639,6 @@ export default function LoginPage() {
             {/* FOOTER */}
             <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500 space-y-1">
               <div>Centro Médico de Saúde Ocupacional {new Date().getFullYear()}</div>
-              <div>Versão {packageInfo.version}</div>
             </div>
           </motion.div>
         </div>

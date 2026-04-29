@@ -1135,7 +1135,7 @@ export default function RelatoriosPage() {
       <Modal
         aria-label="Modal de detalhes do atendimento"
         classNames={{
-          base: "max-h-[90vh] border border-[#44735e]/20",
+          base: "max-h-[90vh] border border-[#104e35]/20",
           wrapper: "z-[500]",
           backdrop: "z-[400]",
         }}
@@ -1165,7 +1165,7 @@ export default function RelatoriosPage() {
         isOpen={alertModal.open}
         onClose={() => setAlertModal({ ...alertModal, open: false })}
       >
-        <ModalContent className="border border-[#44735e]/20">
+        <ModalContent className="border border-[#104e35]/20">
           <ModalHeader
             className={
               alertModal.type === "success"

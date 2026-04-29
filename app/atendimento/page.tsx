@@ -1192,7 +1192,7 @@ const AtendimentoPage: React.FC = () => {
               settings?.assinaturaProvider !== "BRYKMS" &&
               pscAuthStatus.status !== "ACTIVE" ? (
                 <Button
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-normal bg-white text-[#104e35] border border-gray-300 hover:bg-gray-50 transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-normal bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-700 transition-all"
                   onPress={handlePscClick}
                 >
                   {pscAuthStatus.status === "EXPIRED"

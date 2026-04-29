@@ -383,12 +383,11 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
     <>
       <Button
         aria-label="Iniciar atendimento do dia"
-        className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white hover:opacity-90 focus:ring-2 focus:ring-[#104e35]"
+        className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl font-medium bg-[#e8f4e3] text-[#104e35] border border-[#104e35]/30 hover:bg-[#d4e8d0] focus:ring-2 focus:ring-[#104e35]/20"
         onPress={() => setIsOpen(true)}
       >
         <Calendar className="h-4 w-4" />
-        <span>Atendimentos hoje</span>
-        <Plus className="h-3 w-3 ml-auto" />
+        <span>Agenda</span>
       </Button>
 
       <Drawer
@@ -426,8 +425,8 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
                     <Search className="text-gray-500" size={18} />
                   </div>
                   <input
-                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-sm 
-                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 
+                    className="w-full pl-11 pr-10 py-3 bg-white border border-gray-300 rounded-xl text-sm
+                      focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500
                       hover:border-gray-400 transition-colors shadow-sm"
                     id="busca-senha"
                     placeholder="Buscar por nome, empresa ou cargo..."

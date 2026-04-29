@@ -243,9 +243,9 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter className="border-t border-green-200 justify-center">
+            <ModalFooter className="border-t border-[#104e35]/20 justify-center">
               <Button
-                className="bg-gradient-to-r from-green-600 to-green-500 text-white"
+                className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white"
                 variant="solid"
                 onPress={handleClose}
               >

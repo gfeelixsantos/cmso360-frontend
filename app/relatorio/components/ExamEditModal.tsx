@@ -246,7 +246,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         onClose={onClose}
       >
         <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
+          <ModalHeader className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white">
             Carregando formulário...
           </ModalHeader>
           <ModalBody className="py-8">
@@ -317,16 +317,16 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
       {/* Modal de erro simplificado */}
       {error && (
         <Modal isOpen={!!error} size="sm" onClose={() => setError("")}>
-          <ModalContent className="border border-[#44735e]/20">
-            <ModalHeader className="bg-[#2a4a3a] text-white">
+          <ModalContent className="border border-[#104e35]/20">
+            <ModalHeader className="bg-[#104e35] text-white">
               ✗ Erro
             </ModalHeader>
             <ModalBody>
               <p className="text-red-700">{error}</p>
             </ModalBody>
-            <ModalFooter className="border-t border-[#44735e]/15">
+            <ModalFooter className="border-t border-[#104e35]/15">
               <Button
-                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+                className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white focus-visible:ring-2 focus-visible:ring-[#104e35]/40"
                 onPress={() => setError("")}
               >
                 Fechar
@@ -348,7 +348,7 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
         isOpen={alertModal.open}
         onClose={() => setAlertModal({ ...alertModal, open: false })}
       >
-        <ModalContent className="border border-[#44735e]/20">
+        <ModalContent className="border border-[#104e35]/20">
           <ModalHeader
             className={
               alertModal.type === "success"

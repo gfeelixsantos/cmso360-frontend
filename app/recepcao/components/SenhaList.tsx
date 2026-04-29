@@ -42,7 +42,7 @@ interface SenhasListProps {
 const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
   <Card
     aria-describedby="empty-senhas-description"
-    className="bg-white rounded-lg border border-gray-200 shadow-md p-8 text-center 
+    className="bg-white rounded-lg border border-gray-200 shadow-md p-8 text-center
       transition-all duration-200 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
     role="alertdialog"
   >
@@ -96,7 +96,7 @@ const SenhasList: React.FC<SenhasListProps> = ({
         senhas={senhasPreferenciais}
         setTicketSelecionado={setTicketSelecionado}
         socket={socket}
-        title={`Preferencial (${senhasPreferenciais.length})`}
+        title="Preferencial"
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}
@@ -109,7 +109,7 @@ const SenhasList: React.FC<SenhasListProps> = ({
         senhas={senhasComPrefixo}
         setTicketSelecionado={setTicketSelecionado}
         socket={socket}
-        title={`Prioridade (${senhasComPrefixo.length})`}
+        title="Prioridade"
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}
@@ -122,7 +122,7 @@ const SenhasList: React.FC<SenhasListProps> = ({
         senhas={senhasNormais}
         setTicketSelecionado={setTicketSelecionado}
         socket={socket}
-        title={`Atendimento (${senhasNormais.length})`}
+        title="Atendimento"
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}
@@ -135,7 +135,7 @@ const SenhasList: React.FC<SenhasListProps> = ({
         senhas={senhasPrepracao}
         setTicketSelecionado={setTicketSelecionado}
         socket={socket}
-        title={`Em preparação (${senhasPrepracao.length})`}
+        title="Em preparação"
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}

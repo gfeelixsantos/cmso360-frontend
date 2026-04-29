@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -7,7 +7,6 @@ import { Button } from "@heroui/react";
 
 import AgendamentosList from "../../app/recepcao/components/AgendamentosList";
 
-import { StatusBadge } from "./StatusBadge";
 
 import {
   EXAMES_LIST,
@@ -67,8 +66,8 @@ const SelectField = ({
         aria-label={label}
         className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${
           conectado
-            ? "bg-gray-100 border-gray-300 text-gray-400 cursor-not-allowed"
-            : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#4CAF50]"
+            ? "bg-white border-gray-200 text-gray-400 cursor-not-allowed"
+            : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#104e35]"
         }`}
         disabled={conectado}
         id={id}
@@ -110,12 +109,11 @@ const ActionButtonGroup = ({
   <div className="flex flex-col gap-2 mt-4">
     <Button
       aria-label="Iniciar atendimento do dia"
-      className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white hover:opacity-90 focus:ring-2 focus:ring-[#104e35]"
+      className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-sm bg-[#104e35] text-white hover:bg-[#7FA830] focus:ring-2 focus:ring-[#104e35]/40"
       onPress={onAddAtendimento}
     >
       <Users className="h-4 w-4" />
       <span>Novo Atendimento</span>
-      <Plus className="h-3 w-3 ml-auto" />
     </Button>
   </div>
 );
@@ -175,31 +173,23 @@ export function SidebarRecepcao({
               <span className="text-sm font-medium text-gray-700 text-left">
                 Servidor:
               </span>
-              <div className="justify-self-end w-[150px]">
-                <StatusBadge
-                  className="!w-full justify-center"
-                  color={
-                    conectado && !onLoading
-                      ? isReconnecting
-                        ? "yellow"
-                        : "green"
-                      : "gray"
-                  }
-                  icon={
-                    conectado && !onLoading && isReconnecting ? (
-                      <div className="w-3 h-3 border-2 border-amber-300 border-t-amber-700 rounded-full animate-spin" />
-                    ) : !conectado ? (
-                      <WifiOff className="w-3 h-3" />
-                    ) : undefined
-                  }
-                  label={
-                    conectado && !onLoading
-                      ? isReconnecting
-                        ? "Reconectando..."
-                        : "Conectado"
-                      : "Desconectado"
-                  }
-                />
+              <div className="justify-self-end flex items-center gap-2">
+                {conectado && !onLoading && isReconnecting ? (
+                  <>
+                    <div className="w-2 h-2 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm text-amber-600">Reconectando...</span>
+                  </>
+                ) : conectado && !onLoading ? (
+                  <>
+                    <Wifi className="w-3 h-3 text-[#B8D864]" />
+                    <span className="text-sm text-[#B8D864]">Conectado</span>
+                  </>
+                ) : (
+                  <>
+                    <WifiOff className="w-3 h-3 text-red-500" />
+                    <span className="text-sm text-red-600">Desconectado</span>
+                  </>
+                )}
               </div>
             </div>
 
@@ -208,7 +198,7 @@ export function SidebarRecepcao({
                 <span className="text-sm font-medium text-gray-700 text-left pt-1">
                   Assinatura:
                 </span>
-                <div className="justify-self-end w-[150px]">
+                <div className="justify-self-end flex items-center gap-2">
                   {pscStatusElement}
                 </div>
               </div>
@@ -274,10 +264,10 @@ export function SidebarRecepcao({
         <div className="mb-6">
           <Button
             aria-pressed={conectado}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-md transition-all ${
+            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all ${
               conectado
-                ? "bg-white text-gray-700 border border-gray-300 hover:bg-gray-50"
-                : "bg-gradient-to-r from-[#104e35] to-[#4CAF50] text-white hover:opacity-90"
+                ? "bg-white text-[#104e35] hover:bg-[#e8f4e3]"
+                : "bg-[#104e35] text-white hover:bg-[#7FA830] hover:text-white"
             }`}
             disabled={onLoading}
             isLoading={onLoading}
@@ -318,12 +308,6 @@ export function SidebarRecepcao({
           </aside>
         )}
 
-        {/* Footer */}
-        <footer className="mt-10 pt-4 border-t border-gray-200 mb-8">
-          <p className="text-xs text-gray-500 text-center font-medium">
-            Sistema <span className="text-[#104e35] font-bold">CMSO 360°</span>
-          </p>
-        </footer>
       </main>
     </aside>
   );

@@ -215,7 +215,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter className="border-t border-green-200" />
+            <ModalFooter className="border-t border-[#104e35]/20" />
           </>
         );
 

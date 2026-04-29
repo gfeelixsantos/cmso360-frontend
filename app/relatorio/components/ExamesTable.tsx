@@ -798,7 +798,7 @@ const ExamesTable: React.FC<{
         isOpen={alertModal.open}
         onClose={() => setAlertModal({ ...alertModal, open: false })}
       >
-        <ModalContent className="border border-[#44735e]/20">
+        <ModalContent className="border border-[#104e35]/20">
           <ModalHeader
             className={
               alertModal.type === "success"

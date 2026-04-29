@@ -36,7 +36,6 @@ interface PreparationCardProps {
   onAttachments?: () => void;
   onComplete?: () => void;
   disabled: boolean;
-  isLoading?: boolean;
 }
 
 export function PreparationCard({
@@ -45,7 +44,6 @@ export function PreparationCard({
   onAttachments,
   onComplete,
   disabled,
-  isLoading = false,
 }: PreparationCardProps) {
   const [nomeEmpresa, setNomeEmpresa] = useState<string>();
 
@@ -198,19 +196,13 @@ export function PreparationCard({
           <Button
             className="flex-1 sm:flex-none text-xs"
             color="success"
-            disabled={disabled || isLoading}
+            disabled={disabled}
             fullWidth={true}
-            startContent={
-              isLoading ? (
-                <Spinner className="w-3 h-3" color="success" size="sm" />
-              ) : (
-                <Check className="w-3 h-3" />
-              )
-            }
-            variant={isLoading ? "flat" : "light"}
+            startContent={<Check className="w-3 h-3" />}
+            variant="light"
             onPress={onComplete}
           >
-            {isLoading ? "Finalizando..." : "Finalizar"}
+            Finalizar
           </Button>
         </div>
       </CardFooter>
@@ -275,9 +267,8 @@ interface PreparationGridProps {
 export function PreparationGrid({ requests, socket }: PreparationGridProps) {
   const [requestToConfirm, setRequestToConfirm] =
     useState<PreparationRequest | null>(null);
-  const [loadingRequest, setLoadingRequest] =
-    useState<PreparationRequest | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isConfirmLoading, setIsConfirmLoading] = useState(false);
 
   const handleAttachments = useCallback((request: PreparationRequest) => {
     console.log("Anexos para:", request.nome);
@@ -289,23 +280,22 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
 
   const handleConfirm = useCallback(async () => {
     if (requestToConfirm) {
+      setIsConfirmLoading(true);
       setIsProcessing(true);
-      setLoadingRequest(requestToConfirm);
-      setRequestToConfirm(null);
 
       try {
-        // Simula um pequeno delay para mostrar o loading
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
         emitEvent(socket, EventType.PREPARATION_REQUEST, {
           type: PreparationRequestTypes.FINISHED,
           request: requestToConfirm,
         });
+        // Delay para sincronizar com resposta do servidor
+        await new Promise((resolve) => setTimeout(resolve, 1500));
       } catch (error) {
         console.error("Erro ao finalizar solicitação:", error);
       } finally {
+        setIsConfirmLoading(false);
         setIsProcessing(false);
-        setLoadingRequest(null);
+        setRequestToConfirm(null);
       }
     }
   }, [requestToConfirm, socket]);
@@ -317,7 +307,6 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
   useEffect(() => {
     return () => {
       setRequestToConfirm(null);
-      setLoadingRequest(null);
       setIsProcessing(false);
     };
   }, []);
@@ -326,16 +315,12 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
     <>
       {requests.length > 0 ? (
         <div className="px-4 sm:px-6 lg:px-8">
-          <h3 className="text-2xl font-bold mb-6">Solicitações de preparo</h3>
+          <h3 className="text-lg font-medium text-gray-600 mb-4">Solicitações de preparo</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {requests.map((req) => (
               <PreparationCard
                 key={`${req.cpf}-${req.dataNascimento}`}
                 disabled={isProcessing}
-                isLoading={
-                  loadingRequest?.cpf === req.cpf &&
-                  loadingRequest?.dataNascimento === req.dataNascimento
-                }
                 request={req}
                 ticket={req.tickets}
                 onAttachments={() => handleAttachments(req)}
@@ -358,8 +343,8 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
         isOpen={!!requestToConfirm}
         onOpenChange={handleCancel}
       >
-        <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="text-[#2a4a3a]">Confirmar</ModalHeader>
+        <ModalContent className="border border-[#104e35]/20">
+          <ModalHeader className="text-[#104e35]">Confirmar</ModalHeader>
           <ModalBody>
             {requestToConfirm && (
               <p>
@@ -370,7 +355,7 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
           </ModalBody>
           <ModalFooter className="flex justify-end gap-2">
             <Button
-              className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+              className="text-[#104e35] hover:bg-[#e8f4e3]"
               color="default"
               size="sm"
               variant="flat"
@@ -379,7 +364,8 @@ export function PreparationGrid({ requests, socket }: PreparationGridProps) {
               Cancelar
             </Button>
             <Button
-              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+              className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white focus-visible:ring-2 focus-visible:ring-[#104e35]/40"
+              isLoading={isConfirmLoading}
               size="sm"
               onClick={handleConfirm}
             >

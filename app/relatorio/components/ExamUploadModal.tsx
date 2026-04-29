@@ -169,13 +169,13 @@ const ExamUploadModal: React.FC<{
       size="xl"
       onClose={onClose}
     >
-      <ModalContent className="border border-[#44735e]/20">
-        <ModalHeader className="flex flex-col gap-1 text-[#2a4a3a] border-b border-[#44735e]/15">
+      <ModalContent className="border border-[#104e35]/20">
+        <ModalHeader className="flex flex-col gap-1 text-[#104e35] border-b border-[#104e35]/15">
           <div className="flex items-center gap-2">
-            <Upload className="text-[#44735e]" size={20} />
+            <Upload className="text-[#104e35]" size={20} />
             <p>Envio de Resultado </p>
           </div>
-          <p className="text-sm text-[#44735e]">{exame.nomeExame}</p>
+          <p className="text-sm text-[#104e35]">{exame.nomeExame}</p>
         </ModalHeader>
         <ModalBody>
           <div className="space-y-4">
@@ -247,9 +247,9 @@ const ExamUploadModal: React.FC<{
             </div>
           </div>
         </ModalBody>
-        <ModalFooter className="border-t border-[#44735e]/15">
+        <ModalFooter className="border-t border-[#104e35]/15">
           <Button
-            className="text-[#2a4a3a] hover:bg-[#e8f4e3]"
+            className="text-[#104e35] hover:bg-[#e8f4e3]"
             disabled={isUploading}
             variant="light"
             onPress={onClose}
@@ -257,7 +257,7 @@ const ExamUploadModal: React.FC<{
             Cancelar
           </Button>
           <Button
-            className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
+            className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white focus-visible:ring-2 focus-visible:ring-[#104e35]/40"
             disabled={selectedFiles.length === 0 || isUploading}
             isLoading={isUploading}
             startContent={<Upload size={16} />}
