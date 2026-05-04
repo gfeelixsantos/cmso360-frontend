@@ -198,17 +198,21 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         throw new Error(`Erro ao buscar prontuário: ${txt}`);
       }
 
-      const data = await response.json();
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const newWin = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
-      if (data.sas_url) {
-        window.open(data.sas_url, "_blank", "noopener,noreferrer");
-      } else {
+      if (!newWin) {
+        URL.revokeObjectURL(blobUrl);
         setAlertModal({
           open: true,
-          type: "warning",
-          message: "Prontuário não disponível",
+          type: "error",
+          message: "Não foi possível abrir o prontuário em nova aba",
         });
+        return;
       }
+
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (error) {
       console.error("Erro ao visualizar prontuário:", error);
       setAlertModal({
@@ -561,3 +565,5 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
 LazyModalContent.displayName = "LazyModalContent";
 export default LazyModalContent;
+
+
