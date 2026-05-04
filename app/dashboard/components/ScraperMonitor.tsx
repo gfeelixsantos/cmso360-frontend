@@ -13,8 +13,6 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { AsoTrackingSection } from "./AsoTrackingSection";
-
 import { WORKER_SCRAPER_STATUS, WORKER_WS_URL } from "@/config/constants";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 
@@ -374,10 +372,6 @@ export const ScraperMonitor: React.FC = () => {
           </div>
         )}
 
-        {/* 🔄 LIBERAÇÃO DE ASOs */}
-        <div className="mt-4">
-          <AsoTrackingSection />
-        </div>
       </div>
     </motion.div>
   );
