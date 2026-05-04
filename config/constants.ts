@@ -65,7 +65,6 @@ export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
 export const NEST_SOC_PEDIDOEXAME_VALIDADE = `${NEST_URL}soc/pedidoexame/validate?`;
 export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
-export const NEST_SCHEDULINGS_SYNC_SOC = `${NEST_URL}soc/sync-soc`;
 export const NEST_SOC_SINCRONIZAR_PRONTUARIO = `${NEST_URL}soc/sincronizar-prontuario`;
 
 export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;

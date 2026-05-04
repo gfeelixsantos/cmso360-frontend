@@ -18,7 +18,6 @@ import InformacoesGerais, {
 } from "./components/InformacoesGerais";
 import ExamesTable from "./components/ExamesTable";
 import AnexosUpload from "./components/AnexosUpload"; // Importe o novo componente
-import SyncSocConfirmationModal from "./components/SyncSocConfirmationModal";
 
 import {
   NEST_SCHEDULINGS_UPDATE,
@@ -70,7 +69,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const [loadingSyncSoc, setLoadingSyncSoc] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [loadingAttachments, setLoadingAttachments] = useState(false);
-  const [syncSocModalOpen, setSyncSocModalOpen] = useState(false);
 
   // Estado para modal de alerta
   const [alertModal, setAlertModal] = useState<{
@@ -265,7 +263,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     }
   };
 
-  const handleSyncWithSOC = async (_manterExamesRealizados: boolean) => {
+  const handleSyncWithSOC = async () => {
     try {
       setLoadingSyncSoc(true);
 
@@ -281,23 +279,13 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Erro ao sincronizar com SOC");
-      }
-
       const payload: SyncProntuarioPayload = await response.json();
 
-      if (!payload?.success || !payload?.data) {
-        throw new Error(payload?.message || "Falha na sincronizacao");
+      if (!response.ok || !payload?.success || !payload?.data) {
+        throw new Error(payload?.message || "Erro ao sincronizar com SOC");
       }
 
-      const updatedScheduling = payload.data as Scheduling;
-
-      console.log("Scheduling atualizado apos sync exclusivo:", payload);
-
-      if (onUpdateScheduling) {
-        onUpdateScheduling(updatedScheduling);
-      }
+      onUpdateScheduling?.(payload.data);
 
       const resumo = payload.resumo;
       const resumoMessage = resumo
@@ -309,7 +297,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         type: "success",
         message: `Sincronizacao do prontuario realizada com sucesso!${resumoMessage}`,
       });
-      setSyncSocModalOpen(false);
     } catch (error) {
       console.error("Erro ao sincronizar:", error);
       setAlertModal({
@@ -391,13 +378,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
         onDeleteSuccess={onClose}
       />
 
-      <SyncSocConfirmationModal
-        isLoading={loadingSyncSoc}
-        isOpen={syncSocModalOpen}
-        onClose={() => setSyncSocModalOpen(false)}
-        onConfirm={() => handleSyncWithSOC(true)}
-      />
-
       <ModalHeader className="flex gap-2">
         <div className="flex items-center justify-between w-full">
           <div>
@@ -450,10 +430,24 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
               <Button
                 color="default"
-                isDisabled={true}
+                disabled={
+                  loadingSyncSoc ||
+                  loadingViewMedicalRecord ||
+                  loadingViewReport
+                }
+                isLoading={loadingSyncSoc}
                 size="sm"
                 startContent={<RefreshCw size={16} />}
                 variant="light"
+                onPress={() =>
+                  setAlertModal({
+                    open: true,
+                    type: "warning",
+                    message:
+                      "A sincronizacao com o SOC vai atualizar os dados cadastrais desta ficha com base no cadastro retornado pelo SOC e reconciliar os exames da mesma data.\n\nExames iniciados ou finalizados serao preservados. Exames pendentes poderao ser adicionados ou removidos conforme o retorno do SOC.\n\nDeseja continuar?",
+                    onConfirm: handleSyncWithSOC,
+                  })
+                }
               >
                 Sincronizar SOC
               </Button>
