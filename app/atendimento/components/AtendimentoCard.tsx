@@ -49,7 +49,6 @@ interface AtendimentoCardProps {
   unidadeSelecionada: string;
   socket: Socket;
   onHandleModal: (state: boolean) => void;
-  // setTicketSelecionado: (ticket: Ticket | null) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
   pendingAction?: {
@@ -176,14 +175,14 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
   );
 };
 
-// Componente para informações do funcionário
+// Componente para informações do funcionário - AJUSTADO
 const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
   atendimento,
 }) => {
   const idade = calcularIdade(atendimento.DATANASCIMENTO);
 
   return (
-    <div className="flex items-start gap-3 w-full">
+    <div className="flex-1 flex items-start gap-3 min-w-0">
       <EmployeeAvatar atendimento={atendimento} />
 
       <div className="flex-1 min-w-0 overflow-hidden">
@@ -309,47 +308,19 @@ const shouldShowCompletedTime = (exame: ExamRegister): boolean => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "AGENDADO":
-      return {
-        bg: "bg-blue-50",
-        text: "text-blue-700",
-        border: "border-blue-200",
-      };
+      return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" };
     case "REALIZADO":
-      return {
-        bg: "bg-green-50",
-        text: "text-green-700",
-        border: "border-green-200",
-      };
+      return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" };
     case "EM ANDAMENTO":
-      return {
-        bg: "bg-amber-50",
-        text: "text-amber-700",
-        border: "border-amber-200",
-      };
+      return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
     case "CANCELADO":
-      return {
-        bg: "bg-red-50",
-        text: "text-red-700",
-        border: "border-red-200",
-      };
+      return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
     case "FINALIZADO":
-      return {
-        bg: "bg-purple-50",
-        text: "text-purple-700",
-        border: "border-purple-200",
-      };
+      return { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" };
     case "PENDENTE":
-      return {
-        bg: "bg-gray-50",
-        text: "text-gray-700",
-        border: "border-gray-200",
-      };
+      return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200" };
     default:
-      return {
-        bg: "bg-gray-50",
-        text: "text-gray-700",
-        border: "border-gray-200",
-      };
+      return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200" };
   }
 };
 
@@ -407,18 +378,12 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                 : "";
 
               return (
-                <TableRow
-                  key={exame.codigoExame || index.toString()}
-                  className="hover:bg-gray-50 transition-colors"
-                >
+                <TableRow key={exame.codigoExame || index.toString()} className="hover:bg-gray-50 transition-colors">
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-xs text-gray-900">
-                        {examName}
-                      </span>
+                      <span className="font-medium text-xs text-gray-900">{examName}</span>
                     </div>
                   </TableCell>
-
                   <TableCell>
                     <div className="flex justify-center">
                       <span className="font-medium text-xs text-gray-900 text-center">
@@ -426,7 +391,6 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       </span>
                     </div>
                   </TableCell>
-
                   <TableCell>
                     <div className="flex items-center gap-1 justify-center">
                       <span className="text-xs text-gray-700 text-left">
@@ -434,15 +398,11 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       </span>
                     </div>
                   </TableCell>
-
                   <TableCell>
                     <div className="flex items-center gap-1 justify-left whitespace-nowrap">
-                      <span className="text-xs text-gray-700">
-                        {exame.sala || "—"}
-                      </span>
+                      <span className="text-xs text-gray-700">{exame.sala || "—"}</span>
                     </div>
                   </TableCell>
-
                   <TableCell>
                     <div className="flex justify-center">
                       {formattedTime ? (
@@ -454,7 +414,6 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                       )}
                     </div>
                   </TableCell>
-
                   <TableCell>
                     <div className="flex justify-center">
                       {exame.url ? (
@@ -491,54 +450,31 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
             : "";
 
           return (
-            <div
-              key={exame.codigoExame || index.toString()}
-              className="p-3 bg-gray-50 rounded-lg border border-gray-200"
-            >
+            <div key={exame.codigoExame || index.toString()} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="col-span-2">
-                  <span className="font-semibold text-gray-900">
-                    {examName}
-                  </span>
-                  <span className="text-xs text-gray-400 font-mono ml-2">
-                    {exame.codigoExame}
-                  </span>
+                  <span className="font-semibold text-gray-900">{examName}</span>
+                  <span className="text-xs text-gray-400 font-mono ml-2">{exame.codigoExame}</span>
                 </div>
-
                 <div className="col-span-2">
-                  <Badge
-                    className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`}
-                    size="sm"
-                    variant="flat"
-                  >
+                  <Badge className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`} size="sm" variant="flat">
                     {exame.status}
                   </Badge>
                 </div>
-
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs">
-                    {exame.profissional || "Não atribuído"}
-                  </span>
+                  <span className="text-xs">{exame.profissional || "Não atribuído"}</span>
                 </div>
-
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs">
-                    {exame.sala || "Não definida"}
-                  </span>
+                  <span className="text-xs">{exame.sala || "Não definida"}</span>
                 </div>
-
-                {/* Horário do exame para mobile */}
                 {formattedTime && (
                   <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-gray-200 mt-1">
                     <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-600">
-                      {formattedTime}
-                    </span>
+                    <span className="text-xs text-gray-600">{formattedTime}</span>
                   </div>
                 )}
-
                 <div className="col-span-2 flex justify-center pt-2">
                   {exame.url ? (
                     <Button
@@ -595,9 +531,7 @@ const Anexos: React.FC<{ anexos: any[] }> = ({ anexos }) => {
 };
 
 // Componente para observações e anotações (sempre visível)
-const Observations: React.FC<{ atendimento: Scheduling }> = ({
-  atendimento,
-}) => {
+const Observations: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) => {
   const hasObservations = atendimento.ANOTACOES || atendimento.OBSERVACOES;
 
   if (!hasObservations) return null;
@@ -608,23 +542,14 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({
         <div className="space-y-2 text-xs text-gray-700">
           {atendimento.ANOTACOES && (
             <div>
-              <span className="font-medium block text-xs text-yellow-800 mb-1">
-                Anotações internas:
-              </span>
-              <p className="text-xs whitespace-pre-line">
-                {atendimento.ANOTACOES}
-              </p>
+              <span className="font-medium block text-xs text-yellow-800 mb-1">Anotações internas:</span>
+              <p className="text-xs whitespace-pre-line">{atendimento.ANOTACOES}</p>
             </div>
           )}
-
           {atendimento.OBSERVACOES && (
             <div>
-              <span className="font-medium block text-xs text-yellow-800 mb-1">
-                Observações cliente:
-              </span>
-              <p className="text-xs whitespace-pre-line">
-                {atendimento.OBSERVACOES}
-              </p>
+              <span className="font-medium block text-xs text-yellow-800 mb-1">Observações cliente:</span>
+              <p className="text-xs whitespace-pre-line">{atendimento.OBSERVACOES}</p>
             </div>
           )}
         </div>
@@ -677,15 +602,6 @@ const getStatusVisual = (status: string) => {
         textColor: "text-gray-500",
       };
     case TicketStatus.EM_PREPARACAO:
-      return {
-        cardBg: "bg-blue-100",
-        border: "border-2 border-blue-400",
-        hoverBg: "hover:bg-blue-200",
-        pillBg: "bg-blue-400 text-white",
-        pillDotColor: "bg-blue-200",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-blue-500",
-      };
     case TicketStatus.ENCAMINHADO_RX:
       return {
         cardBg: "bg-blue-100",
@@ -712,25 +628,13 @@ const getStatusVisual = (status: string) => {
 const getPendingActionVisual = (pendingAction: PendingActionInfo) => {
   switch (pendingAction.action) {
     case TicketActionType.CHAMAR:
-      return {
-        label: "CHAMANDO",
-        className: "border border-amber-500 bg-white text-amber-600",
-      };
+      return { label: "CHAMANDO", className: "border border-amber-500 bg-white text-amber-600" };
     case TicketActionType.ATENDER:
-      return {
-        label: "ATENDENDO",
-        className: "border border-red-500 bg-white text-red-600",
-      };
+      return { label: "ATENDENDO", className: "border border-red-500 bg-white text-red-600" };
     case TicketActionType.RETORNAR:
-      return {
-        label: "RETORNANDO",
-        className: "border border-gray-500 bg-white text-gray-600",
-      };
+      return { label: "RETORNANDO", className: "border border-gray-500 bg-white text-gray-600" };
     default:
-      return {
-        label: "PROCESSANDO",
-        className: "border border-gray-400 bg-white text-gray-600",
-      };
+      return { label: "PROCESSANDO", className: "border border-gray-400 bg-white text-gray-600" };
   }
 };
 
@@ -741,15 +645,10 @@ const StatusBadge: React.FC<{
 }> = ({ status, pendingAction }) => {
   if (pendingAction) {
     const pendingVisual = getPendingActionVisual(pendingAction);
-
     return (
-      <div
-        className={`${pendingVisual.className} px-3 py-1 rounded-full flex items-center justify-center`}
-      >
+      <div className={`${pendingVisual.className} px-3 py-1 rounded-full flex items-center justify-center`}>
         <Spinner className="mr-2" color="current" size="sm" variant="simple" />
-        <span className="text-xs font-semibold uppercase truncate">
-          {pendingVisual.label}
-        </span>
+        <span className="text-xs font-semibold uppercase truncate">{pendingVisual.label}</span>
       </div>
     );
   }
@@ -759,13 +658,9 @@ const StatusBadge: React.FC<{
   return (
     <div className={`${pillBg} ${pillClass} flex items-center justify-center`}>
       {(status === TicketStatus.EM_PREPARACAO ||
-        status === TicketStatus.ENCAMINHADO_RX) && (
-        <Spinner className="mr-2" color="white" size="sm" variant="simple" />
-      )}
-      {status === TicketStatus.EM_CHAMADA && (
-        <Spinner className="mr-2" color="white" size="sm" variant="simple" />
-      )}
-      {status === TicketStatus.EM_ATENDIMENTO && (
+        status === TicketStatus.ENCAMINHADO_RX ||
+        status === TicketStatus.EM_CHAMADA ||
+        status === TicketStatus.EM_ATENDIMENTO) && (
         <Spinner className="mr-2" color="white" size="sm" variant="simple" />
       )}
       <span className="text-xs font-semibold uppercase truncate">{status}</span>
@@ -773,7 +668,7 @@ const StatusBadge: React.FC<{
   );
 };
 
-// Componente para as ações do ticket (com cores do SenhaCard)
+// Componente para as ações do ticket
 const TicketActions: React.FC<{
   ticket: Ticket;
   salaSelecionada: string;
@@ -781,7 +676,6 @@ const TicketActions: React.FC<{
   socket: Socket;
   atendimento: Scheduling;
   onHandleModal: (state: boolean) => void;
-  // setTicketSelecionado: (ticket: Ticket) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
   pendingAction?: PendingActionInfo;
@@ -793,24 +687,16 @@ const TicketActions: React.FC<{
   socket,
   atendimento,
   onHandleModal,
-  // setTicketSelecionado,
   setFuncionarioSelecionado,
   exameSelecionado,
   pendingAction,
   startPendingAction,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
-  const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>(
-    {},
-  );
+  const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>({});
 
-  // Utilizado para chamar e nas demais ações
-  const handleExecutarAcao = (
-    atendimento: Scheduling,
-    action: TicketActionType,
-  ) => {
+  const handleExecutarAcao = (atendimento: Scheduling, action: TicketActionType) => {
     const currentUser = getCurrentUser();
-
     startPendingAction(ticket.id, action);
     executarAtendimentoAcao(
       atendimento._id,
@@ -825,36 +711,21 @@ const TicketActions: React.FC<{
     );
   };
 
-  const handleAtender = (
-    ticket: Ticket,
-    action: TicketActionType,
-    funcionario: Scheduling,
-  ) => {
+  const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
     const currentUser = getCurrentUser();
-
-    if (
-      ticket.status === TicketStatus.EM_ATENDIMENTO &&
-      firstClickMap[ticket.id]
-    ) {
+    if (ticket.status === TicketStatus.EM_ATENDIMENTO && firstClickMap[ticket.id]) {
       setFuncionarioSelecionado(funcionario);
       onHandleModal(true);
-
       setFirstClickMap((prev) => {
         const updated = { ...prev };
-
         delete updated[ticket.id];
-
         return updated;
       });
-
       return;
     }
 
     startPendingAction(ticket.id, action);
-    if (
-      !firstClickMap[ticket.id] ||
-      ticket.status !== TicketStatus.EM_ATENDIMENTO
-    ) {
+    if (!firstClickMap[ticket.id] || ticket.status !== TicketStatus.EM_ATENDIMENTO) {
       executarAtendimentoAcao(
         atendimento._id,
         ticket.id,
@@ -869,38 +740,19 @@ const TicketActions: React.FC<{
     }
   };
 
-  const handleRetornar = (
-    atendimento: Scheduling,
-    action: TicketActionType,
-  ) => {
-    // Reseta o clique para permitir novo ciclo
+  const handleRetornar = (atendimento: Scheduling, action: TicketActionType) => {
     setFirstClickMap((prev) => {
       const updated = { ...prev };
-
       delete updated[ticket.id];
-
       return updated;
     });
-
     startPendingAction(ticket.id, action);
-
-    return executarAtendimentoAcao(
-      atendimento._id,
-      ticket.id,
-      action,
-      unidadeSelecionada,
-      socket,
-    );
+    return executarAtendimentoAcao(atendimento._id, ticket.id, action, unidadeSelecionada, socket);
   };
 
   const handleDisabledStatus = (ticket: Ticket) => {
     const currentUser = getCurrentUser();
-
-    // FINALIZADO sempre bloqueado
-    if (ticket.status === TicketStatus.FINALIZADO) {
-      return true;
-    }
-
+    if (ticket.status === TicketStatus.FINALIZADO) return true;
     return belongsToOtherOperationalContext(ticket, {
       sala: salaSelecionada,
       profissional: currentUser?.nome,
@@ -909,16 +761,10 @@ const TicketActions: React.FC<{
 
   const isDisabled = handleDisabledStatus(ticket);
   const isPending = !!pendingAction;
-
   const isButtonDisabled = isDisabled || isPending;
 
   return (
-    <div
-      aria-label="Ações do ticket"
-      className="flex items-center gap-2"
-      role="group"
-    >
-      {/* Botão Chamar */}
+    <div aria-label="Ações do ticket" className="flex items-center gap-2" role="group">
       <Tooltip content="Chamar" placement="bottom">
         <Button
           isIconOnly
@@ -926,15 +772,12 @@ const TicketActions: React.FC<{
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isButtonDisabled}
           size="md"
-          onPress={() =>
-            handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
-          }
+          onPress={() => handleExecutarAcao(atendimento, TicketActionType.CHAMAR)}
         >
           <Phone className="h-4 w-4" />
         </Button>
       </Tooltip>
 
-      {/* Botão Atender */}
       <Tooltip content="Atender" placement="bottom">
         <Button
           isIconOnly
@@ -942,15 +785,12 @@ const TicketActions: React.FC<{
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isButtonDisabled}
           size="md"
-          onPress={() =>
-            handleAtender(ticket, TicketActionType.ATENDER, atendimento)
-          }
+          onPress={() => handleAtender(ticket, TicketActionType.ATENDER, atendimento)}
         >
           <FilePlus className="h-4 w-4" />
         </Button>
       </Tooltip>
 
-      {/* Botão Retornar */}
       <Tooltip content="Retornar" placement="bottom">
         <Button
           isIconOnly
@@ -967,7 +807,7 @@ const TicketActions: React.FC<{
   );
 };
 
-// Componente principal - CORRIGIDO
+// Componente principal - AJUSTADO
 const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   atendimento,
   salaSelecionada,
@@ -980,9 +820,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
   startPendingAction,
 }) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
-  const { cardBg, border, hoverBg } = getStatusVisual(
-    atendimento.TICKET?.status,
-  );
+  const { cardBg, border, hoverBg } = getStatusVisual(atendimento.TICKET?.status);
 
   const formatarTempoEspera = (emissao: string | Date) => {
     const dataEmissao = new Date(emissao);
@@ -991,7 +829,6 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
     const minutos = Math.floor(diferencaMs / 1000 / 60);
     const horas = Math.floor(minutos / 60);
     const minutosRestantes = minutos % 60;
-
     return horas > 0 ? `${horas}h ${minutosRestantes}m` : `${minutos}m`;
   };
 
@@ -1002,16 +839,11 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
       role="article"
     >
       <div className="space-y-4">
-        {/* Header com informações do funcionário e badge de status */}
-        <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between gap-2">
           <EmployeeInfo atendimento={atendimento} />
 
-          {/* Ações do ticket */}
-          <div className="flex flex-col gap-2 flex-shrink-0 ml-2">
-            <StatusBadge
-              pendingAction={pendingAction}
-              status={atendimento.TICKET?.status}
-            />
+          <div className="flex flex-col gap-2 flex-shrink-0 ml-2 items-end">
+            <StatusBadge pendingAction={pendingAction} status={atendimento.TICKET?.status} />
             <TicketActions
               atendimento={atendimento}
               exameSelecionado={exameSelecionado}
@@ -1027,42 +859,26 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           </div>
         </div>
 
-        {/* Observações e anotações */}
         <Observations atendimento={atendimento} />
 
-        {/* Botão para ver detalhes dos exames */}
         {atendimento.EXAMES && atendimento.EXAMES.length > 0 && (
           <Button
             aria-expanded={showExamDetails}
             aria-label={`${showExamDetails ? "Ocultar" : "Mostrar"} detalhes dos exames`}
             className="w-full text-xs"
             color="success"
-            endContent={
-              showExamDetails ? (
-                <ChevronUp className="h-3 w-3" />
-              ) : (
-                <ChevronDown className="h-3 w-3" />
-              )
-            }
+            endContent={showExamDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             size="lg"
             variant="light"
             onPress={() => setShowExamDetails(!showExamDetails)}
           >
-            {/* Barra de progresso dos exames */}
             <ExamProgress exames={atendimento.EXAMES} />
           </Button>
         )}
 
-        {/* Detalhes dos exames em tabela */}
         {showExamDetails && <ExamDetails exames={atendimento.EXAMES} />}
 
-        {/* Footer com informações do ticket e anexos */}
-        <div
-          aria-label="Informações adicionais do atendimento"
-          className="space-y-3 pt-4 border-t border-gray-200"
-          role="contentinfo"
-        >
-          {/* Anexos */}
+        <div aria-label="Informações adicionais do atendimento" className="space-y-3 pt-4 border-t border-gray-200" role="contentinfo">
           {atendimento.ANEXOS && atendimento.ANEXOS.length > 0 && (
             <div className="flex gap-2">
               <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -1073,12 +889,8 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
             </div>
           )}
 
-          {/* Informações do ticket */}
           <div className="flex items-center justify-between">
-            <div
-              aria-label="Detalhes do ticket"
-              className="flex items-center gap-2 text-xs text-gray-500"
-            >
+            <div aria-label="Detalhes do ticket" className="flex items-center gap-2 text-xs text-gray-500">
               <Clock aria-hidden="true" className="h-4 w-4" />
               <span>{formatarTempoEspera(atendimento.TICKET.emissao)}</span>
               <User aria-hidden="true" className="h-4 w-4 text-gray-400" />
@@ -1088,7 +900,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
               <Senha aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {Number(atendimento.TICKET.numero) < 0
                 ? "N/A"
-                : atendimento.TICKET.prefixo + atendimento.TICKET.numero}
+                : (atendimento.TICKET.prefixo || "") + atendimento.TICKET.numero}
               <Pin aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {atendimento.TICKET.unidade}
             </div>
