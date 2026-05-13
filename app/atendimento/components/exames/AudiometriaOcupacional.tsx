@@ -19,6 +19,7 @@ import HeaderExame from "./HeaderExame";
 import { generateAudiogramSVG } from "./AudiometriaGraphics";
 import { AudiogramDisplay } from "./AudiometriaDisplay";
 import { openHistoricoHTML } from "./OpenHistoricoHTML";
+import { avaliarCriterioPcdAuditivo } from "./audiometria-pcd";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import {
@@ -724,6 +725,24 @@ export class AudiometriaCalculator {
       });
   }
 
+  static verificarCriterioPCDAuditivoOcupacional(
+    mediaOD: number | null,
+    mediaOE: number | null,
+    vaLimiaresOD: {
+      [key: number]: string;
+    },
+    vaLimiaresOE: {
+      [key: number]: string;
+    },
+  ): string {
+    return avaliarCriterioPcdAuditivo({
+      mediaOD,
+      mediaOE,
+      od: vaLimiaresOD,
+      oe: vaLimiaresOE,
+    });
+  }
+
   static classificarResultadoOcupacional(
     isNormal: boolean,
     audiometriaAnterior: string,
@@ -1059,7 +1078,12 @@ export class AudiometriaCalculator {
       classificacaoGeral: conclusaoGeral,
 
       // === Critérios legais e NR-7 ===
-      criterioPCD: this.verificarCriterioPCD(mediaTonalOD, mediaTonalOE),
+      criterioPCD: this.verificarCriterioPCDAuditivoOcupacional(
+        mediaTonalOD,
+        mediaTonalOE,
+        vaLimiaresOD,
+        vaLimiaresOE,
+      ),
       classificacaoNR7OD,
       classificacaoNR7OE,
     };
@@ -2246,13 +2270,21 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
             {/* Conclusão Geral */}
             <div className="p-4">
-              <div className="mb-6 p-3 rounded-lg">
+              <div
+                className={`mb-6 p-3 rounded-lg ${
+                  formData.criterioPCD.trim().length === 0 ? "hidden" : ""
+                }`}
+              >
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Sugestão de enquadramento PCD
                 </label>
                 <Textarea
                   isReadOnly
-                  className={`text-sm font-semibold ${formData.criterioPCD.includes("POSSIBILIDADE") ? "text-green-700 border-green-300" : "text-gray-700 border-gray-300"}`}
+                  className={`text-sm font-semibold ${
+                    formData.criterioPCD.startsWith("Atende aos")
+                      ? "text-green-700 border-green-300"
+                      : "text-gray-700 border-gray-300"
+                  }`}
                   rows={2}
                   value={formData.criterioPCD}
                 />
