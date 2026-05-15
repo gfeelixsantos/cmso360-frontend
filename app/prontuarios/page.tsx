@@ -56,7 +56,7 @@ import { HeaderApp } from "@/components/shared/HeaderApp";
 import { PscProviderStatus } from "@/app/atendimento/components/PscProviderStatus";
 
 // Utils e config
-import { getCurrentUser, logout } from "@/lib/utils";
+import { getCurrentUser, getStatusColor, logout } from "@/lib/utils";
 import {
   NEST_PRONTUARIO_PARAMETROS,
   NEST_PRONTUARIO_REGISTROS,
@@ -148,18 +148,7 @@ const mapSchedulingToMedicalRecord = (
   } as MedicalRecord;
 };
 
-const getStatusColor = (status: AtendimentoStatus) => {
-  switch (status) {
-    case AtendimentoStatus.AVALIACAO_MEDICA:
-      return "warning";
-    case AtendimentoStatus.FINALIZADO:
-      return "success";
-    case AtendimentoStatus.AGUARDANDO_RESULTADOS:
-      return "primary";
-    default:
-      return "default";
-  }
-};
+
 
 /* ---------------------- Página Principal ---------------------- */
 
@@ -669,12 +658,17 @@ export default function UnifiedProntuarioPage() {
           <div className="space-y-4">
             {/* Badge do Provedor de Assinatura Digital */}
             {assinaDigitalmente && (
-              <div className="mb-2">
-                <PscProviderStatus
-                  isLoading={isPscLoading}
-                  pscAuthStatus={pscAuthStatus}
-                  settings={pscSettings}
-                />
+              <div className="mb-4 grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2 border-b border-divider pb-3">
+                <span className="text-sm font-medium text-gray-700 text-left pt-1">
+                  Assinatura:
+                </span>
+                <div className="justify-self-end flex items-center gap-2">
+                  <PscProviderStatus
+                    isLoading={isPscLoading}
+                    pscAuthStatus={pscAuthStatus}
+                    settings={pscSettings}
+                  />
+                </div>
               </div>
             )}
 

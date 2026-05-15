@@ -343,9 +343,9 @@ export default function DashboardPage() {
       setCurrentMessage(message);
 
       // Verificar se já foi vista
-      if (!hasSeenMessage()) {
-        setShowModal(true);
-      }
+      // if (!hasSeenMessage()) {
+      //   setShowModal(true);
+      // }
 
       setHasNewMessage(true);
     }
@@ -382,9 +382,9 @@ export default function DashboardPage() {
           setHasNewMessage(true);
 
           // Mostrar modal apenas se ainda não foi vista
-          if (!hasSeenMessage()) {
-            setShowModal(true);
-          }
+          // if (!hasSeenMessage()) {
+          //   setShowModal(true);
+          // }
         } else {
           // Buscar nova mensagem
           await fetchAndSetMessage();
@@ -518,7 +518,8 @@ export default function DashboardPage() {
         </motion.footer>
       </main>
 
-      {/* Modal de Mensagem */}
+      {/* Modal de Mensagem desabilitado temporariamente */}
+      {/* 
       <MessageModal
         isOpen={showModal}
         message={currentMessage}
@@ -527,8 +528,10 @@ export default function DashboardPage() {
           setShowModal(false);
         }}
       />
+      */}
 
-      {/* Botão flutuante para mensagens */}
+      {/* Botão flutuante para mensagens desabilitado temporariamente */}
+      {/* 
       {currentMessage && (
         <MessageFloatingButton
           hasMessage={hasNewMessage}
@@ -537,6 +540,7 @@ export default function DashboardPage() {
           }}
         />
       )}
+      */}
     </div>
   );
 }

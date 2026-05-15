@@ -34,6 +34,7 @@ import {
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { getCurrentUser } from "@/lib/utils";
+import { useExamDraft } from "@/hooks/useExamDraft";
 
 interface AtendimentoModalExamesProps {
   isOpen: boolean;
@@ -83,6 +84,24 @@ const AtendimentoModalExames = ({
     [],
   );
   const [entrevistaPsico, setEntrevistaPsico] = useState<boolean>(false);
+
+  // Rascunho local: protege dados em caso de queda de rede
+  const draftCodigosExame = useMemo(
+    () => exameParaAtualizar.map((e) => e.codigoExame),
+    [exameParaAtualizar],
+  );
+  const { saveDraft, loadDraft, clearDraft } = useExamDraft(
+    funcionarioSelecionado?._id ?? null,
+    draftCodigosExame,
+  );
+
+  // Formulário inicial: rascunho salvo tem prioridade sobre dado do banco
+  const initialFormulario = useMemo(() => {
+    const draft = loadDraft();
+    if (draft) return draft;
+    return exameParaAtualizar[0]?.formulario ?? undefined;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, exameParaAtualizar]);
   const [psicossocial, setPsicossocial] = useState<boolean>(false);
   const [notificationModal, setNotificationModal] =
     useState<NotificationModalState>({
@@ -192,6 +211,9 @@ const AtendimentoModalExames = ({
           throw new Error("Erro ao atualizar exame");
         }
 
+        // Limpa rascunho após envio bem-sucedido
+        clearDraft();
+
         // Retorna o ticket
         executarAtendimentoAcao(
           funcionarioSelecionado._id,
@@ -245,6 +267,7 @@ const AtendimentoModalExames = ({
       verificarExamesPendentes,
       closeNotificationModal,
       onClose,
+      clearDraft,
     ],
   );
 
@@ -254,6 +277,9 @@ const AtendimentoModalExames = ({
   const handleSaveExam = useCallback(
     async (data: any) => {
       if (!funcionarioSelecionado) return;
+
+      // Salva rascunho antes de processar (proteção contra queda de rede na confirmação)
+      saveDraft(data);
 
       const isValidExamData = (data: any) => {
         return data && typeof data === "object" && Object.keys(data).length > 0;
@@ -452,7 +478,7 @@ const AtendimentoModalExames = ({
           <Formulario
             atendimento={funcionarioSelecionado}
             exame={exame}
-            formulario={exameParaAtualizar[0]?.formulario}
+            formulario={initialFormulario}
             operationalUser={effectiveUser}
             onClose={onClose}
             onSave={handleSaveExam}

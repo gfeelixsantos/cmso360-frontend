@@ -470,12 +470,7 @@ export default function ConfiguracoesPage() {
               </CardHeader>
               <CardBody>
                 <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    {pscAuthStatus.isActive ? (
-                      <CheckCircle className="h-6 w-6 text-green-500" />
-                    ) : (
-                      <AlertCircle className="h-6 w-6 text-gray-400" />
-                    )}
+                  <div className="flex items-center">
                     <div>
                       <p className="font-medium text-gray-900">
                         Status:{" "}

@@ -46,7 +46,7 @@ const ExamUploadModal: React.FC<{
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
 
-      if (file.type !== "application/pdf") {
+      if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
         setUploadError(
           `Arquivo inválido: ${file.name}. Apenas PDFs são permitidos.`,
         );
@@ -95,7 +95,7 @@ const ExamUploadModal: React.FC<{
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
-      setUploadError("Selecione pelo menos um arquivo PDF.");
+      setUploadError("Selecione pelo menos um arquivo PDF ou imagem.");
 
       return;
     }
@@ -184,14 +184,14 @@ const ExamUploadModal: React.FC<{
                 <div className="flex items-center gap-2">
                   <Paperclip className="text-gray-500" size={16} />
                   <span className="text-sm font-medium text-gray-700">
-                    Selecionar Arquivos PDF
+                    Selecionar PDFs ou Imagens
                   </span>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <input
                     multiple
-                    accept="application/pdf"
+                    accept="application/pdf,image/jpeg,image/png"
                     className="hidden"
                     disabled={isUploading}
                     id="file-input-modal"

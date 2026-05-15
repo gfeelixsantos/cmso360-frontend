@@ -2,6 +2,27 @@ import { useState, useEffect, useCallback } from "react";
 
 import { NEST_SCHEDULINGS_ASO_PENDING } from "@/config/constants";
 
+export type AsoPanelGroup = "EM_ANDAMENTO" | "CONCLUIDO" | "NAO_APLICAVEL";
+
+export type AsoPanelDisplayStatus =
+  | "AGUARDANDO_ENVIO"
+  | "NA_FILA_DO_GERADOR"
+  | "EM_GERACAO"
+  | "SEGUINDO_AUTOMATICAMENTE"
+  | "PRECISA_DE_INTERVENCAO"
+  | "COM_FALHA"
+  | "ASO_LIBERADO"
+  | "NAO_APLICAVEL";
+
+export interface AsoPanelProjection {
+  group: AsoPanelGroup;
+  displayStatus: AsoPanelDisplayStatus;
+  displayReason: string;
+  nextExpectedAction: string;
+  willAutoProgress: boolean;
+  needsManualAction: boolean;
+}
+
 export interface AsoPendingItem {
   schedulingId: string;
   nomeFuncionario: string;
@@ -9,7 +30,15 @@ export interface AsoPendingItem {
   tipoExame: string;
   dataAgendamento: string;
   unidadeAtendimento: string;
-  status: "PENDENTE" | "PROCESSANDO" | "DIGITALIZADA" | "FALHA" | "LIBERADO" | "NA_FILA" | "NAO_APLICAVEL";
+  status:
+    | "PENDENTE"
+    | "PROCESSANDO"
+    | "DIGITALIZADA"
+    | "AGUARDANDO_AUTENTICACAO"
+    | "FALHA"
+    | "LIBERADO"
+    | "NA_FILA"
+    | "NAO_APLICAVEL";
   etapa:
     | "GERACAO"
     | "PDF_GERADO"
@@ -28,20 +57,24 @@ export interface AsoPendingItem {
   url: string | null;
   fonte?: "MONGODB" | "FILA_AZURE";
   parecer?: string | null;
+  panel?: AsoPanelProjection;
 }
 
 export interface AsoPendingStats {
-  naFila: number;
-  pendentes: number;
-  processando: number;
-  digitalizadas: number;
-  liberados: number;
-  falhas: number;
-  semAso: number;
+  naFilaDoGerador: number;
+  aguardandoEnvio: number;
+  emGeracao: number;
+  seguindoAutomaticamente: number;
+  precisaIntervencao: number;
+  comFalha: number;
 }
 
 export interface AsoPendingResponse {
   total: number;
+  totalItems?: number;
+  totalPages?: number;
+  page?: number;
+  limit?: number;
   totalNaFila?: number;
   janelaDias?: number;
   stats?: AsoPendingStats;
@@ -52,15 +85,173 @@ export interface AsoPendingResponse {
 interface UseAsoTrackingOptions {
   unidade?: string;
   limit?: number;
+  page?: number;
   autoRefresh?: boolean;
   refreshInterval?: number;
+}
+
+const LEGACY_STATUS_TO_PANEL_STATUS: Partial<
+  Record<AsoPendingItem["status"], AsoPanelDisplayStatus>
+> = {
+  NA_FILA: "NA_FILA_DO_GERADOR",
+  PENDENTE: "AGUARDANDO_ENVIO",
+  PROCESSANDO: "SEGUINDO_AUTOMATICAMENTE",
+  DIGITALIZADA: "SEGUINDO_AUTOMATICAMENTE",
+  AGUARDANDO_AUTENTICACAO: "PRECISA_DE_INTERVENCAO",
+  FALHA: "COM_FALHA",
+  LIBERADO: "ASO_LIBERADO",
+  NAO_APLICAVEL: "NAO_APLICAVEL",
+};
+
+const LEGACY_ETAPA_TO_PANEL_STATUS: Partial<
+  Record<AsoPendingItem["etapa"], AsoPanelDisplayStatus>
+> = {
+  GERACAO: "AGUARDANDO_ENVIO",
+  PDF_GERADO: "SEGUINDO_AUTOMATICAMENTE",
+  ASSINATURA: "SEGUINDO_AUTOMATICAMENTE",
+  FINALIZADO: "ASO_LIBERADO",
+  NA_FILA_AGUARDANDO: "NA_FILA_DO_GERADOR",
+  NAO_APLICAVEL: "NAO_APLICAVEL",
+};
+
+function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
+  if (item.status === "NAO_APLICAVEL" || item.etapa === "NAO_APLICAVEL") {
+    return {
+      group: "NAO_APLICAVEL",
+      displayStatus: "NAO_APLICAVEL",
+      displayReason:
+        "Parecer medico concluido fora do fluxo automatico de liberacao de ASO.",
+      nextExpectedAction: "Nenhuma acao adicional esperada neste fluxo.",
+      willAutoProgress: false,
+      needsManualAction: false,
+    };
+  }
+
+  if (item.status === "LIBERADO") {
+    return {
+      group: "CONCLUIDO",
+      displayStatus: "ASO_LIBERADO",
+      displayReason: "ASO concluido e liberado para entrega.",
+      nextExpectedAction: "Nenhuma acao adicional esperada.",
+      willAutoProgress: false,
+      needsManualAction: false,
+    };
+  }
+
+  if (item.status === "AGUARDANDO_AUTENTICACAO") {
+    return {
+      group: "EM_ANDAMENTO",
+      displayStatus: "PRECISA_DE_INTERVENCAO",
+      displayReason:
+        "O ASO aguarda autenticacao da assinatura digital para continuar.",
+      nextExpectedAction:
+        "Assim que a autenticacao estiver disponivel, o fluxo podera continuar.",
+      willAutoProgress: false,
+      needsManualAction: true,
+    };
+  }
+
+  if (item.status === "FALHA" || item.etapa === "ERRO") {
+    return {
+      group: "EM_ANDAMENTO",
+      displayStatus: "COM_FALHA",
+      displayReason:
+        item.error || "O fluxo do ASO registrou falha e nao avancara sozinho.",
+      nextExpectedAction:
+        "Este caso precisa de analise para definir a proxima acao.",
+      willAutoProgress: false,
+      needsManualAction: true,
+    };
+  }
+
+  const displayStatus =
+    LEGACY_ETAPA_TO_PANEL_STATUS[item.etapa] ||
+    LEGACY_STATUS_TO_PANEL_STATUS[item.status] ||
+    "SEGUINDO_AUTOMATICAMENTE";
+
+  if (displayStatus === "NA_FILA_DO_GERADOR") {
+    return {
+      group: "EM_ANDAMENTO",
+      displayStatus,
+      displayReason:
+        "O ASO esta na fila do gerador e ainda nao iniciou a geracao.",
+      nextExpectedAction:
+        "Assim que chegar a vez deste atendimento, o gerador iniciara o processamento.",
+      willAutoProgress: true,
+      needsManualAction: false,
+    };
+  }
+
+  if (displayStatus === "AGUARDANDO_ENVIO") {
+    return {
+      group: "EM_ANDAMENTO",
+      displayStatus,
+      displayReason:
+        "O ASO ainda nao foi enviado ao gerador para iniciar o processamento.",
+      nextExpectedAction:
+        "O sistema ainda precisa encaminhar este atendimento para o gerador.",
+      willAutoProgress: true,
+      needsManualAction: false,
+    };
+  }
+
+  if (displayStatus === "EM_GERACAO") {
+    return {
+      group: "EM_ANDAMENTO",
+      displayStatus,
+      displayReason:
+        "O ASO ja foi enviado ao gerador e esta em geracao neste momento.",
+      nextExpectedAction:
+        "A proxima evolucao esperada e a conclusao da geracao do PDF.",
+      willAutoProgress: true,
+      needsManualAction: false,
+    };
+  }
+
+  return {
+    group: "EM_ANDAMENTO",
+    displayStatus:
+      displayStatus === "PRECISA_DE_INTERVENCAO"
+        ? "PRECISA_DE_INTERVENCAO"
+        : displayStatus === "COM_FALHA"
+          ? "COM_FALHA"
+          : "SEGUINDO_AUTOMATICAMENTE",
+    displayReason:
+      displayStatus === "PRECISA_DE_INTERVENCAO"
+        ? item.error ||
+          "O ASO aguarda autenticacao da assinatura digital para continuar."
+        : displayStatus === "COM_FALHA"
+          ? item.error ||
+            "O fluxo do ASO registrou falha e nao avancara sozinho."
+          : "O ASO ja saiu da geracao e esta nas etapas seguintes da liberacao.",
+    nextExpectedAction:
+      displayStatus === "PRECISA_DE_INTERVENCAO"
+        ? "Assim que a autenticacao estiver disponivel, o fluxo podera continuar."
+        : displayStatus === "COM_FALHA"
+          ? "Este caso precisa de analise para definir a proxima acao."
+          : "O sistema continuara acompanhando as proximas etapas ate a liberacao.",
+    willAutoProgress:
+      displayStatus !== "PRECISA_DE_INTERVENCAO" &&
+      displayStatus !== "COM_FALHA",
+    needsManualAction:
+      displayStatus === "PRECISA_DE_INTERVENCAO" ||
+      displayStatus === "COM_FALHA",
+  };
+}
+
+function normalizeAsoPendingItem(item: AsoPendingItem): AsoPendingItem {
+  return {
+    ...item,
+    panel: item.panel || inferLegacyPanel(item),
+  };
 }
 
 export function useAsoTracking({
   unidade,
   limit = 100,
+  page = 1,
   autoRefresh = true,
-  refreshInterval = 30000, // 30 segundos
+  refreshInterval = 30000,
 }: UseAsoTrackingOptions = {}) {
   const [data, setData] = useState<AsoPendingResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -75,6 +266,7 @@ export function useAsoTracking({
 
       if (unidade) params.append("unidade", unidade);
       if (limit) params.append("limit", limit.toString());
+      if (page > 1) params.append("page", page.toString());
 
       const url = `${NEST_SCHEDULINGS_ASO_PENDING}${params.toString() ? `?${params.toString()}` : ""}`;
 
@@ -84,16 +276,20 @@ export function useAsoTracking({
         throw new Error(`Erro HTTP: ${response.status}`);
       }
 
-      const result = await response.json();
+      const result = (await response.json()) as AsoPendingResponse;
 
-      setData(result);
+      setData({
+        ...result,
+        items: Array.isArray(result.items)
+          ? result.items.map(normalizeAsoPendingItem)
+          : [],
+      });
     } catch (err) {
       setError(err as Error);
-      // Log removido - erro já está no state
     } finally {
       setLoading(false);
     }
-  }, [unidade, limit]);
+  }, [unidade, limit, page]);
 
   useEffect(() => {
     fetchAsoPending();

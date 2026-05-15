@@ -181,8 +181,8 @@ export function SidebarRecepcao({
                   </>
                 ) : conectado && !onLoading ? (
                   <>
-                    <Wifi className="w-3 h-3 text-[#B8D864]" />
-                    <span className="text-sm text-[#B8D864]">Conectado</span>
+                    <Wifi className="w-3 h-3 text-[#104e35]" />
+                    <span className="text-sm text-[#104e35] font-semibold">Conectado</span>
                   </>
                 ) : (
                   <>

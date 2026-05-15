@@ -22,6 +22,7 @@ import {
 import { useEffect, useState, useMemo } from "react";
 
 import { ScraperMonitor } from "./ScraperMonitor";
+import { AsoTrackingSection } from "./AsoTrackingSection";
 
 import { TicketStatus } from "@/lib/ticket/ticket";
 import {
@@ -349,6 +350,7 @@ export function StatisticsSection() {
   const [showAllExams, setShowAllExams] = useState<Record<string, boolean>>({});
   const [lastUpdate, setLastUpdate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshSignal, setRefreshSignal] = useState(0);
 
   const statisticsData = data as unknown as StatisticsResponseDto;
 
@@ -405,6 +407,7 @@ export function StatisticsSection() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
+    setRefreshSignal((current) => current + 1);
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
@@ -571,6 +574,7 @@ export function StatisticsSection() {
         {/* 🏥 PAINEL COLETA DE RESULTADOS - Espaço maior com ASO tracking */}
         <div className="grid grid-cols-1 gap-6">
           <ScraperMonitor />
+          <AsoTrackingSection refreshSignal={refreshSignal} />
         </div>
 
         {/* 📊 STATUS E TIPOS DE EXAME */}

@@ -360,13 +360,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
         if (!updateSerivce) return;
 
-        const today = new Date();
-        const day = String(today.getDate()).padStart(2, "0");
-        const month = String(today.getMonth() + 1).padStart(2, "0");
-        const year = today.getFullYear();
-        const currentDate = `${day}/${month}/${year}`;
-
-        const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&data=${currentDate}&manterExamesRealizados=${updateSerivce}`;
+        const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${empresa}&codfuncionario=${codigoFuncionario}&manterExamesRealizados=${updateSerivce}`;
 
         const response = await fetch(url);
         const prontuario: Scheduling = await response.json();
