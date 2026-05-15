@@ -55,6 +55,12 @@ export interface AsoPendingItem {
   tempoNaEtapa: string;
   error: string | null;
   url: string | null;
+  validacaoUrl?: string | null;
+  emailSent?: boolean;
+  signatureStatus?: string | null;
+  retryPending?: boolean;
+  nextRetryAt?: string | null;
+  retryCount?: number | null;
   fonte?: "MONGODB" | "FILA_AZURE";
   parecer?: string | null;
   panel?: AsoPanelProjection;
@@ -120,8 +126,8 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "NAO_APLICAVEL",
       displayStatus: "NAO_APLICAVEL",
       displayReason:
-        "Parecer medico concluido fora do fluxo automatico de liberacao de ASO.",
-      nextExpectedAction: "Nenhuma acao adicional esperada neste fluxo.",
+        "Parecer médico concluído fora do fluxo automático de liberação de ASO.",
+      nextExpectedAction: "Nenhuma ação adicional esperada neste fluxo.",
       willAutoProgress: false,
       needsManualAction: false,
     };
@@ -131,8 +137,8 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
     return {
       group: "CONCLUIDO",
       displayStatus: "ASO_LIBERADO",
-      displayReason: "ASO concluido e liberado para entrega.",
-      nextExpectedAction: "Nenhuma acao adicional esperada.",
+      displayReason: "ASO concluído e liberado para entrega.",
+      nextExpectedAction: "Nenhuma ação adicional esperada.",
       willAutoProgress: false,
       needsManualAction: false,
     };
@@ -143,9 +149,9 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "EM_ANDAMENTO",
       displayStatus: "PRECISA_DE_INTERVENCAO",
       displayReason:
-        "O ASO aguarda autenticacao da assinatura digital para continuar.",
+        "O ASO aguarda autenticação da assinatura digital para continuar.",
       nextExpectedAction:
-        "Assim que a autenticacao estiver disponivel, o fluxo podera continuar.",
+        "Assim que a autenticação estiver disponível, o fluxo poderá continuar.",
       willAutoProgress: false,
       needsManualAction: true,
     };
@@ -156,9 +162,9 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "EM_ANDAMENTO",
       displayStatus: "COM_FALHA",
       displayReason:
-        item.error || "O fluxo do ASO registrou falha e nao avancara sozinho.",
+        item.error || "O fluxo do ASO registrou falha e não avançará sozinho.",
       nextExpectedAction:
-        "Este caso precisa de analise para definir a proxima acao.",
+        "Este caso precisa de análise para definir a próxima ação.",
       willAutoProgress: false,
       needsManualAction: true,
     };
@@ -174,9 +180,9 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "EM_ANDAMENTO",
       displayStatus,
       displayReason:
-        "O ASO esta na fila do gerador e ainda nao iniciou a geracao.",
+        "O ASO está na fila do gerador e ainda não iniciou a geração.",
       nextExpectedAction:
-        "Assim que chegar a vez deste atendimento, o gerador iniciara o processamento.",
+        "Assim que chegar a vez deste atendimento, o gerador iniciará o processamento.",
       willAutoProgress: true,
       needsManualAction: false,
     };
@@ -187,7 +193,7 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "EM_ANDAMENTO",
       displayStatus,
       displayReason:
-        "O ASO ainda nao foi enviado ao gerador para iniciar o processamento.",
+        "O ASO ainda não foi enviado ao gerador para iniciar o processamento.",
       nextExpectedAction:
         "O sistema ainda precisa encaminhar este atendimento para o gerador.",
       willAutoProgress: true,
@@ -200,9 +206,9 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
       group: "EM_ANDAMENTO",
       displayStatus,
       displayReason:
-        "O ASO ja foi enviado ao gerador e esta em geracao neste momento.",
+        "O ASO já foi enviado ao gerador e está em geração neste momento.",
       nextExpectedAction:
-        "A proxima evolucao esperada e a conclusao da geracao do PDF.",
+        "A próxima evolução esperada é a conclusão da geração do PDF.",
       willAutoProgress: true,
       needsManualAction: false,
     };
@@ -219,17 +225,17 @@ function inferLegacyPanel(item: AsoPendingItem): AsoPanelProjection {
     displayReason:
       displayStatus === "PRECISA_DE_INTERVENCAO"
         ? item.error ||
-          "O ASO aguarda autenticacao da assinatura digital para continuar."
+          "O ASO aguarda autenticação da assinatura digital para continuar."
         : displayStatus === "COM_FALHA"
           ? item.error ||
-            "O fluxo do ASO registrou falha e nao avancara sozinho."
-          : "O ASO ja saiu da geracao e esta nas etapas seguintes da liberacao.",
+            "O fluxo do ASO registrou falha e não avançará sozinho."
+          : "O ASO já foi gerado e aguarda o avanço da assinatura digital.",
     nextExpectedAction:
       displayStatus === "PRECISA_DE_INTERVENCAO"
-        ? "Assim que a autenticacao estiver disponivel, o fluxo podera continuar."
+        ? "Assim que a autenticação estiver disponível, o fluxo poderá continuar."
         : displayStatus === "COM_FALHA"
-          ? "Este caso precisa de analise para definir a proxima acao."
-          : "O sistema continuara acompanhando as proximas etapas ate a liberacao.",
+          ? "Este caso precisa de análise para definir a próxima ação."
+          : "A próxima evolução esperada é o processamento da assinatura digital.",
     willAutoProgress:
       displayStatus !== "PRECISA_DE_INTERVENCAO" &&
       displayStatus !== "COM_FALHA",

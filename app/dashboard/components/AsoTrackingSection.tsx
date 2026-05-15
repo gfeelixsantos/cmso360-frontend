@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
-  CircleHelp,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,118 +18,11 @@ import {
   useAsoTracking,
 } from "@/hooks/useAsoTracking";
 
-const SUMMARY_EXPLANATIONS = [
-  {
-    label: "A iniciar",
-    description: "ASOs que ainda não entraram efetivamente no processamento.",
-  },
-  {
-    label: "Em andamento",
-    description: "ASOs que estao sendo gerados neste momento.",
-  },
-  {
-    label: "Com atenção",
-    description:
-      "ASOs com falha ou que dependem de autenticação/intervenção para continuar.",
-  },
-];
-
-const STATUS_EXPLANATIONS = [
-  {
-    label: "Aguardando envio",
-    description: "O ASO ainda não chegou ao gerador.",
-  },
-  {
-    label: "Na fila do gerador",
-    description: "O ASO esta visivel na fila do cmso360-aso-generate.",
-  },
-  {
-    label: "Em geração",
-    description: "O gerador já pegou o ASO e está criando o documento.",
-  },
-  {
-    label: "Nas etapas seguintes",
-    description:
-      "O ASO saiu da geração e agora está nas etapas seguintes da liberação.",
-  },
-  {
-    label: "Precisa de intervenção",
-    description:
-      "O fluxo depende de autenticação da assinatura digital ou outra ação manual.",
-  },
-  {
-    label: "Com falha",
-    description: "O fluxo registrou falha e não conclui sozinho.",
-  },
-];
-
-function HelpPopover() {
-  return (
-    <div className="group relative">
-      <button
-        aria-label="Explicar os contadores e situações da liberação de ASOs"
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-[#44735E]/20 bg-white/80 text-[#44735E] transition-colors hover:bg-white"
-        type="button"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <CircleHelp className="h-3.5 w-3.5" />
-      </button>
-
-      <div className="pointer-events-none absolute right-0 top-7 z-20 hidden w-[360px] rounded-xl border border-gray-200 bg-white p-5 text-left shadow-xl group-hover:block group-focus-within:block">
-        <p className="text-base font-semibold text-gray-900">
-          Como interpretar esta seção
-        </p>
-        <p className="mt-1 text-sm leading-6 text-gray-600">
-          Esta seção mostra apenas ASOs que ainda não foram liberados e seguem
-          em tratamento no sistema.
-        </p>
-
-        <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Resumo do topo
-          </p>
-          <div className="mt-2 space-y-2">
-            {SUMMARY_EXPLANATIONS.map((item) => (
-              <div key={item.label}>
-                <p className="text-sm font-medium text-gray-800">
-                  {item.label}
-                </p>
-                <p className="text-sm leading-6 text-gray-600">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="mt-3">
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-            Situações dos cards
-          </p>
-          <div className="mt-2 space-y-2">
-            {STATUS_EXPLANATIONS.map((item) => (
-              <div key={item.label}>
-                <p className="text-sm font-medium text-gray-800">
-                  {item.label}
-                </p>
-                <p className="text-sm leading-6 text-gray-600">
-                  {item.description}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function isSignatureAuthenticationPending(message: string | null | undefined) {
   const normalized = String(message || "").toLowerCase();
 
   return (
-    normalized.includes("sessao psc") ||
-    normalized.includes("sessão psc") ||
+    (normalized.includes("sess") && normalized.includes("psc")) ||
     normalized.includes("autentic") ||
     normalized.includes("credencial")
   );
@@ -156,6 +48,20 @@ function getUpdatedAtSortValue(updatedAt: string | null) {
   const value = Date.parse(updatedAt);
 
   return Number.isNaN(value) ? 0 : value;
+}
+
+function formatRetryAt(value: string | null | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = new Date(value);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  return parsed.toLocaleString("pt-BR");
 }
 
 const PROCESS_STEPS = [
@@ -188,22 +94,27 @@ function getCurrentStepIndex(item: AsoPendingItem): number {
   }
 
   if (displayStatus === "PRECISA_DE_INTERVENCAO") {
-    if (
-      item.status === "AGUARDANDO_AUTENTICACAO" ||
-      item.etapa === "ASSINATURA"
-    ) {
-      return 2;
+    if (item.validacaoUrl) {
+      return 3;
     }
 
     return item.url ? 2 : 1;
   }
 
   if (displayStatus === "COM_FALHA") {
+    if (item.validacaoUrl) {
+      return 3;
+    }
+
     return item.url ? 2 : 1;
   }
 
   if (displayStatus === "SEGUINDO_AUTOMATICAMENTE") {
-    if (item.status === "PROCESSANDO" || item.etapa === "ASSINATURA") {
+    if (item.emailSent) {
+      return 4;
+    }
+
+    if (item.validacaoUrl) {
       return 3;
     }
 
@@ -277,7 +188,7 @@ function ProcessTimeline({ item }: { item: AsoPendingItem }) {
   const currentIndex = getCurrentStepIndex(item);
 
   return (
-    <div className="mt-4 rounded-xl border border-[#44735E]/10 bg-[#f8faf8] px-4 py-4">
+    <div className="mt-4 rounded-xl border border-[#44735E]/10 px-4 py-4">
       <div className="grid gap-3 md:grid-cols-5">
         {PROCESS_STEPS.map((step, index) => {
           const state = getStepState(
@@ -330,6 +241,20 @@ function ProcessTimeline({ item }: { item: AsoPendingItem }) {
   );
 }
 
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <p className="text-sm text-gray-600">
+      <span className="font-semibold text-gray-800">{label}:</span> {value}
+    </p>
+  );
+}
+
 const AsoItemCard = ({
   item,
   index,
@@ -342,15 +267,26 @@ const AsoItemCard = ({
   }
 
   const friendlyError = getFriendlyOperationalError(item.error);
-  const technicalDetails = [
-    `Parecer medico: ${item.parecer || "N/A"}`,
-    `Tempo na etapa: ${item.tempoNaEtapa}`,
-    `Medico: ${item.nomeMedico || "N/A"}`,
-    `Unidade: ${item.unidadeAtendimento || "N/A"}`,
+  const retryAt = formatRetryAt(item.nextRetryAt);
+  const detailRows = [
+    { label: "Parecer médico", value: item.parecer || "N/A" },
+    { label: "Tempo na etapa", value: item.tempoNaEtapa },
+    { label: "Médico", value: item.nomeMedico || "N/A" },
+    { label: "Unidade", value: item.unidadeAtendimento || "N/A" },
   ];
 
+  if (retryAt) {
+    detailRows.push({
+      label: "Próxima tentativa",
+      value:
+        item.retryCount && item.retryCount > 0
+          ? `${retryAt} (tentativa ${item.retryCount + 1})`
+          : retryAt,
+    });
+  }
+
   if (item.fonte === "FILA_AZURE") {
-    technicalDetails.push("Origem: Fila Azure");
+    detailRows.push({ label: "Origem", value: "Fila Azure" });
   }
 
   return (
@@ -363,7 +299,7 @@ const AsoItemCard = ({
       <div className="p-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
               <span className="truncate font-medium text-gray-700">
                 {item.nomeEmpresa}
               </span>
@@ -375,22 +311,32 @@ const AsoItemCard = ({
               {item.nomeFuncionario}
             </h4>
           </div>
+
+          {item.url && (
+            <a
+              className="inline-flex shrink-0 rounded-lg border border-[#44735E]/20 bg-white px-3 py-1.5 text-sm font-medium text-[#44735E] transition-colors hover:bg-[#44735E]/5"
+              href={item.url}
+              rel="noreferrer"
+              target="_blank"
+            >
+              Ver ASO
+            </a>
+          )}
         </div>
 
         <ProcessTimeline item={item} />
 
-        <div className="mt-3 rounded-lg bg-gray-50 px-3 py-3">
+        <div className="mt-3 px-1 py-1">
           <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            Detalhes desta etapa
+            Detalhes
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {technicalDetails.map((detail) => (
-              <span
-                key={detail}
-                className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600"
-              >
-                {detail}
-              </span>
+          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5">
+            {detailRows.map((detail) => (
+              <DetailRow
+                key={`${detail.label}-${detail.value}`}
+                label={detail.label}
+                value={detail.value}
+              />
             ))}
           </div>
         </div>
@@ -513,14 +459,13 @@ export function AsoTrackingSection({
   const pageSize = data?.limit || 100;
   const pageStart = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const pageEnd = total === 0 ? 0 : pageStart + items.length - 1;
-  const startCount =
-    (data?.stats?.aguardandoEnvio || 0) + (data?.stats?.naFilaDoGerador || 0);
+  const startCount = data?.stats?.naFilaDoGerador || 0;
   const inProgressCount =
     (data?.stats?.emGeracao || 0) + (data?.stats?.seguindoAutomaticamente || 0);
   const attentionCount =
     (data?.stats?.precisaIntervencao || 0) + (data?.stats?.comFalha || 0);
   const summaryParts = [
-    startCount > 0 ? `${startCount} a iniciar` : null,
+    startCount > 0 ? `${startCount} na fila` : null,
     inProgressCount > 0 ? `${inProgressCount} em andamento` : null,
     attentionCount > 0 ? `${attentionCount} com atenção` : null,
   ].filter(Boolean);
@@ -533,7 +478,7 @@ export function AsoTrackingSection({
       transition={{ duration: 0.4 }}
     >
       <div
-        className="w-full cursor-pointer border-b border-gray-200 bg-[#B8D864]/20 px-5 py-4 text-left transition-all duration-200 hover:bg-[#B8D864]/25 hover:shadow-md"
+        className="w-full cursor-pointer border-b border-gray-200 bg-white px-5 py-4 text-left transition-all duration-200 hover:bg-gray-50"
         role="button"
         tabIndex={0}
         onClick={() => setIsExpanded((current) => !current)}
@@ -556,20 +501,21 @@ export function AsoTrackingSection({
 
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-base font-semibold tracking-tight text-gray-800">
+                <h3 className="text-lg font-semibold tracking-tight text-gray-800">
                   Liberação de ASOs
-                  {data?.janelaDias && (
-                    <span className="ml-2 text-xs font-normal text-gray-500">
-                      (últimos {data.janelaDias} dias)
-                    </span>
-                  )}
                 </h3>
-                <HelpPopover />
+                <span className="rounded-full border border-[#44735E]/20 bg-[#44735E]/10 px-2.5 py-0.5 text-xs font-medium text-[#44735E]">
+                  Versão de Avaliação
+                </span>
+                {data?.janelaDias && (
+                  <span className="text-sm font-normal text-gray-500">
+                    (últimos {data.janelaDias} dias)
+                  </span>
+                )}
               </div>
 
-              <p className="text-xs text-gray-600">
-                {total} item{total !== 1 ? "s" : ""} em acompanhamento
-                operacional
+              <p className="text-sm text-gray-600">
+                {total} atendimento{total !== 1 ? "s" : ""}
                 {summaryParts.length > 0 && (
                   <span className="ml-2 font-medium text-gray-400">
                     | {summaryParts.join(" | ")}
@@ -584,7 +530,6 @@ export function AsoTrackingSection({
               </p>
             </div>
           </div>
-
         </div>
       </div>
 
