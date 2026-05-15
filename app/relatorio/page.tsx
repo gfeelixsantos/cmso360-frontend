@@ -721,7 +721,8 @@ export default function RelatoriosPage() {
                   <SearchIcon className="text-gray-400" size={16} />
                 }
                 value={filters.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
+                onChange={(e) => handleFilterChange("search", e.target.value.trimStart())}
+                onBlur={(e) => handleFilterChange("search", e.target.value.trim())}
                 onClear={() => handleFilterChange("search", "")}
               />
             </div>
