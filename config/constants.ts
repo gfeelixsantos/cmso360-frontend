@@ -171,17 +171,17 @@ export const ESTIMATIVA_EXAMES: Record<string, number> = {
   Triagem: 10,
 
   "Acuidade Visual": 15,
-  "Avaliação Psicossocial": 18,
-  Laboratorial: 20,
+  Espirometria: 18,
+  Audiometria: 18,
 
-  Espirometria: 22,
-  EEG: 25,
+  Laboratorial: 22,
+  "Avaliação Psicossocial": 22,
 
-  Audiometria: 28,
-  ECG: 30,
-  "Raio-X": 32,
+  EEG: 40,
+  ECG: 25,
+  "Raio-X": 50,
 
-  "Exame Clínico": 40,
+  "Exame Clínico": 25,
 };
 
 export const EMPRESAS_COM_PSICOLOGA = new Set([
