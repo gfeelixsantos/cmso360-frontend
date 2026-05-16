@@ -62,6 +62,7 @@ import {
   EXAMES_LIST,
   NEST_SOC_RECORDS,
   NEST_SCHEDULINGS_UPDATE,
+  NEST_SCHEDULINGS_PRONTUARIO,
   NEST_SOC_PEDIDOEXAME,
   NEST_SOC_PEDIDOEXAME_CREDENCIADAS,
   NEST_TICKETS_URL,
@@ -141,6 +142,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   onExecutarAcao,
 }: AtendimentoModalProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncingCard, setIsSyncingCard] = useState<boolean>(false);
   const [codigoFuncionario, setCodigoFuncionario] = useState<string>("");
   const [empresa, setEmpresa] = useState<string>("");
   const [nome, setNome] = useState<string>("");
@@ -191,13 +193,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // ---------------------------------------------------------
   // Validation rules
   // ---------------------------------------------------------
+
+  // Edição e envio só permitidos quando AGENDADO
+  const isAgendado =
+    funcionarioSelecionado?.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO;
+
   const validation = useMemo(() => {
     return {
       empresa: empresa.trim().length > 0,
       codigo: codigoFuncionario.trim().length > 0,
       nome: nome.trim().length > 0,
       tipoExame: tipoExame.trim().length > 0,
-      exames: codigoExames.length > 0,
+      exames: somentePa || codigoExames.length > 0,
       preferencial: ticketSelecionado?.preferencialTipo
         ? preferencialTipo.length > 0 ||
           ticketSelecionado.preferencialTipo?.length > 0
@@ -207,7 +214,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         codigoFuncionario.trim().length > 0 &&
         nome.trim().length > 0 &&
         tipoExame.trim().length > 0 &&
-        codigoExames.length > 0 &&
+        (somentePa || codigoExames.length > 0) &&
         (ticketSelecionado?.preferencialTipo
           ? preferencialTipo.length > 0 ||
             ticketSelecionado.preferencialTipo?.length > 0
@@ -221,8 +228,9 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     nome,
     tipoExame,
     codigoExames,
+    somentePa,
     preferencialTipo,
-    ticketSelecionado?.preferencialTipo, // Adicionar dependência
+    ticketSelecionado?.preferencialTipo,
   ]);
 
   // ---------------------------------------------------------
@@ -301,6 +309,34 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       return matchesSearch;
     });
   }, [agendamentos, searchTerm, statusFilter]);
+
+  // ---------------------------------------------------------
+  // Função para "desclicar" um agendamento selecionado
+  // ---------------------------------------------------------
+  const handleDeselecionarAgendamento = useCallback(() => {
+    // Reset form after successful submission
+    setCodigoFuncionario("");
+    setEmpresa(String(""));
+    setNome("");
+    setDataNascimento("");
+    setCpf("");
+    setTelefone("");
+    setTipoExame("");
+    setCodigoExames([]);
+    setPsicoPresencial(false);
+    setObservacoes("");
+    setPreferencialTipo("");
+    setAnotacoes("");
+    setShowErrors(false);
+    setSelectedSchedulingId(null);
+    setAnexos([]);
+    setFilesUpload([]);
+    setIsBindServiceSelected(false);
+    setSomentePa(false);
+    setRecords([]);
+    setRecordsCodes(new Set());
+    setFuncionarioSelecionado(null);
+  }, []);
 
   // ---------------------------------------------------------
   // Actions: buscar funcionario por código (somente números)
@@ -437,29 +473,15 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   );
 
   // ---------------------------------------------------------
-  // Quando seleciona um paciente no sidebar
-  // caso estiver com ASO OK, preenche formulário
-  // do contrário realiza fetch ASO no SOC para preenchimento
+  // Função auxiliar: preenche o formulário com os dados de um Scheduling
+  // Extraída para ser reutilizada pelo fluxo automático (clique no card)
+  // e pelo fluxo manual (busca por código SOC)
   // ---------------------------------------------------------
-  const handleSelecionarPacienteAgendamento = useCallback(
+  const preencherFormulario = useCallback(
     async (paciente: Scheduling) => {
-      setIsLoading(true);
-
-      document.getElementById("empresa-autocomplete")?.scrollIntoView({
-        behavior: "smooth",
-        block: "start",
-        inline: "nearest",
-      });
-
-      handleDeselecionarAgendamento();
       setFuncionarioSelecionado(paciente);
 
-      const isAsoValido =
-        paciente.ASOSTATUS === AsoStatus.GERADO ||
-        paciente.ASOSTATUS === AsoStatus.KIT_CREDENCIADA ||
-        paciente.ASOSTATUS === AsoStatus.NAO_GERADO;
-
-      if (isAsoValido && paciente.EXAMES.length > 0) {
+      if (paciente.EXAMES && paciente.EXAMES.length > 0) {
         const pedidos = paciente.EXAMES;
 
         // 1. Cria mapas de referência
@@ -519,9 +541,127 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setAnexos(paciente.ANEXOS?.map((a) => a) || []);
       setIsBindServiceSelected(false);
       setSomentePa(false);
-      setIsLoading(false);
     },
-    [handleAtendimentoCredenciada, funcionarioSelecionado],
+    [
+      setFuncionarioSelecionado,
+      setCodigoExames,
+      setLaboratorioExames,
+      setExamesImagem,
+      setEmpresa,
+      setCodigoFuncionario,
+      setNome,
+      setDataNascimento,
+      setCpf,
+      setTelefone,
+      setTipoExame,
+      setSelectedSchedulingId,
+      setObservacoes,
+      setAnotacoes,
+      setPreferencialTipo,
+      setAnexos,
+      setIsBindServiceSelected,
+      setSomentePa,
+    ],
+  );
+
+  // ---------------------------------------------------------
+  // Quando seleciona um paciente no sidebar:
+  // 1. Detecta KIT/Credenciada e desvia se necessário
+  // 2. Consulta o SOC em tempo real via GET /soc/pedidoexame
+  // 3. Preenche o formulário com os dados atualizados do SOC
+  // ---------------------------------------------------------
+  const handleSelecionarPacienteAgendamento = useCallback(
+    async (paciente: Scheduling) => {
+      // 1. Detecta KIT/Credenciada antes de qualquer fetch
+      if (
+        paciente.CODIGOINTERNOEMPRESA?.includes("KIT") &&
+        paciente.EXAMES.length === 0
+      ) {
+        setIsLoading(true);
+        await handleAtendimentoCredenciada(paciente);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      setIsSyncingCard(true);
+
+      document.getElementById("empresa-autocomplete")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+        inline: "nearest",
+      });
+
+      handleDeselecionarAgendamento();
+
+      try {
+        // 2. Sempre busca o documento completo do MongoDB primeiro
+        let docBase: Scheduling = paciente;
+        if (paciente._id) {
+          try {
+            const mongoResponse = await fetch(
+              `${NEST_SCHEDULINGS_PRONTUARIO}${paciente._id}`,
+            );
+            if (mongoResponse.ok) {
+              docBase = await mongoResponse.json();
+            }
+          } catch {
+            // mantém o paciente do WebSocket como base
+          }
+        }
+
+        // 3. Se AGENDADO, tenta sincronizar com SOC para exames atualizados
+        if (paciente.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO) {
+          try {
+            const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${paciente.CODIGOEMPRESA}&codfuncionario=${paciente.CODIGO}`;
+            const response = await fetch(url);
+            const prontuario: Scheduling | { success: false; message: string } =
+              await response.json();
+
+            if (
+              response.ok &&
+              !("success" in prontuario && !prontuario.success)
+            ) {
+              // SOC retornou dados válidos — usa eles
+              await preencherFormulario(prontuario as Scheduling);
+              return;
+            }
+          } catch {
+            // SOC falhou — usa o documento do MongoDB
+          }
+
+          // SOC não retornou exames — verifica se MongoDB também não tem
+          if (!docBase.EXAMES || docBase.EXAMES.length === 0) {
+            await preencherFormulario(docBase);
+            setModalText(
+              <p>
+                Nenhum pedido de exame válido foi localizado no SOC para este
+                funcionário na data atual.
+              </p>,
+            );
+            setModalAlert(true);
+            return;
+          }
+        }
+
+        // 4. Preenche com o documento do MongoDB (todos os status)
+        await preencherFormulario(docBase);
+      } catch (err) {
+        // Erro inesperado — usa dados do WebSocket
+        await preencherFormulario(paciente);
+        setModalText(
+          <p>
+            Erro ao carregar dados do funcionário:{" "}
+            <strong>{String(err)}</strong>
+          </p>,
+        );
+        setModalAlert(true);
+      } finally {
+        setIsLoading(false);
+        setIsSyncingCard(false);
+      }
+    },
+    [handleAtendimentoCredenciada, handleDeselecionarAgendamento, preencherFormulario],
   );
 
   // ---------------------------------------------------------
@@ -531,34 +671,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     handleDeselecionarAgendamento();
     setSearchTerm("");
   }, [isOpen, onClose]);
-
-  // ---------------------------------------------------------
-  // Função para "desclicar" um agendamento selecionado
-  // ---------------------------------------------------------
-  const handleDeselecionarAgendamento = useCallback(() => {
-    // Reset form after successful submission
-    setCodigoFuncionario("");
-    setEmpresa(String(""));
-    setNome("");
-    setDataNascimento("");
-    setCpf("");
-    setTelefone("");
-    setTipoExame("");
-    setCodigoExames([]);
-    setPsicoPresencial(false);
-    setObservacoes("");
-    setPreferencialTipo("");
-    setAnotacoes("");
-    setShowErrors(false);
-    setSelectedSchedulingId(null);
-    setAnexos([]);
-    setFilesUpload([]);
-    setIsBindServiceSelected(false);
-    setSomentePa(false);
-    setRecords([]);
-    setRecordsCodes(new Set());
-    setFuncionarioSelecionado(null);
-  }, []);
 
   // ---------------------------------------------------------
   // Data de nascimento Modal
@@ -604,15 +716,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     (exame: string) => {
       setCodigoExames((prev) => {
         if (prev.includes(exame)) {
-          // já estava selecionado → remove
           return prev.filter((ex) => ex !== exame);
         } else {
-          // não estava → adiciona
           return [...prev, exame];
         }
       });
     },
-    [funcionarioSelecionado],
+    [],
   );
 
   const handlePsicoExame = () => {
@@ -904,8 +1014,29 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       };
     }
 
+    // Filtra EXAMES para enviar apenas os grupos que o usuário deixou marcados
+    // Constrói mapa de codigoExame → grupo a partir do EXAMES_LIST
+    const codigoParaGrupo: Record<string, string> = {};
+    for (const [grupo, examList] of Object.entries(EXAMES_LIST)) {
+      for (const ex of examList) {
+        for (const cod of ex.codigos) {
+          codigoParaGrupo[cod] = grupo;
+        }
+      }
+    }
+    const examesFiltrados = funcionarioSelecionado.EXAMES.filter((ex) => {
+      const grupo = codigoParaGrupo[ex.codigoExame];
+      // Se o código não mapeia para nenhum grupo conhecido, mantém (não remove)
+      if (!grupo) return true;
+      return codigoExames.includes(grupo);
+    });
+    const funcionarioParaEnvio = {
+      ...funcionarioSelecionado,
+      EXAMES: examesFiltrados,
+    };
+
     try {
-      formData.append("scheduling", JSON.stringify(funcionarioSelecionado));
+      formData.append("scheduling", JSON.stringify(funcionarioParaEnvio));
       formData.append("somentepa", String(somentePa));
 
       const submmitResponse = await fetch(NEST_SCHEDULINGS_UPDATE, {
@@ -1008,6 +1139,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         >
           <div
             onClick={() => {
+              if (isSyncingCard) return; // bloqueia cliques concorrentes
               if (isSelected) {
                 handleDeselecionarAgendamento();
               } else {
@@ -1015,7 +1147,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               }
             }}
             // Adicionei a classe 'relative' para que o chip 'absolute' funcione
-            className={` p-2 rounded-lg border cursor-pointer transition-all duration-200 ${isSelected
+            className={`p-2 rounded-lg border transition-all duration-200 ${
+              isSyncingCard
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${isSelected
                 ? "bg-[#e6f0ff] border-[#003366] ring-2 ring-[#003366]/20 shadow-md"
                 : "bg-white border-gray-200 hover:border-[#003366] hover:shadow-sm hover:scale-[1.01]"
               }`}
@@ -1047,6 +1183,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   <Clock className="h-3 w-3 text-gray-400" />
                   <span>
                     {paciente.HORARIO} - {paciente.TIPOEXAMENOME}
+                    {paciente.ATENDIMENTOSTATUS !== AtendimentoStatus.AGENDADO &&
+                    paciente.TICKET?.prefixo !== undefined
+                      ? ` · ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
+                      : ""}
                   </span>
                 </div>
               </div>
@@ -1087,6 +1227,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         >
           <div
             onClick={() => {
+              if (isSyncingCard) return; // bloqueia cliques concorrentes
               if (isSelected) {
                 handleDeselecionarAgendamento();
               } else {
@@ -1094,7 +1235,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               }
             }}
             // Adicionei a classe 'relative' para que o chip 'absolute' funcione
-            className={`relative p-2 rounded-lg border cursor-pointer transition-all duration-200 ${isSelected
+            className={`relative p-2 rounded-lg border transition-all duration-200 ${
+              isSyncingCard
+                ? "opacity-50 cursor-not-allowed"
+                : "cursor-pointer"
+            } ${isSelected
                 ? "bg-[#e6f0ff] border-[#003366] ring-2 ring-[#003366]/20 shadow-md"
                 : "bg-white border-gray-200 hover:border-[#003366] hover:shadow-sm hover:scale-[1.01]"
               }`}
@@ -1128,17 +1273,21 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   <Clock className="h-3 w-3 text-gray-400" />
                   <span>
                     {paciente.HORARIO} - {paciente.TIPOEXAMENOME}
+                    {paciente.ATENDIMENTOSTATUS !== AtendimentoStatus.AGENDADO &&
+                    paciente.TICKET?.prefixo !== undefined
+                      ? ` · ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
+                      : ""}
                   </span>
                 </div>
               </div>
             </div>
-            <div className="mt-1 flex flex-col items-end">
+            <div className="mt-1 flex flex-col items-start">
               {paciente.ASOSTATUS === AsoStatus.GERADO && (
                 <span className="text-xs text-green-400">ASO OK</span>
               )}
               {paciente.ATENDIMENTOSTATUS && (
                 <span
-                  className={`text-right text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
+                  className={`text-left text-xs text-${getStatusColor(paciente.ATENDIMENTOSTATUS)}-500`}
                 >
                   {formatAtendimentoStatusLabel(paciente.ATENDIMENTOSTATUS)}
                 </span>
@@ -1178,7 +1327,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             <div>
               <h3 className="text-xl font-semibold">Atendimento</h3>
               <p className="text-sm opacity-90">
-                Preencha os dados para iniciar o atendimento
+                {[salaSelecionada, unidadeSelecionada, user?.nome].filter(Boolean).join(" · ") || "Selecione sala e unidade"}
               </p>
             </div>
           </div>
@@ -1469,7 +1618,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                         role="radio"
                         size="sm"
                         type="button"
-                        onChange={() => handleToggleTipo(key)}
+                        onPress={() => handleToggleTipo(key)}
                       >
                         {value}
                       </Button>
@@ -1484,34 +1633,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 )}
 
                 <div className="mt-4">
-                  {empresa && codigoFuncionario && funcionarioSelecionado && (
-                    <div className="flex justify-end">
-                      <Checkbox
-                        color="danger"
-                        disabled={isLoading}
-                        isSelected={somentePa}
-                        onValueChange={handleSomentePa}
-                      >
-                        <span
-                          className={`text-sm ${somentePa ? "text-red-600" : "text-gray-700"}`}
-                        >
-                          Somente P.A
-                        </span>
-                      </Checkbox>
-
-                      {/* <Checkbox
-                      color="success"
-                      disabled={isLoading}
-                      isSelected={isBindServiceSelected}
-                      onValueChange={handleBindService}
-                    >
-                      <span className="text-sm text-gray-700">
-                        Vincular ASO
-                      </span>
-                    </Checkbox> */}
-                    </div>
-                  )}
-
                   {isBindServiceSelected && (
                     <div className="mt-1 flex flex-col align-center items-start space-x-2">
                       <div className="mt-2 mb-2">
@@ -1547,9 +1668,25 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
               {/* Exames (checkbox grid) */}
               <div>
-                <div className="flex items-center justify-start mb-2">
-                  <div className="text-xs text-gray-400">
-                    {codigoExames.length} selecionado(s)
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-4">
+                    {empresa && codigoFuncionario && funcionarioSelecionado && isAgendado && (
+                      <Checkbox
+                        color="danger"
+                        disabled={isLoading}
+                        isSelected={somentePa}
+                        onValueChange={handleSomentePa}
+                      >
+                        <span
+                          className={`text-sm ${somentePa ? "text-red-600" : "text-gray-700"}`}
+                        >
+                          Somente P.A
+                        </span>
+                      </Checkbox>
+                    )}
+                    <div className="text-xs text-gray-400">
+                      {codigoExames.length} selecionado(s)
+                    </div>
                   </div>
                 </div>
 
@@ -1584,13 +1721,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                             isSelected
                               ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
                               : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                          } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
                           disableAnimation={true}
-                          disabled={isLoading}
+                          disabled={isLoading || !isAgendado}
                           role="radio"
                           size="sm"
                           type="button"
-                          onChange={() => toggleExame(exame)}
+                          onPress={() => toggleExame(exame)}
                         >
                           {exame}
                         </Button>
@@ -1603,13 +1740,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                           isSelected
                             ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
                             : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
                         disableAnimation={true}
-                        disabled={isLoading}
+                        disabled={isLoading || !isAgendado}
                         role="radio"
                         size="sm"
                         type="button"
-                        onChange={() => toggleExame(exame)}
+                        onPress={() => toggleExame(exame)}
                       >
                         {exame.includes("Psico") && isSelected ? (
                           <div className="flex justify-between items-baseline-last w-full">
