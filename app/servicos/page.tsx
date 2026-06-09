@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Tab, Tabs } from "@heroui/react";
-import { FolderOpen, Layers, FileCheck } from "lucide-react";
+import { FolderOpen, Layers } from "lucide-react";
 
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { FileExplorer } from "@/components/shared/FileExplorer";
@@ -11,19 +11,6 @@ import { getCurrentUser, logout } from "@/lib/utils";
 import { usePushNotification } from "@/hooks/usePushNotification";
 
 import { QueueMonitor } from "./components/QueueMonitor";
-import dynamic from "next/dynamic";
-
-const AsoTrackingSection = dynamic(
-  () => import("@/app/dashboard/components/AsoTrackingSection").then((mod) => mod.AsoTrackingSection),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-      </div>
-    ),
-  },
-);
 
 export default function ServicosPage() {
   const router = useRouter();
@@ -88,19 +75,6 @@ export default function ServicosPage() {
             </div>
           </Tab>
 
-          <Tab
-            key="aso"
-            title={
-              <div className="flex items-center gap-2">
-                <FileCheck className="h-4 w-4" />
-                Liberação de ASOs
-              </div>
-            }
-          >
-            <div className="mt-4">
-              <AsoTrackingSection />
-            </div>
-          </Tab>
         </Tabs>
       </main>
     </div>
