@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -14,9 +14,10 @@ import {
   Bell,
   X,
 } from "lucide-react";
-import { Button } from "@heroui/react";
+import { Button, addToast, Modal, ModalBody, ModalContent, ModalFooter, ModalHeader } from "@heroui/react";
 
 import { StatisticsSection } from "./components/StatisticsSection";
+import { ConsentModal } from "@/lib/consent/ConsentModal";
 import {
   getCurrentMessage,
   Message,
@@ -28,6 +29,7 @@ import { getCurrentUser, logout } from "@/lib/utils";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import { NEST_DASHBOARD } from "@/config/constants";
+import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
 
 // Interfaces
 interface MenuCardProps {
@@ -333,6 +335,14 @@ export default function DashboardPage() {
   const [showModal, setShowModal] = useState(false);
   const [hasNewMessage, setHasNewMessage] = useState(false);
 
+  const { pscAuthStatus, isLoading: isPscLoading, refetch: refetchPscStatus } = usePscAuthStatus();
+  const previousPscStatusRef = useRef(pscAuthStatus.status);
+  const expiryWarningShownRef = useRef(false);
+  const [showReauthModal, setShowReauthModal] = useState(false);
+  const [isPscAuthenticating, setIsPscAuthenticating] = useState(false);
+  const pscAuthWindowRef = useRef<Window | null>(null);
+  const [pscAuthWindowUrl, setPscAuthWindowUrl] = useState<string>("");
+
   // Buscar mensagem atual
   const fetchAndSetMessage = async () => {
     const message = await getCurrentMessage();
@@ -399,6 +409,115 @@ export default function DashboardPage() {
 
     initDashboard();
   }, [router]);
+
+  useEffect(() => {
+    const prev = previousPscStatusRef.current;
+    const curr = pscAuthStatus.status;
+
+    if (prev !== curr) {
+      if (curr === 'EXPIRED') {
+        expiryWarningShownRef.current = false;
+        setShowReauthModal(true);
+        addToast({
+          title: 'Sessão PSC expirada',
+          description: 'Sua autenticação de assinatura expirou. Reautentique-se para continuar assinando digitalmente.',
+          severity: 'warning',
+          color: 'foreground',
+          variant: 'flat',
+        });
+      }
+      previousPscStatusRef.current = curr;
+    }
+
+    if (curr === 'ACTIVE' && pscAuthStatus.expiresAt && !expiryWarningShownRef.current) {
+      const timeLeft = new Date(pscAuthStatus.expiresAt).getTime() - Date.now();
+      if (timeLeft > 0 && timeLeft <= 300000) {
+        expiryWarningShownRef.current = true;
+        addToast({
+          title: 'Assinatura Digital',
+          description: 'Sua assinatura digital está próxima ao vencimento. Reautentique-se para evitar interrupções.',
+          severity: 'warning',
+          color: 'foreground',
+          variant: 'flat',
+        });
+      }
+    }
+  }, [pscAuthStatus]);
+
+  const attemptPscReauth = useCallback(async () => {
+    try {
+      const payload = { provider: '' };
+      const response = await fetch('/api/psc/auth/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const data = await response.json();
+      if (data.url) {
+        setPscAuthWindowUrl(data.url);
+        setIsPscAuthenticating(true);
+        setShowReauthModal(false);
+
+        const width = 800;
+        const height = 700;
+        const left = window.screen.width ? (window.screen.width - width) / 2 : 0;
+        const top = window.screen.height ? (window.screen.height - height) / 2 : 0;
+        const newWindow = window.open(data.url, 'psc_auth', `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`);
+        if (newWindow) {
+          pscAuthWindowRef.current = newWindow;
+          newWindow.focus();
+        }
+      }
+    } catch (error: any) {
+      addToast({
+        title: 'Erro de Autenticação',
+        description: `Falha ao conectar com provedor: ${error.message || 'Erro desconhecido'}`,
+        severity: 'danger',
+        color: 'foreground',
+        variant: 'flat',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isPscAuthenticating) return;
+    const pollInterval = setInterval(async () => {
+      if (pscAuthWindowRef.current && pscAuthWindowRef.current.closed) {
+        clearInterval(pollInterval);
+        setIsPscAuthenticating(false);
+        addToast({
+          title: 'Autenticação Não Concluída',
+          description: 'A janela de autenticação foi fechada antes de concluir.',
+          variant: 'flat',
+        });
+        return;
+      }
+      await refetchPscStatus();
+    }, 2000);
+    return () => clearInterval(pollInterval);
+  }, [isPscAuthenticating, refetchPscStatus]);
+
+  useEffect(() => {
+    if (isPscAuthenticating && pscAuthStatus.isActive) {
+      setIsPscAuthenticating(false);
+      if (pscAuthWindowRef.current && !pscAuthWindowRef.current.closed) {
+        pscAuthWindowRef.current.close();
+      }
+      addToast({
+        title: 'Autenticação Realizada',
+        description: 'Assinatura digital habilitada com sucesso.',
+        severity: 'success',
+        color: 'foreground',
+        variant: 'flat',
+      });
+    }
+  }, [isPscAuthenticating, pscAuthStatus.isActive]);
+
+  useEffect(() => {
+    const interval = setInterval(refetchPscStatus, 60000);
+    return () => clearInterval(interval);
+  }, [refetchPscStatus]);
 
   const menuItems = [
     {
@@ -513,10 +632,38 @@ export default function DashboardPage() {
           transition={{ duration: 0.5, delay: 1.5 }}
         >
           <p className="text-sm text-gray-600">
-            Centro Médico de Saúde Ocupacional • {new Date().getFullYear()}
+            Centro Médico de Saúde Ocupacional • {new Date().getFullYear()} •{" "}
+            <a href="/privacidade" className="text-blue-600 hover:underline">
+              Política de Privacidade
+            </a>
           </p>
         </motion.footer>
       </main>
+
+      {/* Modal de consentimento LGPD */}
+      <ConsentModal />
+
+      {/* Modal de re-autenticação PSC */}
+      <Modal isOpen={showReauthModal} onClose={() => setShowReauthModal(false)} placement="center" size="sm">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1 text-[#2a4a3a]">
+            Sessão de Assinatura Expirada
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600">
+              Sua sessão de assinatura digital expirou. Para continuar assinando, clique no botão abaixo e realize a autenticação novamente.
+            </p>
+          </ModalBody>
+          <ModalFooter className="flex gap-2">
+            <Button variant="flat" color="default" onPress={() => setShowReauthModal(false)}>
+              Agora não
+            </Button>
+            <Button className="bg-[#44735E] text-white" onPress={attemptPscReauth}>
+              Autenticar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de Mensagem desabilitado temporariamente */}
       {/* 

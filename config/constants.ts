@@ -2,19 +2,61 @@
 // NEST BACKEND
 // ---------------------------------------------------------
 const PORT = 3333;
-const NEST_URL_DEVELOP = `http://127.0.0.1:${PORT}/`;
+const normalizeBaseUrl = (value: string) => value.trim().replace(/\/+$/, "") + "/";
+const NEST_URL_DEVELOP = normalizeBaseUrl(
+  process.env.NEXT_PUBLIC_NEST_URL_DEVELOP || `http://127.0.0.1:${PORT}`,
+);
 
 export const NEST_URL =
   process.env.NODE_ENV === "development"
     ? NEST_URL_DEVELOP
-    : process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
-      "https://cmso360-backend.fly.dev/";
-console.log(NEST_URL);
+    : normalizeBaseUrl(
+        process.env.NEXT_PUBLIC_NEST_URL_PRODUCTION ||
+          "https://cmso360-backend.fly.dev",
+      );
 // export const NEST_URL = `http://192.168.0.222:${PORT}/`
 export const NEXT_WS_URL = NEST_URL?.replace("http", "ws").replace(
   "https",
   "wss",
 );
+
+export const isLoopbackHost = (host: string) => {
+  const normalized = String(host || "").trim().toLowerCase();
+  return (
+    !normalized ||
+    normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized.startsWith("127.")
+  );
+};
+
+export const getHostnameFromUrl = (value: string) => {
+  try {
+    return new URL(value).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+};
+
+export const isLoopbackUrl = (value: string) =>
+  isLoopbackHost(getHostnameFromUrl(value));
+
+export const resolveTeleatendimentoWsUrl = () => {
+  if (typeof window === "undefined" || process.env.NODE_ENV !== "development") {
+    return NEXT_WS_URL;
+  }
+
+  const pageHost = window.location.hostname.toLowerCase();
+  const configuredHost = getHostnameFromUrl(NEST_URL_DEVELOP);
+
+  if (!isLoopbackHost(pageHost) && isLoopbackHost(configuredHost)) {
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    return `${protocol}://${pageHost}:${PORT}/`;
+  }
+
+  return NEXT_WS_URL;
+};
 
 // ---------------------------------------------------------
 // WORKER (Scraping Metrics)
@@ -34,7 +76,6 @@ export const NEST_TICKET_DELETE = `${NEST_URL}ticket/delete/`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 
-export const NEST_SCHEDULINGS_ALL = `${NEST_URL}schedulings/all`;
 export const NEST_SCHEDULINGS_ANEXO_UPLOAD = `${NEST_URL}schedulings/upload-anexo`;
 export const NEST_SCHEDULINGS_ANEXO_REMOVE = `${NEST_URL}schedulings/remove-anexo`;
 export const NEST_SCHEDULINGS_DELETE = `${NEST_URL}schedulings/delete`;
@@ -45,13 +86,25 @@ export const NEST_SCHEDULINGS_FINISH = `${NEST_URL}schedulings/finish`;
 export const NEST_SCHEDULINGS_PRONTUARIO = `${NEST_URL}schedulings/prontuario/`; // adiciona id na query
 export const NEST_SCHEDULINGS_STATISTICS = `${NEST_URL}schedulings/statistics`;
 export const NEST_SCHEDULINGS_ASO_PENDING = `${NEST_URL}schedulings/aso/pending`;
+export const NEST_SCHEDULINGS_ASO_REQUEUE = `${NEST_URL}schedulings/aso/requeue`;
 export const NEST_SCHEDULINGS_TODAY = `${NEST_URL}schedulings/today`;
 export const NEST_SCHEDULINGS_UPDATE = `${NEST_URL}schedulings/update`;
 export const NEST_SCHEDULINGS_UPDATE_EXAM_RESULT = `${NEST_URL}schedulings/update/resultadoexame`; // envia resultados de exame pdf
 
+export const NEST_FACIAL_SESSION = "/api/facial/session";
+export const NEST_FACIAL_STATUS = "/api/facial/status/";
+export const NEST_FACIAL_FINALIZE = "/api/facial/finalize";
+export const NEST_TELEATENDIMENTO_SESSION = "/api/teleatendimento/session";
+export const NEST_TELEATENDIMENTO_INVITE = "/api/teleatendimento/invite/";
+
 export const NEST_PRONTUARIO_PARAMETROS =
   NEST_URL + "schedulings/record-params";
 export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
+export const NEST_GED_EMPRESAS = NEST_URL + "schedulings/ged/empresas";
+export const NEST_GED_PERIODOS = NEST_URL + "schedulings/ged/periodos";
+export const NEST_GED_PRONTUARIOS = NEST_URL + "schedulings/ged/prontuarios";
+export const NEST_GED_ARQUIVOS = NEST_URL + "schedulings/ged/arquivos";
+export const NEST_GED_BATCH = NEST_URL + "schedulings/ged/batch";
 export const NEST_RELATORIO_PARAMETROS = NEST_URL + "schedulings/report-params";
 export const NEST_RELATORIO_FILTROS = NEST_URL + "schedulings/report-filters";
 export const NEST_RELATORIO_FUNCIONARIO = NEST_URL + "schedulings/report/"; // schedulings/report/:ID ---> Busca funcionário
@@ -62,6 +115,7 @@ export const NEST_SOC_AUDIOMETRIA_ANTERIOR = `${NEST_URL}soc/audiometria-anterio
 export const NEST_SOC_COMPANIES = `${NEST_URL}soc/empresas`;
 export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
 export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
+export const NEST_SOC_PEDIDOEXAME_OPTIONS = `${NEST_URL}soc/pedidoexame/options?`;
 export const NEST_SOC_PEDIDOEXAME_VALIDADE = `${NEST_URL}soc/pedidoexame/validate?`;
 export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
@@ -69,6 +123,11 @@ export const NEST_SOC_SINCRONIZAR_PRONTUARIO = `${NEST_URL}soc/sincronizar-pront
 
 export const NEST_NOTIFICATION_URL = `${NEST_URL}push/subscribe`;
 export const NEST_USER_SETTINGS_URL = `${NEST_URL}user-settings/`;
+export const NEST_AUDIT_LOGS_URL = `${NEST_URL}audit-logs`;
+
+export const NEST_INTERNAL_HEALTH_WORKERS = `${NEST_URL}internal/health/workers`;
+export const NEST_AZURE_QUEUES_STATS = `${NEST_URL}azure/queues/stats`;
+export const NEST_AZURE_QUEUE_PEEK = `${NEST_URL}azure/queues`;
 
 // ---------------------------------------------------------
 // NEXT APPLICATION
@@ -139,6 +198,8 @@ export const SALAS_RECEPCAO = [
 ];
 export const SALAS_EXAMES = [
   "SALA 1",
+  "SALA 1 - LAB",
+  "SALA 1 - ESP",
   "SALA 2",
   "SALA 3-A",
   "SALA 3-B",
@@ -230,375 +291,3 @@ export const CODIGOS_ESPACO_CONFINADO = new Set([
   "666", // Catalogação dos espaços confinados
   "977", // Espaço confinado no acesso a tanques para inspeção e limpeza
 ]);
-
-type ExamToogle = {
-  codigos: string[];
-  nome: string;
-};
-
-export const EXAMES_LIST: Record<string, ExamToogle[]> = {
-  "Exame Clínico": [
-    {
-      codigos: ["clinico", "11"],
-      nome: "Exame Clínico",
-    },
-    {
-      codigos: ["002211"],
-      nome: "Teste de Romberg",
-    },
-  ],
-  Audiometria: [
-    {
-      codigos: ["51.01.004-6", "50c", "10014"],
-      nome: "Audiometria",
-    },
-    {
-      codigos: ["28032024"],
-      nome: "Avaliação Acústica da Voz",
-    },
-    {
-      codigos: ["0281"],
-      nome: "Audiometria tonal ocupacional",
-    },
-  ],
-  "Acuidade Visual": [
-    {
-      codigos: ["50.01.001-8", "20221407", "4447", "02002", "4445"],
-      nome: "Acuidade Visual",
-    },
-    {
-      codigos: ["07072023"],
-      nome: "Consulta Oftalmológica",
-    },
-    {
-      codigos: ["0298"],
-      nome: "Avaliação da acuidade visual com colorimetria (Ishihara)",
-    },
-  ],
-  Laboratório: [
-    {
-      codigos: ["2"],
-      nome: "2,5-hexanodiona urinária",
-    },
-    {
-      codigos: ["XX"],
-      nome: "Acetona urinária",
-    },
-    {
-      codigos: ["28.15.001-5"],
-      nome: "Ácido delta aminolevulínico - ALA-U",
-    },
-    {
-      codigos: ["28.15.003-1"],
-      nome: "Ácido fenilglioxílico",
-    },
-    {
-      codigos: ["28.15.004-0"],
-      nome: "Ácido hipúrico",
-    },
-    {
-      codigos: ["28.15.005-8"],
-      nome: "Ácido mandélico",
-    },
-    {
-      codigos: ["28.15.006-6"],
-      nome: "Ácido metilhipúrico",
-    },
-    {
-      codigos: ["5555"],
-      nome: "Ácido trans, trans-mucônico",
-    },
-    {
-      codigos: ["28010175"],
-      nome: "Ácido úrico",
-    },
-    {
-      codigos: ["1180"],
-      nome: "Antígeno específico prostático total (PSA)",
-    },
-    {
-      codigos: ["CÁDMIO"],
-      nome: "Cádmio Sanguíneo",
-    },
-    {
-      codigos: ["001234"],
-      nome: "Cádmio urinários",
-    },
-    {
-      codigos: ["28.15.009-0"],
-      nome: "Carboxihemoglobina",
-    },
-    {
-      codigos: ["28.15.012-0"],
-      nome: "Chumbo sanguíneo",
-    },
-    {
-      codigos: ["0012345"],
-      nome: "Chumbo urinário",
-    },
-    {
-      codigos: ["1332"],
-      nome: "Colesterol (HDL)",
-    },
-    {
-      codigos: ["1222"],
-      nome: "Colesterol (LDL)",
-    },
-    {
-      codigos: ["00000"],
-      nome: "Colesterol (VLDL)",
-    },
-    {
-      codigos: ["28010507"],
-      nome: "Colesterol total",
-    },
-    {
-      codigos: ["28.01.054-0"],
-      nome: "Creatinina",
-    },
-    {
-      codigos: ["02"],
-      nome: "Cromo sanguíneo",
-    },
-    {
-      codigos: ["28100239"],
-      nome: "Cultura nas fezes",
-    },
-    {
-      codigos: ["28.15.030-9"],
-      nome: "Etanol",
-    },
-    {
-      codigos: ["28.15.014-7"],
-      nome: "Fenol",
-    },
-    {
-      codigos: ["28.15.015-5"],
-      nome: "Fluoreto urinário",
-    },
-    {
-      codigos: ["11072025"],
-      nome: "Função hepática",
-    },
-    {
-      codigos: ["002000"],
-      nome: "Fungos, pesquisa a fresco",
-    },
-    {
-      codigos: ["28.01.095-7"],
-      nome: "Gama-glutamil transferase (Gama-GT)",
-    },
-    {
-      codigos: ["28.01.097-3"],
-      nome: "Glicemia",
-    },
-    {
-      codigos: ["2336", "28040350"],
-      nome: "Grupo sanguíneo ABO, e fator Rho (inclui Du)",
-    },
-    {
-      codigos: ["28011023"],
-      nome: "Hemoglobina glicada (A1 total)",
-    },
-    {
-      codigos: ["28.04.048-1"],
-      nome: "Hemograma com contagem de plaquetas ou frações",
-    },
-    {
-      codigos: ["28.04.048-1", "28040562"],
-      nome: "Hemograma com contagem de plaquetas ou frações",
-    },
-    {
-      codigos: ["28060105"],
-      nome: "Hepatite A - HAV - IgG",
-    },
-    {
-      codigos: ["28060113"],
-      nome: "Hepatite A - HAV - IgM",
-    },
-    {
-      codigos: ["28060067"],
-      nome: "Hepatite B - HBCAC - IgG",
-    },
-    {
-      codigos: ["28061195"],
-      nome: "Hepatite B - HBCAC - IgM",
-    },
-    {
-      codigos: ["-"],
-      nome: "Hepatite B - HBeAC (anti HBE)",
-    },
-    {
-      codigos: ["144"],
-      nome: "Hepatite B - HBsAG",
-    },
-    {
-      codigos: ["1123"],
-      nome: "Hepatite B - HBsAC (anti-HBs)",
-    },
-    {
-      codigos: ["00022"],
-      nome: "Hepatite C - anti-HCV - IgG",
-    },
-    {
-      codigos: ["1125"],
-      nome: "Hepatite C - anti-HCV - IgM",
-    },
-    {
-      codigos: ["200"],
-      nome: "Hormônio gonodotrofico corionico",
-    },
-    {
-      codigos: ["28.15.018-0"],
-      nome: "Metanol",
-    },
-    {
-      codigos: ["1", "54778844"],
-      nome: "Metil Etil Cetona",
-    },
-    {
-      codigos: ["28030141"],
-      nome: "Parasitológico de fezes",
-    },
-    {
-      codigos: ["0101"],
-      nome: "Reticulócitos",
-    },
-    {
-      codigos: ["28.13.036-7", "47788855"],
-      nome: "Rotina de urina",
-    },
-    {
-      codigos: ["28061004"],
-      nome: "Sífilis - VDRL",
-    },
-    {
-      codigos: ["09022023"],
-      nome: "Tolueno urinário",
-    },
-    {
-      codigos: ["02020"],
-      nome: "Exame Toxicológico",
-    },
-    {
-      codigos: ["28.01.136-8"],
-      nome: "TGO",
-    },
-    {
-      codigos: ["28.01.137-6"],
-      nome: "TGP",
-    },
-    {
-      codigos: ["13012023"],
-      nome: "Tolueno sanguíneo",
-    },
-    {
-      codigos: ["09022023"],
-      nome: "Tolueno urinário",
-    },
-    {
-      codigos: ["28011392"],
-      nome: "Triglicerídeos",
-    },
-    {
-      codigos: ["28.01.141-4"],
-      nome: "Uréia",
-    },
-    {
-      codigos: ["1427"],
-      nome: "Estireno na urina",
-    },
-    {
-      codigos: [],
-      nome: "Micológico de unha",
-    },
-    {
-      codigos: [],
-      nome: "Secreção Orofaringe e Nasal",
-    },
-  ],
-  ECG: [
-    {
-      codigos: ["20.01.001-0"],
-      nome: "ECG",
-    },
-  ],
-  EEG: [
-    {
-      codigos: ["22010017"],
-      nome: "EEG",
-    },
-  ],
-  Psicossocial: [
-    {
-      codigos: ["225588", "00123", "111114"],
-      nome: "Psicossocial",
-    },
-  ],
-  Espirometria: [
-    {
-      codigos: ["19.01.029-0"],
-      nome: "Espirometria",
-    },
-  ],
-  "Raio-X": [
-    {
-      codigos: ["32050070", "14111"],
-      nome: "Radiografia de tórax (PA) Padrão OIT",
-    },
-    {
-      codigos: ["12200", "8998"],
-      nome: "Tomografia de tórax",
-    },
-    {
-      codigos: ["ex imagem"],
-      nome: "Radiografia de coluna total",
-    },
-    {
-      codigos: ["111", "1v1v", "254477"],
-      nome: "Radiografia de coluna lombo-sacra",
-    },
-    {
-      codigos: ["-0-"],
-      nome: "Radiografia de coluna dorsal",
-    },
-    {
-      codigos: ["0.."],
-      nome: "Radiografia de coluna cervical",
-    },
-    {
-      codigos: ["2221111"],
-      nome: "Métodos Diagnósticos por Imagem Coluna",
-    },
-  ],
-  Dinamometria: [
-    {
-      codigos: ["20", "58877"],
-      nome: "Dinamometria",
-    },
-    {
-      codigos: ["041120252"],
-      nome: "Dinamometria (escapular)",
-    },
-    {
-      codigos: ["041120253"],
-      nome: "Dinamometria (lombar)",
-    },
-    {
-      codigos: ["041120251"],
-      nome: "Dinamometria (punhos)",
-    },
-  ],
-  Ultrassom: [
-    {
-      codigos: ["1444", "587744"],
-      nome: "Ultrassom",
-    },
-  ],
-  Triagem: [
-    {
-      codigos: ["triagem"],
-      nome: "Triagem",
-    },
-  ],
-};

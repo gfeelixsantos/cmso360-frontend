@@ -21,6 +21,7 @@ import {
 
 import PreferencialTipo from "./components/PreferencialTipo";
 
+import { useUnits } from "@/lib/config/useUnits";
 import {
   Ticket,
   TicketEmitedDto,
@@ -38,7 +39,6 @@ import {
   COLOR_PALETTE,
   NEST_TICKETS_URL,
   SERVICES_KEY,
-  UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 
 // Interface para dados de autenticação salvos
@@ -259,8 +259,10 @@ const Header = ({ unidade }: { unidade?: string }) => {
 // Componente para a tela de autenticação e conexão
 const InitialScreen = ({
   onConnect,
+  unidades,
 }: {
   onConnect: (unidade: string) => void;
+  unidades: string[];
 }) => {
   const [serial, setSerial] = useState("");
   const [unidade, setUnidade] = useState("");
@@ -381,7 +383,7 @@ const InitialScreen = ({
             <option disabled value="">
               Selecione a unidade
             </option>
-            {UNIDADES_ATENDIMENTO.map((u) => (
+            {unidades.map((u) => (
               <option key={u} value={u}>
                 {u}
               </option>
@@ -838,6 +840,7 @@ export default function Home() {
     null,
   );
   const { getAuthData } = useAuthStorage();
+  const { unidades } = useUnits();
 
   useEffect(() => {
     const savedAuth = getAuthData();
@@ -879,7 +882,7 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
           >
-            <InitialScreen onConnect={handleConnect} />
+            <InitialScreen onConnect={handleConnect} unidades={unidades} />
           </motion.div>
         )}
       </AnimatePresence>

@@ -21,15 +21,13 @@ import AnexosUpload from "./components/AnexosUpload"; // Importe o novo componen
 
 import {
   NEST_SCHEDULINGS_UPDATE,
-  NEST_SCHEDULINGS_DELETE,
   NEST_SCHEDULINGS_ANEXO_UPLOAD,
-  NEST_SCHEDULINGS_ANEXO_REMOVE,
   NEST_SCHEDULINGS_PRONTUARIO,
-  NEST_SOC_SINCRONIZAR_PRONTUARIO,
   NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
 import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // função de geração de relatório
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { IUserInfo } from "@/hooks/useUser";
 
 interface LazyModalContentProps {
@@ -50,6 +48,32 @@ interface SyncProntuarioPayload {
   };
 }
 
+const formatStatusLabel = (status?: string | null): string => {
+  if (!status) return "Não informado";
+
+  return status
+    .replace(/_/g, " ")
+    .toLowerCase()
+    .replace(/\b\w/g, (letter: string) => letter.toUpperCase());
+};
+
+const getStatusTextColor = (status: string): string => {
+  switch (status) {
+    case AtendimentoStatus.FINALIZADO:
+      return "text-emerald-600";
+    case AtendimentoStatus.EM_ATENDIMENTO:
+      return "text-red-600";
+    case AtendimentoStatus.AGUARDANDO_RESULTADOS:
+      return "text-secondary-600";
+    case AtendimentoStatus.AVALIACAO_MEDICA:
+      return "text-amber-600";
+    case AtendimentoStatus.AGENDADO:
+      return "text-gray-600";
+    default:
+      return "text-primary-600";
+  }
+};
+
 // ============================================
 // COMPONENTE PRINCIPAL: LazyModalContent
 // ============================================
@@ -68,6 +92,10 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const [loadingViewReport, setLoadingViewReport] = useState(false);
   const [loadingSyncSoc, setLoadingSyncSoc] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [removeAttachmentModal, setRemoveAttachmentModal] = useState<{
+    isOpen: boolean;
+    fileName: string;
+  }>({ isOpen: false, fileName: "" });
   const [loadingAttachments, setLoadingAttachments] = useState(false);
 
   // Estado para modal de alerta
@@ -132,51 +160,12 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   const handleRemoveAttachment = useCallback(
     async (fileName: string) => {
       if (!atendimento._id) return;
-
-      setAlertModal({
-        open: true,
-        type: "warning",
-        message: "Deseja realmente remover este anexo?",
-        onConfirm: async () => {
-          try {
-            const response = await fetch(NEST_SCHEDULINGS_ANEXO_REMOVE, {
-              method: "DELETE",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                schedulingId: atendimento._id,
-                fileName: fileName,
-              }),
-            });
-
-            if (!response.ok) {
-              throw new Error("Erro ao remover anexo");
-            }
-
-            const updatedAtendimento = await response.json();
-
-            if (onUpdateScheduling) {
-              onUpdateScheduling(updatedAtendimento);
-            }
-
-            setAlertModal({
-              open: true,
-              type: "success",
-              message: "Anexo removido com sucesso!",
-            });
-          } catch (error) {
-            console.error("Erro ao remover anexo:", error);
-            setAlertModal({
-              open: true,
-              type: "error",
-              message: "Erro ao remover anexo",
-            });
-          }
-        },
+      setRemoveAttachmentModal({
+        isOpen: true,
+        fileName,
       });
     },
-    [atendimento._id, onUpdateScheduling],
+    [atendimento._id],
   );
 
   // ============================================
@@ -184,6 +173,18 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   // ============================================
 
   const handleViewMedicalRecord = async () => {
+    const newWin = window.open("", "_blank", "noopener,noreferrer");
+
+    if (!newWin) {
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Não foi possível abrir o prontuário em nova aba",
+      });
+
+      return;
+    }
+
     try {
       setLoadingViewMedicalRecord(true);
       const response = await fetch(
@@ -191,6 +192,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       );
 
       if (!response.ok) {
+        newWin.close();
         const txt = await response.text();
 
         throw new Error(`Erro ao buscar prontuário: ${txt}`);
@@ -198,20 +200,11 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
-      const newWin = window.open(blobUrl, "_blank", "noopener,noreferrer");
 
-      if (!newWin) {
-        URL.revokeObjectURL(blobUrl);
-        setAlertModal({
-          open: true,
-          type: "error",
-          message: "Não foi possível abrir o prontuário em nova aba",
-        });
-        return;
-      }
-
+      newWin.location.href = blobUrl;
       setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (error) {
+      newWin.close();
       console.error("Erro ao visualizar prontuário:", error);
       setAlertModal({
         open: true,
@@ -267,7 +260,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     try {
       setLoadingSyncSoc(true);
 
-      const response = await fetch(NEST_SOC_SINCRONIZAR_PRONTUARIO, {
+      const response = await fetch("/api/soc/sincronizar-prontuario", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -287,15 +280,10 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
       onUpdateScheduling?.(payload.data);
 
-      const resumo = payload.resumo;
-      const resumoMessage = resumo
-        ? `\n\nResumo da sincronizacao:\n- Preservados: ${resumo.preservados ?? 0}\n- Adicionados: ${resumo.adicionados ?? 0}\n- Removidos: ${resumo.removidos ?? 0}`
-        : "";
-
       setAlertModal({
         open: true,
         type: "success",
-        message: `Sincronizacao do prontuario realizada com sucesso!${resumoMessage}`,
+        message: `Prontuário atualizado com os dados do SOC.`,
       });
     } catch (error) {
       console.error("Erro ao sincronizar:", error);
@@ -312,31 +300,75 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     }
   };
 
-  const handleDeleteScheduling = async (password: string) => {
+  const handleDeleteScheduling = async ({
+    password,
+    motivo,
+  }: {
+    password: string;
+    motivo: string;
+  }) => {
     try {
-      const response = await fetch(NEST_SCHEDULINGS_DELETE, {
+      const response = await fetch("/api/schedulings/delete", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           schedulingId: atendimento._id,
-          password: password,
+          password,
+          motivo,
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
+      const payload = await response.json().catch(() => ({}));
 
-        throw new Error(errorData.message || "Erro ao excluir atendimento");
+      if (!response.ok) {
+        throw new Error(payload?.message || "Erro ao excluir atendimento");
       }
 
-      return Promise.resolve();
+      return {
+        requestId: payload?.requestId,
+      };
     } catch (error: any) {
       console.error("Erro ao excluir:", error);
 
       return Promise.reject(error);
     }
+  };
+
+  const handleRemoveStoredAttachment = async ({
+    password,
+    motivo,
+  }: {
+    password: string;
+    motivo: string;
+  }) => {
+    const response = await fetch("/api/schedulings/remove-anexo", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        schedulingId: atendimento._id,
+        fileName: removeAttachmentModal.fileName,
+        motivo,
+        password,
+      }),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(payload?.message || "Erro ao remover anexo.");
+    }
+
+    if (onUpdateScheduling && payload) {
+      onUpdateScheduling(payload as Scheduling);
+    }
+
+    return {
+      requestId: payload?.requestId,
+    };
   };
 
   const handleSaveEmployeeData = async (data: Partial<Scheduling>) => {
@@ -372,10 +404,42 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   return (
     <>
       <DeleteConfirmationModal
+        confirmDescription={
+          <span>
+            Esta ação irá excluir <strong>definitivamente</strong> o
+            atendimento e todos os dados associados.
+          </span>
+        }
         isOpenModalDelete={deleteModalOpen}
+        loadingTitle="Excluindo atendimento"
+        loadingMessage="Validando sua senha e registrando a exclusão do atendimento..."
         onCloseModalDelete={() => setDeleteModalOpen(false)}
         onConfirm={handleDeleteScheduling}
         onDeleteSuccess={onClose}
+      />
+
+      <DeleteConfirmationModal
+        confirmButtonText="Remover anexo"
+        confirmDescription={
+          <span>
+            Tem certeza que deseja remover o anexo{" "}
+            <strong>{removeAttachmentModal.fileName}</strong>?
+          </span>
+        }
+        confirmTitle="Remover anexo"
+        isOpenModalDelete={removeAttachmentModal.isOpen}
+        loadingMessage="Validando sua senha e removendo o anexo..."
+        loadingTitle="Removendo anexo"
+        motivoPlaceholder="Explique por que o anexo está sendo removido"
+        onCloseModalDelete={() =>
+          setRemoveAttachmentModal({
+            isOpen: false,
+            fileName: "",
+          })
+        }
+        onConfirm={handleRemoveStoredAttachment}
+        successMessage="Anexo removido com sucesso."
+        successTitle="Anexo removido"
       />
 
       <ModalHeader className="flex gap-2">
@@ -444,7 +508,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                     open: true,
                     type: "warning",
                     message:
-                      "A sincronizacao com o SOC vai atualizar os dados cadastrais desta ficha com base no cadastro retornado pelo SOC e reconciliar os exames da mesma data.\n\nExames iniciados ou finalizados serao preservados. Exames pendentes poderao ser adicionados ou removidos conforme o retorno do SOC.\n\nDeseja continuar?",
+                      "A sincronização vai atualizar os dados do funcionário com as informações mais recentes do sistema. Exames já realizados serão mantidos. Deseja continuar?",
                     onConfirm: handleSyncWithSOC,
                   })
                 }
@@ -461,6 +525,13 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                 Excluir
               </Button>
             </div>
+          </div>
+          <div className="flex items-center">
+            <span
+              className={`text-lg font-bold ${getStatusTextColor(atendimento.ATENDIMENTOSTATUS || "")}`}
+            >
+              {formatStatusLabel(atendimento.ATENDIMENTOSTATUS)}
+            </span>
           </div>
         </div>
       </ModalHeader>
@@ -559,5 +630,4 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
 
 LazyModalContent.displayName = "LazyModalContent";
 export default LazyModalContent;
-
 

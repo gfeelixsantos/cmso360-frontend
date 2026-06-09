@@ -22,6 +22,11 @@ import {
   Copy,
   FileInput,
   PrinterCheck,
+  Fingerprint,
+  ChevronDown,
+  Camera,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
 import {
   Input,
@@ -41,6 +46,10 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
@@ -48,6 +57,11 @@ import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Socket } from "socket.io-client";
 
 import EmPreparacaoModal from "./PreparoModal";
+import BiometriaModal, { BiometriaModalState, BiometriaStatus } from "@/app/atendimento/components/BiometriaModal";
+import CadastroBiometricoModal, { BiometriaCadastroModalState } from "@/app/atendimento/components/CadastroBiometricoModal";
+import BiometriaValidacaoModal, { ValidacaoModalState, ValidacaoStatus } from "@/app/atendimento/components/BiometriaValidacaoModal";
+import BiometriaFuncionarioModal from "@/app/atendimento/components/BiometriaFuncionarioModal";
+import FacialModal, { FacialContext } from "@/app/atendimento/components/FacialModal";
 
 import {
   PreparationRequest,
@@ -57,13 +71,14 @@ import {
   TicketGroups,
   TicketStatus,
 } from "@/lib/ticket/ticket";
+import { fetchExamesGrouped } from "@/lib/exames/utils/exames-helper";
+import { fetchExames } from "@/lib/exames/services/exames.service";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
-  EXAMES_LIST,
   NEST_SOC_RECORDS,
   NEST_SCHEDULINGS_UPDATE,
-  NEST_SCHEDULINGS_PRONTUARIO,
   NEST_SOC_PEDIDOEXAME,
+  NEST_SOC_PEDIDOEXAME_OPTIONS,
   NEST_SOC_PEDIDOEXAME_CREDENCIADAS,
   NEST_TICKETS_URL,
   PREFERENCIAL_OPTIONS,
@@ -83,11 +98,13 @@ import {
   formatCPF,
   formatPhone,
   getStatusColor,
+  normalizeId,
 } from "@/lib/utils";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
-import { AsoFuncionarioDto } from "@/lib/soc/interfaces/AsoFuncionario";
-import { reportInternal } from "@/lib/scheduling/report/reportInternal";
+import { AsoFuncionarioDto, AsoOption } from "@/lib/soc/interfaces/AsoFuncionario";
+import { guiaAtendimento } from "@/lib/scheduling/report/guiaAtendimento";
+import { fetchPrestadores, IPrestador } from "@/lib/prestadores/services/prestadores.service";
 
 function normalizeString(str: string): string {
   return str
@@ -96,12 +113,106 @@ function normalizeString(str: string): string {
     .toLowerCase();
 }
 
+function formatDedoLabel(dedo: string): string {
+  const mapa: Record<string, string> = {
+    POLEGAR_DIREITO: 'Polegar Direito',
+    INDICADOR_DIREITO: 'Indicador Direito',
+    MEDIO_DIREITO: 'Médio Direito',
+    ANELAR_DIREITO: 'Anelar Direito',
+    MINIMO_DIREITO: 'Mínimo Direito',
+    POLEGAR_ESQUERDO: 'Polegar Esquerdo',
+    INDICADOR_ESQUERDO: 'Indicador Esquerdo',
+    MEDIO_ESQUERDO: 'Médio Esquerdo',
+    ANELAR_ESQUERDO: 'Anelar Esquerdo',
+    MINIMO_ESQUERDO: 'Mínimo Esquerdo',
+  };
+  return mapa[dedo] || dedo;
+}
+
 function formatAtendimentoStatusLabel(status?: string): string {
   if (!status) return "";
 
   return status
     .replace(/_/g, " ")
     .replace(/\b\w/g, (l: string) => l.toUpperCase());
+}
+
+function resolveTipoExameRecepcao(paciente: Partial<Scheduling>): string {
+  const tipoExameNome = String(paciente?.TIPOEXAMENOME || "").trim();
+  const mappedByNome = TIPOS_EXAME[tipoExameNome as keyof typeof TIPOS_EXAME];
+  if (mappedByNome) return mappedByNome;
+
+  const tipoExameCodigo = String(paciente?.TIPOEXAME || "").trim();
+  const mappedByCodigo: Record<string, string> = {
+    "1": TIPOS_EXAME.ADMISSIONAL,
+    "2": TIPOS_EXAME.PERIODICO,
+    "3": TIPOS_EXAME["RETORNO TRABALHO"],
+    "4": TIPOS_EXAME["MUDANCA FUNCAO"],
+    "5": TIPOS_EXAME.DEMISSIONAL,
+    "6": TIPOS_EXAME["MONITORACAO PONTUAL"],
+  };
+
+  return mappedByCodigo[tipoExameCodigo] || "";
+}
+
+function getBiometriaFuncionarioRef(funcionario: Partial<Scheduling>): string {
+  return String(
+    funcionario.CODIGOPRONTUARIO ||
+      funcionario.CODIGO ||
+      funcionario._id ||
+      "",
+  );
+}
+
+function getSchedulingMongoId(funcionario: Partial<Scheduling>): string {
+  return String(funcionario._id || "");
+}
+
+type MetodoValidacao = "SOC" | "BIOMETRIA" | "FACIAL";
+
+function getAuthMethodVisual(
+  metodo: MetodoValidacao | string | undefined,
+  status?: string,
+) {
+  if (metodo === "BIOMETRIA") {
+    return {
+      label: "Biometria",
+      icon: <Fingerprint className="h-4 w-4" />,
+      badge:
+        status === "VALIDADO" ? (
+          <span className="text-[10px] text-green-600 font-medium">✓ OK</span>
+        ) : (
+          <span className="text-[10px] text-amber-600">Pendente</span>
+        ),
+    };
+  }
+
+  if (metodo === "FACIAL") {
+    return {
+      label: "Facial",
+      icon: <Camera className="h-4 w-4" />,
+      badge:
+        status === "VALIDADO" ? (
+          <span className="text-[10px] text-green-600 font-medium">✓ OK</span>
+        ) : (
+          <span className="text-[10px] text-amber-600">Pendente</span>
+        ),
+    };
+  }
+
+  if (metodo === "SOC") {
+    return {
+      label: "SOC",
+      icon: <Globe className="h-4 w-4" />,
+      badge: <span className="text-[10px] text-blue-600 font-medium">Padrão</span>,
+    };
+  }
+
+  return {
+    label: "Não autenticado",
+    icon: <ShieldCheck className="h-4 w-4" />,
+    badge: <span className="text-[10px] text-amber-600">Pendente</span>,
+  };
 }
 
 interface AtendimentoModalProps {
@@ -128,6 +239,50 @@ interface AtendimentoModalProps {
   ) => void;
 }
 
+function getAuthMethodVisualClean(
+  metodo: MetodoValidacao | string | undefined,
+  status?: string,
+) {
+  switch (metodo) {
+    case "BIOMETRIA":
+      return {
+        label: "Biometria",
+        icon: <Fingerprint className="h-4 w-4" />,
+        badge:
+          status === "VALIDADO" ? (
+            <span className="text-[10px] text-green-600 font-medium">OK</span>
+          ) : (
+            <span className="text-[10px] text-amber-600">Pendente</span>
+          ),
+      };
+    case "FACIAL":
+      return {
+        label: "Facial",
+        icon: <Camera className="h-4 w-4" />,
+        badge:
+          status === "VALIDADO" ? (
+            <span className="text-[10px] text-green-600 font-medium">OK</span>
+          ) : (
+            <span className="text-[10px] text-amber-600">Pendente</span>
+          ),
+      };
+    case "SOC":
+      return {
+        label: "SOC",
+        icon: <Globe className="h-4 w-4" />,
+        badge: (
+          <span className="text-[10px] text-blue-600 font-medium">Padrao</span>
+        ),
+      };
+    default:
+      return {
+        label: "Nao autenticado",
+        icon: <ShieldCheck className="h-4 w-4" />,
+        badge: <span className="text-[10px] text-amber-600">Pendente</span>,
+      };
+  }
+}
+
 const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   isOpen,
   onClose,
@@ -141,6 +296,50 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   onSetPreparacaoFinalizada,
   onExecutarAcao,
 }: AtendimentoModalProps) => {
+  const [metodoValidacao, setMetodoValidacao] = useState<MetodoValidacao>("SOC");
+  const [examesData, setExamesData] = useState<Record<string, { codigos: string[]; nome: string }[]> | null>(null);
+  const examesDataRef = useRef(examesData);
+  examesDataRef.current = examesData;
+  const [prestadores, setPrestadores] = useState<IPrestador[]>([]);
+  const [examesPreparacaoMap, setExamesPreparacaoMap] = useState<Record<string, string>>({});
+
+  // Estados de Biometria
+  const [biometriaStatus, setBiometriaStatus] = useState<BiometriaStatus>("idle");
+  const [biometriaMessage, setBiometriaMessage] = useState<string>("");
+  const [biometriaRequestId, setBiometriaRequestId] = useState<string | null>(
+    null,
+  );
+  const [isCapturingBiometria, setIsCapturingBiometria] =
+    useState<boolean>(false);
+  const [biometriaSuccess, setBiometriaSuccess] = useState<boolean>(false);
+  const [biometriaContextExtra, setBiometriaContextExtra] = useState<{
+    cpf?: string;
+    dataNascimento?: string;
+  }>({});
+  const [dedoCapturado, setDedoCapturado] = useState<string | null>(null);
+  const biometriaRequestIdRef = useRef<string | null>(null);
+
+  const [biometriaModal, setBiometriaModal] = useState<BiometriaModalState>({
+    isOpen: false,
+    status: "idle",
+  });
+
+  const [cadastroBiometricoModal, setCadastroBiometricoModal] = useState<BiometriaCadastroModalState>({
+    isOpen: false,
+    status: "selecionando_dedo",
+  });
+
+  const [validacaoModal, setValidacaoModal] = useState<ValidacaoModalState>({
+    isOpen: false,
+    status: "idle",
+  });
+
+  const [facialModalOpen, setFacialModalOpen] = useState(false);
+  const [facialContext, setFacialContext] = useState<FacialContext | null>(null);
+  const validacaoRequestIdRef = useRef<string | null>(null);
+
+  const [biometriaStatusModalOpen, setBiometriaStatusModalOpen] = useState(false);
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncingCard, setIsSyncingCard] = useState<boolean>(false);
   const [codigoFuncionario, setCodigoFuncionario] = useState<string>("");
@@ -171,9 +370,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const [isOpenPreparationModal, setIsOpenPreparationModal] = useState(false);
   const [somentePa, setSomentePa] = useState<boolean>(false);
 
-  // referencia para o sidebar dos cards
-  const listRef = useRef<any>(null);
-
   // Controls when error labels are shown
   const [showErrors, setShowErrors] = useState<boolean>(false);
 
@@ -181,11 +377,141 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const [modalAlert, setModalAlert] = useState<boolean>(false);
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isSuccessModal, setIsSuccessModal] = useState<boolean>(false);
+  const [reuseExistingPrompt, setReuseExistingPrompt] = useState<{
+    empresa: string;
+    codigoFuncionario: string;
+  } | null>(null);
 
   // Controle de agendamento selecionado
   const [selectedSchedulingId, setSelectedSchedulingId] = useState<
     string | null
   >(null);
+
+  // Estados para selecao de multiplas fichas (ASO)
+  const [asoOptions, setAsoOptions] = useState<AsoOption[]>([]);
+  const [isAsoSelectionOpen, setIsAsoSelectionOpen] = useState(false);
+  const [pendingAsoSelection, setPendingAsoSelection] = useState<{
+    empresa: string;
+    codigoFuncionario: string;
+  } | null>(null);
+
+  const fecharBiometriaModal = useCallback(() => {
+    setBiometriaModal((prev) => {
+      if (prev.requestId && socket) {
+        socket.emit("biometria:captura_cancel", {
+          requestId: prev.requestId,
+          unidade: prev.context?.unidade ?? unidadeSelecionada,
+        });
+      }
+      return { ...prev, isOpen: false };
+    });
+    setIsCapturingBiometria(false);
+  }, [socket, unidadeSelecionada]);
+
+  const fecharCadastroBiometricoModal = useCallback(() => {
+    setCadastroBiometricoModal((prev) => {
+      if (prev.requestId && socket) {
+        socket.emit("biometria:cadastro_cancel", {
+          requestId: prev.requestId,
+          unidade: prev.context?.unidade || unidadeSelecionada,
+        });
+      }
+      return { ...prev, isOpen: false };
+    });
+  }, [socket, unidadeSelecionada]);
+
+  const resetarCadastroBiometricoModal = useCallback(() => {
+    setCadastroBiometricoModal((prev) => {
+      const isTerminal = ["concluido", "erro", "timeout", "agent_not_found", "reader_unavailable"].includes(prev.status);
+      if (!isTerminal && prev.requestId && socket) {
+        socket.emit("biometria:cadastro_cancel", {
+          requestId: prev.requestId,
+          unidade: prev.context?.unidade || unidadeSelecionada,
+        });
+      }
+      return {
+        ...prev,
+        status: "selecionando_dedo",
+        capturas: undefined,
+        mensagem: "",
+        requestId: undefined,
+      };
+    });
+  }, [socket, unidadeSelecionada]);
+
+  const handleCadastroBiometrico = useCallback(() => {
+    if (!funcionarioSelecionado) return;
+    const funcionarioCpf =
+      (typeof cpf === "string" ? cpf : "").trim() ||
+      funcionarioSelecionado.CPFFUNCIONARIO ||
+      "";
+    const funcionarioDataNascimento =
+      (typeof dataNascimento === "string" ? dataNascimento : "").trim() ||
+      "";
+
+    setCadastroBiometricoModal({
+      isOpen: true,
+      status: "selecionando_dedo",
+      context: {
+        unidade: unidadeSelecionada,
+        sala: salaSelecionada,
+        funcionarioNome: funcionarioSelecionado.NOME,
+        funcionarioId: getBiometriaFuncionarioRef(funcionarioSelecionado),
+        funcionarioProntuario: funcionarioSelecionado.CODIGOPRONTUARIO,
+        atendimentoId: getSchedulingMongoId(funcionarioSelecionado),
+        funcionarioCpf,
+        funcionarioDataNascimento,
+        operadorId: String(user.codigo || user.nome),
+        operadorNome: user.nome,
+      },
+    });
+  }, [funcionarioSelecionado, unidadeSelecionada, salaSelecionada, user, cpf, dataNascimento]);
+
+  const handleAbrirBiometriaFuncionario = useCallback(() => {
+    if (!funcionarioSelecionado) return;
+    setBiometriaStatusModalOpen(true);
+  }, [funcionarioSelecionado]);
+
+  const handleBiometriaCadastroConcluido = useCallback(() => {
+    setBiometriaStatusModalOpen(false);
+  }, []);
+
+  const handleConfirmarDedoCadastro = useCallback((dedo: any) => {
+    if (!socket || !cadastroBiometricoModal.context) return;
+    const ctx = cadastroBiometricoModal.context;
+
+    const requestId = `reg_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+
+    console.log(`BIOMETRIA_CADASTRO_REQUEST_ENVIADO requestId=${requestId}`);
+
+    socket.emit("biometria:cadastro_request", {
+      requestId,
+      unidade: ctx.unidade,
+      sala: ctx.sala,
+      operador: {
+        id: ctx.operadorId,
+        nome: ctx.operadorNome,
+        perfil: "OPERADOR",
+      },
+      funcionario: {
+        id: ctx.funcionarioId,
+        nome: ctx.funcionarioNome,
+        cpf: ctx.funcionarioCpf || undefined,
+        dataNascimento: ctx.funcionarioDataNascimento || undefined,
+        prontuario: ctx.funcionarioProntuario,
+      },
+      schedulingId: ctx.atendimentoId,
+      atendimentoId: ctx.atendimentoId,
+      dedo,
+      origem: "RECEPCAO",
+      solicitadoEm: new Date().toISOString(),
+    });
+
+    setCadastroBiometricoModal(prev => ({ ...prev, requestId }));
+  }, [socket, cadastroBiometricoModal.context]);
+
+  // referencia para o sidebar dos cards
+  const listRef = useRef<any>(null);
 
   // Ref for containing element (for focus management if needed)
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -194,7 +520,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // Validation rules
   // ---------------------------------------------------------
 
-  // Edição e envio só permitidos quando AGENDADO
+  // Edicao e envio so permitidos quando AGENDADO
   const isAgendado =
     funcionarioSelecionado?.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO;
 
@@ -207,7 +533,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       exames: somentePa || codigoExames.length > 0,
       preferencial: ticketSelecionado?.preferencialTipo
         ? preferencialTipo.length > 0 ||
-          ticketSelecionado.preferencialTipo?.length > 0
+        ticketSelecionado.preferencialTipo?.length > 0
         : null,
       all:
         empresa.trim().length > 0 &&
@@ -217,10 +543,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         (somentePa || codigoExames.length > 0) &&
         (ticketSelecionado?.preferencialTipo
           ? preferencialTipo.length > 0 ||
-            ticketSelecionado.preferencialTipo?.length > 0
+          ticketSelecionado.preferencialTipo?.length > 0
           : true) &&
         funcionarioSelecionado?.ATENDIMENTOSTATUS ===
-          AtendimentoStatus.AGENDADO,
+        AtendimentoStatus.AGENDADO,
     };
   }, [
     empresa,
@@ -238,7 +564,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   // ---------------------------------------------------------
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (!isOpen) return; // Previne execução quando fechado
+      if (!isOpen) return; // Previne execucao quando fechado
 
       if (e.key === "Escape") {
         onClose();
@@ -265,7 +591,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   }, [isOpen, handleKeyDown]);
 
   // ---------------------------------------------------------
-  // filtros de agendamentos: search + status (manhã/tarde/all)
+  // filtros de agendamentos: search + status (manha/tarde/all)
   // ---------------------------------------------------------
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -286,9 +612,9 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         return matchesSearch;
       }
 
-      // 2. Trata o horário em branco ("") - Inclui em MANHÃ e TARDE
+      // 2. Trata o horario em branco ("") - Inclui em MANHA e TARDE
       if (p.HORARIO === "") {
-        return matchesSearch; // Se não tem horário, é incluído
+        return matchesSearch; // Se nao tem horario, e incluido
       }
 
       const hora = parseInt(p.HORARIO.substring(0, 2), 10);
@@ -311,7 +637,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   }, [agendamentos, searchTerm, statusFilter]);
 
   // ---------------------------------------------------------
-  // Função para "desclicar" um agendamento selecionado
+  // Funcao para "desclicar" um agendamento selecionado
   // ---------------------------------------------------------
   const handleDeselecionarAgendamento = useCallback(() => {
     // Reset form after successful submission
@@ -338,15 +664,69 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     setFuncionarioSelecionado(null);
   }, []);
 
+  async function carregarProntuarioPorCodigo({
+    empresa,
+    codigoFuncionario,
+    manterExamesRealizados,
+    ficha,
+    skipAsoCheck,
+  }: {
+    empresa: string;
+    codigoFuncionario: string;
+    manterExamesRealizados: boolean;
+    ficha?: string;
+    skipAsoCheck?: boolean;
+  }): Promise<boolean> {
+    const query = new URLSearchParams({
+      codempresa: empresa,
+      codfuncionario: codigoFuncionario,
+      manterExamesRealizados: String(manterExamesRealizados),
+    });
+
+    if (ficha) {
+      query.set("ficha", ficha);
+    }
+
+    const response = await fetch(`${NEST_SOC_PEDIDOEXAME}${query.toString()}`);
+    const prontuario: Scheduling = await response.json();
+
+    if (response.ok && prontuario?.CODIGOPRONTUARIO) {
+      await handleSelecionarPacienteAgendamento(prontuario, {
+        skipAsoCheck,
+        ficha: ficha || prontuario.SEQUENCIAFICHA,
+      });
+
+      const index = filteredAgendamentos.findIndex(
+        (a) => a.CODIGOPRONTUARIO === prontuario.CODIGOPRONTUARIO,
+      );
+
+      if (index !== -1 && listRef.current) {
+        listRef.current.scrollToItem(index, "center");
+      }
+
+      return true;
+    }
+
+    const { message } = prontuario as any;
+
+    setModalText(
+      <p>{message || "Nao foi possivel carregar os dados do funcionario."}</p>,
+    );
+    setModalAlert(true);
+    handleDeselecionarAgendamento();
+
+    return false;
+  }
+
   // ---------------------------------------------------------
-  // Actions: buscar funcionario por código (somente números)
+  // Actions: buscar funcionario por codigo (somente numeros)
   // ---------------------------------------------------------
   const handleBuscarFuncionario = useCallback(async () => {
     if (!empresa || !codigoFuncionario) {
       setModalText(
         <p>
           Informe <strong>empresa</strong> e{" "}
-          <strong>código do funcionário</strong>
+          <strong>codigo do funcionario</strong>
         </p>,
       );
       setModalAlert(true);
@@ -366,7 +746,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     try {
       setIsLoading(true);
-      // Se for KIT e sem exames -> chama a função de busca
+      // Se for KIT e sem exames -> chama a funcao de busca
       if (
         funcionarioSelecionado &&
         funcionarioSelecionado.CODIGOINTERNOEMPRESA?.includes("KIT") &&
@@ -387,12 +767,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           await responseValidate.json();
 
         if (data) {
-          const confirmResponse = confirm(
-            "Encontramos um atendimento válido para este funcionário. Deseja reutilizá-lo?",
-          );
-
-          updateSerivce = confirmResponse;
+          setReuseExistingPrompt({
+            empresa,
+            codigoFuncionario,
+          });
+          return;
         }
+
 
         if (!updateSerivce) return;
 
@@ -406,12 +787,12 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           // handleDeselecionarAgendamento()
           await handleSelecionarPacienteAgendamento(prontuario);
 
-          // Localiza o índice na lista
+          // Localiza o indice na lista
           const index = filteredAgendamentos.findIndex(
             (a) => a.CODIGOPRONTUARIO === prontuario.CODIGOPRONTUARIO,
           );
 
-          // Faz o scroll até o funcionário encontrado
+          // Faz o scroll ate o funcionario encontrado
           if (index !== -1 && listRef.current) {
             listRef.current.scrollToItem(index, "center"); // pode ser "auto", "center" ou "smart"
           }
@@ -420,16 +801,50 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         } else {
           const { message } = prontuario as any;
 
-          alert(message);
+          setModalText(
+            <p>{message || "Nao foi possivel carregar o atendimento."}</p>,
+          );
+          setModalAlert(true);
           handleDeselecionarAgendamento();
         }
       }
     } catch (err) {
-      alert(`Erro ao buscar funcionário: ${err}`);
+      console.error("[AtendimentoModal] Erro ao buscar funcionario:", err);
+      setModalText(
+        <p>Não foi possível buscar o funcionário. Tente novamente.</p>,
+      );
+      setModalAlert(true);
     } finally {
       setIsLoading(false);
     }
   }, [empresa, codigoFuncionario, unidadeSelecionada, filteredAgendamentos]);
+
+  const handleConfirmarReutilizacao = useCallback(async () => {
+    if (!reuseExistingPrompt) return;
+
+    setReuseExistingPrompt(null);
+    setIsLoading(true);
+
+    try {
+      await carregarProntuarioPorCodigo({
+        empresa: reuseExistingPrompt.empresa,
+        codigoFuncionario: reuseExistingPrompt.codigoFuncionario,
+        manterExamesRealizados: true,
+      });
+    } catch (err) {
+      console.error("[AtendimentoModal] Erro ao reutilizar atendimento:", err);
+      setModalText(
+        <p>Não foi possível reutilizar o atendimento. Tente novamente.</p>,
+      );
+      setModalAlert(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [reuseExistingPrompt, filteredAgendamentos]);
+
+  const handleCancelarReutilizacao = useCallback(() => {
+    setReuseExistingPrompt(null);
+  }, []);
 
   const handleAtendimentoCredenciada = useCallback(
     async (paciente: Scheduling) => {
@@ -447,16 +862,16 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           if (response.ok) {
             const examesJson = await response.json();
 
-            // ✅ Cria nova cópia de paciente (imutável)
+            // Cria nova copia de paciente (imutavel)
             const pacienteAtualizado = {
               ...paciente,
               EXAMES: [...paciente.EXAMES, ...examesJson],
             };
 
-            // ✅ Atualiza o estado reativo — isso re-renderiza a UI
+            // Atualiza o estado reativo e re-renderiza a UI
             setFuncionarioSelecionado(pacienteAtualizado);
 
-            // Se quiser que o restante da lógica de seleção rode também:
+            // Se quiser que o restante da logica de selecao rode tambem:
             await handleSelecionarPacienteAgendamento(pacienteAtualizado);
           } else {
             alert(await response.text());
@@ -473,21 +888,20 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   );
 
   // ---------------------------------------------------------
-  // Função auxiliar: preenche o formulário com os dados de um Scheduling
-  // Extraída para ser reutilizada pelo fluxo automático (clique no card)
-  // e pelo fluxo manual (busca por código SOC)
+  // Funcao auxiliar: preenche o formulario com os dados de um Scheduling
+  // Extraida para ser reutilizada pelo fluxo automatico (clique no card)
+  // e pelo fluxo manual (busca por codigo SOC)
   // ---------------------------------------------------------
   const preencherFormulario = useCallback(
     async (paciente: Scheduling) => {
       setFuncionarioSelecionado(paciente);
 
-      if (paciente.EXAMES && paciente.EXAMES.length > 0) {
+      if (examesDataRef.current && paciente.EXAMES && paciente.EXAMES.length > 0) {
         const pedidos = paciente.EXAMES;
+        const data = examesDataRef.current;
 
-        // 1. Cria mapas de referência
-        const { codigoToGrupo, codigoToNome } = Object.entries(
-          EXAMES_LIST,
-        ).reduce(
+        // 1. Cria mapas de referencia
+        const { codigoToGrupo, codigoToNome } = Object.entries(data).reduce(
           (acc, [grupo, examList]) => {
             examList.forEach((ex) => {
               ex.codigos.forEach((codigo) => {
@@ -526,14 +940,14 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         setExamesImagem(examesImagem);
       }
 
-      // Atualiza demais campos do formulário
+      // Atualiza demais campos do formulario
       setEmpresa(String(paciente.CODIGOEMPRESA) || "");
       setCodigoFuncionario(paciente.CODIGO || "");
       setNome(paciente.NOME || "");
       setDataNascimento(paciente.DATANASCIMENTO || "");
       setCpf(formatCPF(paciente.CPFFUNCIONARIO || ""));
       setTelefone(formatPhone(paciente.TELEFONE || ""));
-      setTipoExame(TIPOS_EXAME[paciente.TIPOEXAMENOME] || "");
+      setTipoExame(resolveTipoExameRecepcao(paciente));
       setSelectedSchedulingId(paciente.CODIGOPRONTUARIO || "");
       setObservacoes(paciente.OBSERVACOES || "");
       setAnotacoes("");
@@ -565,13 +979,37 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   );
 
   // ---------------------------------------------------------
+  // Busca opcoes de ASO para o funcionario (multiplas fichas no mesmo dia)
+  // ---------------------------------------------------------
+  const buscarAsoOptions = useCallback(
+    async (empresa: string, codigoFuncionario: string): Promise<AsoOption[]> => {
+      try {
+        const url = `${NEST_SOC_PEDIDOEXAME_OPTIONS}codempresa=${empresa}&codfuncionario=${codigoFuncionario}`;
+        const response = await fetch(url);
+        if (!response.ok) return [];
+        const data = await response.json();
+        return data.options || [];
+      } catch {
+        return [];
+      }
+    },
+    [],
+  );
+
+  // ---------------------------------------------------------
   // Quando seleciona um paciente no sidebar:
-  // 1. Detecta KIT/Credenciada e desvia se necessário
+  // 1. Detecta KIT/Credenciada e desvia se necessario
   // 2. Consulta o SOC em tempo real via GET /soc/pedidoexame
-  // 3. Preenche o formulário com os dados atualizados do SOC
+  // 3. Preenche o formulario com os dados atualizados do SOC
   // ---------------------------------------------------------
   const handleSelecionarPacienteAgendamento = useCallback(
-    async (paciente: Scheduling) => {
+    async (
+      paciente: Scheduling,
+      options?: {
+        skipAsoCheck?: boolean;
+        ficha?: string;
+      },
+    ) => {
       // 1. Detecta KIT/Credenciada antes de qualquer fetch
       if (
         paciente.CODIGOINTERNOEMPRESA?.includes("KIT") &&
@@ -595,48 +1033,66 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       handleDeselecionarAgendamento();
 
       try {
-        // 2. Sempre busca o documento completo do MongoDB primeiro
-        let docBase: Scheduling = paciente;
-        if (paciente._id) {
-          try {
-            const mongoResponse = await fetch(
-              `${NEST_SCHEDULINGS_PRONTUARIO}${paciente._id}`,
-            );
-            if (mongoResponse.ok) {
-              docBase = await mongoResponse.json();
-            }
-          } catch {
-            // mantém o paciente do WebSocket como base
-          }
-        }
-
-        // 3. Se AGENDADO, tenta sincronizar com SOC para exames atualizados
+        // 2. Se AGENDADO, tenta sincronizar com SOC para exames atualizados
         if (paciente.ATENDIMENTOSTATUS === AtendimentoStatus.AGENDADO) {
           try {
-            const url = `${NEST_SOC_PEDIDOEXAME}codempresa=${paciente.CODIGOEMPRESA}&codfuncionario=${paciente.CODIGO}`;
+            const fichaSelecionada =
+              options?.ficha || paciente.SEQUENCIAFICHA || "";
+            const url =
+              `${NEST_SOC_PEDIDOEXAME}codempresa=${paciente.CODIGOEMPRESA}` +
+              `&codfuncionario=${paciente.CODIGO}` +
+              (fichaSelecionada
+                ? `&ficha=${encodeURIComponent(fichaSelecionada)}`
+                : "");
             const response = await fetch(url);
             const prontuario: Scheduling | { success: false; message: string } =
               await response.json();
+            console.log("[AtendimentoModal] SOC prontuario response:", {
+              ok: response.ok,
+              success: "success" in prontuario ? prontuario.success : undefined,
+              examesCount:
+                "EXAMES" in prontuario && Array.isArray(prontuario.EXAMES)
+                  ? prontuario.EXAMES.length
+                  : undefined,
+            });
 
             if (
               response.ok &&
               !("success" in prontuario && !prontuario.success)
             ) {
-              // SOC retornou dados válidos — usa eles
+              // SOC retornou dados validos
+              if (!options?.skipAsoCheck) {
+                const options = await buscarAsoOptions(
+                  paciente.CODIGOEMPRESA,
+                  paciente.CODIGO,
+                );
+                if (options.length > 1) {
+                  setAsoOptions(options);
+                  setPendingAsoSelection({
+                    empresa: paciente.CODIGOEMPRESA,
+                    codigoFuncionario: paciente.CODIGO,
+                  });
+                  setIsAsoSelectionOpen(true);
+                  setIsLoading(false);
+                  setIsSyncingCard(false);
+                  return;
+                }
+              }
+              // Unica opcao: preenche o formulario diretamente
               await preencherFormulario(prontuario as Scheduling);
               return;
             }
           } catch {
-            // SOC falhou — usa o documento do MongoDB
+            // SOC falhou: segue com os dados já carregados do painel
           }
 
-          // SOC não retornou exames — verifica se MongoDB também não tem
-          if (!docBase.EXAMES || docBase.EXAMES.length === 0) {
-            await preencherFormulario(docBase);
+          // SOC nao retornou exames: segue com o documento já recebido
+          if (!paciente.EXAMES || paciente.EXAMES.length === 0) {
+            await preencherFormulario(paciente);
             setModalText(
               <p>
-                Nenhum pedido de exame válido foi localizado no SOC para este
-                funcionário na data atual.
+                Nenhum pedido de exame valido foi localizado no SOC para este
+                funcionario na data atual.
               </p>,
             );
             setModalAlert(true);
@@ -644,16 +1100,14 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           }
         }
 
-        // 4. Preenche com o documento do MongoDB (todos os status)
-        await preencherFormulario(docBase);
+        // 3. Preenche com o documento já carregado no modal
+        await preencherFormulario(paciente);
       } catch (err) {
-        // Erro inesperado — usa dados do WebSocket
+        console.error("[AtendimentoModal] Erro ao carregar dados:", err);
+        // Erro inesperado: usa dados do WebSocket
         await preencherFormulario(paciente);
         setModalText(
-          <p>
-            Erro ao carregar dados do funcionário:{" "}
-            <strong>{String(err)}</strong>
-          </p>,
+          <p>Não foi possível carregar os dados do funcionário. Tente novamente.</p>,
         );
         setModalAlert(true);
       } finally {
@@ -661,8 +1115,74 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         setIsSyncingCard(false);
       }
     },
-    [handleAtendimentoCredenciada, handleDeselecionarAgendamento, preencherFormulario],
+    [handleAtendimentoCredenciada, handleDeselecionarAgendamento, preencherFormulario, buscarAsoOptions],
   );
+
+  // ---------------------------------------------------------
+  // Handler: usuario selecionou uma ficha (ASO) no modal de opcoes
+  // ---------------------------------------------------------
+  const handleConfirmarAsoOption = useCallback(
+    async (option: AsoOption) => {
+      setIsAsoSelectionOpen(false);
+      setAsoOptions([]);
+
+      if (!pendingAsoSelection) return;
+
+      setIsLoading(true);
+      try {
+        await carregarProntuarioPorCodigo({
+          empresa: pendingAsoSelection.empresa,
+          codigoFuncionario: pendingAsoSelection.codigoFuncionario,
+          manterExamesRealizados: true,
+          ficha: option.sequenciaFicha,
+          skipAsoCheck: true,
+        });
+      } catch (err) {
+        console.error("[AtendimentoModal] Erro ao buscar ficha:", err);
+        setModalText(
+          <p>Não foi possível buscar a ficha. Tente novamente.</p>,
+        );
+        setModalAlert(true);
+        handleDeselecionarAgendamento();
+      } finally {
+        setIsLoading(false);
+        setPendingAsoSelection(null);
+      }
+    },
+    [pendingAsoSelection, handleSelecionarPacienteAgendamento, handleDeselecionarAgendamento],
+  );
+
+  const handleCancelarAsoSelection = useCallback(() => {
+    setIsAsoSelectionOpen(false);
+    setAsoOptions([]);
+    setPendingAsoSelection(null);
+    handleDeselecionarAgendamento();
+  }, [handleDeselecionarAgendamento]);
+
+  // ---------------------------------------------------------
+  // Load exames data on mount
+  // ---------------------------------------------------------
+  useEffect(() => {
+    fetchExamesGrouped().then(setExamesData).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetchPrestadores().then(setPrestadores).catch(console.error);
+  }, []);
+
+  useEffect(() => {
+    fetchExames().then((exames) => {
+      const map: Record<string, string> = {};
+      for (const exame of exames) {
+        if (exame.preparacao) {
+          for (const codigo of exame.codigos) {
+            map[codigo] = exame.preparacao;
+          }
+        }
+      }
+      setExamesPreparacaoMap(map);
+    }).catch(console.error);
+  }, []);
 
   // ---------------------------------------------------------
   // Reset form when modal opens/closes
@@ -826,7 +1346,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     if (!empresa || !codigoFuncionario) return;
 
-    // pela lógica implementada a negação faz a busca quando o check for true
+    // Pela lógica implementada, a negação faz a busca quando o check for true
     if (value) {
       const url = `${NEST_SOC_RECORDS}empresa=${empresa}&funcionario=${codigoFuncionario}&ficha=${funcionarioSelecionado?.SEQUENCIAFICHA}`;
       const response = await fetch(url);
@@ -877,7 +1397,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         funcionarioSelecionado.TICKET = ticket;
       } else if (funcionarioSelecionado) {
         // Se for lançado sem vínculo de ticket, realiza a "emissão"
-        // direto para o servidor como fosse o mesmo da recepção
+        // direto para o servidor como se fosse o mesmo da recepção
 
         const ticketPrefix = preferencialTipo === "" ? "" : "P";
 
@@ -942,7 +1462,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   };
 
   // Função que faz o print da guia de atendimento
-  const handlePrint = () => {
+  const handlePrint = async (prestador?: IPrestador) => {
     if (!funcionarioSelecionado) {
       setModalText(
         <p>
@@ -952,8 +1472,63 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       setModalAlert(true);
 
       return;
+    }
+
+    if (isLoading || isSyncingCard) {
+      setModalText(
+        <p>
+          Aguarde o carregamento do funcionario antes de imprimir a guia.
+        </p>,
+      );
+      setModalAlert(true);
+      console.log("[GuiaPrestador] handlePrint blocked:", {
+        isLoading,
+        isSyncingCard,
+      });
+      return;
     } else {
-      const htmlContent = reportInternal(funcionarioSelecionado);
+      const prestadorGroups = (prestador?.grupos || []).map((grupo) =>
+        String(grupo ?? "").trim(),
+      );
+      const examesFuncionario = (funcionarioSelecionado.EXAMES || []).map((exame) => ({
+        codigoExame: exame.codigoExame,
+        nomeExame: exame.nomeExame,
+        grupo: exame.grupo,
+        preparacao: exame.preparacao,
+      }));
+      const funcionarioPayloadGuia: Scheduling = {
+        ...funcionarioSelecionado,
+        EXAMES: examesFuncionario,
+      };
+
+      console.log("[GuiaPrestador] handlePrint codigoExames:", [...codigoExames]);
+      console.log("[GuiaPrestador] handlePrint prestador:", {
+        id: prestador?.id,
+        nome: prestador?.nome,
+        grupos: prestadorGroups,
+      });
+      console.log("[GuiaPrestador] handlePrint funcionario:", {
+        codigo: funcionarioPayloadGuia.CODIGO,
+        nome: funcionarioPayloadGuia.NOME,
+        examesCount: examesFuncionario.length,
+        exames: examesFuncionario,
+      });
+      console.log("[GuiaPrestador] handlePrint flags:", {
+        isLoading,
+        isSyncingCard,
+        funcionarioSelecionadoId: funcionarioPayloadGuia._id,
+      });
+
+      const htmlContent = await guiaAtendimento(
+        funcionarioPayloadGuia,
+        prestador,
+        undefined,
+        examesPreparacaoMap,
+        {
+          operadorNome: user.nome,
+          unidade: unidadeSelecionada,
+        },
+      );
       const printWindow = window.open("", "_blank", "width=900,height=800");
 
       if (printWindow) {
@@ -970,6 +1545,394 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   };
 
   // ---------------------------------------------------------
+  // Biometria
+  // ---------------------------------------------------------
+  const handleCapturarBiometria = useCallback(() => {
+    if (!socket || !funcionarioSelecionado || !unidadeSelecionada || !salaSelecionada) {
+      alert("Certifique-se de que o funcionário está selecionado e a unidade/sala estão configuradas.");
+      return;
+    }
+
+    const requestId = crypto.randomUUID();
+    biometriaRequestIdRef.current = requestId;
+
+    const payload = {
+      requestId,
+      unidade: unidadeSelecionada,
+      sala: salaSelecionada, // Mantido para identificação/log no backend
+      operador: {
+        id: String(user.codigo ?? user.nome),
+        nome: user.nome,
+        perfil: user.perfil ?? "RECEPCAO",
+      },
+      funcionario: {
+        id: getBiometriaFuncionarioRef(funcionarioSelecionado),
+        nome: funcionarioSelecionado.NOME,
+        prontuario: funcionarioSelecionado.CODIGOPRONTUARIO,
+      },
+      atendimento: {
+        id: getSchedulingMongoId(funcionarioSelecionado),
+        ticketId: String(funcionarioSelecionado.TICKET?.id ?? ""),
+        tipoAtendimento: funcionarioSelecionado.TIPOEXAMENOME,
+        exame: tipoExame,
+      },
+      origem: "RECEPCAO" as const,
+      solicitadoEm: new Date().toISOString(),
+    };
+
+    setBiometriaStatus("routing");
+    setBiometriaRequestId(requestId);
+    setBiometriaMessage("Solicitando captura biométrica...");
+    setIsCapturingBiometria(true);
+    setBiometriaSuccess(false);
+
+    // Salva o CPF e Nascimento no contexto local para exibição no modal
+    setBiometriaContextExtra({
+      cpf: cpf,
+      dataNascimento: dataNascimento,
+    });
+
+    socket.emit("biometria:captura_request", payload);
+  }, [
+    socket,
+    funcionarioSelecionado,
+    unidadeSelecionada,
+    salaSelecionada,
+    user,
+    tipoExame,
+    cpf,
+    dataNascimento,
+  ]);
+
+  const handleCloseBiometria = useCallback(() => {
+    if (biometriaRequestId && biometriaStatus !== "success" && biometriaStatus !== "error") {
+      socket?.emit("biometria:captura_cancel", {
+        requestId: biometriaRequestId,
+        unidade: unidadeSelecionada,
+      });
+      setBiometriaStatus("cancelled");
+      setBiometriaMessage("Captura cancelada pelo usuário.");
+    }
+    setIsCapturingBiometria(false);
+  }, [biometriaRequestId, biometriaStatus, socket, unidadeSelecionada]);
+
+  // Validação Biométrica 1:1
+  const handleValidarBiometria = useCallback((dedoSelecionado?: string) => {
+    if (!socket || !funcionarioSelecionado || !unidadeSelecionada) {
+      alert("Certifique-se de que o funcionário está selecionado e a unidade está configurada.");
+      return;
+    }
+
+    const schedulingId = getSchedulingMongoId(funcionarioSelecionado);
+    const cpfRaw =
+      funcionarioSelecionado.CPFFUNCIONARIO ||
+      (typeof cpf === "string" ? cpf : "");
+    if (!schedulingId) {
+      alert("CPF do funcionário inválido para validação biométrica.");
+      return;
+    }
+
+    const requestId = crypto.randomUUID();
+    validacaoRequestIdRef.current = requestId;
+
+    const payload = {
+      requestId,
+      schedulingId,
+      unidade: unidadeSelecionada,
+      ipLocal: "",
+      funcionario: {
+        nome: funcionarioSelecionado.NOME,
+      },
+      atendimento: {
+        id: schedulingId,
+      },
+      dedo: {
+        codigo: dedoSelecionado || "INDICADOR_DIREITO",
+        label: dedoSelecionado
+          ? dedoSelecionado.replace(/_/g, " ").toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase())
+          : "Indicador direito",
+      },
+      origem: "recepcao",
+    };
+
+    setValidacaoModal({
+      isOpen: true,
+      status: "routing",
+      mensagem: "Buscando cadastro biométrico...",
+      requestId,
+      context: {
+        funcionarioNome: funcionarioSelecionado.NOME,
+        funcionarioCpf: cpfRaw,
+        unidade: unidadeSelecionada,
+      },
+    });
+
+    console.log("[BIOMETRIA_RETRY] Emitindo validacao_request", { requestId, schedulingId, unidade: unidadeSelecionada });
+    socket.emit("biometria:validacao_request", payload);
+  }, [socket, funcionarioSelecionado, unidadeSelecionada, cpf]);
+
+  const handleAbrirFacial = useCallback(() => {
+    if (!funcionarioSelecionado) return;
+
+    setFacialContext({
+      funcionarioNome: funcionarioSelecionado.NOME,
+      funcionarioId: String(funcionarioSelecionado.CODIGO),
+      funcionarioCpf: funcionarioSelecionado.CPFFUNCIONARIO || "",
+      schedulingId: funcionarioSelecionado._id?.toString() || "",
+      user: {
+        codigo: user.codigo,
+        nome: user.nome,
+      },
+    });
+    setFacialModalOpen(true);
+  }, [funcionarioSelecionado, user]);
+
+  const handleFacialClose = (success?: boolean) => {
+    setFacialModalOpen(false);
+    if (success) {
+      setBiometriaStatus("success");
+      setBiometriaMessage("Autenticação Facial OK");
+      setFuncionarioSelecionado((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          AUTENTICACAOATENDIMENTO: {
+            ...(prev.AUTENTICACAOATENDIMENTO ?? { metodo: "FACIAL" }),
+            metodo: "FACIAL",
+            status: "VALIDADO",
+          },
+        };
+      });
+    }
+  };
+
+  const handleCloseValidacao = useCallback(() => {
+    setValidacaoModal({ isOpen: false, status: "idle" });
+    validacaoRequestIdRef.current = null;
+  }, []);
+
+  const handleRetryValidacao = useCallback(() => {
+    setValidacaoModal({ isOpen: false, status: "idle" });
+    validacaoRequestIdRef.current = null;
+    setBiometriaStatusModalOpen(true);
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const onBiometriaRequestState = (payload: any) => {
+      // Validação estrita de requestId
+      if (biometriaRequestIdRef.current && payload.requestId === biometriaRequestIdRef.current) {
+        setBiometriaStatus(payload.state);
+        setBiometriaMessage(payload.message ?? "");
+
+        if (payload.state === "success") {
+          setBiometriaSuccess(true);
+        } else if (payload.state === "error" || payload.state === "timeout" || payload.state === "cancelled") {
+          setBiometriaSuccess(false);
+        }
+      }
+
+      // Também atualiza o estado do modal unificado se houver
+      setBiometriaModal((prev) => {
+        if (!prev.isOpen || (payload.requestId && prev.requestId !== payload.requestId)) return prev;
+        return {
+          ...prev,
+          status: payload.state,
+          mensagem: payload.message,
+        };
+      });
+
+      // Cadastro Biométrico
+      setCadastroBiometricoModal((prev) => {
+        if (!prev.isOpen || (payload.requestId && prev.requestId !== payload.requestId)) return prev;
+        
+        let newStatus = prev.status;
+        const isAgentNotFound = [
+          "agent_not_found", "agent_indisponivel", "AGENT_NOT_FOUND", "AGENT_INDISPONIVEL", "BIOMETRIA_AGENT_NOT_FOUND"
+        ].includes(payload.state);
+        
+        const isReaderUnavailable = [
+          "reader_unavailable", "LEITOR_INDISPONIVEL", "reader_offline"
+        ].includes(payload.state);
+
+        if (isAgentNotFound) {
+          newStatus = "agent_not_found";
+        } else if (isReaderUnavailable) {
+          newStatus = "reader_unavailable";
+        } else if (payload.state === "error" || payload.state === "timeout") {
+          newStatus = "erro";
+        }
+        
+        return {
+          ...prev,
+          status: newStatus,
+          mensagem: payload.message
+        };
+      });
+
+      // Validação Biométrica
+      if (validacaoRequestIdRef.current && payload.requestId === validacaoRequestIdRef.current) {
+        setValidacaoModal((prev) => {
+          if (!prev.isOpen) return prev;
+          
+          let newStatus = prev.status;
+          const isAgentNotFound = [
+            "agent_not_found", "agent_indisponivel", "AGENT_NOT_FOUND", "AGENT_INDISPONIVEL", "BIOMETRIA_AGENT_NOT_FOUND"
+          ].includes(payload.state);
+          
+          const isReaderUnavailable = [
+            "reader_unavailable", "LEITOR_INDISPONIVEL", "reader_offline"
+          ].includes(payload.state);
+
+          if (isAgentNotFound) {
+            newStatus = "agent_not_found";
+          } else if (isReaderUnavailable) {
+            newStatus = "reader_unavailable";
+          } else if (payload.state === "error" || payload.state === "timeout") {
+            newStatus = "error";
+          } else if (payload.state === "agent_found") {
+            newStatus = "agent_found";
+          } else if (payload.state === "command_sent") {
+            newStatus = "command_sent";
+          } else if (payload.state === "waiting_finger") {
+            newStatus = "waiting_finger";
+          } else if (payload.state === "capturing") {
+            newStatus = "capturing";
+          }
+          
+          return {
+            ...prev,
+            status: newStatus,
+            mensagem: payload.message
+          };
+        });
+      }
+    };
+
+    const onBiometriaAgentSnapshot = (payload: any) => {
+      // Se estamos em estado de erro de hardware e o snapshot diz que o leitor abriu, tenta auto-retry
+      // APENAS para captura simples e se o modal de captura estiver aberto.
+      if (
+        isCapturingBiometria &&
+        (biometriaStatus === "routing" || biometriaStatus === "error" || biometriaStatus === "reader_unavailable") &&
+        payload.unidade === unidadeSelecionada &&
+        payload.leitorAberto === true &&
+        !biometriaSuccess
+      ) {
+        console.log("[BIOMETRIA] Agente pronto detectado via snapshot. Auto-tentativa...");
+        handleCapturarBiometria();
+      }
+    };
+
+    const onBiometriaAgentUnavailable = (payload: any) => {
+      setBiometriaModal((prev) => prev.isOpen ? { ...prev, status: "error", mensagem: payload.mensagem } : prev);
+      setCadastroBiometricoModal((prev) => prev.isOpen ? { ...prev, status: "erro", mensagem: payload.mensagem } : prev);
+    };
+
+    const onBiometriaCadastroStatus = (payload: any) => {
+      setCadastroBiometricoModal((prev) => prev.isOpen ? { ...prev, status: payload.status, mensagem: payload.mensagem, requestId: payload.requestId } : prev);
+    };
+
+    const onBiometriaCadastroResult = (payload: any) => {
+      if (payload.status === "concluido") {
+        const dedo = payload.capturas?.[payload.capturas.length - 1]?.dedo?.codigo
+          ?? payload.capturas?.[payload.capturas.length - 1]?.dedo;
+        if (dedo) setDedoCapturado(dedo);
+        setMetodoValidacao("BIOMETRIA");
+        setFuncionarioSelecionado((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            AUTENTICACAOATENDIMENTO: {
+              ...(prev.AUTENTICACAOATENDIMENTO ?? { metodo: "BIOMETRIA" }),
+              metodo: "BIOMETRIA",
+              status: "VALIDADO",
+              biometria: {
+                ...(prev.AUTENTICACAOATENDIMENTO?.biometria ?? {}),
+                dedo: dedo ?? prev.AUTENTICACAOATENDIMENTO?.biometria?.dedo,
+              },
+            },
+          };
+        });
+      }
+      setCadastroBiometricoModal((prev) => {
+        if (!prev.isOpen) return prev;
+        const TERMINAL_INFRA_ERRORS = ["agent_not_found", "reader_unavailable"];
+        if (TERMINAL_INFRA_ERRORS.includes(prev.status)) return prev;
+        return { ...prev, status: payload.status, mensagem: payload.mensagem, capturas: payload.capturas };
+      });
+    };
+
+    // Validação 1:1
+    const onValidacaoStatus = (payload: any) => {
+      if (validacaoRequestIdRef.current && payload.requestId === validacaoRequestIdRef.current) {
+        setValidacaoModal((prev) => ({
+          ...prev,
+          status: payload.status,
+          mensagem: payload.mensagem,
+        }));
+      }
+    };
+
+    const onValidacaoResult = (payload: any) => {
+      if (validacaoRequestIdRef.current && payload.requestId === validacaoRequestIdRef.current) {
+        if (payload.aprovado) {
+          if (payload.dedo) setDedoCapturado(payload.dedo);
+          setMetodoValidacao("BIOMETRIA");
+          setFuncionarioSelecionado((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              AUTENTICACAOATENDIMENTO: {
+                ...(prev.AUTENTICACAOATENDIMENTO ?? { metodo: "BIOMETRIA" }),
+                metodo: "BIOMETRIA",
+                status: "VALIDADO",
+                biometria: {
+                  ...(prev.AUTENTICACAOATENDIMENTO?.biometria ?? {}),
+                  dedo: payload.dedo ?? prev.AUTENTICACAOATENDIMENTO?.biometria?.dedo,
+                },
+              },
+            };
+          });
+        }
+        setValidacaoModal((prev) => {
+          // Não sobrescreve estados de erro de infra (agent/leitor indisponível)
+          // que já foram definidos pelo onBiometriaRequestState.
+          const TERMINAL_INFRA_ERRORS: ValidacaoStatus[] = ["agent_not_found", "reader_unavailable"];
+          if (TERMINAL_INFRA_ERRORS.includes(prev.status)) return prev;
+
+          return {
+            ...prev,
+            status: payload.aprovado ? "aprovado" : "reprovado",
+            mensagem: payload.mensagem,
+            score: payload.score,
+            threshold: payload.threshold,
+          };
+        });
+      }
+    };
+
+    socket.on("biometria:request_state", onBiometriaRequestState);
+    socket.on("biometria:agent_snapshot", onBiometriaAgentSnapshot);
+    socket.on("biometria:agent_unavailable", onBiometriaAgentUnavailable);
+    socket.on("biometria:cadastro_status", onBiometriaCadastroStatus);
+    socket.on("biometria:cadastro_result", onBiometriaCadastroResult);
+    socket.on("biometria:validacao_status", onValidacaoStatus);
+    socket.on("biometria:validacao_result", onValidacaoResult);
+
+    return () => {
+      socket.off("biometria:request_state", onBiometriaRequestState);
+      socket.off("biometria:agent_snapshot", onBiometriaAgentSnapshot);
+      socket.off("biometria:agent_unavailable", onBiometriaAgentUnavailable);
+      socket.off("biometria:cadastro_status", onBiometriaCadastroStatus);
+      socket.off("biometria:cadastro_result", onBiometriaCadastroResult);
+      socket.off("biometria:validacao_status", onValidacaoStatus);
+      socket.off("biometria:validacao_result", onValidacaoResult);
+    };
+  }, [socket, biometriaStatus, isCapturingBiometria, biometriaSuccess, unidadeSelecionada, handleCapturarBiometria]);
+
+  // ---------------------------------------------------------
   // Submit
   // ---------------------------------------------------------
   const handleSubmit = useCallback(async () => {
@@ -977,12 +1940,36 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     if (!validation.all || isSubmitting || !funcionarioSelecionado || !socket)
       return;
 
+    // Valida autenticação biométrica/facial
+    const authStatus = funcionarioSelecionado.AUTENTICACAOATENDIMENTO?.status;
+    if (
+      (metodoValidacao === "BIOMETRIA" || metodoValidacao === "FACIAL") &&
+      authStatus !== "VALIDADO"
+    ) {
+      setModalText(
+        <p>
+          Autenticação{" "}
+          {metodoValidacao === "BIOMETRIA" ? "biométrica" : "facial"} não
+          foi concluída. Complete a autenticação antes de lançar o
+          funcionário.
+        </p>,
+      );
+      setModalAlert(true);
+      setIsSubmitting(false);
+      return;
+    }
+
     setIsSubmitting(true);
     const formData = new FormData();
 
     await updateTicketFuncionarioSelecionado(ticketSelecionado!);
     funcionarioSelecionado.UNIDADEATENDIMENTO = unidadeSelecionada;
     funcionarioSelecionado.ANOTACOES = anotacoes.toUpperCase();
+
+    // Persiste CPF e data de nascimento editados no formulario
+    // Necessario para o backend-first de autenticacao (AtendimentoAuthContextService)
+    funcionarioSelecionado.CPFFUNCIONARIO = cpf.replace(/\D/g, '');
+    funcionarioSelecionado.DATANASCIMENTO = dataNascimento;
 
     // Adiciona códigos de prontuários
     if (recordsCodes && recordsCodes.size > 0) {
@@ -1014,13 +2001,22 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       };
     }
 
+    // Persiste o metodo de autenticação selecionado
+    funcionarioSelecionado.AUTENTICACAOATENDIMENTO = {
+      ...(funcionarioSelecionado.AUTENTICACAOATENDIMENTO ?? { metodo: "SOC" }),
+      metodo: metodoValidacao,
+    };
+
     // Filtra EXAMES para enviar apenas os grupos que o usuário deixou marcados
-    // Constrói mapa de codigoExame → grupo a partir do EXAMES_LIST
+    // Constrói mapa de codigoExame -> grupo a partir do examesData
+    const data = examesDataRef.current;
     const codigoParaGrupo: Record<string, string> = {};
-    for (const [grupo, examList] of Object.entries(EXAMES_LIST)) {
-      for (const ex of examList) {
-        for (const cod of ex.codigos) {
-          codigoParaGrupo[cod] = grupo;
+    if (data) {
+      for (const [grupo, examList] of Object.entries(data)) {
+        for (const ex of examList) {
+          for (const cod of ex.codigos) {
+            codigoParaGrupo[cod] = grupo;
+          }
         }
       }
     }
@@ -1065,11 +2061,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         setModalAlert(true);
       }
     } catch (err) {
+      console.error("[AtendimentoModal] Erro ao submeter atendimento:", err);
       setIsSuccessModal(false);
       setModalText(
-        <p>
-          Erro ao submeter atendimento: <strong>{String(err)}</strong>
-        </p>,
+        <p>Não foi possível enviar o atendimento. Tente novamente.</p>,
       );
       setModalAlert(true);
     } finally {
@@ -1091,10 +2086,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     selectedSchedulingId,
     funcionarioSelecionado,
     psicoPresencial,
+    metodoValidacao,
   ]);
 
   // Prevent rendering when closed
   if (!isOpen) return null;
+
+  const authStatus = funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.status;
+  const authVisual = getAuthMethodVisualClean(metodoValidacao, authStatus);
+  const isAuthBlockedForSubmit =
+    !!funcionarioSelecionado &&
+    (metodoValidacao === "BIOMETRIA" || metodoValidacao === "FACIAL") &&
+    authStatus !== "VALIDADO";
 
   const LoadingOverlay = () => (
     <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
@@ -1147,11 +2150,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               }
             }}
             // Adicionei a classe 'relative' para que o chip 'absolute' funcione
-            className={`p-2 rounded-lg border transition-all duration-200 ${
-              isSyncingCard
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            } ${isSelected
+            className={`p-2 rounded-lg border transition-all duration-200 ${isSyncingCard
+              ? "opacity-50 cursor-not-allowed"
+              : "cursor-pointer"
+              } ${isSelected
                 ? "bg-[#e6f0ff] border-[#003366] ring-2 ring-[#003366]/20 shadow-md"
                 : "bg-white border-gray-200 hover:border-[#003366] hover:shadow-sm hover:scale-[1.01]"
               }`}
@@ -1184,8 +2186,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   <span>
                     {paciente.HORARIO} - {paciente.TIPOEXAMENOME}
                     {paciente.ATENDIMENTOSTATUS !== AtendimentoStatus.AGENDADO &&
-                    paciente.TICKET?.prefixo !== undefined
-                      ? ` · ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
+                      paciente.TICKET?.prefixo !== undefined
+                      ? ` - ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
                       : ""}
                   </span>
                 </div>
@@ -1219,7 +2221,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           color="warning"
           content={
             <div className="px-1 py-2 max-w-xs">
-              <p className="text-xs break-words font-medium">OBSERVAÇÃO:</p>
+              <p className="text-xs break-words font-medium">OBSERVAÇÕES:</p>
               <p className="text-xs break-words">{paciente.OBSERVACOES}</p>
             </div>
           }
@@ -1235,11 +2237,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               }
             }}
             // Adicionei a classe 'relative' para que o chip 'absolute' funcione
-            className={`relative p-2 rounded-lg border transition-all duration-200 ${
-              isSyncingCard
-                ? "opacity-50 cursor-not-allowed"
-                : "cursor-pointer"
-            } ${isSelected
+            className={`relative p-2 rounded-lg border transition-all duration-200 ${isSyncingCard
+              ? "opacity-50 cursor-not-allowed"
+              : "cursor-pointer"
+              } ${isSelected
                 ? "bg-[#e6f0ff] border-[#003366] ring-2 ring-[#003366]/20 shadow-md"
                 : "bg-white border-gray-200 hover:border-[#003366] hover:shadow-sm hover:scale-[1.01]"
               }`}
@@ -1274,8 +2275,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   <span>
                     {paciente.HORARIO} - {paciente.TIPOEXAMENOME}
                     {paciente.ATENDIMENTOSTATUS !== AtendimentoStatus.AGENDADO &&
-                    paciente.TICKET?.prefixo !== undefined
-                      ? ` · ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
+                      paciente.TICKET?.prefixo !== undefined
+                      ? ` - ${paciente.TICKET.prefixo}${paciente.TICKET.numero}`
                       : ""}
                   </span>
                 </div>
@@ -1327,7 +2328,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             <div>
               <h3 className="text-xl font-semibold">Atendimento</h3>
               <p className="text-sm opacity-90">
-                {[salaSelecionada, unidadeSelecionada, user?.nome].filter(Boolean).join(" · ") || "Selecione sala e unidade"}
+                {[salaSelecionada, unidadeSelecionada, user?.nome].filter(Boolean).join(" - ") || "Selecione sala e unidade"}
               </p>
             </div>
           </div>
@@ -1356,9 +2357,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
             {/* Conteúdo do modal (fica desabilitado durante o loading) */}
             <div
-              className={`max-w-3xl mx-auto space-y-3 transition-opacity duration-300 ${
-                isLoading ? "opacity-50 pointer-events-none" : "opacity-100"
-              }`}
+              className={`max-w-3xl mx-auto space-y-3 transition-opacity duration-300 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"
+                }`}
             >
               {/* Indicador de agendamento selecionado */}
               {selectedSchedulingId && (
@@ -1414,7 +2414,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                           {item.RAZAOSOCIAL}
                         </span>
                         <span className="text-xs text-gray-500">
-                          Cód {item.CODIGO}
+                          Cod {item.CODIGO}
                         </span>
                       </div>
                     </AutocompleteItem>
@@ -1428,18 +2428,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 )}
               </div>
 
-              {/* Código funcionário (compact) e Nome funcionário */}
+              {/* Codigo funcionario (compact) e Nome funcionario */}
               <section className="flex items-baseline gap-2">
                 <div className="mt-1">
                   <Input
-                    aria-label="Código do funcionário"
+                    aria-label="Codigo do funcionario"
                     className={`flex-1 ${showErrors && !codigoFuncionario ? "ring-1 ring-amber-300" : ""}`}
                     disabled={isLoading}
                     endContent={
                       codigoFuncionario != "" &&
                       empresa && (
                         <Button
-                          aria-label="Buscar funcionário"
+                          aria-label="Buscar funcionario"
                           className="bg-transparent"
                           disabled={isLoading}
                           isIconOnly={true}
@@ -1450,7 +2450,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                           <Tooltip
                             key={`tooltip-searchbutton-${funcionarioSelecionado?.CODIGOPRONTUARIO}`}
                             color="foreground"
-                            content="Buscar funcionário"
+                            content="Buscar funcionario"
                             disableAnimation={true}
                           >
                             <UserRoundSearch />
@@ -1459,7 +2459,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                       )
                     }
                     inputMode="numeric"
-                    label={"Código SOC"}
+                    label={"Codigo SOC"}
                     size="sm"
                     value={codigoFuncionario}
                     onChange={(e: any) => {
@@ -1470,7 +2470,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   />
                 </div>
 
-                {/* Nome do funcionário (obrigatório) */}
+                {/* Nome do funcionario (obrigatorio) */}
                 <div className="w-full">
                   <Input
                     aria-invalid={!validation.nome && showErrors}
@@ -1502,7 +2502,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   />
                   {showErrors && !validation.nome && (
                     <div className="text-xs text-amber-700 mt-1">
-                      Informe o nome do funcionário.
+                      Informe o nome do funcionario.
                     </div>
                   )}
                 </div>
@@ -1513,7 +2513,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 <Input
                   className="text-xs"
                   disabled={isLoading}
-                  label={"Data Nascimento"}
+                  label={"Data de nascimento"}
                   maxLength={10}
                   size="sm"
                   value={dataNascimento}
@@ -1608,11 +2608,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                       <Button
                         key={key}
                         aria-checked={active}
-                        className={`px-3 py-1.5 rounded-md text-xs border transition  ${
-                          active
-                            ? "bg-[#6AA84F] text-white border-[#6AA84F]"
-                            : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                        } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`px-3 py-1.5 rounded-md text-xs border transition  ${active
+                          ? "bg-[#6AA84F] text-white border-[#6AA84F]"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
+                          } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                         disableAnimation={true}
                         disabled={isLoading}
                         role="radio"
@@ -1632,8 +2631,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                   </div>
                 )}
 
-                <div className="mt-4">
-                  {isBindServiceSelected && (
+                {isBindServiceSelected && (
+                  <div className="mt-4">
                     <div className="mt-1 flex flex-col align-center items-start space-x-2">
                       <div className="mt-2 mb-2">
                         {records && (
@@ -1641,7 +2640,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                             className="min-w-lg"
                             disabled={isLoading}
                             label="Prontuários"
-                            placeholder="prontuários disponíveis"
+                            placeholder="Prontuários disponíveis"
                             selectedKeys={recordsCodes}
                             selectionMode="multiple"
                             size="sm"
@@ -1662,8 +2661,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                         )}
                       </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Exames (checkbox grid) */}
@@ -1691,7 +2690,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                  {Object.keys(EXAMES_LIST).map((exame, index) => {
+                  {Object.keys(examesData || {}).map((exame, index) => {
                     const isSelected = codigoExames.includes(exame);
 
                     return (exame === "Laboratório" || exame === "Raio-X") &&
@@ -1702,26 +2701,25 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                         content={
                           exame == "Laboratório"
                             ? laboratorialExames?.map((e, i) => (
-                                <span key={`lab-${i}`} className="text-xs">
-                                  {e}
-                                </span>
-                              ))
+                              <span key={`lab-${i}`} className="text-xs">
+                                {e}
+                              </span>
+                            ))
                             : examesImagem?.map((e, i) => (
-                                <span key={`img-${i}`} className="text-xs">
-                                  {e}
-                                </span>
-                              ))
+                              <span key={`img-${i}`} className="text-xs">
+                                {e}
+                              </span>
+                            ))
                         }
                         disableAnimation={true}
                       >
                         <Button
                           key={exame}
                           aria-checked={isSelected}
-                          className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${
-                            isSelected
-                              ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
-                              : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
+                          className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${isSelected
+                            ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
+                            : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
+                            } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
                           disableAnimation={true}
                           disabled={isLoading || !isAgendado}
                           role="radio"
@@ -1736,11 +2734,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                       <Button
                         key={exame}
                         aria-checked={isSelected}
-                        className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${
-                          isSelected
-                            ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
-                            : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                        } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
+                        className={`px-3 py-1.5 rounded-md justify-start items-center text-xs border transition ${isSelected
+                          ? "bg-[#6AA84F] text-white font-medium border-[#6AA84F]"
+                          : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
+                          } ${isLoading || !isAgendado ? "opacity-50 cursor-not-allowed" : ""}`}
                         disableAnimation={true}
                         disabled={isLoading || !isAgendado}
                         role="radio"
@@ -1809,23 +2806,23 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 </div>
               )}
 
-              {/* Anotações */}
+              {/* Anotacoes */}
               <div>
                 <label className="text-sm font-medium text-gray-700">
-                  Anotações
+                  Anotacoes
                 </label>
                 <Textarea
                   isClearable
                   className="resize-none"
                   disabled={isLoading}
-                  label="Informações internas"
+                  label="Informacoes internas"
                   minRows={2}
                   value={anotacoes}
                   onValueChange={setAnotacoes}
                 />
               </div>
 
-              {/* Vincular prontuário */}
+              {/* Vincular prontuario */}
               <div>
                 <div>
                   <input
@@ -1838,11 +2835,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                     onChange={handleFileUpload}
                   />
                   <label
-                    className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${
-                      isLoading
-                        ? "bg-gray-400 text-gray-200 cursor-not-allowed"
-                        : "bg-gray-500 text-white hover:bg-gray-600"
-                    }`}
+                    className={`cursor-pointer text-xs inline-flex items-center px-3 py-2 rounded-full ${isLoading
+                      ? "bg-gray-400 text-gray-200 cursor-not-allowed"
+                      : "bg-gray-500 text-white hover:bg-gray-600"
+                      }`}
                     htmlFor="file-upload"
                   >
                     Anexos {filesUpload.length > 0 ? filesUpload.length : ""}
@@ -1863,71 +2859,70 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               {/* Atendimento Preferencial - Modificado */}
               {(ticketSelecionado?.preferencial ||
                 ticketSelecionado == null) && (
-                <div>
-                  <label className="text-sm font-medium text-gray-700">
-                    Atendimento Preferencial
-                    {ticketSelecionado?.preferencialTipo && (
-                      <span className="ml-2 text-xs text-green-600 font-semibold">
-                        (Tipo já definido: {ticketSelecionado.preferencialTipo})
-                      </span>
-                    )}
-                  </label>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">
+                      Atendimento Preferencial
+                      {ticketSelecionado?.preferencialTipo && (
+                        <span className="ml-2 text-xs text-green-600 font-semibold">
+                          (Tipo já definido: {ticketSelecionado.preferencialTipo})
+                        </span>
+                      )}
+                    </label>
 
-                  <div className="mt-2 flex gap-2 flex-wrap">
-                    {PREFERENCIAL_OPTIONS.map((pref) => {
-                      const active = preferencialTipo === pref;
-                      const isDisabled =
-                        ticketSelecionado?.preferencialTipo &&
-                        ticketSelecionado.preferencialTipo !== "Outros" &&
-                        pref !== "Outros";
+                    <div className="mt-2 flex gap-2 flex-wrap">
+                      {PREFERENCIAL_OPTIONS.map((pref) => {
+                        const active = preferencialTipo === pref;
+                        const isDisabled =
+                          ticketSelecionado?.preferencialTipo &&
+                          ticketSelecionado.preferencialTipo !== "Outros" &&
+                          pref !== "Outros";
 
-                      return (
-                        <Button
-                          key={pref}
-                          className={`px-3 py-1 rounded-md text-sm border transition ${
-                            active
+                        return (
+                          <Button
+                            key={pref}
+                            className={`px-3 py-1 rounded-md text-sm border transition ${active
                               ? "bg-[#6AA84F] text-white border-[#6AA84F]"
                               : "bg-white text-gray-700 border-gray-200 hover:border-[#003366]"
-                          } ${isLoading || isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
-                          disabled={isLoading}
-                          type="button"
-                          value={pref}
-                          onPress={(e: any) => {
-                            // Se já tem tipo definido, só permite alterar para "Outros"
-                            if (
-                              ticketSelecionado?.preferencialTipo &&
-                              ticketSelecionado.preferencialTipo !== "Outros" &&
-                              pref !== "Outros"
-                            ) {
-                              return;
-                            }
-                            togglePreferencial(e.target.value);
-                          }}
-                        >
-                          {pref}
-                          {pref === "Outros" &&
-                            ticketSelecionado?.preferencialTipo && (
-                              <span className="ml-1 text-xs">(Alterar)</span>
-                            )}
-                        </Button>
-                      );
-                    })}
-                  </div>
+                              } ${isLoading || isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                            disabled={isLoading}
+                            type="button"
+                            value={pref}
+                            onPress={(e: any) => {
+                              // Se já tem tipo definido, só permite alterar para "Outros"
+                              if (
+                                ticketSelecionado?.preferencialTipo &&
+                                ticketSelecionado.preferencialTipo !== "Outros" &&
+                                pref !== "Outros"
+                              ) {
+                                return;
+                              }
+                              togglePreferencial(e.target.value);
+                            }}
+                          >
+                            {pref}
+                            {pref === "Outros" &&
+                              ticketSelecionado?.preferencialTipo && (
+                                <span className="ml-1 text-xs">(Alterar)</span>
+                              )}
+                          </Button>
+                        );
+                      })}
+                    </div>
 
-                  {ticketSelecionado?.preferencialTipo &&
-                    ticketSelecionado.preferencialTipo !== "Outros" && (
-                      <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
-                        <p className="text-xs text-blue-700">
-                          <Info className="h-3 w-3 inline mr-1" />O tipo
-                          preferencial{" "}
-                          <strong>{ticketSelecionado.preferencialTipo}</strong>{" "}
-                          foi definido no totem. Você pode alterar para "Outros"
-                          se necessário.
-                        </p>
-                      </div>
-                    )}
-                </div>
-              )}
+                    {ticketSelecionado?.preferencialTipo &&
+                      ticketSelecionado.preferencialTipo !== "Outros" && (
+                        <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                          <p className="text-xs text-blue-700">
+                            <Info className="h-3 w-3 inline mr-1" />O tipo
+                            preferencial{" "}
+                            <strong>{ticketSelecionado.preferencialTipo}</strong>{" "}
+                            foi definido no totem. Você pode alterar para "Outros"
+                            se necessário.
+                          </p>
+                        </div>
+                      )}
+                  </div>
+                )}
             </div>
           </main>
 
@@ -1941,7 +2936,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                 <div>
                   <h4 className="font-medium">Atendimentos</h4>
                   <div className="text-xs text-gray-500">
-                    {filteredAgendamentos.length} funcionários
+                    {filteredAgendamentos.length} funcionarios
                   </div>
                 </div>
 
@@ -1962,7 +2957,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                     Todos
                   </SelectItem>
                   <SelectItem key={"MANHA"} variant="light">
-                    Manhã
+                    Manha
                   </SelectItem>
                   <SelectItem key={"TARDE"} variant="light">
                     Tarde
@@ -2024,7 +3019,134 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
         {/* FOOTER (fora do scroll) */}
         <footer className="border-t border-gray-200 bg-white p-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          {/* Grupo Esquerdo: Ações Complementares + Biometria */}
+          <div className="flex items-center gap-3 min-h-[44px]">
+            {funcionarioSelecionado && (
+              <>
+                <Button
+                  className="px-4 py-2 rounded hover:bg-gray-100"
+                  disabled={isSubmitting || isLoading || isSyncingCard}
+                  variant="flat"
+                  onPress={handlePreparationModal}
+                >
+                  <FileInput className="h-4 w-4 mr-2" /> Solicitar Preparo
+                </Button>
+                {/* Dropdown de Guia */}
+                <Dropdown className="z-[100]" placement="top-start">
+                  <DropdownTrigger>
+                    <Button
+                      className="px-4 py-2 rounded hover:bg-gray-100"
+                      disabled={isSubmitting || isLoading || isSyncingCard}
+                      variant="flat"
+                    >
+                      <PrinterCheck className="h-4 w-4 mr-2" /> Guia
+                      <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    aria-label="Opções de guia"
+                    items={[
+                      { key: "__default__", label: "Guia Padrão", description: "Guia com todos os exames" },
+                      ...prestadores.filter((p) => p.ativo && p.unidade.trim().toUpperCase() === String(unidadeSelecionada || "").trim().toUpperCase() && p.grupos.some((g) => codigoExames.includes(g))).map((p) => ({
+                        key: p.id, label: `Guia • ${p.nome}`, description: [p.unidade, p.grupos.join(", ")].filter(Boolean).join(" • "),
+                      })),
+                    ]}
+                    onAction={(key) => { handlePrint(key === "__default__" ? undefined : prestadores.find((p) => p.id === key)); }}
+                  >
+                    {(item) => (
+                      <DropdownItem key={item.key} description={item.description} startContent={<PrinterCheck className="h-4 w-4" />}>
+                        {item.label}
+                      </DropdownItem>
+                    )}
+                  </DropdownMenu>
+                </Dropdown>
+
+                {/* Dropdown de Biometria / Metodo de Validacao */}
+                <Dropdown className="z-[100]" placement="top-start">
+                  <DropdownTrigger>
+                    <Button
+                      className="px-4 py-2 rounded hover:bg-gray-100"
+                      disabled={isSubmitting || isLoading || isSyncingCard}
+                      variant="flat"
+                    >
+                      <span
+                        className={`mr-2 ${
+                          isCapturingBiometria
+                            ? "animate-pulse text-blue-500"
+                            : funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.status ===
+                                "VALIDADO"
+                              ? "text-green-600"
+                              : "text-gray-500"
+                        }`}
+                      >
+                        {authVisual.icon}
+                      </span>
+                      <div className="flex flex-col items-start leading-tight">
+                        <span className="text-xs font-semibold">
+                          {authVisual.label}
+                        </span>
+                        {metodoValidacao === "BIOMETRIA" &&
+                        funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.status ===
+                          "VALIDADO" ? (
+                          <span className="text-[10px] text-green-600 font-medium">
+                            OK
+                            {funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.biometria
+                              ?.dedo
+                              ? ` - ${formatDedoLabel(
+                                  funcionarioSelecionado.AUTENTICACAOATENDIMENTO
+                                    .biometria.dedo,
+                                )}`
+                              : dedoCapturado
+                                ? ` - ${formatDedoLabel(dedoCapturado)}`
+                                : ""}
+                          </span>
+                        ) : (
+                          authVisual.badge
+                        )}
+                      </div>
+                      <ChevronDown className="h-3 w-3 ml-2 opacity-50" />
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    aria-label="Opcoes de validacao"
+                    onAction={(key) => {
+                      if (key === "BIOMETRIA") {
+                        setMetodoValidacao("BIOMETRIA");
+                        handleAbrirBiometriaFuncionario();
+                      }
+                      if (key === "FACIAL") {
+                        setMetodoValidacao("FACIAL");
+                        handleAbrirFacial();
+                      }
+                      if (key === "SOC") setMetodoValidacao("SOC");
+                    }}
+                  >
+                    <DropdownItem
+                      key="BIOMETRIA"
+                      description="Cadastrar ou validar biometria"
+                      startContent={<Fingerprint className="h-4 w-4 text-emerald-600" />}
+                    >
+                      Biometria
+                    </DropdownItem>
+                    <DropdownItem
+                      key="FACIAL"
+                      description="Reconhecimento facial"
+                      startContent={<Camera className="h-4 w-4 text-emerald-600" />}
+                    >
+                      Facial
+                    </DropdownItem>
+                    <DropdownItem
+                      key="SOC"
+                      description="Fluxo padrao via SOC"
+                      startContent={<Globe className="h-4 w-4 text-blue-600" />}
+                    >
+                      SOC (Padrao)
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+              </>
+            )}
+
             {showErrors && !validation.all && (
               <div className="text-xs text-amber-700 bg-amber-50 px-2 py-1 rounded border border-amber-200">
                 Corrija os campos obrigatórios
@@ -2032,35 +3154,23 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
             )}
           </div>
 
+          {/* Grupo Direito: Atendimento */}
           <div className="flex items-center gap-3">
             <Button
               className="px-4 py-2 rounded hover:bg-gray-100"
               disabled={isSubmitting}
               variant="flat"
-              onPress={handlePreparationModal}
-            >
-              <FileInput className="h-4 w-4 mr-2" /> Preparar documentação
-            </Button>
-            <Button
-              className="px-4 py-2 rounded hover:bg-gray-100"
-              disabled={isSubmitting}
-              variant="flat"
-              onPress={handlePrint}
-            >
-              <PrinterCheck className="h-4 w-4 mr-2" /> Guia
-            </Button>
-            <Button
-              className="px-4 py-2 rounded hover:bg-gray-100"
-              disabled={isSubmitting}
-              variant="flat"
-              onPress={onClose}
+              onPress={() => {
+                if (isCapturingBiometria) handleCloseBiometria();
+                onClose();
+              }}
             >
               <X className="h-4 w-4 mr-2" /> Cancelar
             </Button>
 
             <Button
               className="px-4 py-2 rounded bg-[#114E34] text-white hover:bg-[#0b3523] hover:shadow-lg transition-all duration-200"
-              isDisabled={!validation.all || isSubmitting}
+              isDisabled={!validation.all || isSubmitting || isAuthBlockedForSubmit}
               isLoading={isSubmitting}
               onPress={handleSubmit}
             >
@@ -2077,16 +3187,192 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       </div>
 
       {socket && funcionarioSelecionado && (
-        <EmPreparacaoModal
-          funcionario={funcionarioSelecionado}
-          isOpen={isOpenPreparationModal}
-          salaSelecionada={salaSelecionada}
-          socket={socket}
-          ticket={ticketSelecionado ?? null}
-          unidadeSelecionada={unidadeSelecionada}
-          onOpenChange={setIsOpenPreparationModal}
-        />
+        <>
+          {process.env.NEXT_PUBLIC_BIOMETRIA_CAPTURA_SIMPLES_DEV === 'true' && (
+            <BiometriaModal
+              state={{
+                isOpen: isCapturingBiometria,
+                status: biometriaStatus,
+                mensagem: biometriaMessage,
+                requestId: biometriaRequestId || undefined,
+                context: {
+                  operadorNome: user.nome,
+                  unidade: unidadeSelecionada,
+                  sala: salaSelecionada,
+                  funcionarioNome: funcionarioSelecionado.NOME,
+                  funcionarioId: getBiometriaFuncionarioRef(funcionarioSelecionado),
+                  funcionarioCpf: biometriaContextExtra.cpf,
+                  funcionarioDataNascimento: biometriaContextExtra.dataNascimento,
+                  atendimentoId: getSchedulingMongoId(funcionarioSelecionado),
+                },
+              }}
+              onClose={handleCloseBiometria}
+              onRetry={handleCapturarBiometria}
+            />
+          )}
+
+          <CadastroBiometricoModal
+            state={cadastroBiometricoModal}
+            onClose={fecharCadastroBiometricoModal}
+            onStartCapture={handleConfirmarDedoCadastro}
+            onReset={resetarCadastroBiometricoModal}
+          />
+
+          <BiometriaValidacaoModal
+            state={validacaoModal}
+            onClose={handleCloseValidacao}
+            onRetry={handleRetryValidacao}
+          />
+
+          <FacialModal
+            isOpen={facialModalOpen}
+            context={facialContext}
+            onClose={handleFacialClose}
+          />
+
+          <BiometriaFuncionarioModal
+            isOpen={biometriaStatusModalOpen}
+            onClose={() => setBiometriaStatusModalOpen(false)}
+            socket={socket}
+            unidade={unidadeSelecionada}
+            operador={{
+              id: String(user.codigo || user.nome),
+              nome: user.nome,
+              perfil: user.perfil,
+            }}
+            funcionario={funcionarioSelecionado ? {
+              id: getSchedulingMongoId(funcionarioSelecionado),
+              nome: funcionarioSelecionado.NOME,
+              schedulingId: getSchedulingMongoId(funcionarioSelecionado),
+            } : null}
+            onAction={(action, payload) => {
+              setBiometriaStatusModalOpen(false);
+              if (action === "CADASTRAR" || action === "REACADASTRAR" || action === "NOVO_CADASTRO") {
+                handleCadastroBiometrico();
+              } else if (action === "VALIDAR") {
+                handleValidarBiometria(payload?.dedo);
+              }
+            }}
+          />
+
+          <EmPreparacaoModal
+            funcionario={funcionarioSelecionado}
+            isOpen={isOpenPreparationModal}
+            salaSelecionada={salaSelecionada}
+            socket={socket}
+            ticket={ticketSelecionado ?? null}
+            unidadeSelecionada={unidadeSelecionada}
+            onOpenChange={setIsOpenPreparationModal}
+          />
+        </>
       )}
+
+      {/* Modal de selecao de multiplas fichas (ASO) */}
+      <Modal
+        disableAnimation={true}
+        isDismissable={false}
+        isOpen={!!reuseExistingPrompt}
+        placement="center"
+        size="md"
+      >
+        <ModalContent className="border border-[#114E34]/20">
+          <ModalHeader className="text-[#114E34] flex items-center gap-2">
+            <ExclamationCircleIcon className="h-6 w-6 text-[#114E34]" />
+            Atendimento Encontrado
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-3">
+              <p className="text-sm text-gray-700 leading-6">
+                Encontramos um atendimento válido para este funcionário na data atual.
+              </p>
+              <div className="rounded-xl border border-[#114E34]/15 bg-[#114E34]/[0.03] p-4">
+                <p className="text-sm font-medium text-[#114E34]">
+                  Deseja reutilizar este atendimento?
+                </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Se você continuar, vamos carregar o prontuário existente e seguir o fluxo normal de validação.
+                </p>
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter className="flex justify-end gap-2">
+            <Button
+              className="px-4 py-2 rounded hover:bg-gray-100"
+              size="sm"
+              variant="flat"
+              onPress={handleCancelarReutilizacao}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="bg-[#114E34] text-white hover:bg-[#0b3523] focus-visible:ring-2 focus-visible:ring-[#114E34]/40"
+              size="sm"
+              onPress={handleConfirmarReutilizacao}
+            >
+              Reutilizar atendimento
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        disableAnimation={true}
+        isDismissable={false}
+        isOpen={isAsoSelectionOpen}
+        placement="center"
+        size="lg"
+      >
+        <ModalContent className="border border-[#114E34]/20">
+          <ModalHeader className="text-[#114E34] flex items-center gap-2">
+            <ExclamationCircleIcon className="h-6 w-6 text-[#114E34]" />
+            Múltiplas Fichas Encontradas
+          </ModalHeader>
+          <ModalBody>
+            <p className="text-sm text-gray-600 mb-4">
+              Foram encontradas <strong>{asoOptions.length}</strong> fichas de ASO para este funcionário na data de hoje. Selecione qual deseja encaminhar para atendimento:
+            </p>
+            <div className="space-y-3">
+              {asoOptions.map((option, index) => (
+                <div
+                  key={option.sequenciaFicha || index}
+                  className="border border-gray-200 rounded-lg p-4 hover:border-[#114E34] hover:shadow-md transition-all cursor-pointer bg-white"
+                  onClick={() => handleConfirmarAsoOption(option)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleConfirmarAsoOption(option);
+                  }}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-sm text-gray-800">
+                        {option.tipoExameNome}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Ficha: <strong>{option.sequenciaFicha || "N/A"}</strong>
+                        {option.dataFicha ? ` - ${option.dataFicha}` : ""}
+                      </p>
+                    </div>
+                    <div className="bg-[#114E34] text-white text-xs px-3 py-1 rounded-full font-medium">
+                      Selecionar
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ModalBody>
+          <ModalFooter className="flex justify-end gap-2">
+            <Button
+              className="px-4 py-2 rounded hover:bg-gray-100"
+              size="sm"
+              variant="flat"
+              onPress={handleCancelarAsoSelection}
+            >
+              Cancelar
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
 
       {/* Modal de Alerta */}
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>

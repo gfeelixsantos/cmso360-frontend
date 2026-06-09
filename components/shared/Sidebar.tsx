@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Plus, Wifi, WifiOff, Users } from "lucide-react";
 import { Button } from "@heroui/react";
@@ -8,14 +8,15 @@ import { Button } from "@heroui/react";
 import AgendamentosList from "../../app/recepcao/components/AgendamentosList";
 
 
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 import {
-  EXAMES_LIST,
+  UNIDADES_ATENDIMENTO,
   SALAS_EXAMES,
   SALAS_RECEPCAO,
-  UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { Ticket } from "@/lib/ticket/ticket";
+import { useUnits } from "@/lib/config/useUnits";
 
 interface SidebarRecepcaoProps {
   unidadeSelecionada: string;
@@ -35,6 +36,7 @@ interface SidebarRecepcaoProps {
   pscStatusElement?: React.ReactNode;
   pscAuthButtonElement?: React.ReactNode;
   isReconnecting?: boolean;
+  examesGrouped: Record<string, ExamToogle[]>;
 }
 
 /* SelectField CMSO */
@@ -134,23 +136,36 @@ export function SidebarRecepcao({
   pscStatusElement,
   isReconnecting = false,
   pscAuthButtonElement,
+  examesGrouped,
 }: SidebarRecepcaoProps) {
   const pathname = usePathname();
+  const isAtendimento = pathname?.includes("atendimento") ?? false;
+  const { units } = useUnits(undefined, !isAtendimento);
   const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO);
-  const [examesAtendimento, setExamesAtendimento] = useState<string[]>([]);
+  const unidadeOptions = useMemo(
+    () =>
+      isAtendimento
+        ? UNIDADES_ATENDIMENTO
+        : units.map((u) => u.nome),
+    [isAtendimento, units],
+  );
 
-  /* Atualiza opções de sala + lista de exames */
+  const examesAtendimento = useMemo(() =>
+    Object.keys(examesGrouped || {}).sort((a, b) => a.localeCompare(b, "pt-BR")),
+  [examesGrouped]);
+
+  /* Atualiza opções de sala baseadas na unidade selecionada + caminho */
   useEffect(() => {
     if (!pathname) return;
 
-    const isAtendimento = pathname.includes("atendimento");
+    const selectedUnit = units.find((u) => u.nome === unidadeSelecionada);
 
-    setSalaOpcoes(isAtendimento ? SALAS_EXAMES : SALAS_RECEPCAO);
-
-    setExamesAtendimento(
-      Object.keys(EXAMES_LIST).sort((a, b) => a.localeCompare(b, "pt-BR")),
+    setSalaOpcoes(
+      isAtendimento
+        ? (selectedUnit?.salas?.exames ?? SALAS_EXAMES)
+        : (selectedUnit?.salas?.recepcao ?? SALAS_RECEPCAO),
     );
-  }, [pathname]);
+  }, [pathname, units, unidadeSelecionada]);
 
   const handleAddAtendimento = useCallback(() => {
     setTicketSelecionado(null);
@@ -222,7 +237,9 @@ export function SidebarRecepcao({
             label="Unidade"
             options={[
               { label: "Selecione uma unidade", value: "" },
-              ...UNIDADES_ATENDIMENTO.map((u) => ({ label: u, value: u })),
+              ...(unidadeOptions.length > 0
+                ? unidadeOptions.map((nome) => ({ label: nome, value: nome }))
+                : []),
             ]}
             value={unidadeSelecionada}
             onChange={setUnidadeSelecionada}

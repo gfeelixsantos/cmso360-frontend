@@ -1,127 +1,226 @@
-import { Link } from "@heroui/react";
+"use client";
+
+import { Badge, Button, Link } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  LogOut,
-  ChevronDown,
-  Bell,
   AlertCircle,
+  ArrowLeft,
+  Bell,
+  CheckCheck,
   CheckCircle,
+  ChevronDown,
+  ExternalLink,
+  Inbox,
+  LayoutGrid,
+  LogOut,
   Settings,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
+import {
+  type AppNotification,
+  addNotification,
+  clearAllNotifications,
+  clearReadNotifications,
+  getNotifications,
+  markAllAsRead,
+  markAsRead,
+  subscribe,
+} from "@/lib/notification-store";
 
-interface Notification {
-  id: string;
-  title: string;
-  message: string;
-  type: "info" | "warning" | "success";
-  date: string;
-  read: boolean;
-}
-// Componente de Notificações
-const NotificationsPanel: React.FC<{
-  notifications: Notification[];
-  isOpen: boolean;
-  onClose: () => void;
-  onMarkAsRead: (id: string) => void;
-}> = ({ notifications, isOpen, onClose, onMarkAsRead }) => {
-  if (!isOpen) return null;
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "warning":
-        return <AlertCircle className="h-5 w-5 text-yellow-500" />;
-      case "success":
-        return <CheckCircle className="h-5 w-5 text-green-500" />;
-      default:
-        return <Bell className="h-5 w-5 text-blue-500" />;
-    }
-  };
-
-  return (
-    <motion.div
-      animate={{ opacity: 1, y: 0 }}
-      className="absolute top-full right-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50"
-      exit={{ opacity: 0, y: -10 }}
-      initial={{ opacity: 0, y: -10 }}
-    >
-      <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900">Notificações</h3>
-          <span className="text-sm text-gray-500">
-            {notifications.filter((n) => !n.read).length} não lidas
-          </span>
-        </div>
-      </div>
-      <div className="max-h-96 overflow-y-auto">
-        {notifications.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            Nenhuma notificação
-          </div>
-        ) : (
-          notifications.map((notification) => (
-            <div
-              key={notification.id}
-              className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                !notification.read ? "bg-blue-50" : ""
-              }`}
-              onClick={() => onMarkAsRead(notification.id)}
-            >
-              <div className="flex items-start space-x-3">
-                {getIcon(notification.type)}
-                <div className="flex-1">
-                  <p className="font-medium text-sm text-gray-900">
-                    {notification.title}
-                  </p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-2">
-                    {notification.date}
-                  </p>
-                </div>
-                {!notification.read && (
-                  <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                )}
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </motion.div>
-  );
-};
-
-interface HeaderProps {
-  onLogout: () => void;
-  children: React.ReactNode;
-}
+type MenuView = "menu" | "notifications";
 
 const getSpecialtyColor = (especialidade: string) => {
   const colorMap: Record<string, string> = {
     MEDICO: "bg-blue-100 text-blue-700 border-blue-200",
     ENFERMAGEM: "bg-green-100 text-green-700 border-green-200",
     FONOAUDIOLOGA: "bg-purple-100 text-purple-700 border-purple-200",
-    RECEPÇÃO: "bg-orange-100 text-orange-700 border-orange-200",
+    RECEPCAO: "bg-orange-100 text-orange-700 border-orange-200",
   };
 
   return colorMap[especialidade] || "bg-gray-100 text-gray-700 border-gray-200";
 };
 
-// Componente Header atualizado
+const getAvatarColor = (especialidade: string) => {
+  const colorMap: Record<string, string> = {
+    MEDICO: "bg-blue-500",
+    ENFERMAGEM: "bg-green-500",
+    FONOAUDIOLOGA: "bg-purple-500",
+    RECEPCAO: "bg-orange-500",
+  };
+
+  return colorMap[especialidade] || "bg-gray-500";
+};
+
+const getInitials = (nome: string): string => {
+  if (!nome) return "?";
+
+  const names = nome.trim().split(/\s+/);
+
+  if (names.length === 1) return names[0].substring(0, 2).toUpperCase();
+
+  return (names[0][0] + names[names.length - 1][0]).toUpperCase();
+};
+
+const getNotificationIcon = (type: AppNotification["type"]) => {
+  switch (type) {
+    case "warning":
+      return <AlertCircle className="h-5 w-5 text-amber-500" />;
+    case "success":
+      return <CheckCircle className="h-5 w-5 text-emerald-500" />;
+    case "error":
+      return <AlertCircle className="h-5 w-5 text-red-500" />;
+    default:
+      return <Bell className="h-5 w-5 text-sky-500" />;
+  }
+};
+
+const NotificationsList: React.FC<{
+  notifications: AppNotification[];
+  onMarkAsRead: (id: string) => void;
+  onMarkAllAsRead: () => void;
+  onClearRead: () => void;
+  onClearAll: () => void;
+  onOpenAction: (notification: AppNotification) => void;
+}> = ({
+  notifications,
+  onMarkAsRead,
+  onMarkAllAsRead,
+  onClearRead,
+  onClearAll,
+  onOpenAction,
+}) => {
+  const unreadCount = notifications.filter((n) => !n.read).length;
+  const hasUnread = unreadCount > 0;
+  const hasRead = notifications.some((n) => n.read);
+  const recentNotifications = notifications.slice(0, 8);
+
+  return (
+    <div className="flex flex-col">
+      <div className="border-b border-gray-100 px-4 py-3">
+        <h3 className="text-sm font-semibold text-gray-900">Notificações</h3>
+        <p className="text-xs text-gray-500">
+          {unreadCount} não lida(s) · {notifications.length} total
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Button
+            isDisabled={!hasUnread}
+            size="sm"
+            startContent={<CheckCheck className="h-4 w-4" />}
+            variant="light"
+            onPress={onMarkAllAsRead}
+          >
+            Marcar todas
+          </Button>
+          <Button
+            isDisabled={notifications.length === 0}
+            size="sm"
+            startContent={<Inbox className="h-4 w-4" />}
+            variant="light"
+            onPress={onClearAll}
+          >
+            Limpar tudo
+          </Button>
+        </div>
+      </div>
+
+      <div className="max-h-[28rem] overflow-y-auto">
+        {recentNotifications.length === 0 ? (
+          <div className="flex flex-col items-center justify-center px-4 py-8 text-center text-gray-500">
+            <Bell className="mb-3 h-8 w-8 text-gray-300" />
+            <p className="text-sm font-medium text-gray-700">
+              Nenhuma notificação
+            </p>
+            <p className="text-xs text-gray-500">
+              Novos eventos aparecerão aqui.
+            </p>
+          </div>
+        ) : (
+          recentNotifications.map((notification) => (
+            <div
+              key={notification.id}
+              className={`border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50 ${
+                notification.read ? "" : "bg-sky-50/60"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <button
+                  aria-label={`Marcar notificação ${notification.title} como lida`}
+                  className="mt-0.5 rounded-full bg-white p-2 shadow-sm ring-1 ring-gray-100"
+                  onClick={() => onMarkAsRead(notification.id)}
+                >
+                  {getNotificationIcon(notification.type)}
+                </button>
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-semibold text-gray-900">
+                        {notification.title}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-600">
+                        {notification.message}
+                      </p>
+                    </div>
+
+                    {!notification.read && (
+                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
+                    )}
+                  </div>
+
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
+                    {notification.date}
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {notification.actionUrl && (
+                      <Button
+                        color="primary"
+                        size="sm"
+                        startContent={<ExternalLink className="h-4 w-4" />}
+                        variant="flat"
+                        onPress={() => onOpenAction(notification)}
+                      >
+                        {notification.actionLabel || "Abrir"}
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="light"
+                      onPress={() => onMarkAsRead(notification.id)}
+                    >
+                      {notification.read ? "Lida" : "Marcar como lida"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+};
+
+interface HeaderProps {
+  onLogout: () => void;
+  children?: React.ReactNode;
+}
+
 export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
   const router = useRouter();
   const [user, setUser] = useState<IUserInfo | null>(null);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [view, setView] = useState<MenuView>("menu");
+  const [notifications, setNotifications] = useState<AppNotification[]>(() =>
+    getNotifications(),
+  );
 
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
@@ -133,199 +232,273 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
     }
   }, [router]);
 
-  // Fechar dropdown ao clicar fora
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsDropdownOpen(false);
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        closeMenu();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeMenu();
       }
     };
 
     document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
 
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
   }, []);
 
-  // Notificações mockadas
   useEffect(() => {
-    setNotifications([
-      {
-        id: "1",
-        title: "ASO Pendente",
-        message: "15 ASOs aguardando liberação médica",
-        type: "warning",
-        date: "10 min atrás",
-        read: false,
-      },
-      {
-        id: "2",
-        title: "Exames Atrasados",
-        message: "8 exames com resultado pendente há mais de 48h",
-        type: "warning",
-        date: "1 hora atrás",
-        read: false,
-      },
-      {
-        id: "3",
-        title: "Agendamento Confirmado",
-        message: "Novo agendamento para SEW EURODRIVE",
-        type: "info",
-        date: "2 horas atrás",
-        read: true,
-      },
-      {
-        id: "4",
-        title: "Liberação Concluída",
-        message: "23 prontuários liberados hoje",
-        type: "success",
-        date: "3 horas atrás",
-        read: true,
-      },
-    ]);
+    const unsubscribe = subscribe(setNotifications);
+
+    return unsubscribe;
   }, []);
 
-  const unreadNotificationsCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const handler = (event: MessageEvent) => {
+      const data = event.data;
+
+      if (!data || data.type !== "app-notification" || !data.notification) {
+        return;
+      }
+
+      addNotification(data.notification);
+    };
+
+    navigator.serviceWorker.addEventListener("message", handler);
+
+    return () => navigator.serviceWorker.removeEventListener("message", handler);
+  }, []);
+
+  const unreadNotificationsCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications],
+  );
+
+  const closeMenu = () => {
+    setIsMenuOpen(false);
+    setView("menu");
+  };
+
   const handleMarkAsRead = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((notification) =>
-        notification.id === id ? { ...notification, read: true } : notification,
-      ),
-    );
+    markAsRead(id);
+  };
+
+  const handleOpenAction = (notification: AppNotification) => {
+    if (!notification.actionUrl) return;
+
+    markAsRead(notification.id);
+    closeMenu();
+
+    if (/^https?:\/\//i.test(notification.actionUrl)) {
+      window.open(notification.actionUrl, "_blank", "noopener,noreferrer");
+
+      return;
+    }
+
+    router.push(notification.actionUrl);
+  };
+
+  const handleNavigate = (path: string) => {
+    closeMenu();
+    router.push(path);
+  };
+
+  const handleLogout = () => {
+    closeMenu();
+    onLogout();
   };
 
   return (
-    <>
-      <motion.header
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm sticky top-0 z-40"
-        initial={{ y: -80, opacity: 0 }}
-        role="banner"
-        transition={{ duration: 0.6, ease: "easeOut" }}
-      >
-        <div className="mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            {/* Logo */}
-            <Link
-              aria-label="Ir para o dashboard"
-              className="flex items-center gap-2 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg p-1"
-              href="/dashboard"
-            >
-              <Image
-                priority
-                alt="MedLink - Sistema Médico"
-                className="h-12 w-auto"
-                height={54}
-                src="/images/logo.png"
-                width={180}
-              />
-            </Link>
+    <motion.header
+      animate={{ y: 0, opacity: 1 }}
+      className="sticky top-0 z-40 border-b border-gray-100 bg-white/95 shadow-sm backdrop-blur-md"
+      initial={{ y: -80, opacity: 0 }}
+      role="banner"
+      transition={{ duration: 0.6, ease: "easeOut" }}
+    >
+      <div className="mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex h-16 items-center justify-between">
+          <Link
+            aria-label="Ir para o dashboard"
+            className="flex items-center gap-2 rounded-lg p-1 transition-transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            href="/dashboard"
+          >
+            <Image
+              priority
+              alt="CMSO 360"
+              className="h-12 w-auto"
+              height={54}
+              src="/images/logo.png"
+              width={180}
+            />
+          </Link>
 
-            {children && children}
-            {/* User info + notifications + logout */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                {/* <button
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Notificações"
+          {children}
+
+          <div className="flex items-center gap-3">
+            <div ref={menuRef} className="relative">
+              <button
+                aria-expanded={isMenuOpen}
+                aria-haspopup="true"
+                aria-label="Abrir menu do usuário"
+                className="flex cursor-pointer items-center gap-2 rounded-xl p-2 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={() => setIsMenuOpen((current) => !current)}
+              >
+                <Badge
+                  color="danger"
+                  content={unreadNotificationsCount}
+                  isInvisible={unreadNotificationsCount === 0}
+                  placement="bottom-left"
+                  shape="circle"
+                  size="sm"
                 >
-                  <Bell className="h-5 w-5" />
-                  {unreadNotificationsCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                      {unreadNotificationsCount}
+                  <div
+                    className={`flex h-9 w-9 items-center justify-center rounded-full ${getAvatarColor(user?.perfil ?? "")} ring-2 ring-white shadow-md`}
+                    title={user?.nome}
+                  >
+                    <span className="text-sm font-semibold text-white">
+                      {getInitials(user?.nome ?? "")}
                     </span>
-                  )}
-                </button>
-                
-                <NotificationsPanel
-                  notifications={notifications}
-                  isOpen={showNotifications}
-                  onClose={() => setShowNotifications(false)}
-                  onMarkAsRead={handleMarkAsRead}
-                /> */}
-              </div>
-
-              {/* User profile with dropdown */}
-              <div ref={dropdownRef} className="relative">
-                <button
-                  aria-expanded={isDropdownOpen}
-                  aria-haspopup="true"
-                  aria-label="Abrir menu do usuário"
-                  className="flex items-center gap-2 p-2 rounded-xl hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                >
-                  {/* Nome + perfil (visível em telas médias para cima) */}
-                  <div className="hidden md:block text-left">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {user?.nome}
-                    </p>
-                    <p
-                      className={`text-xs px-2 py-0.5 rounded-full font-medium text-center border shadow-sm ${getSpecialtyColor(
-                        user?.perfil ?? "",
-                      )}`}
-                    >
-                      {user?.perfil}
-                    </p>
                   </div>
+                </Badge>
 
-                  <ChevronDown
-                    aria-hidden="true"
-                    className={`h-4 w-4 text-gray-500 transition-transform ${isDropdownOpen ? "rotate-180" : ""}`}
-                  />
-                </button>
+                <div className="hidden text-left md:block">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {user?.nome}
+                  </p>
+                  <p
+                    className={`rounded-full border px-2 py-0.5 text-center text-xs font-medium shadow-sm ${getSpecialtyColor(
+                      user?.perfil ?? "",
+                    )}`}
+                  >
+                    {user?.perfil}
+                  </p>
+                </div>
 
-                {/* Dropdown menu */}
-                <AnimatePresence>
-                  {isDropdownOpen && (
-                    <motion.div
-                      animate={{ opacity: 1, y: 0 }}
-                      aria-orientation="vertical"
-                      className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg py-2 border border-gray-200 z-50"
-                      exit={{ opacity: 0, y: -10 }}
-                      initial={{ opacity: 0, y: -10 }}
-                      role="menu"
-                      transition={{ duration: 0.2 }}
+                <ChevronDown
+                  aria-hidden="true"
+                  className={`h-4 w-4 text-gray-500 transition-transform ${
+                    isMenuOpen ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isMenuOpen && (
+                  <motion.div
+                    animate={{ opacity: 1, y: 0 }}
+                    className="absolute right-0 z-50 mt-2 w-[22rem] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+                    exit={{ opacity: 0, y: -10 }}
+                    initial={{ opacity: 0, y: -10 }}
+                    role="menu"
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="border-b border-gray-100 px-4 py-3">
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user?.nome}
+                      </p>
+                      <p className="text-xs text-gray-500">{user?.perfil}</p>
+                    </div>
+
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      onClick={() => handleNavigate("/configuracoes")}
                     >
-                      <div className="px-4 py-2 border-b border-gray-100">
-                        <p className="text-sm font-medium text-gray-900">
-                          {user?.nome}
-                        </p>
-                      </div>
+                      <Settings className="mr-3 h-4 w-4" />
+                      Configurações
+                    </button>
 
-                      <button
-                        className="flex w-full items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          router.push("/configuracoes");
-                        }}
-                      >
-                        <Settings className="h-4 w-4 mr-3" />
-                        Configurações
-                      </button>
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      onClick={() => handleNavigate("/servicos")}
+                    >
+                      <LayoutGrid className="mr-3 h-4 w-4" />
+                      Serviços
+                    </button>
 
-                      <button
-                        className="flex w-full items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                        role="menuitem"
-                        onClick={() => {
-                          setIsDropdownOpen(false);
-                          onLogout();
-                        }}
-                      >
-                        <LogOut className="h-4 w-4 mr-3" />
-                        Sair
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
+                    <button
+                      aria-expanded={view === "notifications"}
+                      className="flex w-full items-center justify-between px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      onClick={() =>
+                        setView((current) =>
+                          current === "notifications" ? "menu" : "notifications",
+                        )
+                      }
+                    >
+                      <span className="flex items-center">
+                        <Bell className="mr-3 h-4 w-4" />
+                        Notificações
+                      </span>
+                      <span className="flex items-center gap-2">
+                        {unreadNotificationsCount > 0 && (
+                          <Badge
+                            color="danger"
+                            content={unreadNotificationsCount}
+                            shape="circle"
+                            size="sm"
+                          >
+                            <span className="sr-only">não lidas</span>
+                          </Badge>
+                        )}
+                        <ChevronDown
+                          aria-hidden="true"
+                          className={`h-3.5 w-3.5 text-gray-400 transition-transform ${
+                            view === "notifications" ? "rotate-180" : ""
+                          }`}
+                        />
+                      </span>
+                    </button>
+
+                    <AnimatePresence initial={false}>
+                      {view === "notifications" && (
+                        <motion.div
+                          animate={{ height: "auto", opacity: 1 }}
+                          className="overflow-hidden border-t border-gray-100"
+                          exit={{ height: 0, opacity: 0 }}
+                          initial={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.2, ease: "easeOut" }}
+                        >
+                          <div className="max-h-[28rem] overflow-y-auto">
+                            <NotificationsList
+                              notifications={notifications}
+                              onClearAll={clearAllNotifications}
+                              onClearRead={clearReadNotifications}
+                              onMarkAllAsRead={markAllAsRead}
+                              onMarkAsRead={handleMarkAsRead}
+                              onOpenAction={handleOpenAction}
+                            />
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    <div className="border-t border-gray-100" />
+
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+                      onClick={handleLogout}
+                    >
+                      <LogOut className="mr-3 h-4 w-4" />
+                      Sair
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
-      </motion.header>
-    </>
+      </div>
+    </motion.header>
   );
 };

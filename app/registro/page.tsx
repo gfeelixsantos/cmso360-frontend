@@ -9,6 +9,7 @@ import {
   User,
   Lock,
   ArrowRight,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -143,6 +144,8 @@ export default function RegistroPage(): JSX.Element {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [consentTermos, setConsentTermos] = useState(false);
+  const [consentPrivacidade, setConsentPrivacidade] = useState(false);
 
   const handleCpfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setCpf(formatCPF(e.target.value));
@@ -173,7 +176,7 @@ export default function RegistroPage(): JSX.Element {
     setError(null);
     setIsLoading(true);
     try {
-      const payload = { cpf, codigo, password } as any;
+      const payload = { cpf, codigo, password, consentimento: true } as any;
       const res = await fetchBodyJson<ApiResponse<IUserInfo>>(
         API_REGISTER_URL,
         "POST",
@@ -221,6 +224,12 @@ export default function RegistroPage(): JSX.Element {
 
     if (password !== confirmPassword) {
       setError("As senhas não coincidem.");
+
+      return;
+    }
+
+    if (!consentTermos || !consentPrivacidade) {
+      setError("Você precisa aceitar os Termos de Uso e a Política de Privacidade.");
 
       return;
     }
@@ -400,12 +409,54 @@ export default function RegistroPage(): JSX.Element {
 
               <motion.div
                 animate={{ opacity: 1, y: 0 }}
+                className="space-y-3 bg-gray-50 p-4 rounded-lg border border-gray-200"
                 initial={{ opacity: 0, y: 10 }}
                 transition={{ duration: 0.4, delay: 0.5 }}
               >
+                <p className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <ExternalLink size={14} />
+                  Consentimento LGPD
+                </p>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentTermos}
+                    onChange={(e) => setConsentTermos(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#104e35] focus:ring-[#104e35]"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Aceito os <strong>Termos de Uso</strong> do CMSO360
+                  </span>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={consentPrivacidade}
+                    onChange={(e) => setConsentPrivacidade(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#104e35] focus:ring-[#104e35]"
+                  />
+                  <span className="text-sm text-gray-600">
+                    Aceito a{" "}
+                    <a
+                      href="/privacidade"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Política de Privacidade
+                    </a>
+                  </span>
+                </label>
+              </motion.div>
+
+              <motion.div
+                animate={{ opacity: 1, y: 0 }}
+                initial={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.4, delay: 0.55 }}
+              >
                 <button
                   className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-all duration-300 shadow-md hover:shadow-lg"
-                  disabled={isLoading}
+                  disabled={isLoading || !consentTermos || !consentPrivacidade}
                   type="submit"
                 >
                   {isLoading ? (

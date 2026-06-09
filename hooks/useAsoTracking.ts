@@ -1,6 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
-import { NEST_SCHEDULINGS_ASO_PENDING } from "@/config/constants";
+import {
+  NEST_SCHEDULINGS_ASO_PENDING,
+  NEST_SCHEDULINGS_ASO_REQUEUE,
+} from "@/config/constants";
 
 export type AsoPanelGroup = "EM_ANDAMENTO" | "CONCLUIDO" | "NAO_APLICAVEL";
 
@@ -61,6 +64,7 @@ export interface AsoPendingItem {
   retryPending?: boolean;
   nextRetryAt?: string | null;
   retryCount?: number | null;
+  origem?: string;
   fonte?: "MONGODB" | "FILA_AZURE";
   parecer?: string | null;
   panel?: AsoPanelProjection;
@@ -260,12 +264,26 @@ export function useAsoTracking({
   refreshInterval = 30000,
 }: UseAsoTrackingOptions = {}) {
   const [data, setData] = useState<AsoPendingResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const hasDataRef = useRef(false);
 
   const fetchAsoPending = useCallback(async () => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      setLoading(true);
+      if (!hasDataRef.current) {
+        setIsLoading(true);
+      } else {
+        setIsRefreshing(true);
+      }
       setError(null);
 
       const params = new URLSearchParams();
@@ -276,7 +294,7 @@ export function useAsoTracking({
 
       const url = `${NEST_SCHEDULINGS_ASO_PENDING}${params.toString() ? `?${params.toString()}` : ""}`;
 
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: controller.signal });
 
       if (!response.ok) {
         throw new Error(`Erro HTTP: ${response.status}`);
@@ -284,6 +302,7 @@ export function useAsoTracking({
 
       const result = (await response.json()) as AsoPendingResponse;
 
+      hasDataRef.current = true;
       setData({
         ...result,
         items: Array.isArray(result.items)
@@ -291,14 +310,24 @@ export function useAsoTracking({
           : [],
       });
     } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        return;
+      }
       setError(err as Error);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
+      setIsRefreshing(false);
     }
   }, [unidade, limit, page]);
 
   useEffect(() => {
     fetchAsoPending();
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [fetchAsoPending]);
 
   useEffect(() => {
@@ -309,5 +338,40 @@ export function useAsoTracking({
     return () => clearInterval(interval);
   }, [autoRefresh, refreshInterval, fetchAsoPending]);
 
-  return { data, loading, error, refetch: fetchAsoPending };
+  return {
+    data,
+    loading: isLoading,
+    isRefreshing,
+    error,
+    refetch: fetchAsoPending,
+  };
+}
+
+import { getCurrentUser } from "@/lib/utils";
+
+export async function requeueAso(schedulingId: string): Promise<boolean> {
+  const currentUser = getCurrentUser();
+  
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  
+  if (currentUser) {
+    headers["x-auth-user"] = JSON.stringify(currentUser);
+  }
+
+  const response = await fetch(NEST_SCHEDULINGS_ASO_REQUEUE, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ schedulingId }),
+  });
+
+  if (!response.ok) {
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Erro desconhecido" }));
+    throw new Error(error.message || `Erro HTTP: ${response.status}`);
+  }
+
+  return true;
 }

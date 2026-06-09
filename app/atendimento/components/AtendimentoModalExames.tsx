@@ -8,6 +8,7 @@ import {
   ModalHeader,
   Spinner,
 } from "@heroui/react";
+import { Fingerprint } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Socket } from "socket.io-client";
 
@@ -42,6 +43,7 @@ interface AtendimentoModalExamesProps {
   funcionarioSelecionado: Scheduling | null;
   exame: string;
   sala: string;
+  unidade?: string;
   codigosAtendimento: Set<string>;
   socket: Socket;
   operationalUser?: IUserInfo | null;
@@ -69,6 +71,7 @@ const AtendimentoModalExames = ({
   onClose,
   exame,
   sala,
+  unidade,
   codigosAtendimento,
   funcionarioSelecionado,
   socket,
@@ -436,6 +439,10 @@ const AtendimentoModalExames = ({
       </Modal>
     );
   };
+
+  const currentFormulario = useMemo(() => {
+    return initialFormulario;
+  }, [initialFormulario]);
 
   // Protege contra mapeamento inexistente
   if (!Formulario) {

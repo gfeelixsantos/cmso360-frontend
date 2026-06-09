@@ -22,7 +22,6 @@ import {
 import { useEffect, useState, useMemo } from "react";
 
 import { ScraperMonitor } from "./ScraperMonitor";
-import { AsoTrackingSection } from "./AsoTrackingSection";
 
 import { TicketStatus } from "@/lib/ticket/ticket";
 import {
@@ -30,6 +29,7 @@ import {
   StatisticsResponseDto,
   useStatistics,
 } from "@/hooks/useStatictics";
+import { fetchExamesGrouped, type ExamToogle } from "@/lib/exames/utils/exames-helper";
 
 // 🎨 Constantes de design
 const COLORS = {
@@ -244,13 +244,32 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
   );
 };
 
+// 🔍 Função para encontrar o nome individual do exame a partir do código
+const getExamNameByCode = (codigoExame: string, examesGrouped?: Record<string, ExamToogle[]>): string | null => {
+  if (!codigoExame || !examesGrouped) return null;
+
+  const normalizedCode = codigoExame.trim().toLowerCase();
+
+  for (const examItems of Object.values(examesGrouped)) {
+    for (const item of examItems) {
+      if (item.codigos.some((c) => c.trim().toLowerCase() === normalizedCode)) {
+        return item.nome;
+      }
+    }
+  }
+
+  return null;
+};
+
 // 📋 Card de exame
 const ExamCard = ({
   exame,
   expanded = false,
+  subtitle,
 }: {
   exame: ExameStatisticsDto;
   expanded?: boolean;
+  subtitle?: string | null;
 }) => {
   const pendentes =
     exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
@@ -267,11 +286,17 @@ const ExamCard = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <FlaskConical className="h-4 w-4 text-[#44735E]" />
-            <h4 className="font-semibold text-gray-900 truncate">
-              {exame.nomeExame}
-            </h4>
+            <div className="min-w-0">
+              <h4 className="font-semibold text-gray-900 truncate">
+                {exame.nomeExame}
+              </h4>
+              {subtitle && (
+                <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">
+                  {subtitle}
+                </p>
+              )}
+            </div>
           </div>
-          {/* <p className="text-xs text-gray-500 font-mono">{exame.codigoExame}</p> */}
         </div>
         <div className="text-right">
           <div className="text-2xl font-bold text-gray-900">{total}</div>
@@ -350,7 +375,8 @@ export function StatisticsSection() {
   const [showAllExams, setShowAllExams] = useState<Record<string, boolean>>({});
   const [lastUpdate, setLastUpdate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [refreshSignal, setRefreshSignal] = useState(0);
+  const [examesGrouped, setExamesGrouped] = useState<Record<string, ExamToogle[]>>({});
+  useEffect(() => { fetchExamesGrouped().then(setExamesGrouped); }, []);
 
   const statisticsData = data as unknown as StatisticsResponseDto;
 
@@ -407,7 +433,6 @@ export function StatisticsSection() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
-    setRefreshSignal((current) => current + 1);
     setTimeout(() => setIsRefreshing(false), 500);
   };
 
@@ -571,10 +596,8 @@ export function StatisticsSection() {
           />
         </div>
 
-        {/* 🏥 PAINEL COLETA DE RESULTADOS - Espaço maior com ASO tracking */}
         <div className="grid grid-cols-1 gap-6">
           <ScraperMonitor />
-          <AsoTrackingSection refreshSignal={refreshSignal} />
         </div>
 
         {/* 📊 STATUS E TIPOS DE EXAME */}
@@ -962,6 +985,7 @@ export function StatisticsSection() {
                               key={`${unidade.unidade}-${exame.codigoExame}`}
                               exame={exame}
                               expanded={isExamExpanded}
+                              subtitle={getExamNameByCode(exame.codigoExame, examesGrouped)}
                             />
                           ))}
                       </div>

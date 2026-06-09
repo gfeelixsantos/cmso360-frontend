@@ -7,6 +7,7 @@ import {
   ModalFooter,
   Button,
   Spinner,
+  Textarea,
 } from "@heroui/react";
 import {
   AlertCircle,
@@ -15,16 +16,33 @@ import {
   Key,
   Trash,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 type DeleteStatus = "confirm" | "loading" | "success" | "error";
+
+type DeleteResult = {
+  requestId?: string;
+};
 
 interface DeleteConfirmationModalProps {
   isOpenModalDelete: boolean;
   onCloseModalDelete: () => void;
-  onConfirm: (password: string) => Promise<void>;
+  onConfirm: (input: {
+    password: string;
+    motivo: string;
+  }) => Promise<DeleteResult | void>;
   onDeleteSuccess?: () => void;
-  isLoading?: boolean;
+  confirmTitle?: string;
+  confirmDescription: React.ReactNode;
+  passwordLabel?: string;
+  motivoLabel?: string;
+  motivoPlaceholder?: string;
+  confirmButtonText?: string;
+  loadingTitle?: string;
+  loadingMessage?: string;
+  successTitle?: string;
+  successMessage?: string;
+  retryMessage?: string;
 }
 
 const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
@@ -32,20 +50,35 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   onCloseModalDelete,
   onConfirm,
   onDeleteSuccess,
+  confirmTitle = "Confirmar exclusão",
+  confirmDescription,
+  passwordLabel = "Senha de login",
+  motivoLabel = "Motivo da exclusão",
+  motivoPlaceholder = "Descreva brevemente o motivo",
+  confirmButtonText = "Confirmar exclusão",
+  loadingTitle = "Processando exclusão",
+  loadingMessage = "Validando sua senha e processando a exclusão...",
+  successTitle = "Exclusão concluída",
+  successMessage = "Excluído com sucesso.",
+  retryMessage = "Ocorreu um erro ao processar a exclusão.",
 }) => {
   const [password, setPassword] = useState("");
+  const [motivo, setMotivo] = useState("");
   const [error, setError] = useState("");
   const [status, setStatus] = useState<DeleteStatus>("confirm");
   const [errorMessage, setErrorMessage] = useState("");
   const [isCapsLockOn, setIsCapsLockOn] = useState(false);
+  const [requestId, setRequestId] = useState("");
 
   useEffect(() => {
     if (isOpenModalDelete) {
       setStatus("confirm");
       setPassword("");
+      setMotivo("");
       setError("");
       setErrorMessage("");
       setIsCapsLockOn(false);
+      setRequestId("");
     }
   }, [isOpenModalDelete]);
 
@@ -55,7 +88,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     const timeoutId = window.setTimeout(() => {
       onCloseModalDelete();
       onDeleteSuccess?.();
-    }, 2200);
+    }, 2600);
 
     return () => {
       window.clearTimeout(timeoutId);
@@ -69,9 +102,13 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
   };
 
   const handleConfirm = async () => {
-    if (!password.trim()) {
-      setError("A senha é obrigatória");
+    if (!motivo.trim()) {
+      setError("O motivo é obrigatório.");
+      return;
+    }
 
+    if (!password.trim()) {
+      setError("A senha de login é obrigatória.");
       return;
     }
 
@@ -79,20 +116,29 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
     setError("");
 
     try {
-      await onConfirm(password);
+      const result = await onConfirm({
+        password,
+        motivo,
+      });
+
+      setPassword("");
+      setRequestId(result?.requestId || "");
       setStatus("success");
     } catch (err: any) {
+      setPassword("");
       setStatus("error");
-      setErrorMessage(err.message || "Erro ao excluir atendimento");
+      setErrorMessage(err?.message || retryMessage);
     }
   };
 
   const handleClose = () => {
     setStatus("confirm");
     setPassword("");
+    setMotivo("");
     setError("");
     setErrorMessage("");
     setIsCapsLockOn(false);
+    setRequestId("");
     onCloseModalDelete();
   };
 
@@ -104,33 +150,40 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
               <div className="flex items-center gap-2">
                 <Trash size={20} />
-                <span className="text-lg font-semibold">
-                  Confirmar Exclusão
-                </span>
+                <span className="text-lg font-semibold">{confirmTitle}</span>
               </div>
             </ModalHeader>
             <ModalBody className="py-5">
               <div className="mt-2 text-sm text-gray-700">
-                <p className="flex items-center gap-2">
-                  <AlertCircle className="text-red-500" size={18} />
-                  <span>
-                    Esta ação irá excluir <strong>permanentemente</strong> o
-                    atendimento e todos os dados associados.
-                  </span>
-                </p>
-                <p className="text-xs text-red-600 mt-3 bg-red-50 border border-red-200 p-2 rounded">
-                  <strong>ATENÇÃO:</strong> Esta ação não pode ser desfeita.
-                </p>
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="mt-0.5 text-red-500" size={18} />
+                  <div>{confirmDescription}</div>
+                </div>
               </div>
               <div className="mt-4">
-                <label className="text-sm font-medium text-gray-700 mb-1 block">
-                  Digite a senha de exclusão:
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  {motivoLabel}
+                </label>
+                <Textarea
+                  isInvalid={!!error && !motivo.trim()}
+                  minRows={3}
+                  placeholder={motivoPlaceholder}
+                  value={motivo}
+                  onValueChange={(value) => {
+                    setMotivo(value);
+                    setError("");
+                  }}
+                />
+              </div>
+              <div className="mt-4">
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  {passwordLabel}
                 </label>
                 <Input
                   endContent={<Key className="text-gray-400" size={20} />}
                   errorMessage={error}
-                  isInvalid={!!error}
-                  placeholder="Senha de exclusão"
+                  isInvalid={!!error && !password.trim()}
+                  placeholder="Digite sua senha"
                   type="password"
                   value={password}
                   onBlur={() => setIsCapsLockOn(false)}
@@ -164,7 +217,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 variant="solid"
                 onPress={handleConfirm}
               >
-                Confirmar Exclusão
+                {confirmButtonText}
               </Button>
             </ModalFooter>
           </>
@@ -176,16 +229,14 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
               <div className="flex items-center gap-2">
                 <Trash size={20} />
-                <span className="text-lg font-semibold">
-                  Excluindo Atendimento
-                </span>
+                <span className="text-lg font-semibold">{loadingTitle}</span>
               </div>
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
                 <Spinner color="danger" size="lg" />
-                <p className="text-sm text-gray-600 text-center">
-                  Processando exclusão...
+                <p className="text-center text-sm text-gray-600">
+                  {loadingMessage}
                 </p>
               </div>
             </ModalBody>
@@ -199,18 +250,16 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-green-600 to-green-500 text-white">
               <div className="flex items-center gap-2">
                 <CheckCircle size={20} />
-                <span className="text-lg font-semibold">
-                  Exclusao Concluida
-                </span>
+                <span className="text-lg font-semibold">{successTitle}</span>
               </div>
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
                 <CheckCircle className="text-green-500" size={48} />
-                <p className="text-sm text-gray-700 text-center font-medium">
-                  Atendimento excluido com sucesso!
+                <p className="text-center text-sm font-medium text-gray-700">
+                  {successMessage}
                 </p>
-                <p className="text-xs text-gray-500 text-center">
+                <p className="text-center text-xs text-gray-500">
                   Fechando automaticamente...
                 </p>
               </div>
@@ -225,21 +274,21 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
             <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-red-600 to-red-500 text-white">
               <div className="flex items-center gap-2">
                 <AlertCircle size={20} />
-                <span className="text-lg font-semibold">Erro na Exclusão</span>
+                <span className="text-lg font-semibold">Erro na exclusão</span>
               </div>
             </ModalHeader>
             <ModalBody className="py-8">
               <div className="flex flex-col items-center gap-4">
                 <AlertCircle className="text-red-500" size={48} />
-                <p className="text-sm text-gray-700 text-center font-medium">
-                  Ocorreu um erro ao excluir o atendimento
+                <p className="text-center text-sm font-medium text-gray-700">
+                  {retryMessage}
                 </p>
-                <p className="text-xs text-red-500 text-center max-w-full break-words px-4">
+                <p className="max-w-full break-words px-4 text-center text-xs text-red-500">
                   {errorMessage || "Tente novamente mais tarde."}
                 </p>
               </div>
             </ModalBody>
-            <ModalFooter className="border-t border-red-200 justify-center gap-2">
+            <ModalFooter className="justify-center gap-2 border-t border-red-200">
               <Button
                 className="text-red-600 hover:bg-red-50"
                 color="default"
@@ -254,7 +303,7 @@ const DeleteConfirmationModal: React.FC<DeleteConfirmationModalProps> = ({
                 variant="solid"
                 onPress={handleConfirm}
               >
-                Tentar Novamente
+                Tentar novamente
               </Button>
             </ModalFooter>
           </>

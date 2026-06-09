@@ -20,6 +20,7 @@ import {
   Paperclip,
 } from "lucide-react";
 
+import { toProxyUrl } from "@/lib/blob/blob-proxy";
 import { FileUpload } from "@/lib/scheduling/interface/scheduling";
 
 interface AnexosUploadProps {
@@ -153,9 +154,40 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
 
   const handleOpenAttachment = useCallback((anexo: FileUpload) => {
     if (anexo.StoragePath) {
-      window.open(anexo.StoragePath, "_blank", "noopener,noreferrer");
+      window.open(toProxyUrl(anexo.StoragePath), "_blank", "noopener,noreferrer");
+    } else if (anexo.Content) {
+      // Convert base64 to blob and open
+      const base64 = anexo.Content as string;
+      const byteCharacters = atob(base64);
+      const byteNumbers = new Array(byteCharacters.length);
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i);
+      }
+      const byteArray = new Uint8Array(byteNumbers);
+      const blob = new Blob([byteArray], { type: anexo.Type });
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     }
   }, []);
+
+  const formatFileSize = (bytes: number): string => {
+    if (!bytes || bytes === 0) return "";
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
+  const formatDate = (date: Date | string): string => {
+    if (!date) return "";
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  };
 
   const getFileIcon = (fileName: string, className?: string) => {
     const ext = fileName.split(".").pop()?.toLowerCase();
@@ -297,12 +329,34 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
                               • Nuvem
                             </span>
                           )}
+                          {!anexo.StoragePath && anexo.Content && (
+                            <span className="text-xs text-gray-400 truncate flex items-center gap-1">
+                              • Local
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400">
+                          {anexo.Size > 0 && (
+                            <span>{formatFileSize(anexo.Size)}</span>
+                          )}
+                          {anexo.Size > 0 && anexo.UploadedAt && (
+                            <span>•</span>
+                          )}
+                          {anexo.UploadedAt && (
+                            <span>{formatDate(anexo.UploadedAt)}</span>
+                          )}
+                          {anexo.Origin && (
+                            <>
+                              <span>•</span>
+                              <span className="capitalize">{anexo.Origin}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {anexo.StoragePath && (
+                      {(anexo.StoragePath || anexo.Content) && (
                         <Tooltip
                           content="Abrir arquivo"
                           placement="top"

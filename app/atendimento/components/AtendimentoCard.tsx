@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   Card,
   Button,
@@ -13,6 +13,10 @@ import {
   TableRow,
   TableCell,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
 } from "@heroui/react";
 import {
   Clock,
@@ -29,37 +33,42 @@ import {
   Ticket as Senha,
   Eye,
   Paperclip,
+  Fingerprint,
+  Camera,
+  Monitor,
+  Globe,
+  ShieldCheck,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 
+import { toProxyUrl } from "@/lib/blob/blob-proxy";
+import { FALLBACK_EXAMES_GROUPED } from "@/lib/exames/utils/fallback-exames";
 import { getCurrentUser } from "@/lib/utils";
 import { Ticket, TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
 import {
   Scheduling,
   ExamRegister,
 } from "@/lib/scheduling/interface/scheduling";
-import { EXAMES_LIST } from "@/config/constants";
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-context";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
 
 interface AtendimentoCardProps {
   atendimento: Scheduling;
+  exameSelecionado: string;
   salaSelecionada: string;
   unidadeSelecionada: string;
   socket: Socket;
-  onHandleModal: (state: boolean) => void;
-  setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  exameSelecionado: string;
-  pendingAction?: {
-    action: string;
-    startedAt: number;
-    phase: "pending" | "acknowledged" | "resync";
-  };
+  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarAutenticacao?: (
+    atendimento: Scheduling,
+    metodo: "BIOMETRIA" | "FACIAL",
+  ) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  examesGrouped: Record<string, ExamToogle[]>;
 }
-
-type PendingActionInfo = NonNullable<AtendimentoCardProps["pendingAction"]>;
 
 // Hook para cálculo de progresso dos exames (memorizado para performance)
 const useExamProgress = (exames: ExamRegister[]) => {
@@ -175,6 +184,48 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
   );
 };
 
+type BiometriaStatusType = NonNullable<NonNullable<Scheduling["ASOINFO"]>["BIOMETRIA"]>["status"];
+
+const BiometriaIndicator = ({ status }: { status: BiometriaStatusType }) => {
+  const configs = {
+    nao_cadastrado: {
+      color: "text-gray-400",
+      bg: "bg-gray-100",
+      label: "Biometria não cadastrada",
+      icon: <Fingerprint className="h-3 w-3" />,
+    },
+    cadastrado: {
+      color: "text-blue-600",
+      bg: "bg-blue-50",
+      label: "Biometria cadastrada",
+      icon: <Fingerprint className="h-3 w-3" />,
+    },
+    validado_hoje: {
+      color: "text-green-600",
+      bg: "bg-green-50",
+      label: "Biometria validada hoje",
+      icon: <Fingerprint className="h-3 w-3" />,
+    },
+    falha_validacao: {
+      color: "text-red-600",
+      bg: "bg-red-50",
+      label: "Falha na validação",
+      icon: <Fingerprint className="h-3 w-3" />,
+    },
+  };
+
+  const config = configs[status] || configs.nao_cadastrado;
+
+  return (
+    <Tooltip content={config.label} placement="top">
+      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bg} ${config.color} border border-current/20`}>
+        {config.icon}
+        <span className="text-[10px] font-bold uppercase tracking-wider">{status === 'nao_cadastrado' ? 'NÃO CAD' : status.replace('_', ' ')}</span>
+      </div>
+    </Tooltip>
+  );
+};
+
 // Componente para informações do funcionário - AJUSTADO
 const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
   atendimento,
@@ -193,7 +244,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           {atendimento.NOME.toUpperCase()}
         </h3>
 
-        <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+        <div className="flex flex-wrap gap-3 text-xs text-gray-600 mt-1">
           {atendimento.TIPOEXAMENOME && (
             <div className="flex items-center gap-1">
               <span>{atendimento.TIPOEXAMENOME}:</span>
@@ -214,7 +265,7 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           )}
         </div>
 
-        <div className="flex items-center gap-1 text-xs text-gray-600 overflow-hidden">
+        <div className="flex items-center gap-1 text-xs text-gray-600 overflow-hidden mt-1">
           <span className="truncate block max-w-full" title={atendimento.NOMEEMPRESA}>
             {atendimento.NOMEEMPRESA}
           </span>
@@ -263,18 +314,27 @@ const ExamProgress: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
 };
 
 // Função para buscar o nome do exame baseado no código
-const getExamNameByCode = (codigoExame: string): string => {
-  // Procura em todas as categorias de exames
-  for (const [categoriaName, exames] of Object.entries(EXAMES_LIST)) {
+const getExamNameByCode = (
+  codigoExame: string,
+  examesGrouped?: Record<string, ExamToogle[]>,
+): string => {
+  const examGroups = examesGrouped ?? FALLBACK_EXAMES_GROUPED;
+
+  for (const [categoriaName, exames] of Object.entries(examGroups)) {
     for (const exame of exames) {
       if (exame.codigos.includes(codigoExame)) {
-        // Retorna o nome do exame se existir, senão retorna o nome da categoria
         return exame.nome || categoriaName;
       }
     }
   }
 
-  // Se não encontrou, retorna o código como fallback
+  for (const [categoriaName, exames] of Object.entries(FALLBACK_EXAMES_GROUPED)) {
+    for (const exame of exames) {
+      if (exame.codigos.includes(codigoExame)) {
+        return exame.nome || categoriaName;
+      }
+    }
+  }
   return codigoExame;
 };
 
@@ -325,26 +385,41 @@ const getStatusColor = (status: string) => {
 };
 
 // Hook para ordenar exames alfabeticamente
-const useSortedExams = (exames: ExamRegister[]) => {
+const useSortedExams = (
+  exames: ExamRegister[],
+  examesGrouped?: Record<string, ExamToogle[]>,
+) => {
   return useMemo(() => {
     if (!exames || exames.length === 0) return [];
 
     return [...exames].sort((a, b) => {
-      const nameA = getExamNameByCode(a.codigoExame).toLowerCase();
-      const nameB = getExamNameByCode(b.codigoExame).toLowerCase();
+      const nameA =
+        getExamNameByCode(a.codigoExame, examesGrouped) ||
+        a.nomeExame ||
+        a.grupo ||
+        a.codigoExame;
+      const nameB =
+        getExamNameByCode(b.codigoExame, examesGrouped) ||
+        b.nomeExame ||
+        b.grupo ||
+        b.codigoExame;
 
-      return nameA.localeCompare(nameB, "pt-BR");
+      return nameA.toLowerCase().localeCompare(nameB.toLowerCase(), "pt-BR");
     });
-  }, [exames]);
+  }, [exames, examesGrouped]);
 };
 
 // Componente para detalhes dos exames em tabela
-const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
-  const sortedExams = useSortedExams(exames);
+const ExamDetails: React.FC<{
+  exames: ExamRegister[];
+  examesGrouped?: Record<string, ExamToogle[]>;
+}> = ({ exames, examesGrouped }) => {
+  const sortedExams = useSortedExams(exames, examesGrouped);
 
   const handleViewResult = (url: string) => {
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+    const proxyUrl = toProxyUrl(url);
+    if (proxyUrl) {
+      window.open(proxyUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -372,7 +447,11 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
           </TableHeader>
           <TableBody>
             {sortedExams.map((exame, index) => {
-              const examName = getExamNameByCode(exame.codigoExame);
+              const examName =
+                getExamNameByCode(exame.codigoExame, examesGrouped) ||
+                exame.nomeExame ||
+                exame.grupo ||
+                exame.codigoExame;
               const formattedTime = shouldShowCompletedTime(exame)
                 ? formatExamTime(exame.dataExame)
                 : "";
@@ -394,13 +473,13 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                   <TableCell>
                     <div className="flex items-center gap-1 justify-center">
                       <span className="text-xs text-gray-700 text-left">
-                        {exame.profissional?.split(" ")[0] || "—"}
+                        {exame.profissional?.split(" ")[0] || "-"}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 justify-left whitespace-nowrap">
-                      <span className="text-xs text-gray-700">{exame.sala || "—"}</span>
+                      <span className="text-xs text-gray-700">{exame.sala || "-"}</span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -429,7 +508,7 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
                           </Button>
                         </Tooltip>
                       ) : (
-                        <span className="text-gray-400 text-sm">—</span>
+                        <span className="text-gray-400 text-sm">-</span>
                       )}
                     </div>
                   </TableCell>
@@ -444,7 +523,11 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
       <div className="lg:hidden space-y-2">
         {sortedExams.map((exame, index) => {
           const statusColors = getStatusColor(exame.status);
-          const examName = getExamNameByCode(exame.codigoExame);
+          const examName =
+            getExamNameByCode(exame.codigoExame, examesGrouped) ||
+            exame.nomeExame ||
+            exame.grupo ||
+            exame.codigoExame;
           const formattedTime = shouldShowCompletedTime(exame)
             ? formatExamTime(exame.dataExame)
             : "";
@@ -454,7 +537,6 @@ const ExamDetails: React.FC<{ exames: ExamRegister[] }> = ({ exames }) => {
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="col-span-2">
                   <span className="font-semibold text-gray-900">{examName}</span>
-                  <span className="text-xs text-gray-400 font-mono ml-2">{exame.codigoExame}</span>
                 </div>
                 <div className="col-span-2">
                   <Badge className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`} size="sm" variant="flat">
@@ -507,8 +589,9 @@ const Anexos: React.FC<{ anexos: any[] }> = ({ anexos }) => {
   if (!anexos || anexos.length === 0) return null;
 
   const handleOpenAnexo = (url: string, _nome: string) => {
-    if (url) {
-      window.open(url, "_blank", "noopener,noreferrer");
+    const proxyUrl = toProxyUrl(url);
+    if (proxyUrl) {
+      window.open(proxyUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -562,106 +645,30 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) =>
 const getStatusVisual = (status: string) => {
   switch (status) {
     case TicketStatus.AGUARDANDO:
-      return {
-        cardBg: "bg-white",
-        border: "border-2 border-green-500",
-        hoverBg: "hover:bg-green-50",
-        pillBg: "bg-green-500 text-white",
-        pillDotColor: "bg-white",
-        pillClass: "px-3 py-1 rounded-full animate-pulse",
-        textColor: "text-gray-900",
-      };
+      return { cardBg: "bg-white", border: "border-2 border-green-500", hoverBg: "hover:bg-green-50", textColor: "text-gray-900", pillBg: "bg-green-500 text-white" };
     case TicketStatus.EM_CHAMADA:
-      return {
-        cardBg: "bg-amber-50",
-        border: "border-2 border-amber-500",
-        hoverBg: "hover:bg-amber-100",
-        pillBg: "bg-amber-500 text-white",
-        pillDotColor: "bg-white",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-gray-900",
-      };
+      return { cardBg: "bg-amber-50", border: "border-2 border-amber-500", hoverBg: "hover:bg-amber-100", textColor: "text-gray-900", pillBg: "bg-amber-500 text-white" };
     case TicketStatus.EM_ATENDIMENTO:
-      return {
-        cardBg: "bg-red-50",
-        border: "border-2 border-red-500",
-        hoverBg: "hover:bg-red-100",
-        pillBg: "bg-red-500 text-white",
-        pillDotColor: "bg-white",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-gray-900",
-      };
-    case TicketStatus.FINALIZADO:
-      return {
-        cardBg: "bg-gray-100",
-        border: "border-2 border-gray-400",
-        hoverBg: "hover:bg-gray-200",
-        pillBg: "bg-gray-400 text-white",
-        pillDotColor: "bg-gray-200",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-gray-500",
-      };
+      return { cardBg: "bg-red-50", border: "border-2 border-red-500", hoverBg: "hover:bg-red-100", textColor: "text-gray-900", pillBg: "bg-red-500 text-white" };
     case TicketStatus.EM_PREPARACAO:
     case TicketStatus.ENCAMINHADO_RX:
-      return {
-        cardBg: "bg-blue-100",
-        border: "border-2 border-blue-400",
-        hoverBg: "hover:bg-blue-200",
-        pillBg: "bg-blue-400 text-white",
-        pillDotColor: "bg-blue-200",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-blue-500",
-      };
+      return { cardBg: "bg-blue-100", border: "border-2 border-blue-400", hoverBg: "hover:bg-blue-200", textColor: "text-blue-500", pillBg: "bg-blue-400 text-white" };
+    case TicketStatus.FINALIZADO:
+      return { cardBg: "bg-gray-100", border: "border-2 border-gray-400", hoverBg: "hover:bg-gray-200", textColor: "text-gray-500", pillBg: "bg-gray-400 text-white" };
     default:
-      return {
-        cardBg: "bg-white",
-        border: "border-2 border-gray-200",
-        hoverBg: "hover:bg-gray-100",
-        pillBg: "bg-gray-300 text-gray-700",
-        pillDotColor: "bg-gray-500",
-        pillClass: "px-3 py-1 rounded-full",
-        textColor: "text-gray-900",
-      };
+      return { cardBg: "bg-white", border: "border-2 border-gray-200", hoverBg: "hover:bg-gray-100", textColor: "text-gray-900", pillBg: "bg-gray-300 text-gray-700" };
   }
 };
 
-const getPendingActionVisual = (pendingAction: PendingActionInfo) => {
-  switch (pendingAction.action) {
-    case TicketActionType.CHAMAR:
-      return { label: "CHAMANDO", className: "border border-amber-500 bg-white text-amber-600" };
-    case TicketActionType.ATENDER:
-      return { label: "ATENDENDO", className: "border border-red-500 bg-white text-red-600" };
-    case TicketActionType.RETORNAR:
-      return { label: "RETORNANDO", className: "border border-gray-500 bg-white text-gray-600" };
-    default:
-      return { label: "PROCESSANDO", className: "border border-gray-400 bg-white text-gray-600" };
-  }
-};
-
-// Componente para o badge de status
-const StatusBadge: React.FC<{
-  status: string;
-  pendingAction?: PendingActionInfo;
-}> = ({ status, pendingAction }) => {
-  if (pendingAction) {
-    const pendingVisual = getPendingActionVisual(pendingAction);
-    return (
-      <div className={`${pendingVisual.className} px-3 py-1 rounded-full flex items-center justify-center`}>
-        <Spinner className="mr-2" color="current" size="sm" variant="simple" />
-        <span className="text-xs font-semibold uppercase truncate">{pendingVisual.label}</span>
-      </div>
-    );
-  }
-
-  const { pillBg, pillClass } = getStatusVisual(status);
-
+// Badge de status com spinner para estados ativos
+const StatusBadge: React.FC<{ status: string; pillBg: string }> = ({ status, pillBg }) => {
   return (
-    <div className={`${pillBg} ${pillClass} flex items-center justify-center`}>
+    <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${pillBg} shadow-sm`}>
       {(status === TicketStatus.EM_PREPARACAO ||
         status === TicketStatus.ENCAMINHADO_RX ||
         status === TicketStatus.EM_CHAMADA ||
         status === TicketStatus.EM_ATENDIMENTO) && (
-        <Spinner className="mr-2" color="white" size="sm" variant="simple" />
+        <Spinner className="mr-1" color="white" size="sm" variant="simple" />
       )}
       <span className="text-xs font-semibold uppercase truncate">{status}</span>
     </div>
@@ -675,10 +682,8 @@ const TicketActions: React.FC<{
   unidadeSelecionada: string;
   socket: Socket;
   atendimento: Scheduling;
-  onHandleModal: (state: boolean) => void;
-  setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
+  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   exameSelecionado: string;
-  pendingAction?: PendingActionInfo;
   startPendingAction: (ticketId: number, action: string) => void;
 }> = ({
   ticket,
@@ -687,9 +692,7 @@ const TicketActions: React.FC<{
   socket,
   atendimento,
   onHandleModal,
-  setFuncionarioSelecionado,
   exameSelecionado,
-  pendingAction,
   startPendingAction,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
@@ -714,8 +717,7 @@ const TicketActions: React.FC<{
   const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
     const currentUser = getCurrentUser();
     if (ticket.status === TicketStatus.EM_ATENDIMENTO && firstClickMap[ticket.id]) {
-      setFuncionarioSelecionado(funcionario);
-      onHandleModal(true);
+      onHandleModal(funcionario, "exams");
       setFirstClickMap((prev) => {
         const updated = { ...prev };
         delete updated[ticket.id];
@@ -760,8 +762,6 @@ const TicketActions: React.FC<{
   };
 
   const isDisabled = handleDisabledStatus(ticket);
-  const isPending = !!pendingAction;
-  const isButtonDisabled = isDisabled || isPending;
 
   return (
     <div aria-label="Ações do ticket" className="flex items-center gap-2" role="group">
@@ -770,7 +770,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Chamar paciente"
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isButtonDisabled}
+          disabled={isDisabled}
           size="md"
           onPress={() => handleExecutarAcao(atendimento, TicketActionType.CHAMAR)}
         >
@@ -783,7 +783,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Atender paciente"
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isButtonDisabled}
+          disabled={isDisabled}
           size="md"
           onPress={() => handleAtender(ticket, TicketActionType.ATENDER, atendimento)}
         >
@@ -796,7 +796,7 @@ const TicketActions: React.FC<{
           isIconOnly
           aria-label="Retornar paciente à fila"
           className="min-w-8 h-8 bg-gray-500 hover:bg-gray-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
-          disabled={isButtonDisabled}
+          disabled={isDisabled}
           size="md"
           onPress={() => handleRetornar(atendimento, TicketActionType.RETORNAR)}
         >
@@ -807,20 +807,42 @@ const TicketActions: React.FC<{
   );
 };
 
-// Componente principal - AJUSTADO
-const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
+const AtendimentoCard = ({
   atendimento,
-  salaSelecionada,
+  exameSelecionado,
   unidadeSelecionada,
+  salaSelecionada,
   socket,
   onHandleModal,
-  setFuncionarioSelecionado,
-  exameSelecionado,
-  pendingAction,
   startPendingAction,
-}) => {
+  onIniciarAutenticacao,
+  onIniciarTeleatendimento,
+  examesGrouped,
+}: AtendimentoCardProps) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
-  const { cardBg, border, hoverBg } = getStatusVisual(atendimento.TICKET?.status);
+  const { cardBg, border, hoverBg, textColor, pillBg } = getStatusVisual(atendimento.TICKET?.status);
+  const authInfo = atendimento.AUTENTICACAOATENDIMENTO;
+  const isAuthenticated = authInfo?.status === "VALIDADO";
+  const authDescriptor =
+    authInfo?.metodo === "SOC"
+      ? {
+          label: "SOC",
+          icon: <Globe className="h-4 w-4" />,
+        }
+      : authInfo?.metodo === "BIOMETRIA"
+        ? {
+            label: "Biometria",
+            icon: <Fingerprint className="h-4 w-4" />,
+          }
+        : authInfo?.metodo === "FACIAL"
+          ? {
+              label: "Facial",
+              icon: <Camera className="h-4 w-4" />,
+            }
+          : {
+              label: "Não autenticado",
+              icon: <ShieldCheck className="h-4 w-4" />,
+            };
 
   const formatarTempoEspera = (emissao: string | Date) => {
     const dataEmissao = new Date(emissao);
@@ -843,13 +865,11 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           <EmployeeInfo atendimento={atendimento} />
 
           <div className="flex flex-col gap-2 flex-shrink-0 ml-2 items-end">
-            <StatusBadge pendingAction={pendingAction} status={atendimento.TICKET?.status} />
+            <StatusBadge pillBg={pillBg} status={atendimento.TICKET?.status} />
             <TicketActions
               atendimento={atendimento}
               exameSelecionado={exameSelecionado}
-              pendingAction={pendingAction}
               salaSelecionada={salaSelecionada}
-              setFuncionarioSelecionado={setFuncionarioSelecionado}
               socket={socket}
               startPendingAction={startPendingAction}
               ticket={atendimento.TICKET}
@@ -876,7 +896,7 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
           </Button>
         )}
 
-        {showExamDetails && <ExamDetails exames={atendimento.EXAMES} />}
+        {showExamDetails && <ExamDetails exames={atendimento.EXAMES} examesGrouped={examesGrouped} />}
 
         <div aria-label="Informações adicionais do atendimento" className="space-y-3 pt-4 border-t border-gray-200" role="contentinfo">
           {atendimento.ANEXOS && atendimento.ANEXOS.length > 0 && (
@@ -903,6 +923,64 @@ const AtendimentoCard: React.FC<AtendimentoCardProps> = ({
                 : (atendimento.TICKET.prefixo || "") + atendimento.TICKET.numero}
               <Pin aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {atendimento.TICKET.unidade}
+              <div className="flex items-center gap-1">
+                <Dropdown placement="top-end">
+                    <DropdownTrigger>
+                      <Button
+                        className={[
+                          "h-6 min-w-0 px-2 text-[11px] font-medium border",
+                          isAuthenticated
+                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                            : "text-amber-700 bg-amber-50 border-amber-200",
+                        ].join(" ")}
+                        endContent={<ChevronDown className="h-3 w-3 opacity-70" />}
+                        startContent={authDescriptor.icon}
+                        size="sm"
+                        variant="flat"
+                      >
+                        {authDescriptor.label}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Ações de autenticação"
+                      onAction={(key) => {
+                        if (key === "VIDEOCHAMADA") {
+                          onIniciarTeleatendimento?.(atendimento);
+                          return;
+                        }
+
+                        onIniciarAutenticacao?.(
+                          atendimento,
+                          key as "BIOMETRIA" | "FACIAL",
+                        );
+                      }}
+                    >
+                      {onIniciarTeleatendimento ? (
+                        <DropdownItem
+                          key="VIDEOCHAMADA"
+                          description="Abrir sala de teleatendimento"
+                          startContent={<Monitor className="h-4 w-4" />}
+                        >
+                          Videochamada
+                        </DropdownItem>
+                      ) : null}
+                      <DropdownItem
+                        key="BIOMETRIA"
+                        description="Captura pelo leitor biométrico"
+                        startContent={<Fingerprint className="h-4 w-4" />}
+                      >
+                        Biometria
+                      </DropdownItem>
+                      <DropdownItem
+                        key="FACIAL"
+                        description="Captura facial com termo de aceite"
+                        startContent={<Camera className="h-4 w-4" />}
+                      >
+                        Facial
+                      </DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
+              </div>
             </div>
             <p className="text-xs text-gray-400">{exameSelecionado}</p>
           </div>

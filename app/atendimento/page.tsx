@@ -1,7 +1,8 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Socket } from "socket.io-client";
+import { useSocket } from "@/lib/websocket/hooks/useSocket";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
   addToast,
@@ -20,20 +21,33 @@ import dynamic from "next/dynamic";
 import { PscProviderStatus } from "./components/PscProviderStatus";
 import { PscProviderSelector } from "./components/PscProviderSelector";
 
-import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
+import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
 import {
-  CustomEventMap,
   emitEvent,
   EventType,
   TicketActionSuccessPayload,
+  BiometriaCapturaResultPayload,
+  BiometriaCapturaStatusPayload,
+  BiometriaAgentUnavailablePayload,
+  BiometriaRequestStatePayload,
+  BiometriaAgentSnapshotPayload,
 } from "@/lib/websocket/events/events";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
+import {
+  createAtendimentoLoadFlow,
+  mergeSchedulesById,
+  filterSchedulesByUnit,
+} from "@/lib/atendimento/atendimento-load-flow";
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+import { FALLBACK_EXAMES_GROUPED, normalizeExamLabel } from "@/lib/exames/utils/fallback-exames";
+import { getExamsCatalog } from "@/lib/exames/utils/exames-catalog-cache";
 import EmptyState from "@/app/recepcao/components/EmptyState";
 import { SidebarRecepcao } from "@/components/shared/Sidebar";
 import { HeaderApp } from "@/components/shared/HeaderApp";
+import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
 import { CadastroEmpresa } from "@/lib/soc/interfaces/CadastroEmpresa";
 import {
   PreparationRequest,
@@ -47,11 +61,10 @@ import {
   SchedulingChange,
 } from "@/lib/scheduling/interface/scheduling";
 import {
-  EXAMES_LIST,
   NEST_SOC_COMPANIES,
+  NEST_TELEATENDIMENTO_SESSION,
   NEST_SCHEDULINGS_TODAY,
   NEST_TICKET_QUERY,
-  NEST_URL,
 } from "@/config/constants";
 import {
   AtendimentoStatus,
@@ -59,8 +72,17 @@ import {
   MongoOperationTypes,
 } from "@/lib/scheduling/enum/scheduling.enum";
 import { StatsModal } from "@/app/recepcao/components/SenhasEstatisticas";
+import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
+import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
+import BiometriaModal, {
+  BiometriaModalState,
+} from "@/app/atendimento/components/BiometriaModal";
+import FacialModal, {
+  FacialContext,
+} from "@/app/atendimento/components/FacialModal";
+import { usePushNotification } from "@/hooks/usePushNotification";
 
-const SenhasEstatisticas = dynamic(
+const SenhasEstatisticas = dynamic<import("@/app/recepcao/components/SenhasEstatisticas").SenhasEstatisticasProps>(
   () => import("@/app/recepcao/components/SenhasEstatisticas"),
   {
     ssr: false,
@@ -70,122 +92,9 @@ const SenhasEstatisticas = dynamic(
   },
 );
 
-import AtendimentoContent from "@/app/atendimento/components/AtendimentoContent";
-import AtendimentoModalExames from "@/app/atendimento/components/AtendimentoModalExames";
-import CmsoLoading from "@/components/shared/CmsoLoading";
-
 // =================================================================================
 // Socket singleton & helpers
-// - garante apenas 1 conexão ativa por cliente
-// - registra handlers de forma idempotente
-// - expõe connect/disconnect limpos
 // =================================================================================
-
-let SINGLETON_SOCKET: Socket | null = null;
-let registeredOnce = false;
-
-type ConnectOptions = {
-  auth: IUserWebsocket;
-  onConnect?: (socket: Socket) => void;
-  onDisconnect?: (reason: string) => void;
-  onConnectError?: (err: any) => void;
-};
-
-function createSocketIfNeeded(opts: ConnectOptions): Socket {
-  // ? Se já existe socket conectado, reutiliza
-  if (SINGLETON_SOCKET?.connected) {
-    return SINGLETON_SOCKET;
-  }
-
-  // ? Se existe mas está desconectado, remove
-  if (SINGLETON_SOCKET) {
-    try {
-      SINGLETON_SOCKET.removeAllListeners();
-      SINGLETON_SOCKET.disconnect();
-    } catch {}
-    SINGLETON_SOCKET = null;
-  }
-
-  const { auth, onConnect, onDisconnect, onConnectError } = opts;
-
-  // Configurações socket
-  const s = io(NEST_URL, {
-    auth,
-    transports: ["websocket"], // Apenas WebSocket, sem polling
-    reconnection: true,
-    reconnectionAttempts: Infinity, // Tenta reconectar indefinidamente
-    reconnectionDelay: 1000, // Reduzido de 2000 para 1000ms
-    reconnectionDelayMax: 5000, // Reduzido de 10000 para 5000ms
-    timeout: 20000,
-    // Forçar nova conexão ao reconectar
-    forceNew: false,
-    // Upgrade automático desabilitado (já usa websocket)
-    upgrade: false,
-    // Manter conexão ativa
-    rememberUpgrade: true,
-  });
-
-  SINGLETON_SOCKET = s;
-
-  // Registrar handlers apenas uma vez
-  if (!registeredOnce) {
-    s.on("connect", () => {
-      onConnect?.(s);
-    });
-
-    s.on("disconnect", (reason: string) => {
-      // ? NOVO: Distinguir desconexões normais de erros
-      if (reason === "io server disconnect") {
-        // Servidor forçou desconexão - reconectar manualmente
-        s.connect();
-      }
-
-      onDisconnect?.(reason);
-    });
-
-    s.on("connect_error", (err: any) => {
-      onConnectError?.(err);
-    });
-
-    registeredOnce = true;
-  }
-
-  return s;
-}
-
-function closeSocket() {
-  if (SINGLETON_SOCKET) {
-    try {
-      SINGLETON_SOCKET.removeAllListeners();
-      SINGLETON_SOCKET.disconnect();
-    } catch {}
-  }
-  SINGLETON_SOCKET = null;
-  registeredOnce = false;
-}
-
-// Helper para registrar handlers de eventos
-function registerHandlers(
-  s: Socket,
-  handlers: { [K in keyof CustomEventMap]?: (...args: any[]) => void },
-) {
-  Object.entries(handlers).forEach(([event, fn]) => {
-    if (!fn) return;
-    // Remove handler anterior se existir
-    s.off(event as any);
-    s.on(event as any, fn as any);
-  });
-
-  // Retorna função de cleanup
-  return () => {
-    Object.entries(handlers).forEach(([event, fn]) => {
-      if (!fn) return;
-      try {
-        s.off(event as any, fn as any);
-      } catch {}
-    });
-  };
-}
 
 type PendingActionInfo = {
   action: string;
@@ -196,15 +105,33 @@ type PendingActionInfo = {
 const AtendimentoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(() => getCurrentUser());
   const [conectado, setConectado] = useState(false);
+  const {
+    socket,
+    connected,
+    isReconnecting,
+    connect,
+    disconnect,
+    registerHandlers,
+  } = useSocket();
   const socketRef = useRef<Socket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const [isReconnecting, setIsReconnecting] = useState(false);
+  const loadFlowRef = useRef(createAtendimentoLoadFlow());
   const [unidadeSelecionada, setUnidadeSelecionada] = useState("");
+
+  // Debounce de 300ms na troca de unidade para evitar mÃºltiplas chamadas simultÃ¢neas
+  const unidadeTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const setUnidadeSelecionadaDebounced = useCallback((value: string) => {
+    if (unidadeTimerRef.current) clearTimeout(unidadeTimerRef.current);
+    unidadeTimerRef.current = setTimeout(() => setUnidadeSelecionada(value), 300);
+  }, []);
+
   const [statusSelecionado, setStatusSelecionado] = useState("");
   const [salaSelecionada, setSalaSelecionada] = useState("");
   const [exameSelecionado, setExameSelecionado] = useState("");
   const [codigosDeAtendimento, setCodigosDeAtendimento] = useState<Set<string>>(
     new Set(),
+  );
+  const [examesData, setExamesData] = useState<Record<string, ExamToogle[]>>(
+    FALLBACK_EXAMES_GROUPED,
   );
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
   const [agendamentosGeral, setAgendamentosGeral] = useState<Scheduling[]>([]);
@@ -214,6 +141,11 @@ const AtendimentoPage: React.FC = () => {
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [aguardandoPrimeirosAtendimentos, setAguardandoPrimeirosAtendimentos] =
+    useState(false);
+  const [loadingPhase, setLoadingPhase] = useState<
+    "conectando" | "carregando-tickets" | "recebendo-atendimentos"
+  >("conectando");
   const [pendingActions, setPendingActions] = useState<
     Record<number, PendingActionInfo>
   >({});
@@ -225,15 +157,20 @@ const AtendimentoPage: React.FC = () => {
     setAll,
     getAll,
     clear,
+    addOrUpdate,
+    remove,
   } = useEntityManager<Ticket>([]);
-  const [estatisticas, setEstatisticas] = useState({
+  const [estatisticas, setEstatisticas] = useState<Record<string, number>>({
+    pendentes: 0,
+    finalizados: 0,
+    aguardandoRecepcao: 0,
+    total: 0,
+    aguardando: 0,
+    preparacao: 0,
+    raiox: 0,
     recepcaoAguardando: 0,
     examesAguardando: 0,
     emAtendimento: 0,
-    preparacao: 0,
-    raiox: 0,
-    finalizados: 0,
-    total: 0,
   });
 
   const {
@@ -242,10 +179,10 @@ const AtendimentoPage: React.FC = () => {
     isLoading: isPscLoading,
     refetch: refetchPscStatus,
   } = usePscAuthStatus();
+
   const assinaDigitalmente = settings?.assinaDigitalmente ?? false;
   const [isProviderSelectorOpen, setIsProviderSelectorOpen] = useState(false);
 
-  // Estados para gerenciar o popup de autenticação PSC
   const [isPscAuthenticating, setIsPscAuthenticating] = useState(false);
   const [modalPscAvisoOpen, setModalPscAvisoOpen] = useState(false);
   const [isWaitingForAuthToConnect, setIsWaitingForAuthToConnect] =
@@ -255,61 +192,69 @@ const AtendimentoPage: React.FC = () => {
   const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
   const pendingTimeoutsRef = useRef<Record<number, NodeJS.Timeout>>({});
   const previousPscStatusRef = useRef(pscAuthStatus.status);
+  const [biometriaModal, setBiometriaModal] = useState<BiometriaModalState>({
+    isOpen: false,
+    status: "idle",
+  });
+  const biometriaTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [facialModalOpen, setFacialModalOpen] = useState(false);
+  const [facialContext, setFacialContext] = useState<FacialContext | null>(
+    null,
+  );
 
-  // Limpar os intervalos ao sair
+  usePushNotification({
+    enabled: conectado,
+    unidade: unidadeSelecionada,
+    contexto: { sala: salaSelecionada, exame: exameSelecionado, tipo: "atendimento" },
+  });
+
+  useEffect(() => {
+    getExamsCatalog().then(setExamesData);
+  }, []);
+
   useEffect(() => {
     return () => {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
       Object.values(pendingTimeoutsRef.current).forEach((timer) =>
         clearTimeout(timer),
       );
+      if (unidadeTimerRef.current) clearTimeout(unidadeTimerRef.current);
     };
   }, []);
 
-  // Polling para detectar sucesso ou fechamento da janela
   useEffect(() => {
     if (isPscAuthenticating) {
       pscPollingRef.current = setInterval(async () => {
-        // Checar se o popup foi fechado prematuramente
         if (pscWindowRef.current && pscWindowRef.current.closed) {
           if (pscPollingRef.current) clearInterval(pscPollingRef.current);
           setIsPscAuthenticating(false);
           addToast({
             title: "Autenticação Não Concluída",
-            description:
-              "A janela de autenticação foi fechada antes de concluir.",
+            description: "A janela de autenticação foi fechada antes de concluir.",
             severity: "warning",
             color: "foreground",
             variant: "flat",
           });
-
           return;
         }
-
-        // Tentar buscar novo status
         try {
-          // Precisamos acessar a função refetch diretamente do hook atualizada, então apenas chamamos ela.
           await refetchPscStatus();
         } catch {}
       }, 3000);
     } else {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
     }
-
     return () => {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
     };
   }, [isPscAuthenticating, refetchPscStatus]);
 
-  // Se o polling detectou o status ativo
   useEffect(() => {
     if (isPscAuthenticating && pscAuthStatus.isActive) {
       setIsPscAuthenticating(false);
-
       if (pscWindowRef.current && !pscWindowRef.current.closed) {
         pscWindowRef.current.close();
       }
-
       addToast({
         title: "Autenticação Realizada",
         description: "Assinatura digital habilitada com sucesso.",
@@ -317,41 +262,29 @@ const AtendimentoPage: React.FC = () => {
         color: "foreground",
         variant: "flat",
       });
-
-      // --- NOVO: Conectar automaticamente se estava aguardando ---
-      if (isWaitingForAuthToConnect) {
+        if (isWaitingForAuthToConnect) {
         setIsWaitingForAuthToConnect(false);
-        executeConnection();
       }
     }
-  }, [
-    pscAuthStatus.isActive,
-    isPscAuthenticating,
-    isWaitingForAuthToConnect,
-    refetchPscStatus,
-  ]);
+  }, [pscAuthStatus.isActive, isPscAuthenticating, isWaitingForAuthToConnect]);
 
   useEffect(() => {
     const previousStatus = previousPscStatusRef.current;
     const currentStatus = pscAuthStatus.status;
-
     if (previousStatus !== currentStatus && currentStatus === "EXPIRED") {
       addToast({
         title: "Sessão PSC expirada",
-        description:
-          "Sua autenticação de assinatura expirou. Reautentique-se para continuar assinando digitalmente.",
+        description: "Sua autenticação de assinatura expirou. Reautentique-se para continuar assinando digitalmente.",
         severity: "warning",
         color: "foreground",
         variant: "flat",
       });
     }
-
     previousPscStatusRef.current = currentStatus;
   }, [pscAuthStatus.status]);
 
   useEffect(() => {
     const currentUser = getCurrentUser();
-
     if (!currentUser) {
       router.push("/");
     } else {
@@ -361,47 +294,21 @@ const AtendimentoPage: React.FC = () => {
 
   const handlePscAuth = async (provider?: string) => {
     try {
-      const payload = {
-        provider: provider,
-      };
-
-      const finalUrl = "/api/psc/auth/start";
-
-      const response = await fetch(finalUrl, {
+      const response = await fetch("/api/psc/auth/start", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ provider }),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-
-        throw new Error(errorText || "Falha ao iniciar autenticação");
-      }
-
+      if (!response.ok) throw new Error(await response.text() || "Falha ao iniciar autenticação");
       const data = await response.json();
-
       if (data.url) {
         setPscAuthWindowUrl(data.url);
         setIsPscAuthenticating(true);
-
         const width = 800;
         const height = 700;
-        const left = window.screen.width
-          ? (window.screen.width - width) / 2
-          : 0;
-        const top = window.screen.height
-          ? (window.screen.height - height) / 2
-          : 0;
-
-        const newWindow = window.open(
-          data.url,
-          "psc_auth",
-          `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`,
-        );
-
+        const left = window.screen.width ? (window.screen.width - width) / 2 : 0;
+        const top = window.screen.height ? (window.screen.height - height) / 2 : 0;
+        const newWindow = window.open(data.url, "psc_auth", `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes,status=yes`);
         if (newWindow) {
           pscWindowRef.current = newWindow;
           newWindow.focus();
@@ -420,87 +327,265 @@ const AtendimentoPage: React.FC = () => {
 
   const handlePscClick = () => {
     if (pscAuthStatus.status === "ACTIVE") {
-      addToast({
-        title: "Sessão Ativa",
-        description: "Sua sessão com o provedor de assinatura já está ativa.",
-        severity: "success",
-        color: "foreground",
-        variant: "flat",
-      });
-
+      addToast({ title: "Sessão Ativa", description: "Sua sessão com o provedor de assinatura está ativa.", severity: "success", color: "foreground", variant: "flat" });
       return;
     }
-
-    // Se for BRYKMS e estiver configurado, não faz nada (considerado autenticado)
     if (settings?.assinaturaProvider === "BRYKMS") {
-      const isBryKmsConfigured =
-        settings?.uuidCert && settings?.uuidCert.trim() !== "";
+      if (settings?.uuidCert && settings?.uuidCert.trim() !== "") {
+        addToast({ title: "BRy Cloud Configurado", description: "Seu provedor BRy Cloud está configurado e pronto para uso.", severity: "success", color: "foreground", variant: "flat" });
+        return;
+      }
+    }
+    const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+    if (defaultPscProvider) handlePscAuth(defaultPscProvider);
+    else setIsProviderSelectorOpen(true);
+  };
 
-      if (isBryKmsConfigured) {
+  const iniciarBiometria = useCallback(
+    (params: {
+      funcionarioId: string;
+      funcionarioNome: string;
+      funcionarioCpf?: string;
+      funcionarioDataNascimento?: string;
+      atendimentoId: string;
+      ticketId?: string;
+      exame?: string;
+      unidade: string;
+      sala: string;
+      estacaoId: string;
+    }) => {
+      if (!socketRef.current) {
         addToast({
-          title: "BRy Cloud Configurado",
-          description:
-            "Seu provedor BRy Cloud está configurado e pronto para uso.",
+          title: "Biometria indisponível",
+          description: "Conecte-se ao atendimento para iniciar a autenticação biométrica.",
+          severity: "warning",
+          color: "foreground",
+          variant: "flat",
+        });
+        return;
+      }
+
+      if (biometriaModal.requestId) {
+        emitEvent(socketRef.current, EventType.BIOMETRIA_CAPTURA_CANCEL, {
+          requestId: biometriaModal.requestId,
+          unidade: biometriaModal.context?.unidade ?? params.unidade,
+        });
+      }
+
+      const requestId = `bio_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      setBiometriaModal({
+        isOpen: true,
+        status: "routing",
+        requestId,
+        context: {
+          operadorNome: user?.nome ?? undefined,
+          unidade: params.unidade,
+          sala: params.sala,
+          estacaoId: params.estacaoId,
+          funcionarioNome: params.funcionarioNome,
+          funcionarioId: params.funcionarioId,
+          funcionarioCpf: params.funcionarioCpf,
+          funcionarioDataNascimento: params.funcionarioDataNascimento,
+          atendimentoId: params.atendimentoId,
+          ticketId: params.ticketId ? String(params.ticketId) : undefined,
+          exame: params.exame,
+        },
+      });
+
+      emitEvent(socketRef.current, EventType.BIOMETRIA_CAPTURA_REQUEST, {
+        requestId,
+        unidade: params.unidade,
+        sala: params.sala,
+        funcionario: {
+          id: params.funcionarioId,
+          nome: params.funcionarioNome,
+          cpf: params.funcionarioCpf,
+          dataNascimento: params.funcionarioDataNascimento,
+        },
+        atendimento: {
+          id: params.atendimentoId,
+          ticketId: params.ticketId ? String(params.ticketId) : undefined,
+          exame: params.exame,
+        },
+        origem: "ATENDIMENTO",
+        solicitadoEm: new Date().toISOString(),
+      });
+    },
+    [biometriaModal.context, biometriaModal.requestId, user?.nome],
+  );
+
+  const iniciarAutenticacaoAtendimento = useCallback(
+    (atendimento: Scheduling, metodo: "BIOMETRIA" | "FACIAL") => {
+      const authBase = atendimento.AUTENTICACAOATENDIMENTO;
+      const funcionarioId = String(atendimento.CODIGO || atendimento.CODIGOPRONTUARIO || atendimento._id || "");
+      const funcionarioNome = atendimento.NOME || "";
+      const funcionarioCpf = atendimento.CPFFUNCIONARIO || "";
+      const funcionarioDataNascimento = atendimento.DATANASCIMENTO || undefined;
+      const atendimentoId = String(atendimento._id || "");
+      const ticketId = atendimento.TICKET?.id ? String(atendimento.TICKET.id) : undefined;
+      const exame = atendimento.TIPOEXAMENOME || exameSelecionado;
+      const unidade = unidadeSelecionada || atendimento.UNIDADEATENDIMENTO || "";
+      const sala = salaSelecionada || atendimento.TICKET?.sala || "";
+      const estacaoId = socketRef.current?.id || authBase?.requestId || `atendimento:${atendimentoId}`;
+
+      if (metodo === "BIOMETRIA") {
+        iniciarBiometria({
+          funcionarioId,
+          funcionarioNome,
+          funcionarioCpf,
+          funcionarioDataNascimento,
+          atendimentoId,
+          ticketId,
+          exame,
+          unidade,
+          sala,
+          estacaoId,
+        });
+        return;
+      }
+
+      setFacialContext({
+        funcionarioNome,
+        funcionarioId,
+        funcionarioCpf,
+        schedulingId: atendimentoId,
+        user: {
+          codigo: String(user?.codigo || ""),
+          nome: user?.nome || "",
+        },
+      });
+      setFacialModalOpen(true);
+    },
+    [exameSelecionado, iniciarBiometria, salaSelecionada, unidadeSelecionada, user?.codigo, user?.nome],
+  );
+
+  const iniciarTeleatendimento = useCallback(
+    async (atendimento: Scheduling) => {
+      if (!user?.nome) {
+        addToast({
+          title: "Teleatendimento indisponivel",
+          description: "Identifique o profissional antes de iniciar a videochamada.",
+          severity: "warning",
+          color: "foreground",
+          variant: "flat",
+        });
+        return;
+      }
+
+      try {
+        const response = await fetch(NEST_TELEATENDIMENTO_SESSION, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-app-origin": window.location.origin,
+          },
+          body: JSON.stringify({
+            schedulingId: String(atendimento._id || ""),
+            professionalId: String(user.codigo || ""),
+            professionalName: user.nome,
+            unidade: unidadeSelecionada || atendimento.UNIDADEATENDIMENTO || "",
+            sala: salaSelecionada || atendimento.TICKET?.sala || "",
+            exame: atendimento.TIPOEXAMENOME || exameSelecionado || "",
+            employeeId: String(
+              atendimento.CODIGO || atendimento.CODIGOPRONTUARIO || atendimento._id || "",
+            ),
+            employeeName: atendimento.NOME || "Funcionario",
+            companyCode: atendimento.CODIGOEMPRESA || "",
+            prontuarioCode: atendimento.CODIGOPRONTUARIO || "",
+            examType: atendimento.TIPOEXAMENOME || exameSelecionado || "",
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("Nao foi possivel iniciar a sessao de teleatendimento.");
+        }
+
+        const data = await response.json();
+
+        const targetUrl = `/atendimento/videochamada/${data.sessionId}`;
+        const opened = window.open(
+          targetUrl,
+          `teleatendimento_${data.sessionId}`,
+          "width=1480,height=960,resizable=yes,scrollbars=no,status=yes",
+        );
+
+        if (!opened) {
+          throw new Error("O navegador bloqueou a abertura da janela da videochamada.");
+        }
+
+        addToast({
+          title: "Sala criada",
+          description: "A janela da videochamada foi aberta para o profissional.",
           severity: "success",
           color: "foreground",
           variant: "flat",
         });
-
-        return;
+      } catch (error) {
+        addToast({
+          title: "Falha ao iniciar videochamada",
+          description:
+            error instanceof Error
+              ? error.message
+              : "Nao foi possivel criar a sala de teleatendimento.",
+          severity: "danger",
+          color: "foreground",
+          variant: "flat",
+        });
       }
+    },
+    [exameSelecionado, salaSelecionada, unidadeSelecionada, user?.codigo, user?.nome],
+  );
+
+  useEffect(() => {
+    if (
+      biometriaModal.isOpen &&
+      (biometriaModal.status === "routing" || biometriaModal.status === "started")
+    ) {
+      if (biometriaTimeoutRef.current) clearTimeout(biometriaTimeoutRef.current);
+
+      biometriaTimeoutRef.current = setTimeout(() => {
+        setBiometriaModal((prev) => {
+          if (
+            prev.isOpen &&
+            (prev.status === "routing" || prev.status === "started")
+          ) {
+            return {
+              ...prev,
+              status: "timeout",
+              mensagem:
+                "O Agente Biométrico não respondeu. Verifique se a aplicação está aberta e o leitor está conectado.",
+            };
+          }
+          return prev;
+        });
+      }, 15000);
+    } else if (biometriaTimeoutRef.current) {
+      clearTimeout(biometriaTimeoutRef.current);
+      biometriaTimeoutRef.current = null;
     }
 
-    const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+    return () => {
+      if (biometriaTimeoutRef.current) clearTimeout(biometriaTimeoutRef.current);
+    };
+  }, [biometriaModal.isOpen, biometriaModal.status]);
 
-    if (defaultPscProvider) {
-      handlePscAuth(defaultPscProvider);
-    } else {
-      setIsProviderSelectorOpen(true);
-    }
-  };
-
-  // ---------------------------------------------------------
-  // Carrega tickets e solicitações de preparo ao conectar
-  // ---------------------------------------------------------
-  type initialTicketsRequest = {
-    tickets: Ticket[];
-    preparationRequests: PreparationRequest[];
-  };
   const loadInitialTickets = async () => {
     try {
       if (!unidadeSelecionada) return;
-      const encodedUnidade = encodeURIComponent(unidadeSelecionada);
-      const url = `${NEST_TICKET_QUERY}${encodedUnidade}`;
-      const response = await fetch(url);
-
-      if (!response.ok) {
-        return;
-      }
-      const data: initialTicketsRequest = await response.json();
-
+      const response = await fetch(`${NEST_TICKET_QUERY}${encodeURIComponent(unidadeSelecionada)}`);
+      if (!response.ok) return;
+      const data = await response.json();
       if (Array.isArray(data.tickets)) setAll(data.tickets);
-      if (Array.isArray(data.preparationRequests))
-        setEmPreparacao(data.preparationRequests);
+      if (Array.isArray(data.preparationRequests)) setEmPreparacao(data.preparationRequests);
     } catch {}
   };
 
-  // ---------------------------------------------------------
-  // Carrega empresas do SOC
-  // ---------------------------------------------------------
   const loadSocCompanies = useCallback(async () => {
     try {
       const response = await fetch(NEST_SOC_COMPANIES);
-
-      if (!response.ok) {
-        return await IndexDb.getCompanies();
-      }
-
-      const data: CadastroEmpresa[] = await response.json();
-
-      if (Array.isArray(data)) {
-        await IndexDb.saveCompanies(data);
-      }
-
+      if (!response.ok) return await IndexDb.getCompanies();
+      const data = await response.json();
+      if (Array.isArray(data)) await IndexDb.saveCompanies(data);
       return [];
     } catch {
       return await IndexDb.getCompanies();
@@ -509,24 +594,16 @@ const AtendimentoPage: React.FC = () => {
 
   const clearPendingAction = useCallback((ticketId?: number | null) => {
     if (!ticketId || Number.isNaN(Number(ticketId))) return;
-
     const numericTicketId = Number(ticketId);
     const timer = pendingTimeoutsRef.current[numericTicketId];
-
     if (timer) {
       clearTimeout(timer);
       delete pendingTimeoutsRef.current[numericTicketId];
     }
-
     setPendingActions((prev) => {
-      if (!(numericTicketId in prev)) {
-        return prev;
-      }
-
+      if (!(numericTicketId in prev)) return prev;
       const updated = { ...prev };
-
       delete updated[numericTicketId];
-
       return updated;
     });
   }, []);
@@ -534,79 +611,76 @@ const AtendimentoPage: React.FC = () => {
   const resyncAttendimentos = useCallback(
     async (reason: string, targetTicketId?: number) => {
       if (!unidadeSelecionada) return;
-
       try {
-        const response = await fetch(NEST_SCHEDULINGS_TODAY, {
-          cache: "no-store",
-        });
-
-        if (!response.ok) {
-          throw new Error(
-            `Falha ao recarregar atendimentos (${response.status})`,
-          );
-        }
-
+        const response = await fetch(NEST_SCHEDULINGS_TODAY, { cache: "no-store" });
+        if (!response.ok) throw new Error(`Falha ao recarregar atendimentos (${response.status})`);
         const schedules: Scheduling[] = await response.json();
-        const unidadeNormalizada = unidadeSelecionada.trim().toUpperCase();
-        const filtered = Array.isArray(schedules)
-          ? schedules.filter(
-              (schedule) =>
-                schedule.UNIDADEATENDIMENTO?.trim().toUpperCase() ===
-                  unidadeNormalizada || schedule.UNIDADEATENDIMENTO === "",
-            )
-          : [];
-
+        const filtered = filterSchedulesByUnit(schedules, unidadeSelecionada);
         setAgendamentosGeral(filtered);
-
-        if (targetTicketId) {
-          clearPendingAction(targetTicketId);
-        }
+        if (targetTicketId) clearPendingAction(targetTicketId);
       } catch {
-        if (targetTicketId) {
-          clearPendingAction(targetTicketId);
-        }
+        if (targetTicketId) clearPendingAction(targetTicketId);
       }
     },
     [clearPendingAction, unidadeSelecionada],
   );
 
-  const startPendingAction = useCallback(
-    (ticketId: number, action: string) => {
-      clearPendingAction(ticketId);
-
-      setPendingActions((prev) => ({
-        ...prev,
-        [ticketId]: {
-          action,
-          startedAt: Date.now(),
-          phase: "pending",
-        },
-      }));
-
-      pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
-        setPendingActions((prev) => {
-          const current = prev[ticketId];
-
-          if (!current) return prev;
-
-          return {
-            ...prev,
-            [ticketId]: {
-              ...current,
-              phase: "resync",
-            },
-          };
-        });
-
+  const handleFacialClose = useCallback(
+    (success?: boolean) => {
+      setFacialModalOpen(false);
+      setFacialContext(null);
+      if (success) {
         addToast({
-          title: "Verificando atualização",
-          description:
-            "A ação demorou para refletir na tela. Vamos recarregar o atendimento.",
-          severity: "warning",
+          title: "Autenticação facial concluída",
+          description: "O atendimento foi atualizado com sucesso.",
+          severity: "success",
           color: "foreground",
           variant: "flat",
         });
+        void resyncAttendimentos("facial_success");
+      }
+    },
+    [resyncAttendimentos],
+  );
 
+  const fecharBiometriaModal = useCallback(() => {
+    setBiometriaModal((prev) => {
+      const shouldCancel =
+        prev.requestId &&
+        socketRef.current &&
+        prev.status !== "success" &&
+        prev.status !== "error" &&
+        prev.status !== "timeout";
+
+      if (shouldCancel && socketRef.current && prev.requestId) {
+        emitEvent(socketRef.current, EventType.BIOMETRIA_CAPTURA_CANCEL, {
+          requestId: prev.requestId,
+          unidade: prev.context?.unidade ?? "",
+        });
+      }
+
+      if (prev.status === "success") {
+        void resyncAttendimentos("biometria_success");
+      }
+
+      return { ...prev, isOpen: false };
+    });
+  }, [resyncAttendimentos]);
+
+  const startPendingAction = useCallback(
+    (ticketId: number, action: string) => {
+      clearPendingAction(ticketId);
+      setPendingActions((prev) => ({
+        ...prev,
+        [ticketId]: { action, startedAt: Date.now(), phase: "pending" },
+      }));
+      pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
+        setPendingActions((prev) => {
+          const current = prev[ticketId];
+          if (!current) return prev;
+          return { ...prev, [ticketId]: { ...current, phase: "resync" } };
+        });
+        addToast({ title: "Verificando atualização", description: "A ação demorou para refletir na tela. Vamos recarregar o atendimento.", severity: "warning", color: "foreground", variant: "flat" });
         void resyncAttendimentos("timeout", ticketId);
       }, 4000);
     },
@@ -617,631 +691,376 @@ const AtendimentoPage: React.FC = () => {
     (payload: TicketActionSuccessPayload) => {
       const ticketId = Number(payload.ticketId);
       const timer = pendingTimeoutsRef.current[ticketId];
-
       if (timer) {
         clearTimeout(timer);
         delete pendingTimeoutsRef.current[ticketId];
       }
-
       setPendingActions((prev) => {
-        if (!(ticketId in prev)) {
-          return prev;
-        }
-
-        return {
-          ...prev,
-          [ticketId]: {
-            ...prev[ticketId],
-            phase: "acknowledged",
-          },
-        };
+        if (!(ticketId in prev)) return prev;
+        return { ...prev, [ticketId]: { ...prev[ticketId], phase: "acknowledged" } };
       });
-
       pendingTimeoutsRef.current[ticketId] = setTimeout(() => {
         setPendingActions((prev) => {
           const current = prev[ticketId];
-
-          if (!current || current.phase !== "acknowledged") {
-            return prev;
-          }
-
-          return {
-            ...prev,
-            [ticketId]: {
-              ...current,
-              phase: "resync",
-            },
-          };
+          if (!current || current.phase !== "acknowledged") return prev;
+          return { ...prev, [ticketId]: { ...current, phase: "resync" } };
         });
-
         void resyncAttendimentos("acknowledged_without_update", ticketId);
       }, 2500);
     },
     [resyncAttendimentos],
   );
 
-  // ---------------------------------------------------------
-  // Filtragem de atendimentos
-  // ---------------------------------------------------------
-  useEffect(() => {
-    if (!codigosDeAtendimento || codigosDeAtendimento.size === 0) {
-      setAgendamentos([]);
+  const findSchedulingIndex = useCallback((list: Scheduling[], schedule: Scheduling) =>
+    list.findIndex((item) => (item._id && schedule._id && item._id === schedule._id) || (item.CODIGOPRONTUARIO && schedule.CODIGOPRONTUARIO && item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO)),
+  []);
 
-      return;
-    }
-    if (!agendamentosGeral || agendamentosGeral.length === 0) {
-      setAgendamentos([]);
-
-      return;
-    }
-
-    const emAtendimento = agendamentosGeral.filter(
-      (a) => a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO,
-    );
-
-    const meusAtendimentos = emAtendimento.filter(
-      (atend) =>
-        atend.TICKET?.emissao != null &&
-        Array.isArray(atend.EXAMES) &&
-        atend.EXAMES.some(
-          (exame) =>
-            codigosDeAtendimento.has(exame.codigoExame) &&
-            exame.status === ExamStatus.PENDENTE,
-        ),
-    );
-
-    setAgendamentos(meusAtendimentos);
-  }, [agendamentosGeral, codigosDeAtendimento, exameSelecionado]);
-
-  // ---------------------------------------------------------
-  // Reconexão automática ao mudar unidade/sala/exame
-  // ---------------------------------------------------------
-  useEffect(() => {
-    if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) return;
-
-    // Limpa timeout anterior
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-
-    // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
-    if (conectado) {
-      reconnectTimeoutRef.current = setTimeout(() => {
-        closeSocket();
-        setConectado(false);
-
-        // Reconecta após 300ms
-        setTimeout(() => {
-          setConectado(true);
-        }, 300);
-      }, 500);
-    }
-
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
+  const matchesSelectedExam = useCallback(
+    (exame: Scheduling["EXAMES"][number]) => {
+      if (!exameSelecionado) return false;
+      if (codigosDeAtendimento.size > 0) {
+        return codigosDeAtendimento.has(exame.codigoExame);
       }
-    };
-  }, [unidadeSelecionada, salaSelecionada, exameSelecionado]);
 
-  // ---------------------------------------------------------
-  // Nova função auxiliar para executar a conexão (separada da validação)
-  // ---------------------------------------------------------
-  const executeConnection = () => {
-    setIsLoading(true);
-    setConectado(true);
-  };
+      const selected = normalizeExamLabel(exameSelecionado);
+      return (
+        normalizeExamLabel(exame.grupo) === selected ||
+        normalizeExamLabel(exame.nomeExame) === selected
+      );
+    },
+    [codigosDeAtendimento, exameSelecionado],
+  );
 
-  // ---------------------------------------------------------
-  // Conexão com socket: Validação PSC + Lógica de Conexão
-  // ---------------------------------------------------------
+  useEffect(() => {
+    if (!exameSelecionado || !examesData || Object.keys(examesData).length === 0) {
+      setCodigosDeAtendimento(new Set());
+      return;
+    }
+    const group = examesData[exameSelecionado];
+    if (!group) {
+      setCodigosDeAtendimento(new Set());
+      return;
+    }
+    const codigos = group.flatMap((ex) => ex.codigos);
+    setCodigosDeAtendimento(new Set(codigos));
+  }, [exameSelecionado, examesData]);
+
+  useEffect(() => {
+    if (!codigosDeAtendimento || codigosDeAtendimento.size === 0 || !agendamentosGeral || agendamentosGeral.length === 0) {
+      if (!exameSelecionado || !agendamentosGeral || agendamentosGeral.length === 0) {
+        setAgendamentos([]);
+        return;
+      }
+    }
+    const emAtendimento = agendamentosGeral.filter((a) => a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO);
+    const meusAtendimentos = emAtendimento.filter((atend) =>
+      atend.TICKET?.emissao != null &&
+      Array.isArray(atend.EXAMES) &&
+      atend.EXAMES.some(
+        (exame) =>
+          matchesSelectedExam(exame) && exame.status === ExamStatus.PENDENTE,
+      )
+    );
+    setAgendamentos(meusAtendimentos);
+  }, [agendamentosGeral, codigosDeAtendimento, exameSelecionado, matchesSelectedExam]);
+
   const handleConectar = () => {
-    // 1. Lógica de Desconexão (mantida)
-    if (conectado) {
-      closeSocket();
+    if (connected) {
+      disconnect();
       socketRef.current = null;
+      loadFlowRef.current.reset();
       setConectado(false);
+      setAguardandoPrimeirosAtendimentos(false);
+      setIsLoading(false);
       clear();
       setAgendamentos([]);
       setAgendamentosGeral([]);
-      addToast({
-        title: "Desconectado",
-        description: "Você se desconectou do servidor.",
-        severity: "warning",
-        color: "foreground",
-        variant: "flat",
-      });
-
+      addToast({ title: "Desconectado", description: "Você se desconectou do servidor.", severity: "warning", color: "foreground", variant: "flat" });
       return;
     }
-
-    // 2. Validação de seleção (mantida)
     if (!unidadeSelecionada || !salaSelecionada || !exameSelecionado) {
-      setModalText(
-        <p>
-          Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e{" "}
-          <strong>EXAME</strong> antes de conectar.
-        </p>,
-      );
+      setModalText(<p>Selecione uma <strong>UNIDADE</strong>, <strong>SALA</strong> e <strong>EXAME</strong> antes de conectar.</p>);
       setModalAlert(true);
-
       return;
     }
-
-    // 3. NOVA VALIDAÇÃO PSC (Ponto de entrada)
-    // Verifica se precisa de assinatura E não tem sessão ativa
-    // Para BRYKMS: verifica se ID e PIN estão configurados
     let requiresPscAuth = false;
-
     if (assinaDigitalmente) {
       if (settings?.assinaturaProvider === "BRYKMS") {
-        // Para BRYKMS, verifica se ID e PIN estão configurados
-        const isBryKmsConfigured =
-          settings?.uuidCert && settings?.uuidCert.trim() !== "";
-
+        const isBryKmsConfigured = settings?.uuidCert && settings?.uuidCert.trim() !== "";
         requiresPscAuth = !isBryKmsConfigured;
       } else {
-        // Para PSC, verifica se tem sessão ativa
         requiresPscAuth = !pscAuthStatus.isActive;
       }
     }
-
-    // Se precisa autenticar -> Abre Modal (apenas para PSC) mas não bloqueia rede
     if (requiresPscAuth && settings?.assinaturaProvider !== "BRYKMS") {
-      executeConnection();
+      loadFlowRef.current.startConnection();
+      setIsLoading(true);
+      setAguardandoPrimeirosAtendimentos(true);
+      setLoadingPhase("conectando");
+      setConectado(true);
+      connect({
+        nome: user?.nome!,
+        sala: salaSelecionada,
+        type: WebsocketType.USER_ATENDIMENTO,
+        unidade: unidadeSelecionada,
+      });
       setModalPscAvisoOpen(true);
-
       return;
     }
-
-    // Se BRYKMS não está configurado, mostra alerta
     if (requiresPscAuth && settings?.assinaturaProvider === "BRYKMS") {
-      setModalText(
-        <p>
-          Para usar o provedor <strong>BRy Cloud</strong>, configure o{" "}
-          <strong>ID Cert (UUID)</strong> e <strong>PIN</strong> nas
-          configurações de assinatura digital.
-        </p>,
-      );
+      setModalText(<p>Para usar o provedor <strong>BRy Cloud</strong>, configure o <strong>ID Cert (UUID)</strong> e <strong>PIN</strong> nas configurações de assinatura digital.</p>);
       setModalAlert(true);
-
       return;
     }
-
-    // 4. Se passou por tudo, conecta
-    executeConnection();
-  };
-
-  const handleTicketError = (message: string) => {
-    let parsedMessage: {
-      ticketId?: number;
-      action?: string;
-      message?: string;
-      status?: number;
-      stack?: string;
-      conflict?: {
-        funcionarioId?: string;
-        nome?: string;
-        ticketId?: number | null;
-        profissional?: string;
-      };
-    } | null = null;
-
-    try {
-      parsedMessage = JSON.parse(message);
-    } catch {}
-
-    const backendMessage =
-      parsedMessage?.message?.trim() ||
-      "A ação foi recusada pelo servidor e não foi efetivada.";
-    const isConflict =
-      backendMessage.includes("Conflito de posse ativa") ||
-      backendMessage.includes("já está ocupada por outro atendimento ativo");
-    const ticketId = parsedMessage?.ticketId
-      ? Number(parsedMessage.ticketId)
-      : null;
-    const conflictName = parsedMessage?.conflict?.nome?.trim();
-    const conflictProfessional = parsedMessage?.conflict?.profissional?.trim();
-
-    clearPendingAction(ticketId);
-
-    addToast({
-      title: isConflict ? "Chamada não efetivada" : "Falha ao executar ação",
-      description: backendMessage,
-      severity: "warning",
-      color: "foreground",
-      variant: "flat",
-    });
-
-    if (!isConflict) {
-      return;
-    }
-
-    void resyncAttendimentos("conflict", ticketId ?? undefined);
-
-    setModalText(
-      <div className="space-y-3 text-sm text-gray-700">
-        <p>
-          A chamada não foi efetivada para esta sala. O backend retornou um
-          conflito operacional ao processar a ação.
-        </p>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
-          <p className="font-medium text-amber-900">{backendMessage}</p>
-          <p className="mt-2 text-amber-900">
-            Sala selecionada:{" "}
-            <strong>{salaSelecionada || "Não informada"}</strong>
-          </p>
-          {conflictName && (
-            <p className="text-amber-900">
-              Atendimento concorrente identificado:{" "}
-              <strong>{conflictName}</strong>
-            </p>
-          )}
-          {conflictProfessional && (
-            <p className="text-amber-900">
-              Profissional vinculado no conflito:{" "}
-              <strong>{conflictProfessional}</strong>
-            </p>
-          )}
-        </div>
-        <p className="text-xs text-gray-500">
-          Essa validação visual ajuda a confirmar o cenário em que o botão fica
-          clicável, mas a chamada é recusada por sala ou posse ativa.
-        </p>
-      </div>,
-    );
-    setModalAlert(true);
-  };
-
-  const findSchedulingIndex = useCallback(
-    (list: Scheduling[], schedule: Scheduling) =>
-      list.findIndex(
-        (item) =>
-          (item._id && schedule._id && item._id === schedule._id) ||
-          (item.CODIGOPRONTUARIO &&
-            schedule.CODIGOPRONTUARIO &&
-            item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO),
-      ),
-    [],
-  );
-
-  // Este effect só observa a flag `conectado` e efetua a conexão uma vez.
-  useEffect(() => {
-    if (!conectado) return;
-
-    const conectionType = WebsocketType.USER_ATENDIMENTO;
-
-    const auth: IUserWebsocket = {
-      nome: getCurrentUser()?.nome!,
+    loadFlowRef.current.startConnection();
+    setIsLoading(true);
+    setAguardandoPrimeirosAtendimentos(true);
+    setLoadingPhase("conectando");
+    setConectado(true);
+    connect({
+      nome: user?.nome!,
       sala: salaSelecionada,
-      type: conectionType,
+      type: WebsocketType.USER_ATENDIMENTO,
       unidade: unidadeSelecionada,
-    };
-
-    const s = createSocketIfNeeded({
-      auth,
-      onConnect: async (socket) => {
-        socketRef.current = socket;
-        setIsReconnecting(false);
-
-        try {
-          await Promise.all([loadSocCompanies(), loadInitialTickets()]);
-          emitEvent(socket, EventType.TICKET_INFO, unidadeSelecionada);
-
-          addToast({
-            title: "Conectado",
-            description: `Conexão com servidor estabelecida.`,
-            severity: "success",
-            color: "foreground",
-            variant: "flat",
-          });
-        } catch {
-        } finally {
-          setIsLoading(false);
-        }
-      },
-      onDisconnect: (reason) => {
-        // Só mostra alerta se não foi desconexão intencional
-        if (reason !== "io client disconnect") {
-          setIsReconnecting(true);
-
-          // Mostra toast apenas se não reconectar em 2s
-          setTimeout(() => {
-            if (isReconnecting) {
-              addToast({
-                title: "Reconectando...",
-                description: "Tentando restabelecer conexão",
-                severity: "warning",
-                color: "foreground",
-                variant: "flat",
-              });
-            }
-          }, 2000);
-        } else {
-          setConectado(false);
-        }
-
-        setIsLoading(false);
-      },
-      onConnectError: () => {
-        setIsLoading(false);
-        setIsReconnecting(false);
-
-        addToast({
-          title: "Erro de conexão",
-          description: "Não foi possível conectar ao servidor",
-          severity: "danger",
-          color: "foreground",
-          variant: "flat",
-        });
-      },
     });
+  };
 
-    // Handlers de eventos otimizados
-    const handleAtendimentos = (schedules?: Scheduling[]) => {
+
+
+  const handleTicketError = (payload: { error?: string; message?: string }) => {
+    addToast({
+      title: "Erro no Ticket",
+      description: payload.message || payload.error || "Ocorreu um erro.",
+      variant: "flat",
+      color: "danger",
+    });
+  };
+
+  // Manter socketRef atualizado para callbacks
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+
+  // Registro de handlers de eventos do socket
+  useEffect(() => {
+    const handleConnectionRequest = (schedules?: Scheduling[]) => {
+      const loadingState = loadFlowRef.current.markConnectionRequestReceived();
+      setIsLoading(loadingState.isLoading);
+      setAguardandoPrimeirosAtendimentos(
+        loadingState.aguardandoPrimeirosAtendimentos,
+      );
+      if (!loadingState.initialTicketsLoaded) {
+        setLoadingPhase("carregando-tickets");
+      }
+
       if (schedules && Array.isArray(schedules)) {
-        schedules.forEach((schedule) =>
-          clearPendingAction(schedule.TICKET?.id),
-        );
-
+        schedules.forEach((s) => clearPendingAction(s.TICKET?.id));
         setAgendamentosGeral((prev) => {
-          // Usa Map para merge eficiente
-          const map = new Map(prev.map((s) => [s._id, s]));
-
-          schedules.forEach((schedule) => map.set(schedule._id, schedule));
-
-          return Array.from(map.values());
+          return mergeSchedulesById(prev, schedules);
         });
       }
     };
 
-    const handleUpdateSchedule = ({
-      operation,
-      schedule,
-    }: SchedulingChange) => {
-      switch (operation) {
-        case MongoOperationTypes.INSERT:
-          setAgendamentosGeral((prev) => {
-            clearPendingAction(schedule.TICKET?.id);
-            // Evita duplicatas
-            if (prev.some((p) => p._id === schedule._id)) {
-              return prev;
-            }
-
-            return [...prev, schedule];
-          });
-          break;
-
-        case MongoOperationTypes.UPDATE:
-          setAgendamentosGeral((prev) => {
-            clearPendingAction(schedule.TICKET?.id);
-            const idx = findSchedulingIndex(prev, schedule);
-
-            if (idx !== -1) {
-              const updated = [...prev];
-
-              updated[idx] = schedule;
-
-              return updated;
-            }
-
-            return [...prev, schedule];
-          });
-          break;
-
-        case MongoOperationTypes.DELETE:
-          clearPendingAction(schedule.TICKET?.id);
-          setAgendamentosGeral((prev) =>
-            prev.filter(
-              (ag) =>
-                ag._id !== schedule._id &&
-                ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO,
-            ),
-          );
-          break;
+    const handleUpdateSchedule = ({ operation, schedule }: SchedulingChange) => {
+      clearPendingAction(schedule.TICKET?.id);
+      if (operation === MongoOperationTypes.DELETE) {
+        setAgendamentosGeral((prev) => prev.filter((ag) => ag._id !== schedule._id && ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO));
+      } else {
+        setAgendamentosGeral((prev) => {
+          const idx = findSchedulingIndex(prev, schedule);
+          if (idx !== -1) { const updated = [...prev]; updated[idx] = schedule; return updated; }
+          return [...prev, schedule];
+        });
       }
     };
 
-    const handleTicketActionSuccess = (payload: TicketActionSuccessPayload) => {
-      acknowledgePendingAction(payload);
-    };
-
-    const unregister = registerHandlers(s, {
-      [EventType.CONNECTION_REQUEST]: handleAtendimentos,
-      [EventType.TICKET_ACTION_SUCCESS]: handleTicketActionSuccess,
+    const unregister = registerHandlers({
+      [EventType.CONNECTION_REQUEST]: handleConnectionRequest,
+      [EventType.TICKET_EMITED]: (ticket: Ticket) => addOrUpdate(ticket),
+      [EventType.TICKET_UPDATED]: (ticket: Ticket) => addOrUpdate(ticket),
+      [EventType.TICKET_DELETE]: (id: number) => remove(id),
+      [EventType.TICKET_ACTION_SUCCESS]: acknowledgePendingAction,
       [EventType.UPDATE_SCHEDULE]: handleUpdateSchedule,
       [EventType.TICKET_ERROR]: handleTicketError,
+      [EventType.BIOMETRIA_CAPTURA_STATUS]: (payload: BiometriaCapturaStatusPayload) => {
+        setBiometriaModal((prev) => {
+          if (!prev.isOpen || prev.requestId !== payload.requestId) return prev;
+          return {
+            ...prev,
+            status: payload.status as BiometriaModalState["status"],
+            mensagem: payload.mensagem,
+          };
+        });
+      },
+      [EventType.BIOMETRIA_CAPTURA_RESULT]: (payload: BiometriaCapturaResultPayload) => {
+        setBiometriaModal((prev) => {
+          if (!prev.isOpen || prev.requestId !== payload.requestId) return prev;
+          return {
+            ...prev,
+            status: payload.success ? "success" : "error",
+            mensagem: payload.message,
+          };
+        });
+      },
+      [EventType.BIOMETRIA_AGENT_UNAVAILABLE]: (payload: BiometriaAgentUnavailablePayload) => {
+        setBiometriaModal((prev) => {
+          if (!prev.isOpen) return prev;
+          return {
+            ...prev,
+            status: "error",
+            mensagem: payload.mensagem,
+          };
+        });
+      },
+      [EventType.BIOMETRIA_REQUEST_STATE]: (payload: BiometriaRequestStatePayload) => {
+        setBiometriaModal((prev) => {
+          if (!prev.isOpen || prev.requestId !== payload.requestId) return prev;
+          return {
+            ...prev,
+            status: payload.state as BiometriaModalState["status"],
+            mensagem: payload.message,
+          };
+        });
+      },
     } as any);
 
-    // ? Cleanup
-    return () => {
-      unregister();
-      // NÃO fecha o socket aqui - deixa o singleton gerenciar
-      // closeSocket();
-      // socketRef.current = null;
-    };
-  }, [
-    acknowledgePendingAction,
-    conectado,
-    clearPendingAction,
-    unidadeSelecionada,
-    salaSelecionada,
-    exameSelecionado,
-    findSchedulingIndex,
-    resyncAttendimentos,
-  ]);
+    return () => unregister();
+  }, [registerHandlers, clearPendingAction, acknowledgePendingAction, addOrUpdate, remove]);
 
-  // Cleanup ao desmontar componente
+  // Carregar dados iniciais e re-carregar após reconexão
   useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      // Só fecha socket se estiver saindo da página
-      closeSocket();
-    };
+    if (!connected || !socket || !unidadeSelecionada) return;
+
+    emitEvent(socket, EventType.TICKET_INFO, unidadeSelecionada);
+    setLoadingPhase("carregando-tickets");
+
+    loadInitialTickets()
+      .catch(() => {})
+      .finally(() => {
+        const loadingState = loadFlowRef.current.markInitialTicketsLoaded();
+        setIsLoading(loadingState.isLoading);
+        setAguardandoPrimeirosAtendimentos(
+          loadingState.aguardandoPrimeirosAtendimentos,
+        );
+        if (!loadingState.connectionRequestReceived) {
+          setLoadingPhase("recebendo-atendimentos");
+        }
+      });
+
+    void loadSocCompanies();
+  }, [connected, unidadeSelecionada]);
+
+  const handleHandleModal = useCallback((atendimento: Scheduling, modalType: "exams" | "ticket") => {
+    setFuncionarioSelecionado(atendimento);
+    if (modalType === "exams") {
+      setModalAtendimentoAberto(true);
+    }
   }, []);
 
-  // ---------------------------------------------------------
-  // Estatísticas
-  // ---------------------------------------------------------
-  const calcularEstatisticas = () => {
-    const senhasFiltradas = getAll();
-
-    const agendamentosSala = agendamentosGeral.filter((ag) =>
-      ag.EXAMES?.some((ex) => ex.grupo === exameSelecionado),
+  const calcularEstatisticas = useCallback(() => {
+    if (codigosDeAtendimento.size === 0) {
+      setEstatisticas({ pendentes: 0, finalizados: 0, aguardandoRecepcao: getAll().filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.RECEPCAO).length, total: 0, aguardando: 0, preparacao: 0, raiox: 0, recepcaoAguardando: 0, examesAguardando: 0, emAtendimento: 0 });
+      return;
+    }
+    const temExameComStatus = (ag: Scheduling, status: ExamStatus) =>
+      ag.EXAMES?.some((ex) => matchesSelectedExam(ex) && ex.status === status);
+    const agendamentosFluxo = agendamentosGeral.filter(
+      (a) =>
+        a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO &&
+        a.TICKET?.emissao != null,
     );
-
-    const ticketStatus = (ag: any) => ag.TICKET?.status;
-    const exameStatus = (ag: any) =>
-      ag.EXAMES?.find((ex: any) => ex.grupo === exameSelecionado)?.status;
-
     setEstatisticas({
-      recepcaoAguardando: senhasFiltradas.filter(
-        (s) => s.grupo === TicketGroups.RECEPCAO,
+      pendentes: agendamentosFluxo.filter((a) =>
+        temExameComStatus(a, ExamStatus.PENDENTE),
       ).length,
-
-      examesAguardando: agendamentosSala.filter(
-        (ag) => exameStatus(ag) === ExamStatus.PENDENTE,
+      finalizados: agendamentosFluxo.filter((a) =>
+        temExameComStatus(a, ExamStatus.FINALIZADO),
       ).length,
-
-      emAtendimento: agendamentosSala.filter(
-        (ag) =>
-          ticketStatus(ag) === TicketStatus.EM_ATENDIMENTO ||
-          ticketStatus(ag) === TicketStatus.EM_CHAMADA,
+      aguardandoRecepcao: getAll().filter(
+        (s) =>
+          s.status === TicketStatus.AGUARDANDO &&
+          s.grupo === TicketGroups.RECEPCAO,
       ).length,
-
-      preparacao: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.EM_PREPARACAO,
+      total: agendamentosFluxo.filter((a) =>
+        a.EXAMES?.some((ex) => matchesSelectedExam(ex)),
       ).length,
-
-      raiox: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
-      ).length,
-
-      finalizados: agendamentosSala.filter(
-        (ag) => ticketStatus(ag) === TicketStatus.FINALIZADO,
-      ).length,
-
-      total: agendamentosSala.length,
+      aguardando: 0,
+      preparacao: 0,
+      raiox: 0,
+      recepcaoAguardando: 0,
+      examesAguardando: 0,
+      emAtendimento: 0,
     });
-  };
+  }, [getAll, unidadeSelecionada, codigosDeAtendimento, agendamentosGeral, matchesSelectedExam]);
 
-  useEffect(() => {
-    calcularEstatisticas();
-  }, [tickets, agendamentosGeral]);
-
-  if (!user) {
-    return <CmsoLoading />;
-  }
+  useEffect(() => { calcularEstatisticas(); }, [agendamentosGeral, codigosDeAtendimento, tickets, calcularEstatisticas, exameSelecionado, unidadeSelecionada]);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <HeaderApp
-        onLogout={() => {
-          logout();
-          router.push("/");
-        }}
-      >
+    <div className="flex flex-col h-screen overflow-hidden bg-white">
+      <HeaderApp onLogout={() => { logout(); router.push('/'); }}>
         {conectado && socketRef.current && (
           <SenhasEstatisticas
-            agendamentos={agendamentos}
+            context="atendimento"
             estatisticasSenhas={estatisticas}
-            preparationRequests={empreparacao}
-            tickets={tickets}
             onSetStatsModalOpen={setIsStatsModalOpen}
           />
         )}
-        {/* PSC Provider Status movido para a Sidebar */}
       </HeaderApp>
-
-      <PscProviderSelector
-        isOpen={isProviderSelectorOpen}
-        onClose={() => setIsProviderSelectorOpen(false)}
-        onSelect={(provider) => {
-          setIsProviderSelectorOpen(false);
-          handlePscAuth(provider);
-        }}
-      />
-
       <div className="flex flex-1 overflow-hidden">
-        <motion.aside
-          animate={{ x: 0, opacity: 1 }}
-          className="w-60 bg-red shadow-sm"
-          initial={{ x: -80, opacity: 0 }}
-          transition={{ duration: 0.5, ease: "easeOut", delay: 0.1 }}
-        >
-          <SidebarRecepcao
-            agendadosFiltrados={agendamentosGeral}
-            conectado={conectado}
-            exameSelecionado={exameSelecionado}
-            handleConectar={handleConectar}
-            isReconnecting={isReconnecting}
-            pscStatusElement={
-              assinaDigitalmente ? (
-                <PscProviderStatus
-                  isLoading={isPscLoading}
-                  pscAuthStatus={pscAuthStatus}
-                  settings={settings}
-                  onClick={handlePscClick}
-                />
-              ) : null
-            }
-            pscAuthButtonElement={
-              assinaDigitalmente &&
-              settings?.assinaturaProvider !== "BRYKMS" &&
-              pscAuthStatus.status !== "ACTIVE" ? (
-                <Button
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-normal bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-700 transition-all"
-                  onPress={handlePscClick}
-                >
-                  {pscAuthStatus.status === "EXPIRED"
-                    ? "Renovar autenticação"
-                    : "Autenticar assinatura"}
-                </Button>
-              ) : null
-            }
-            salaSelecionada={salaSelecionada}
-            setSalaSelecionada={setSalaSelecionada}
-            setStatusSelecionado={setStatusSelecionado}
-            setTicketSelecionado={() => {}}
-            setUnidadeSelecionada={setUnidadeSelecionada}
-            statusSelecionado={statusSelecionado}
-            unidadeSelecionada={unidadeSelecionada}
-            onHandleExameSelecionado={(ex) => {
-              const setList = new Set(
-                EXAMES_LIST[ex].map((e) => e.codigos).flat(),
-              );
-
-              setCodigosDeAtendimento(setList);
-              setExameSelecionado(ex);
-            }}
-            onHandleModal={() => setModalAtendimentoAberto(true)}
-            onLoading={isLoading}
-          />
-        </motion.aside>
-
-        <main
-          aria-label="Conteúdo principal do atendimento"
-          className="flex-1 overflow-y-auto sm:p-6 lg:p-8 bg-gray-50"
-        >
-          {conectado && socketRef.current && !isLoading ? (
+        <SidebarRecepcao
+          agendadosFiltrados={agendamentosGeral}
+          conectado={conectado}
+          exameSelecionado={exameSelecionado}
+          handleConectar={handleConectar}
+          onHandleExameSelecionado={setExameSelecionado}
+          onHandleModal={() => {}}
+          onLoading={isLoading}
+          salaSelecionada={salaSelecionada}
+          setSalaSelecionada={setSalaSelecionada}
+          setTicketSelecionado={() => {}}
+          unidadeSelecionada={unidadeSelecionada}
+          setUnidadeSelecionada={setUnidadeSelecionadaDebounced}
+          statusSelecionado={statusSelecionado}
+          setStatusSelecionado={setStatusSelecionado}
+          isReconnecting={isReconnecting}
+          pscStatusElement={null}
+          examesGrouped={examesData}
+        />
+        <main className="flex-1 overflow-auto bg-[#f8fbfa] p-6 lg:p-10">
+          {isLoading ? (
+            <CmsoCircularLoading
+              title={
+                loadingPhase === "conectando"
+                  ? "Conectando..."
+                  : loadingPhase === "carregando-tickets"
+                    ? "Carregando tickets..."
+                    : "Recebendo atendimentos..."
+              }
+              description={
+                loadingPhase === "conectando"
+                  ? "Estabelecendo conexão com o servidor"
+                  : loadingPhase === "carregando-tickets"
+                    ? "Buscando tickets da unidade"
+                    : "Aguardando dados dos atendimentos"
+              }
+            />
+          ) : conectado && socket ? (
             <AtendimentoContent
               agendamentos={agendamentos}
               codigosDeAtendimento={codigosDeAtendimento}
+              aguardandoPrimeirosAtendimentos={aguardandoPrimeirosAtendimentos}
               conectado={conectado}
               exameSelecionado={exameSelecionado}
-              operationalUserName={user?.nome}
+              onIniciarAutenticacao={iniciarAutenticacaoAtendimento}
+              onHandleModal={handleHandleModal}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               setFuncionarioSelecionado={setFuncionarioSelecionado}
-              // setTicketSelecionado={setTicketSelecionado}
-              socket={socketRef.current}
+              socket={socket!}
               startPendingAction={startPendingAction}
-              // tickets={tickets}
               unidadeSelecionada={unidadeSelecionada}
-              onHandleModal={() => setModalAtendimentoAberto(true)}
-              // onPreparationRequests={empreparacao}
+              onIniciarTeleatendimento={iniciarTeleatendimento}
+              examesGrouped={examesData}
             />
           ) : (
             <EmptyState
@@ -1252,169 +1071,91 @@ const AtendimentoPage: React.FC = () => {
         </main>
       </div>
 
+      <StatsModal
+        isOpen={isStatsModalOpen}
+        onClose={() => setIsStatsModalOpen(false)}
+        estatisticasSenhas={estatisticas}
+        tickets={getAll()}
+        agendamentos={agendamentosGeral}
+        preparationRequests={empreparacao}
+      />
       <AtendimentoModalExames
-        assinaDigitalmente={assinaDigitalmente}
-        codigosAtendimento={codigosDeAtendimento}
-        exame={exameSelecionado}
-        funcionarioSelecionado={funcionarioSelecionado}
         isOpen={modalAtendimentoAberto}
-        operationalUser={user}
-        pscAuthStatus={pscAuthStatus}
-        sala={salaSelecionada}
-        socket={socketRef.current!}
+        funcionarioSelecionado={funcionarioSelecionado}
         onClose={() => setModalAtendimentoAberto(false)}
+        exame={exameSelecionado}
+        sala={salaSelecionada}
+        unidade={unidadeSelecionada}
+        codigosAtendimento={codigosDeAtendimento}
+        socket={socket!}
+        operationalUser={user}
+        assinaDigitalmente={assinaDigitalmente}
+        pscAuthStatus={pscAuthStatus}
         onPscAuth={handlePscAuth}
       />
-
-      <StatsModal
-        agendamentos={agendamentos}
-        estatisticasSenhas={estatisticas}
-        isOpen={isStatsModalOpen}
-        preparationRequests={empreparacao}
-        tickets={tickets}
-        onClose={() => setIsStatsModalOpen(false)}
+      <BiometriaModal
+        onClose={fecharBiometriaModal}
+        onRetry={() => {
+          if (biometriaModal.context) {
+            iniciarBiometria({
+              funcionarioId: biometriaModal.context.funcionarioId || "",
+              funcionarioNome: biometriaModal.context.funcionarioNome || "",
+              funcionarioCpf: biometriaModal.context.funcionarioCpf || "",
+              funcionarioDataNascimento: biometriaModal.context.funcionarioDataNascimento || "",
+              atendimentoId: biometriaModal.context.atendimentoId || "",
+              ticketId: biometriaModal.context.ticketId,
+              exame: biometriaModal.context.exame,
+              unidade: biometriaModal.context.unidade || "",
+              sala: biometriaModal.context.sala || "",
+              estacaoId: biometriaModal.context.estacaoId || "",
+            });
+          }
+        }}
+        state={biometriaModal}
+      />
+      <FacialModal
+        context={facialContext}
+        isOpen={facialModalOpen}
+        onClose={handleFacialClose}
       />
 
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
         <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="text-[#2a4a3a]">
-            <ExclamationCircleIcon className="h-6 w-6 text-[#44735e]" /> Atenção
-          </ModalHeader>
+          <ModalHeader className="text-[#2a4a3a]"><ExclamationCircleIcon className="h-6 w-6 text-[#44735e]" /> Atenção</ModalHeader>
           <ModalBody>{modalText}</ModalBody>
-          <ModalFooter className="flex justify-end gap-2">
-            <Button
-              className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
-              size="sm"
-              onPress={() => setModalAlert(false)}
-            >
-              Confirmar
-            </Button>
-          </ModalFooter>
+          <ModalFooter><Button className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white" size="sm" onPress={() => setModalAlert(false)}>Confirmar</Button></ModalFooter>
         </ModalContent>
       </Modal>
 
-      {/* Modal de Aguardando Autenticação PSC */}
-      <Modal
-        hideCloseButton
-        disableAnimation={true}
-        isDismissable={false}
-        isOpen={isPscAuthenticating}
-      >
+      <Modal hideCloseButton disableAnimation={true} isDismissable={false} isOpen={isPscAuthenticating}>
         <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
-            Autenticação Necessária
-          </ModalHeader>
+          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">Autenticação Necessária</ModalHeader>
           <ModalBody className="py-6 flex flex-col items-center justify-center text-center">
             <Spinner className="mb-4" color="primary" size="lg" />
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Aguardando provedor...
-            </h3>
-            <p className="text-gray-600 mb-4 text-sm">
-              Conclua a autenticação na janela que foi aberta.
-            </p>
-
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Aguardando provedor...</h3>
+            <p className="text-gray-600 mb-4 text-sm">Conclua a autenticação na janela que foi aberta.</p>
             {pscAuthWindowUrl && (
               <div className="bg-[#e8f4e3] border border-[#b8d864] p-3 rounded-lg w-full mb-4">
-                <p className="text-xs text-[#2a4a3a] mb-1 font-medium text-center">
-                  A janela não abriu?
-                </p>
-                <a
-                  className="text-[#44735e] hover:text-[#2a4a3a] hover:underline text-xs break-all text-center block"
-                  href={pscAuthWindowUrl}
-                  rel="noopener noreferrer"
-                  target="_blank"
-                  onClick={(_e) => {
-                    // Atualizar a ref se abrir manualmente
-                    setTimeout(() => {
-                      if (
-                        !pscWindowRef.current ||
-                        pscWindowRef.current.closed
-                      ) {
-                        // Sem ref segura p/ verificar fechar, mas polling ainda continua
-                      }
-                    }, 500);
-                  }}
-                >
-                  Clique aqui para abrir a autenticação em uma nova aba
-                  diretamente
-                </a>
+                <a className="text-[#44735e] hover:underline text-xs break-all" href={pscAuthWindowUrl} rel="noopener noreferrer" target="_blank">Clique aqui se a janela não abrir</a>
               </div>
             )}
           </ModalBody>
           <ModalFooter className="flex justify-center border-t border-gray-100">
-            <Button
-              color="danger"
-              variant="light"
-              onPress={() => {
-                if (pscPollingRef.current) clearInterval(pscPollingRef.current);
-                setIsPscAuthenticating(false);
-                if (pscWindowRef.current && !pscWindowRef.current.closed) {
-                  pscWindowRef.current.close();
-                }
-              }}
-            >
-              Cancelar Autenticação
-            </Button>
+            <Button color="danger" variant="light" onPress={() => { if (pscPollingRef.current) clearInterval(pscPollingRef.current); setIsPscAuthenticating(false); if (pscWindowRef.current && !pscWindowRef.current.closed) pscWindowRef.current.close(); }}>Cancelar Autenticação</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
-      {/* Modal de Aviso PSC ao Conectar */}
-      <Modal
-        disableAnimation={true}
-        isDismissable={false}
-        isOpen={modalPscAvisoOpen}
-        onClose={() => setModalPscAvisoOpen(false)}
-      >
+
+      <Modal disableAnimation={true} isDismissable={false} isOpen={modalPscAvisoOpen} onClose={() => setModalPscAvisoOpen(false)}>
         <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="flex flex-col gap-1 bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white">
-            <div className="flex items-center gap-2">
-              <UserLock className="h-8 w-8" />
-              <span className="text-lg font-semibold">
-                Autenticação Necessária
-              </span>
-            </div>
-          </ModalHeader>
+          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"><div className="flex items-center gap-2"><UserLock className="h-8 w-8" /><span>Autenticação Necessária</span></div></ModalHeader>
           <ModalBody className="py-6 px-6">
-            <p className="font-semibold text-lg text-gray-800">
-              Você possui assinatura digital habilitada.
-            </p>
-            <p className="text-gray-600 mt-2">
-              Sua sessão de assinatura não está ativa. Deseja autenticar agora
-              para assinar os exames automaticamente?
-            </p>
+            <p className="font-semibold text-lg text-gray-800">Você possui assinatura digital habilitada.</p>
+            <p className="text-gray-600 mt-2">Deseja autenticar agora para assinar os exames automaticamente?</p>
           </ModalBody>
           <ModalFooter className="px-6 pb-4">
-            <Button
-              className="font-medium"
-              color="default"
-              variant="flat"
-              onPress={() => {
-                // Opção: Continuar sem autenticar (apenas conecta)
-                setModalPscAvisoOpen(false);
-                executeConnection();
-              }}
-            >
-              Continuar sem autenticar
-            </Button>
-            <Button
-              className="font-medium bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white focus-visible:ring-2 focus-visible:ring-[#44735e]/40"
-              onPress={() => {
-                // Opção: Autenticar agora
-                setModalPscAvisoOpen(false);
-                setIsWaitingForAuthToConnect(true); // Marca para conectar após sucesso
-
-                const defaultPscProvider =
-                  settings?.pscPadrao ?? settings?.provedorPadrao;
-
-                if (defaultPscProvider) {
-                  handlePscAuth(defaultPscProvider);
-                } else {
-                  setIsProviderSelectorOpen(true);
-                }
-              }}
-            >
-              Autenticar agora
-            </Button>
+            <Button className="font-medium" color="default" variant="flat" onPress={() => { setModalPscAvisoOpen(false); }}>Não agora</Button>
+            <Button className="bg-[#44735e] text-white" onPress={() => { setModalPscAvisoOpen(false); setIsWaitingForAuthToConnect(true); handlePscClick(); }}>Autenticar agora</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -180,6 +180,12 @@ export default function LoginPage() {
 
       if (userLogged.data) {
         setCurrentUser(userLogged.data);
+
+        // Verificar update do SW sem bloquear redirect (fire-and-forget)
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          if (reg) reg.update();
+        }).catch(() => {});
+
         // Não resetar isLoading aqui - deixar o botão em loading até a navegação
         router.push("/dashboard");
 
@@ -646,3 +652,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

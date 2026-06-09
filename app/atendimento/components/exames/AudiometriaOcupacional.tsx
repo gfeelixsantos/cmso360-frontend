@@ -24,7 +24,6 @@ import { avaliarCriterioPcdAuditivo } from "./audiometria-pcd";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import {
   NEST_SOC_AUDIOMETRIA_ANTERIOR,
-  UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
 import { AudiometriaExportaDados } from "@/lib/soc/interfaces/AudiometriaExportaDados";
 
@@ -1190,7 +1189,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
       setAgendamento(atendimento);
       setAudiogramSVG(null);
 
-      if (atendimento.UNIDADEATENDIMENTO === UNIDADES_ATENDIMENTO[1]) {
+      if (atendimento.UNIDADEATENDIMENTO === "CORDEIRÓPOLIS") {
         nextFormData = {
           ...nextFormData,
           dataCalibracao: "06/11/2025",

@@ -8,17 +8,12 @@ import {
   ExamRegister,
   Scheduling,
 } from "@/lib/scheduling/interface/scheduling";
-
 interface ExamePadraoProps {
   atendimento: any;
   exame: string;
   formulario: any;
   onSave?: (data: any) => void;
   onClose?: () => void;
-}
-
-interface ExameFiltrado extends ExamRegister {
-  realizado?: boolean;
 }
 
 const ExamePadrao: React.FC<ExamePadraoProps> = ({
@@ -29,7 +24,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
   onClose,
 }) => {
   const [agendamento, setAgendamento] = useState<Scheduling>();
-  const [examesFiltrados, setExamesFiltrados] = useState<ExameFiltrado[]>([]);
+  const [examesFiltrados, setExamesFiltrados] = useState<ExamRegister[]>([]);
   const [loading, setLoading] = useState(false);
   const [observacoes, setObservacoes] = useState("");
 
@@ -58,26 +53,9 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
       const examesFiltrados = atendimentoData.EXAMES.filter(
         (exameItem: any) =>
           exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
-      ).map((exameItem: any) => ({
-        ...exameItem,
-        realizado: true, // Inicializa como realizado
-      }));
+      );
 
       setExamesFiltrados(examesFiltrados);
-    },
-    [],
-  );
-
-  // Função para atualizar o status de realização do exame
-  const handleRealizacaoExameChange = useCallback(
-    (sequencialResultadoExame: string, realizado: boolean) => {
-      setExamesFiltrados((prev) =>
-        prev.map((exame) =>
-          exame.sequencialResultadoExame === sequencialResultadoExame
-            ? { ...exame, realizado }
-            : exame,
-        ),
-      );
     },
     [],
   );

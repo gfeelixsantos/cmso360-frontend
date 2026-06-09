@@ -99,5 +99,6 @@ export const config = {
     "/prontuarios/:path*",
     "/recepcao/:path*",
     "/relatorio/:path*",
+    "/servicos/:path*",
   ],
 };

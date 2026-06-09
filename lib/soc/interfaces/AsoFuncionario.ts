@@ -45,6 +45,13 @@ export interface AsoFuncionario {
   CODIGOEXAME: string;
 }
 
+export interface AsoOption {
+  sequenciaFicha: string;
+  codigoTipoExame: string;
+  tipoExameNome: string;
+  dataFicha: string;
+}
+
 export type AsoFuncionarioDto = {
   IDFICHA: string;
   CODIGOEMPRESA: string;

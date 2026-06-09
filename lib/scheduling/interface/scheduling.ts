@@ -111,7 +111,42 @@ export interface AsoInfo {
   validacaoUrl?: string;
   emailSent?: boolean;
   error?: string | null;
+  CONVOCADO: boolean;
+  BIOMETRIA?: {
+    status: "nao_cadastrado" | "cadastrado" | "validado_hoje" | "falha_validacao";
+    dataValidacao?: string;
+  };
 }
+
+export type AtendimentoEvidenceInfo = {
+  termoCienciaUrl?: string | null;
+  termoCienciaHash?: string | null;
+  relatorioEvidenciasUrl?: string | null;
+  relatorioEvidenciasHash?: string | null;
+};
+
+export type AtendimentoBiometriaInfo = {
+  cadastroId?: string | null;
+  dedo?: string | null;
+  templateVersion?: string | null;
+};
+
+export type AtendimentoFacialInfo = {
+  provider?: "BRY_SIGN" | null;
+  sessionId?: string | null;
+  transactionId?: string | null;
+};
+
+export type AtendimentoAuthInfo = {
+  metodo: "SOC" | "BIOMETRIA" | "FACIAL";
+  status?: "PENDENTE" | "VALIDADO" | "FALHA";
+  requestId?: string | null;
+  validadoEm?: MongoDateLike;
+  validadoPor?: string | null;
+  evidencias?: AtendimentoEvidenceInfo | null;
+  biometria?: AtendimentoBiometriaInfo | null;
+  facial?: AtendimentoFacialInfo | null;
+};
 
 export class ExamRegister {
   codigoExame: string;
@@ -180,6 +215,7 @@ export type Scheduling = {
   TIPOEXAMENOME: string;
   UNIDADEATENDIMENTO: string;
   ASOINFO?: AsoInfo;
+  AUTENTICACAOATENDIMENTO?: AtendimentoAuthInfo | null;
   _id: string;
 };
 

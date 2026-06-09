@@ -1,0 +1,24 @@
+﻿app/atendimento/components/AtendimentoCard.tsx(842,17): error TS2561: Object literal may only specify known properties, but 'funcionarioCpf' does not exist in type '{ funcionarioId: string; funcionarioNome: string; atendimentoId: string; ticketId?: string | undefined; exame?: string | undefined; unidade: string; sala: string; estacaoId: string; }'. Did you mean to write 'funcionarioId'?
+app/atendimento/components/AtendimentoCard.tsx(849,47): error TS2339: Property 'CODIGOCATEDESSAODE' does not exist on type 'Scheduling'.
+app/atendimento/components/CadastroBiometricoModal.tsx(180,21): error TS2322: Type '{ children: string[]; key: string; value: string; }' is not assignable to type 'IntrinsicAttributes & Omit<ListboxItemBaseProps<object>, "value">'.
+  Property 'value' does not exist on type 'IntrinsicAttributes & Omit<ListboxItemBaseProps<object>, "value">'.
+app/atendimento/page.tsx(63,43): error TS2307: Cannot find module './components/SenhasEstatisticas' or its corresponding type declarations.
+app/atendimento/page.tsx(296,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(308,11): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(347,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(348,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(350,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(351,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(355,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/atendimento/page.tsx(356,9): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/recepcao/components/AtendimentoModal.tsx(1090,35): error TS2339: Property 'requestId' does not exist on type '{ unidade: string; sala: string; operador: { id: string; nome: string; perfil: string; }; funcionario: { id: string; nome: string; cpf: string; }; atendimento: { id: string; ticketId: string; tipoAtendimento: string; exame: string; }; origem: "RECEPCAO"; solicitadoEm: string; }'.
+app/recepcao/components/AtendimentoModal.tsx(1091,45): error TS2339: Property 'requestId' does not exist on type '{ unidade: string; sala: string; operador: { id: string; nome: string; perfil: string; }; funcionario: { id: string; nome: string; cpf: string; }; atendimento: { id: string; ticketId: string; tipoAtendimento: string; exame: string; }; origem: "RECEPCAO"; solicitadoEm: string; }'.
+app/recepcao/components/AtendimentoModal.tsx(1121,26): error TS2345: Argument of type '"cancelado"' is not assignable to parameter of type 'SetStateAction<"routing" | "started" | "stabilizing" | "capturing" | "success" | "error" | "timeout" | "idle">'.

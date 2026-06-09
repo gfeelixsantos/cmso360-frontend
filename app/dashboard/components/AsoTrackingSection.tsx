@@ -9,14 +9,18 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronUp,
+  RotateCw,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { toProxyUrl } from "@/lib/blob/blob-proxy";
 import {
   AsoPanelDisplayStatus,
   AsoPendingItem,
+  requeueAso,
   useAsoTracking,
 } from "@/hooks/useAsoTracking";
+import { WorkerHealthIndicator } from "./WorkerHealthIndicator";
 
 function isSignatureAuthenticationPending(message: string | null | undefined) {
   const normalized = String(message || "").toLowerCase();
@@ -65,11 +69,11 @@ function formatRetryAt(value: string | null | undefined) {
 }
 
 const PROCESS_STEPS = [
-  "Envio ao gerador",
-  "Geração do PDF",
-  "Assinatura digital",
-  "Validação da assinatura",
-  "Envio do e-mail",
+  { label: "Envio", short: "ENV" },
+  { label: "PDF", short: "PDF" },
+  { label: "Assinatura", short: "ASS" },
+  { label: "Validação", short: "VAL" },
+  { label: "E-mail", short: "EML" },
 ] as const;
 
 type ProcessStepState =
@@ -81,6 +85,14 @@ type ProcessStepState =
 
 function getCurrentStepIndex(item: AsoPendingItem): number {
   const displayStatus = item.panel?.displayStatus;
+
+  if (item.status === "LIBERADO") {
+    return 5;
+  }
+
+  if (item.emailSent) {
+    return 4;
+  }
 
   if (
     displayStatus === "AGUARDANDO_ENVIO" ||
@@ -94,7 +106,7 @@ function getCurrentStepIndex(item: AsoPendingItem): number {
   }
 
   if (displayStatus === "PRECISA_DE_INTERVENCAO") {
-    if (item.validacaoUrl) {
+    if (item.validacaoUrl || (item.signatureStatus && item.signatureStatus !== "PENDENTE")) {
       return 3;
     }
 
@@ -102,7 +114,7 @@ function getCurrentStepIndex(item: AsoPendingItem): number {
   }
 
   if (displayStatus === "COM_FALHA") {
-    if (item.validacaoUrl) {
+    if (item.validacaoUrl || (item.signatureStatus && item.signatureStatus !== "PENDENTE")) {
       return 3;
     }
 
@@ -110,11 +122,7 @@ function getCurrentStepIndex(item: AsoPendingItem): number {
   }
 
   if (displayStatus === "SEGUINDO_AUTOMATICAMENTE") {
-    if (item.emailSent) {
-      return 4;
-    }
-
-    if (item.validacaoUrl) {
+    if (item.validacaoUrl || (item.signatureStatus && item.signatureStatus !== "PENDENTE")) {
       return 3;
     }
 
@@ -148,146 +156,198 @@ function getStepState(
   return "upcoming";
 }
 
-function getStepClasses(state: ProcessStepState) {
-  switch (state) {
-    case "complete":
-      return {
-        dot: "border-[#44735E] bg-[#44735E] text-white",
-        line: "bg-[#44735E]",
-        label: "text-[#2f5a47]",
-      };
-    case "current":
-      return {
-        dot: "border-[#c88a11] bg-[#f8e4b1] text-[#8b5e00]",
-        line: "bg-[#e6d6ab]",
-        label: "text-[#8b5e00]",
-      };
-    case "attention":
-      return {
-        dot: "border-orange-500 bg-orange-100 text-orange-700",
-        line: "bg-orange-200",
-        label: "text-orange-700",
-      };
-    case "failed":
-      return {
-        dot: "border-red-500 bg-red-100 text-red-700",
-        line: "bg-red-200",
-        label: "text-red-700",
-      };
-    default:
-      return {
-        dot: "border-gray-200 bg-white text-gray-400",
-        line: "bg-gray-200",
-        label: "text-gray-400",
-      };
-  }
+function getSignaturePhase(
+  item: AsoPendingItem,
+): "digitalizada" | "pendente" | "assinado" {
+  if (item.signatureStatus === "LIBERADO") return "assinado";
+  if (item.status === "DIGITALIZADA") return "digitalizada";
+  return "pendente";
 }
 
 function ProcessTimeline({ item }: { item: AsoPendingItem }) {
   const displayStatus = item.panel?.displayStatus;
   const currentIndex = getCurrentStepIndex(item);
+  const totalSteps = PROCESS_STEPS.length;
+  const progressPercent = (currentIndex / (totalSteps - 1)) * 100;
+  const signaturePhase = getSignaturePhase(item);
+
+  const isFailed = displayStatus === "COM_FALHA";
+  const isAttention = displayStatus === "PRECISA_DE_INTERVENCAO";
+  const hasError = isFailed || isAttention;
+  const isDone = currentIndex >= totalSteps - 1;
 
   return (
-    <div className="mt-4 rounded-xl border border-[#44735E]/10 px-4 py-4">
-      <div className="grid gap-3 md:grid-cols-5">
-        {PROCESS_STEPS.map((step, index) => {
-          const state = getStepState(
-            index,
-            currentIndex,
-            displayStatus || "AGUARDANDO_ENVIO",
-          );
-          const classes = getStepClasses(state);
+    <div className="mt-3">
+      <div className="relative">
+        <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+          <div
+            className={`h-full transition-all duration-700 ease-out ${
+              hasError
+                ? "bg-gradient-to-r from-[#44735E] via-amber-400 to-red-400"
+                : "bg-gradient-to-r from-[#44735E] to-emerald-400"
+            }`}
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
 
-          return (
-            <div
-              key={step}
-              className="relative flex items-start gap-3 md:block"
-            >
-              {index < PROCESS_STEPS.length - 1 && (
+        <div className="absolute -top-0.5 left-0 flex w-full justify-between">
+          {PROCESS_STEPS.map((step, index) => {
+            const isBioFacial =
+              item.origem && item.origem !== "SOC";
+            const state = getStepState(
+              index,
+              currentIndex,
+              displayStatus || "AGUARDANDO_ENVIO",
+            );
+            const isComplete = state === "complete";
+            const isCurrent = state === "current";
+            const isStepAttention = state === "attention";
+            const isStepFailed = state === "failed";
+            const isStepDone = isComplete;
+            const isActive = index === currentIndex;
+
+            const stepLabel =
+              index === 0 && isBioFacial
+                ? "INI"
+                : index === 2
+                  ? signaturePhase === "assinado"
+                    ? "ASS ✓"
+                    : signaturePhase === "digitalizada"
+                      ? "ASS (PDF)"
+                      : "ASS"
+                  : step.short;
+
+            return (
+              <div key={step.label} className="flex flex-col items-center">
                 <div
-                  className={`absolute left-[14px] top-7 h-8 w-[2px] ${classes.line} md:left-[calc(50%+16px)] md:top-[14px] md:h-[2px] md:w-[calc(100%-8px)]`}
-                />
-              )}
-
-              <div
-                className={`relative z-[1] flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-semibold ${classes.dot}`}
-              >
-                {index + 1}
-              </div>
-
-              <div className="min-w-0 md:mt-3">
-                <p
-                  className={`text-[11px] font-semibold uppercase tracking-wide ${classes.label}`}
+                  className={`relative flex h-4 w-4 items-center justify-center rounded-full transition-all duration-300 ${
+                    isComplete
+                      ? "bg-[#44735E] shadow-[0_0_6px_rgba(68,115,94,0.4)]"
+                      : isStepAttention
+                        ? "bg-orange-400 shadow-[0_0_8px_rgba(251,146,60,0.5)] animate-pulse"
+                        : isStepFailed
+                          ? "bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.5)]"
+                          : isCurrent
+                            ? "bg-amber-300 shadow-[0_0_8px_rgba(252,211,77,0.4)]"
+                            : "bg-gray-200"
+                  }`}
                 >
-                  {step}
-                </p>
-                <p className="mt-1 text-[11px] leading-5 text-gray-500">
-                  {index < currentIndex
-                    ? "Etapa concluída"
-                    : index === currentIndex
-                      ? state === "attention"
-                        ? "Etapa com intervenção"
-                        : state === "failed"
-                          ? "Etapa com falha"
-                          : "Etapa atual"
-                      : "Próxima etapa"}
-                </p>
+                  {isComplete && (
+                    <svg
+                      className="h-2.5 w-2.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={3}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  )}
+                </div>
+
+                <span
+                  className={`mt-1.5 text-[7px] font-semibold uppercase tracking-wider ${
+                    isStepDone
+                      ? "text-[#44735E]"
+                      : isStepAttention
+                        ? "text-orange-500"
+                        : isStepFailed
+                          ? "text-red-500"
+                          : isActive
+                            ? "text-amber-600"
+                            : "text-gray-300"
+                  }`}
+                >
+                  {stepLabel}
+                </span>
               </div>
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="mt-6 flex items-center justify-between text-[9px]">
+        <span className="text-gray-400">
+          {currentIndex + 1}/{totalSteps}
+        </span>
+        <span
+          className={`font-medium ${
+            hasError
+              ? isFailed
+                ? "text-red-500"
+                : "text-orange-500"
+              : isDone
+                ? "text-[#44735E]"
+                : "text-amber-600"
+          }`}
+        >
+          {hasError
+            ? isFailed
+              ? "Falha"
+              : "Ação necessária"
+            : isDone
+              ? "Concluído"
+              : PROCESS_STEPS[currentIndex]?.label || "Início"}
+        </span>
       </div>
     </div>
   );
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <p className="text-sm text-gray-600">
-      <span className="font-semibold text-gray-800">{label}:</span> {value}
-    </p>
-  );
-}
-
-const AsoItemCard = ({
+const AsoItemCard = React.memo(({
   item,
   index,
+  onRequeued,
 }: {
   item: AsoPendingItem;
   index: number;
+  onRequeued?: () => void;
 }) => {
+  const [requeueing, setRequeueing] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+
   if (!item.panel) {
     return null;
   }
 
   const friendlyError = getFriendlyOperationalError(item.error);
   const retryAt = formatRetryAt(item.nextRetryAt);
-  const detailRows = [
-    { label: "Parecer médico", value: item.parecer || "N/A" },
-    { label: "Tempo na etapa", value: item.tempoNaEtapa },
-    { label: "Médico", value: item.nomeMedico || "N/A" },
-    { label: "Unidade", value: item.unidadeAtendimento || "N/A" },
+  const details = [
+    item.tempoNaEtapa,
+    item.nomeMedico || "N/A",
   ];
 
   if (retryAt) {
-    detailRows.push({
-      label: "Próxima tentativa",
-      value:
-        item.retryCount && item.retryCount > 0
-          ? `${retryAt} (tentativa ${item.retryCount + 1})`
-          : retryAt,
-    });
+    details.push(
+      item.retryCount && item.retryCount > 0
+        ? `Tentativa ${item.retryCount + 1} em ${retryAt}`
+        : `Próxima tentativa: ${retryAt}`,
+    );
   }
 
   if (item.fonte === "FILA_AZURE") {
-    detailRows.push({ label: "Origem", value: "Fila Azure" });
+    details.push("Fila Azure");
   }
+
+  const handleRequeue = async () => {
+    setRequeueing(true);
+    try {
+      await requeueAso(item.schedulingId);
+      onRequeued?.();
+    } catch (err) {
+      console.error("Erro ao reenfileirar:", err);
+      alert(
+        `Falha ao reenfileirar: ${err instanceof Error ? err.message : "Erro desconhecido"}`,
+      );
+    } finally {
+      setRequeueing(false);
+      setShowConfirm(false);
+    }
+  };
 
   return (
     <motion.div
@@ -305,52 +365,106 @@ const AsoItemCard = ({
               </span>
               <span>{item.tipoExame}</span>
               <span>{item.dataAgendamento}</span>
-              <span>{item.parecer || "N/A"}</span>
+              {item.unidadeAtendimento && (
+                <span>{item.unidadeAtendimento}</span>
+              )}
             </div>
-            <h4 className="mt-1 text-base font-semibold text-gray-900">
-              {item.nomeFuncionario}
-            </h4>
+            <div className="mt-1 flex items-center gap-2">
+              <h4 className="text-base font-semibold text-gray-900">
+                {item.nomeFuncionario}
+              </h4>
+              {item.origem && item.origem !== 'SOC' && (
+                <span
+                  className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
+                    item.origem === 'BIOMETRIA'
+                      ? 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-500/20'
+                      : item.origem === 'FACIAL'
+                        ? 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-500/20'
+                        : 'bg-gray-50 text-gray-600 ring-1 ring-inset ring-gray-500/20'
+                  }`}
+                >
+                  {item.origem}
+                </span>
+              )}
+            </div>
           </div>
 
-          {item.url && (
-            <a
-              className="inline-flex shrink-0 rounded-lg border border-[#44735E]/20 bg-white px-3 py-1.5 text-sm font-medium text-[#44735E] transition-colors hover:bg-[#44735E]/5"
-              href={item.url}
-              rel="noreferrer"
-              target="_blank"
-            >
-              Ver ASO
-            </a>
-          )}
+          <div className="flex shrink-0 items-center gap-2">
+            {friendlyError && (
+              <span
+                className="inline-flex max-w-[280px] items-center gap-1 truncate rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-600 ring-1 ring-inset ring-red-500/10"
+                title={friendlyError}
+              >
+                <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                <span className="truncate">{friendlyError}</span>
+              </span>
+            )}
+            {item.url && (
+              <a
+                className="inline-flex shrink-0 rounded-lg border border-[#44735E]/20 bg-white px-3 py-1.5 text-sm font-medium text-[#44735E] transition-colors hover:bg-[#44735E]/5"
+                href={toProxyUrl(item.url)}
+                rel="noreferrer"
+                target="_blank"
+              >
+                Ver ASO
+              </a>
+            )}
+          </div>
         </div>
 
         <ProcessTimeline item={item} />
 
-        <div className="mt-3 px-1 py-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            Detalhes
+        <div className="mt-2">
+          <p className="text-xs text-gray-500">
+            {details.join(" · ")}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5">
-            {detailRows.map((detail) => (
-              <DetailRow
-                key={`${detail.label}-${detail.value}`}
-                label={detail.label}
-                value={detail.value}
-              />
-            ))}
-          </div>
         </div>
 
-        {friendlyError && (
-          <div className="mt-3 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-            <span>{friendlyError}</span>
+        {(item.panel.needsManualAction || item.error) && (
+          <div className="mt-3 flex justify-end">
+            {showConfirm ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  Reprocessar este ASO?
+                </span>
+                <button
+                  className="inline-flex items-center gap-1 rounded-lg bg-[#44735E] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#365e4c] disabled:opacity-50"
+                  disabled={requeueing}
+                  type="button"
+                  onClick={handleRequeue}
+                >
+                  {requeueing ? (
+                    <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  ) : (
+                    <CheckCircle className="h-3.5 w-3.5" />
+                  )}
+                  Confirmar
+                </button>
+                <button
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-600 transition-colors hover:bg-gray-50"
+                  disabled={requeueing}
+                  type="button"
+                  onClick={() => setShowConfirm(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                className="inline-flex items-center gap-1.5 rounded-lg border border-orange-300 bg-orange-50 px-3 py-1.5 text-xs font-medium text-orange-700 transition-colors hover:bg-orange-100"
+                type="button"
+                onClick={() => setShowConfirm(true)}
+              >
+                <RotateCw className="h-3.5 w-3.5" />
+                Reprocessar
+              </button>
+            )}
           </div>
         )}
       </div>
     </motion.div>
   );
-};
+});
 
 interface AsoTrackingSectionProps {
   refreshSignal?: number;
@@ -363,8 +477,8 @@ export function AsoTrackingSection({
   const [isExpanded, setIsExpanded] = useState(false);
   const previousRefreshSignal = useRef(refreshSignal);
 
-  const { data, loading, error, refetch } = useAsoTracking({
-    autoRefresh: true,
+  const { data, loading, isRefreshing, error, refetch } = useAsoTracking({
+    autoRefresh: isExpanded,
     refreshInterval: 120000,
     limit: 100,
     page,
@@ -384,6 +498,26 @@ export function AsoTrackingSection({
     previousRefreshSignal.current = refreshSignal;
     void refetch();
   }, [refreshSignal, refetch]);
+
+  const items = useMemo(() => {
+    return [...(data?.items || [])].sort((a, b) => {
+      const nameDifference = a.nomeFuncionario.localeCompare(
+        b.nomeFuncionario,
+        "pt-BR",
+        {
+          sensitivity: "base",
+        },
+      );
+
+      if (nameDifference !== 0) {
+        return nameDifference;
+      }
+
+      return (
+        getUpdatedAtSortValue(b.updatedAt) - getUpdatedAtSortValue(a.updatedAt)
+      );
+    });
+  }, [data?.items]);
 
   if (error) {
     return (
@@ -435,24 +569,6 @@ export function AsoTrackingSection({
     );
   }
 
-  const items = [...(data?.items || [])].sort((a, b) => {
-    const nameDifference = a.nomeFuncionario.localeCompare(
-      b.nomeFuncionario,
-      "pt-BR",
-      {
-        sensitivity: "base",
-      },
-    );
-
-    if (nameDifference !== 0) {
-      return nameDifference;
-    }
-
-    return (
-      getUpdatedAtSortValue(b.updatedAt) - getUpdatedAtSortValue(a.updatedAt)
-    );
-  });
-
   const total = data?.totalItems || data?.total || 0;
   const currentPage = data?.page || page;
   const totalPages = data?.totalPages || 1;
@@ -465,8 +581,8 @@ export function AsoTrackingSection({
   const attentionCount =
     (data?.stats?.precisaIntervencao || 0) + (data?.stats?.comFalha || 0);
   const summaryParts = [
-    startCount > 0 ? `${startCount} na fila` : null,
-    inProgressCount > 0 ? `${inProgressCount} em andamento` : null,
+    startCount > 0 ? `${startCount} aguardando geração` : null,
+    inProgressCount > 0 ? `${inProgressCount} em processamento` : null,
     attentionCount > 0 ? `${attentionCount} com atenção` : null,
   ].filter(Boolean);
 
@@ -540,6 +656,8 @@ export function AsoTrackingSection({
           exit={{ opacity: 0, height: 0 }}
           initial={{ opacity: 0, height: 0 }}
         >
+          <WorkerHealthIndicator />
+
           {items.length === 0 ? (
             <div className="py-8 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
@@ -559,6 +677,7 @@ export function AsoTrackingSection({
                   key={item.schedulingId}
                   index={index}
                   item={item}
+                  onRequeued={refetch}
                 />
               ))}
 

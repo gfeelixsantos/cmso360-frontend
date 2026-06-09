@@ -4,6 +4,7 @@ import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
+import { PwaRegister } from "@/components/pwa/PwaRegister";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -47,7 +48,9 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="pt-br">
-      <head />
+      <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+      </head>
       <body
         className={clsx(
           "min-h-screen text-foreground font-sans antialiased",
@@ -55,6 +58,7 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
+          <PwaRegister />
           {children}
         </Providers>
       </body>

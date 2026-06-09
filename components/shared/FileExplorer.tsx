@@ -1,0 +1,470 @@
+"use client";
+
+import React, { useCallback, useMemo } from "react";
+import {
+  addToast,
+  Button,
+  Card,
+  CardBody,
+  CardHeader,
+  Divider,
+  Spinner,
+} from "@heroui/react";
+import { Download, FolderOpen, Package } from "lucide-react";
+
+import { useBlobExplorer } from "@/hooks/useBlobExplorer";
+import { useGedBatchJob } from "@/hooks/useGedBatchJob";
+import { addNotification } from "@/lib/notification-store";
+import BreadcrumbNav from "@/components/shared/arquivos/BreadcrumbNav";
+import DownloadZipButton from "@/components/shared/arquivos/DownloadZipButton";
+import EmpresaList from "@/components/shared/arquivos/EmpresaList";
+import FileList from "@/components/shared/arquivos/FileList";
+import PeriodoList from "@/components/shared/arquivos/PeriodoList";
+import ProntuarioList from "@/components/shared/arquivos/ProntuarioList";
+
+interface FileExplorerProps {
+  showHeader?: boolean;
+}
+
+export const FileExplorer: React.FC<FileExplorerProps> = ({
+  showHeader = true,
+}) => {
+  const {
+    level,
+    filteredCompanies,
+    periods,
+    prontuarios,
+    files,
+    searchQuery,
+    selectedEmpresa,
+    selectedPeriodo,
+    selectedProntuario,
+    isLoadingCompanies,
+    isLoadingPeriods,
+    isLoadingProntuarios,
+    isLoadingFiles,
+    error,
+    selectedFiles,
+    setSearchQuery,
+    selectEmpresa,
+    selectPeriodo,
+    selectProntuario,
+    navigateToRoot,
+    navigateToEmpresa,
+    navigateToPeriodo,
+    toggleFileSelection,
+    selectAllFiles,
+    clearSelection,
+  } = useBlobExplorer();
+
+  const {
+    currentJob,
+    isCreating: isCreatingBatch,
+    isPolling: isPollingBatch,
+    error: batchError,
+    startBatch,
+    clearJob,
+  } = useGedBatchJob({
+    onCompleted: (job) => {
+      addToast({
+        title:
+          job.status === "partial"
+            ? "Lote concluido com pendencias"
+            : "Lote concluido",
+        description:
+          job.status === "partial"
+            ? "Alguns prontuarios nao puderam ser gerados. Verifique as notificacoes."
+            : "O download em lote foi processado com sucesso.",
+        severity: job.status === "partial" ? "warning" : "success",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      addNotification({
+        title:
+          job.status === "partial"
+            ? "Lote concluído com pendências"
+            : "Lote concluído",
+        message: `${job.succeededFuncionarios} prontuário(s) de ${job.empresa.razaoSocial} disponíveis para download.`,
+        type: job.status === "partial" ? "warning" : "success",
+        actionUrl: job.result?.zipUrl || "/servicos",
+        actionLabel: job.result?.zipUrl ? "Baixar lote" : "Ver documentos",
+        dedupeKey: `ged-batch:${job.id}:${job.status}`,
+        metadata: {
+          jobId: job.id,
+          status: job.status,
+          codigoEmpresa: job.empresa.codigoEmpresa,
+        },
+      });
+    },
+    onFailed: (job) => {
+      addToast({
+        title: "Lote com falha",
+        description:
+          job.errors?.[job.errors.length - 1]?.message ||
+          "Nao foi possivel concluir o download em lote.",
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
+      });
+
+      addNotification({
+        title: "Lote com falha",
+        message: job.errors?.length
+          ? `${job.failedFuncionarios} prontuário(s) de ${job.empresa.razaoSocial} apresentaram erro.`
+          : `O processamento do lote de ${job.empresa.razaoSocial} falhou.`,
+        type: "warning",
+        actionUrl: "/servicos",
+        actionLabel: "Ver documentos",
+        dedupeKey: `ged-batch:${job.id}:${job.status}`,
+        metadata: {
+          jobId: job.id,
+          status: job.status,
+          codigoEmpresa: job.empresa.codigoEmpresa,
+        },
+      });
+    },
+  });
+
+  const handleDownloadEmpresa = useCallback(
+    (codigoEmpresa: string, razaoSocial: string) => {
+      void startBatch({
+        codigoEmpresa,
+        razaoSocial,
+      });
+    },
+    [startBatch],
+  );
+
+  const handleDownloadPeriodo = useCallback(
+    (periodo: { ano: string; mes: string }) => {
+      if (!selectedEmpresa) return;
+      void startBatch({
+        scope: "periodo",
+        codigoEmpresa: selectedEmpresa.codigoEmpresa,
+        razaoSocial: selectedEmpresa.razaoSocial,
+        periodo: {
+          ano: periodo.ano,
+          mes: periodo.mes,
+        },
+      });
+    },
+    [selectedEmpresa, startBatch],
+  );
+
+  const handleDownloadProntuario = useCallback(
+    (codigoProntuario: string, nomeFuncionario: string) => {
+      if (!selectedEmpresa || !selectedPeriodo) return;
+      void startBatch({
+        scope: "prontuario",
+        codigoEmpresa: selectedEmpresa.codigoEmpresa,
+        razaoSocial: selectedEmpresa.razaoSocial,
+        periodo: {
+          ano: selectedPeriodo.ano,
+          mes: selectedPeriodo.mes,
+        },
+        prontuarios: [
+          {
+            codigoProntuario,
+            nome: nomeFuncionario,
+          },
+        ],
+      });
+    },
+    [selectedEmpresa, selectedPeriodo, startBatch],
+  );
+
+  const handleDownloadIndividual = async (
+    blobName: string,
+    fileName: string,
+  ) => {
+    try {
+      const params = new URLSearchParams({ blobName });
+      const res = await fetch(`/api/blob-explorer/sas?${params.toString()}`);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data: { sasUrl: string } = await res.json();
+
+      const link = document.createElement("a");
+
+      link.href = data.sasUrl;
+      link.download = fileName;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (err) {
+      console.error("[FileExplorer] Erro no download individual:", err);
+      addToast({
+        title: "Erro no download",
+        description: "Nao foi possivel baixar o arquivo.",
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
+      });
+    }
+  };
+
+  const handleOpenPdf = async (blobName: string) => {
+    try {
+      const params = new URLSearchParams({ blobName });
+      const res = await fetch(`/api/blob-explorer/sas?${params.toString()}`);
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data: { sasUrl: string } = await res.json();
+      const newWindow = window.open(data.sasUrl, "_blank", "noopener,noreferrer");
+
+      if (!newWindow) {
+        throw new Error("O navegador bloqueou a abertura de uma nova aba.");
+      }
+    } catch (err) {
+      console.error("[FileExplorer] Erro ao abrir arquivo:", err);
+      addToast({
+        title: "Erro na visualizacao",
+        description:
+          err instanceof Error
+            ? err.message
+            : "Nao foi possivel abrir o arquivo em nova aba.",
+        severity: "danger",
+        color: "foreground",
+        variant: "flat",
+      });
+    }
+  };
+
+  const isBatchBusy = isCreatingBatch || isPollingBatch;
+
+  const zipLabel = useMemo(() => {
+    const empresa = selectedEmpresa?.razaoSocial || "GED";
+    const ano = selectedPeriodo?.ano || "0000";
+    const mes = selectedPeriodo?.mes || "00";
+
+    return { empresa, ano, mes };
+  }, [selectedEmpresa, selectedPeriodo]);
+
+  return (
+    <Card className="border border-default-200 shadow-sm">
+      {showHeader && (
+        <>
+          <CardHeader className="flex flex-col items-start gap-3 border-b border-default-200">
+            <div className="flex items-center gap-2 text-default-800">
+              <FolderOpen className="h-5 w-5 text-brand-primary" />
+              <h2 className="text-lg font-semibold">Explorador de Arquivos</h2>
+            </div>
+
+            <BreadcrumbNav
+              level={level}
+              razaoSocial={selectedEmpresa?.razaoSocial || ""}
+              selectedAno={selectedPeriodo?.ano || null}
+              selectedEmpresa={selectedEmpresa?.codigoEmpresa || null}
+              selectedMes={selectedPeriodo?.mes || null}
+              selectedProntuario={selectedProntuario?.codigoProntuario || null}
+              onNavigateToEmpresa={navigateToEmpresa}
+              onNavigateToPeriodo={navigateToPeriodo}
+              onNavigateToRoot={navigateToRoot}
+            />
+          </CardHeader>
+
+          <Divider />
+        </>
+      )}
+
+      <CardBody className="min-h-[460px]">
+        {error && (
+          <div className="mb-4 rounded-medium border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger">
+            {error}
+          </div>
+        )}
+
+        {batchError && (
+          <div className="mb-4 rounded-medium border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger">
+            {batchError}
+          </div>
+        )}
+
+        {currentJob && (
+          <div
+            className={`mb-4 rounded-large border px-4 py-3 ${
+              currentJob.status === "failed"
+                ? "border-danger-200 bg-danger-50/70"
+                : currentJob.status === "completed" || currentJob.status === "partial"
+                  ? "border-success-200 bg-success-50/70"
+                  : "border-brand-primary/20 bg-brand-mist"
+            }`}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div
+                  className={`mt-0.5 flex h-9 w-9 items-center justify-center rounded-medium ${
+                    currentJob.status === "failed"
+                      ? "bg-danger/10 text-danger"
+                      : currentJob.status === "completed" || currentJob.status === "partial"
+                        ? "bg-success/10 text-success"
+                        : "bg-brand-primary/10 text-brand-primary"
+                  }`}
+                >
+                  <Package className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-default-800">
+                    {currentJob.status === "completed" || currentJob.status === "partial"
+                      ? "Lote pronto para download"
+                      : currentJob.status === "failed"
+                        ? "Lote GED nao concluido"
+                        : `Lote em andamento — ${currentJob.empresa.razaoSocial}`}
+                  </p>
+                  <p className="text-sm text-default-600">
+                    {currentJob.status === "failed"
+                      ? currentJob.errors?.[currentJob.errors.length - 1]?.message ||
+                        "O lote foi encerrado com erro."
+                      : `${currentJob.processedFuncionarios} de ${currentJob.totalFuncionarios} prontuario(s) processados`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {currentJob.result?.zipUrl && (
+                  <Button
+                    as="a"
+                    className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                    href={currentJob.result.zipUrl}
+                    rel="noreferrer"
+                    size="sm"
+                    startContent={<Download className="h-4 w-4" />}
+                    target="_blank"
+                  >
+                    Baixar lote
+                  </Button>
+                )}
+                {(currentJob.status === "completed" ||
+                  currentJob.status === "partial" ||
+                  currentJob.status === "failed") && (
+                  <Button size="sm" variant="light" onPress={clearJob}>
+                    Fechar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {isBatchBusy && (
+          <div className="mb-4 flex items-center gap-3 rounded-large border border-brand-primary/20 bg-brand-mist px-4 py-3">
+            <Spinner color="primary" size="sm" />
+            <p className="text-sm font-medium text-brand-primary">
+              Preparando lote em background, aguarde...
+            </p>
+          </div>
+        )}
+
+        {level === "root" && (
+          <>
+
+            <EmpresaList
+              empresas={filteredCompanies}
+              isLoading={isLoadingCompanies}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              onDownload={handleDownloadEmpresa}
+              currentJob={currentJob}
+              isCreatingJob={isCreatingBatch}
+              onSelect={(codigoEmpresa) => {
+                const empresa = filteredCompanies.find(
+                  (item) => item.codigoEmpresa === codigoEmpresa,
+                );
+
+                if (empresa) {
+                  void selectEmpresa(empresa);
+                }
+              }}
+            />
+          </>
+        )}
+
+        {level === "periodos" && (
+          <>
+            <PeriodoList
+              isLoading={isLoadingPeriods}
+              periodos={periods}
+              onDownload={handleDownloadPeriodo}
+              onSelect={(periodo) => void selectPeriodo(periodo)}
+              currentJob={currentJob}
+              isCreatingJob={isCreatingBatch}
+            />
+          </>
+        )}
+
+        {level === "prontuarios" && (
+          <>
+            <ProntuarioList
+              isLoading={isLoadingProntuarios}
+              prontuarios={prontuarios}
+              onDownload={handleDownloadProntuario}
+              onSelect={(prontuario) => void selectProntuario(prontuario)}
+              currentJob={currentJob}
+              isCreatingJob={isCreatingBatch}
+            />
+          </>
+        )}
+
+        {level === "files" && (
+          <div className="flex h-full flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-semibold text-default-800">
+                  {selectedProntuario?.nomeFuncionario ||
+                    selectedProntuario?.codigoProntuario}
+                </p>
+                <p className="text-xs text-default-500">
+                  {selectedProntuario?.codigoProntuario}
+                </p>
+              </div>
+
+              {!showHeader && (
+                <div className="flex items-center gap-2">
+                  <BreadcrumbNav
+                    level={level}
+                    razaoSocial={selectedEmpresa?.razaoSocial || ""}
+                    selectedAno={selectedPeriodo?.ano || null}
+                    selectedEmpresa={selectedEmpresa?.codigoEmpresa || null}
+                    selectedMes={selectedPeriodo?.mes || null}
+                    selectedProntuario={selectedProntuario?.codigoProntuario || null}
+                    onNavigateToEmpresa={navigateToEmpresa}
+                    onNavigateToPeriodo={navigateToPeriodo}
+                    onNavigateToRoot={navigateToRoot}
+                  />
+                </div>
+              )}
+
+              <DownloadZipButton
+                ano={zipLabel.ano}
+                mes={zipLabel.mes}
+                razaoSocial={zipLabel.empresa}
+                selectedFiles={selectedFiles}
+              />
+            </div>
+
+            {isLoadingFiles ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-default-500">
+                <Spinner color="primary" size="lg" />
+                <p className="text-sm">Carregando arquivos do prontuario...</p>
+              </div>
+            ) : (
+              <FileList
+                files={files}
+                selectedFiles={selectedFiles}
+                onClearSelection={clearSelection}
+                onDownload={handleDownloadIndividual}
+                onSelectAll={selectAllFiles}
+                onToggleSelect={toggleFileSelection}
+                onView={handleOpenPdf}
+              />
+            )}
+          </div>
+        )}
+      </CardBody>
+    </Card>
+  );
+};

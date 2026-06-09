@@ -1,3 +1,4 @@
+import { Tooltip } from "@heroui/react";
 import { AnimatePresence } from "framer-motion";
 import {
   CheckCircle,
@@ -22,11 +23,17 @@ const StatButton: React.FC<{
   label: string;
   color: string;
   onClick?: () => void;
-}> = ({ icon, value, label, color, onClick }) => (
+  onMouseEnter?: () => void;
+  onMouseLeave?: () => void;
+  onFocus?: () => void;
+  onBlur?: () => void;
+}> = ({ icon, value, label, color, onClick, ...rest }) => (
   <button
     aria-label={label}
-    className="flex gap-2 items-center justify-center p-2 rounded-lg transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#104e35] min-w-[50px]"
+    className="flex gap-2 items-center justify-center p-2 rounded-lg transition-all duration-200 hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-[#104e35] min-w-[50px] cursor-pointer"
     onClick={onClick}
+    type="button"
+    {...rest}
   >
     <div
       className={`w-4 h-4 rounded-full flex items-center justify-center mb-1 ${color}`}
@@ -44,15 +51,7 @@ const StatButton: React.FC<{
 export const StatsModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  estatisticasSenhas: {
-    recepcaoAguardando: number;
-    examesAguardando: number;
-    emAtendimento: number;
-    preparacao: number;
-    raiox: number;
-    finalizados: number;
-    total: number;
-  };
+  estatisticasSenhas: Record<string, number>;
   tickets: Ticket[];
   agendamentos: Scheduling[];
   preparationRequests: PreparationRequest[];
@@ -103,99 +102,60 @@ export const StatsModal: React.FC<{
   );
 };
 
-interface SenhasEstatisticasProps {
-  estatisticasSenhas: {
-    recepcaoAguardando: number;
-    examesAguardando: number;
-    emAtendimento: number;
-    preparacao: number;
-    raiox: number;
-    finalizados: number;
-    total: number;
-  };
+type StatsContext = "recepcao" | "atendimento";
+
+interface CardConfig {
+  key: string;
+  label: string;
+  tooltip: string;
+  icon: React.ReactNode;
+  color: string;
+}
+
+const RECEPCAO_CARDS: CardConfig[] = [
+  { key: "aguardando", label: "Aguardando", tooltip: "Aguardando atendimento", icon: <Clock size={12} />, color: "bg-amber-100 text-amber-600" },
+  { key: "preparacao", label: "Preparo", tooltip: "Em preparação da documentação", icon: <Pause size={12} />, color: "bg-blue-100 text-blue-600" },
+  { key: "raiox", label: "Raio-X", tooltip: "Encaminhados para Raio-X", icon: <Eye size={12} />, color: "bg-purple-100 text-purple-600" },
+  { key: "finalizados", label: "Concluídos", tooltip: "Encaminhados para atendimento (exame)", icon: <CheckCircle size={12} />, color: "bg-green-100 text-green-600" },
+  { key: "total", label: "Totais", tooltip: "Total de senhas", icon: <Users size={12} />, color: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white" },
+];
+
+const ATENDIMENTO_CARDS: CardConfig[] = [
+  { key: "pendentes", label: "Aguardando", tooltip: "Aguardando atendimento", icon: <Clock size={12} />, color: "bg-amber-100 text-amber-600" },
+  { key: "finalizados", label: "Finalizados", tooltip: "Atendidos", icon: <CheckCircle size={12} />, color: "bg-green-100 text-green-600" },
+  { key: "aguardandoRecepcao", label: "Recepção", tooltip: "Senhas aguardando atendimento na recepção", icon: <FilePlus size={12} />, color: "bg-red-100 text-red-600" },
+  { key: "total", label: "Total", tooltip: "Total de atendidos (aguardando + finalizados)", icon: <Users size={12} />, color: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white" },
+];
+
+export interface SenhasEstatisticasProps {
+  context: StatsContext;
+  estatisticasSenhas: Record<string, number>;
   onSetStatsModalOpen: (status: boolean) => void;
-  agendamentos: Scheduling[];
-  preparationRequests: PreparationRequest[];
-  tickets: Ticket[];
 }
 
 export default function SenhasEstatisticas({
+  context,
   estatisticasSenhas,
   onSetStatsModalOpen,
-  agendamentos,
-  preparationRequests,
-  tickets,
 }: SenhasEstatisticasProps) {
-  // Cores apenas para ícones (fundo branco no header)
-  const getIconColor = (status: string) => {
-    const colors = {
-      total: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white",
-      aguardando: "bg-amber-100 text-amber-600",
-      emAtendimento: "bg-red-100 text-red-600",
-      preparacao: "bg-blue-100 text-blue-600",
-      raiox: "bg-purple-100 text-purple-600",
-      finalizados: "bg-green-100 text-green-600",
-    };
-
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-600";
-  };
+  const cards = context === "recepcao" ? RECEPCAO_CARDS : ATENDIMENTO_CARDS;
 
   return (
     <>
-      {/* Grupo de botões de estatísticas - Desktop (compacto para header) */}
       <div className="hidden lg:flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
-        <StatButton
-          color={getIconColor("aguardando")}
-          icon={<Clock size={12} />}
-          label="Recep."
-          value={estatisticasSenhas.recepcaoAguardando}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("aguardando")}
-          icon={<Clock size={12} />}
-          label="Exames"
-          value={estatisticasSenhas.examesAguardando}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("emAtendimento")}
-          icon={<FilePlus size={12} />}
-          label="Atend."
-          value={estatisticasSenhas.emAtendimento}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("preparacao")}
-          icon={<Pause size={12} />}
-          label="Prep."
-          value={estatisticasSenhas.preparacao}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("raiox")}
-          icon={<Eye size={12} />}
-          label="Raio-X"
-          value={estatisticasSenhas.raiox}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("finalizados")}
-          icon={<CheckCircle size={12} />}
-          label="Concl."
-          value={estatisticasSenhas.finalizados}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
-        <StatButton
-          color={getIconColor("total")}
-          icon={<Users size={12} />}
-          label="Total"
-          value={estatisticasSenhas.total}
-          onClick={() => onSetStatsModalOpen(true)}
-        />
+        {cards.map((card) => (
+          <Tooltip key={card.key} content={card.tooltip} color="foreground" placement="bottom" showArrow={true} closeDelay={0}>
+            <StatButton
+              color={card.color}
+              icon={card.icon}
+              label={card.label}
+              value={estatisticasSenhas[card.key] ?? 0}
+              onClick={() => onSetStatsModalOpen(true)}
+            />
+          </Tooltip>
+        ))}
       </div>
 
-      {/* Versão mobile */}
       <div className="lg:hidden">
         <button
           aria-label="Ver estatísticas"

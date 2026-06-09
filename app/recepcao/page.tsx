@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { io, Socket } from "socket.io-client";
+import { Socket } from "socket.io-client";
+import { useSocket } from "@/lib/websocket/hooks/useSocket";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
 import {
@@ -14,14 +15,14 @@ import {
 } from "@heroui/react";
 import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
 
-import { IUserInfo, IUserWebsocket } from "@/lib/user/interfaces/IUser";
-import { CustomEventMap, EventType } from "@/lib/websocket/events/events";
+import { IUserInfo } from "@/lib/user/interfaces/IUser";
+import { EventType } from "@/lib/websocket/events/events";
 import {
   PreparationRequestTypes,
   WebsocketType,
 } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
-import { getCurrentUser, logout, urlBase64ToUint8Array } from "@/lib/utils";
+import { getCurrentUser, logout } from "@/lib/utils";
 import EmptyState from "@/app/recepcao/components/EmptyState";
 import MainContent from "@/app/recepcao/components/MainContent";
 import AtendimentoModal from "@/app/recepcao/components/AtendimentoModal";
@@ -42,171 +43,32 @@ import {
   SchedulingChange,
 } from "@/lib/scheduling/interface/scheduling";
 import {
-  NEST_NOTIFICATION_URL,
   NEST_SOC_COMPANIES,
   NEST_TICKET_QUERY,
-  NEST_URL,
 } from "@/config/constants";
 import { MongoOperationTypes } from "@/lib/scheduling/enum/scheduling.enum";
 import { PreparationGrid } from "@/app/recepcao/components/PreparationGrid";
 import SenhasEstatisticas, {
   StatsModal,
 } from "@/app/recepcao/components/SenhasEstatisticas";
+import { useStatistics } from "@/hooks/useStatictics";
 import CmsoLoading from "@/components/shared/CmsoLoading";
-
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_NOTIFICATION_PUBLICKEY!;
-
-let SINGLETON_SOCKET: Socket | null = null;
-let registeredOnce = false;
-
-type ConnectOptions = {
-  auth: IUserWebsocket;
-  onConnect?: (socket: Socket) => void;
-  onDisconnect?: (reason: string) => void;
-  onConnectError?: (err: any) => void;
-};
-
-function createSocketIfNeeded(opts: ConnectOptions): Socket {
-  // ✅ Se já existe socket conectado, reutiliza
-  if (SINGLETON_SOCKET?.connected) {
-    console.log("♻️ Reutilizando socket existente:", SINGLETON_SOCKET.id);
-
-    return SINGLETON_SOCKET;
-  }
-
-  // ✅ Se existe mas está desconectado, remove
-  if (SINGLETON_SOCKET) {
-    try {
-      SINGLETON_SOCKET.removeAllListeners();
-      SINGLETON_SOCKET.disconnect();
-    } catch (err) {
-      console.warn("Erro ao limpar socket anterior:", err);
-    }
-    SINGLETON_SOCKET = null;
-  }
-
-  const { auth, onConnect, onDisconnect, onConnectError } = opts;
-
-  // ✅ CORREÇÃO: Configurações otimizadas e alinhadas com servidor
-  const s = io(NEST_URL, {
-    auth,
-    transports: ["websocket"], // Apenas WebSocket, sem polling
-    reconnection: true,
-    reconnectionAttempts: Infinity,
-    reconnectionDelay: 1000, // ✅ Reduzido de 2000 para 1000ms
-    reconnectionDelayMax: 5000, // ✅ NOVO: Max 5s
-    timeout: 20000, // ✅ NOVO: 20s timeout
-    forceNew: false, // ✅ NOVO: Permite reusar conexão
-    upgrade: false, // ✅ NOVO: Sem upgrade (já usa websocket)
-    rememberUpgrade: true, // ✅ NOVO: Manter conexão ativa
-  });
-
-  SINGLETON_SOCKET = s;
-
-  // ✅ CORREÇÃO: Registrar handlers apenas uma vez
-  if (!registeredOnce) {
-    s.on("connect", () => {
-      console.log("✅ Socket conectado:", s.id);
-      onConnect?.(s);
-    });
-
-    s.on("disconnect", (reason: string) => {
-      console.warn("⚠️ Socket desconectado:", reason);
-
-      // ✅ NOVO: Distinguir desconexões normais de erros
-      if (reason === "io server disconnect") {
-        console.log("🔄 Servidor desconectou - tentando reconectar...");
-        s.connect();
-      } else if (reason === "transport close") {
-        console.log("🔄 Conexão perdida - reconexão automática...");
-      }
-
-      onDisconnect?.(reason);
-    });
-
-    s.on("connect_error", (err: any) => {
-      console.error("❌ Erro de conexão:", err.message);
-      onConnectError?.(err);
-    });
-
-    // ✅ NOVO: Monitorar reconexões
-    s.on("reconnect", (attemptNumber: number) => {
-      console.log(`✅ Reconectado após ${attemptNumber} tentativas`);
-    });
-
-    s.on("reconnect_attempt", (attemptNumber: number) => {
-      console.log(`🔄 Tentativa de reconexão #${attemptNumber}`);
-    });
-
-    s.on("reconnect_error", (err: any) => {
-      console.error("❌ Erro ao reconectar:", err.message);
-    });
-
-    s.on("reconnect_failed", () => {
-      console.error("❌ Falha ao reconectar após múltiplas tentativas");
-    });
-
-    // ✅ NOVO: Monitorar ping/pong
-    s.on("ping", () => {
-      console.debug("📡 Ping enviado ao servidor");
-    });
-
-    s.on("pong", (latency: number) => {
-      console.debug(`📡 Pong recebido (${latency}ms)`);
-    });
-
-    registeredOnce = true;
-  }
-
-  return s;
-}
-
-function closeSocket() {
-  if (SINGLETON_SOCKET) {
-    try {
-      console.log("🔌 Fechando socket:", SINGLETON_SOCKET.id);
-      SINGLETON_SOCKET.removeAllListeners();
-      SINGLETON_SOCKET.disconnect();
-    } catch (err) {
-      console.warn("Erro ao fechar socket:", err);
-    }
-  }
-  SINGLETON_SOCKET = null;
-  registeredOnce = false;
-}
-
-// ✅ CORREÇÃO: Helper para registrar handlers com cleanup automático
-function registerHandlers(
-  s: Socket,
-  handlers: { [K in keyof CustomEventMap]?: (...args: any[]) => void },
-) {
-  Object.entries(handlers).forEach(([event, fn]) => {
-    if (!fn) return;
-    s.off(event as any);
-    s.on(event as any, fn as any);
-  });
-
-  return () => {
-    Object.entries(handlers).forEach(([event, fn]) => {
-      if (!fn) return;
-      try {
-        s.off(event as any, fn as any);
-      } catch (err) {
-        console.warn(`Erro ao remover handler ${event}:`, err);
-      }
-    });
-  };
-}
+import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
+import { usePushNotification } from "@/hooks/usePushNotification";
 
 // Componente principal
 const RecepcaoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(null);
   const [conectado, setConectado] = useState(false);
-  const [socketState, setSocketState] = useState<Socket | null>(null);
-
-  // ✅ NOVO: Controle de reconexão
-  const [isReconnecting, setIsReconnecting] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const {
+    socket,
+    connected,
+    isReconnecting,
+    connect,
+    disconnect,
+    registerHandlers,
+  } = useSocket();
 
   // Estados de filtro/seleção
   const [unidadeSelecionada, setUnidadeSelecionada] = useState("");
@@ -243,14 +105,24 @@ const RecepcaoPage: React.FC = () => {
     remove,
   } = useEntityManager<Ticket>([]);
 
-  const [estatisticas, setEstatisticas] = useState({
-    recepcaoAguardando: 0,
-    examesAguardando: 0,
-    emAtendimento: 0,
+  // Hook para buscar estatísticas da API
+  const { data: statisticsData, refetch: refetchStatistics } = useStatistics({
+    unidade: unidadeSelecionada,
+    autoRefresh: true,
+    refreshInterval: 300000, // 5 minutos
+  });
+
+  const [estatisticas, setEstatisticas] = useState<Record<string, number>>({
+    aguardando: 0,
     preparacao: 0,
     raiox: 0,
     finalizados: 0,
     total: 0,
+    pendentes: 0,
+    aguardandoRecepcao: 0,
+    recepcaoAguardando: 0,
+    examesAguardando: 0,
+    emAtendimento: 0,
   });
 
   // ---------------------------------------------------------
@@ -333,64 +205,43 @@ const RecepcaoPage: React.FC = () => {
   }, []);
 
   // ---------------------------------------------------------
-  // Notificação Web Push
+  // Push Notifications
   // ---------------------------------------------------------
-  const subscribeNotification = async () => {
-    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      return;
-    }
-    const permission = await Notification.requestPermission();
-
-    if (permission !== "granted") return;
-
-    try {
-      const registration = await navigator.serviceWorker.register(
-        "js/service-worker.js",
-      );
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-
-      await fetch(NEST_NOTIFICATION_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          unidade: unidadeSelecionada,
-          subscription: subscription,
-        }),
-      });
-    } catch (err) {
-      console.error("Erro ao inscrever o usuário:", err);
-    }
-  };
+  usePushNotification({
+    enabled: conectado && salaSelecionada.includes("PREPARO"),
+    unidade: unidadeSelecionada,
+    contexto: { sala: salaSelecionada, tipo: "recepcao" },
+  });
 
   // ---------------------------------------------------------
-  // ✅ NOVO: Reconexão automática com debounce
+  // Reconexão automática ao mudar contexto (unidade/sala)
   // ---------------------------------------------------------
   useEffect(() => {
-    if (!unidadeSelecionada || !salaSelecionada) return;
+    if (!unidadeSelecionada || !salaSelecionada || !conectado) return;
 
-    // Limpa timeout anterior
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
 
-    // Se já estava conectado, aguarda 500ms antes de reconectar (debounce)
-    if (conectado) {
-      console.log("♻️ Mudança de contexto detectada - agendando reconexão...");
+    reconnectTimeoutRef.current = setTimeout(() => {
+      disconnect();
+      setConectado(false);
 
-      reconnectTimeoutRef.current = setTimeout(() => {
-        console.log("🔄 Executando reconexão...");
-        closeSocket();
-        setConectado(false);
+      setTimeout(() => {
+        setConectado(true);
 
-        // Reconecta após 300ms
-        setTimeout(() => {
-          setConectado(true);
-        }, 300);
-      }, 500);
-    }
+        const conectionType = salaSelecionada.includes("PREPARO")
+          ? WebsocketType.USER_PREPARO
+          : WebsocketType.USER_RECEPCAO;
+
+        connect({
+          nome: user?.nome!,
+          sala: salaSelecionada,
+          type: conectionType,
+          unidade: unidadeSelecionada,
+        });
+      }, 300);
+    }, 500);
 
     return () => {
       if (reconnectTimeoutRef.current) {
@@ -412,10 +263,6 @@ const RecepcaoPage: React.FC = () => {
       ]).finally(() => {
         setIsLoading(false);
       });
-
-      if (salaSelecionada.includes("PREPARO")) {
-        subscribeNotification();
-      }
     }
   }, [conectado, unidadeSelecionada, salaSelecionada]);
 
@@ -423,9 +270,8 @@ const RecepcaoPage: React.FC = () => {
   // Gerenciamento de Socket com Singleton
   // ---------------------------------------------------------
   const handleConectar = () => {
-    if (conectado) {
-      closeSocket();
-      setSocketState(null);
+    if (connected) {
+      disconnect();
       setConectado(false);
       addToast({
         title: "Desconectado",
@@ -451,83 +297,32 @@ const RecepcaoPage: React.FC = () => {
     }
 
     setConectado(true);
-  };
-
-  // Conexão otimizada com singleton
-  useEffect(() => {
-    if (!conectado || !unidadeSelecionada || !salaSelecionada) {
-      return;
-    }
 
     const conectionType = salaSelecionada.includes("PREPARO")
       ? WebsocketType.USER_PREPARO
       : WebsocketType.USER_RECEPCAO;
 
-    const userSocket: IUserWebsocket = {
-      nome: getCurrentUser()?.nome!,
+    connect({
+      nome: user?.nome!,
       sala: salaSelecionada,
       type: conectionType,
       unidade: unidadeSelecionada,
-    };
-
-    // Usa singleton ao invés de criar novo socket
-    const s = createSocketIfNeeded({
-      auth: userSocket,
-      onConnect: (socket) => {
-        console.log("✅ Conectado ao WebSocket:", socket.id);
-        setSocketState(socket);
-        setIsReconnecting(false);
-
-        addToast({
-          title: "Conectado",
-          description: `Conexão estabelecida com o servidor.`,
-          severity: "success",
-          color: "foreground",
-          variant: "flat",
-        });
-      },
-      onDisconnect: (reason) => {
-        console.log("⚠️ Socket desconectado, reason=", reason);
-
-        // Só mostra alerta se não foi desconexão intencional
-        if (reason !== "io client disconnect") {
-          setIsReconnecting(true);
-
-          // Mostra toast apenas se não reconectar em 2s
-          setTimeout(() => {
-            if (isReconnecting) {
-              addToast({
-                title: "Reconectando...",
-                description: "Tentando restabelecer conexão",
-                severity: "warning",
-                color: "foreground",
-                variant: "flat",
-              });
-            }
-          }, 2000);
-        } else {
-          setConectado(false);
-        }
-      },
-      onConnectError: (err) => {
-        console.error("❌ Erro ao conectar:", err);
-        setIsReconnecting(false);
-
-        addToast({
-          title: "Erro de conexão",
-          description: "Não foi possível conectar ao servidor",
-          severity: "danger",
-          color: "foreground",
-          variant: "flat",
-        });
-      },
     });
+  };
 
-    // --- Handlers de Eventos ---
+  // Referência do socket para uso em callbacks (evita stale closure)
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    socketRef.current = socket;
+  }, [socket]);
+
+  // Registro de handlers de eventos do socket
+  useEffect(() => {
+    if (!socket) return;
+
     const handleAtendimentos = (schedules?: Scheduling[]) => {
       if (schedules && Array.isArray(schedules)) {
-        console.log(`📥 Recebidos ${schedules.length} agendamentos iniciais`);
-
         setAgendamentos(
           schedules.sort((a, b) =>
             a.NOME.localeCompare(b.NOME, "pt-BR", { sensitivity: "base" }),
@@ -537,7 +332,6 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handleTicketEmitedOrUpdated = (ticket: Ticket) => {
-      console.log("🎫 Ticket atualizado:", ticket.id);
       addOrUpdate(ticket);
     };
 
@@ -546,10 +340,7 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handleDeleteTicket = (id: number) => {
-      // Atualiza a lista de tickets removendo o excluído
       remove(id);
-
-      // Opcional: Feedback visual
       addToast({
         title: "Ticket Removido",
         severity: "success",
@@ -562,22 +353,14 @@ const RecepcaoPage: React.FC = () => {
       operation,
       schedule,
     }: SchedulingChange) => {
-      console.log(`🔄 UPDATE_SCHEDULE: ${operation}`, schedule.NOME);
-
       setAgendamentos((prev) => {
         let newList = [...prev];
 
         switch (operation) {
           case MongoOperationTypes.INSERT:
-            // ✅ Evita duplicatas
             if (
               prev.some((ag) => ag.SCHEDULINGCODE === schedule.SCHEDULINGCODE)
             ) {
-              console.warn(
-                "⚠️ Agendamento duplicado ignorado:",
-                schedule.SCHEDULINGCODE,
-              );
-
               return prev;
             }
             newList.push(schedule);
@@ -603,8 +386,6 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handlePreparationRequest = (request: PreparationRequestModel) => {
-      console.log("🧪 Preparation request:", request.type);
-
       switch (request.type) {
         case PreparationRequestTypes.SUCCESS:
           addOrUpdate(request.request.tickets!);
@@ -616,7 +397,7 @@ const RecepcaoPage: React.FC = () => {
             request.request.ticketId!,
             TicketActionType.PREPARO_OK,
             unidadeSelecionada,
-            s,
+            socketRef.current!,
           );
           setEmPreparacao((prev) =>
             prev.filter((req) => req.ticketId !== request.request.ticketId),
@@ -634,8 +415,7 @@ const RecepcaoPage: React.FC = () => {
       }
     };
 
-    // Helper para registrar handlers
-    const unregister = registerHandlers(s, {
+    const unregister = registerHandlers({
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
       [EventType.TICKET_EMITED]: handleTicketEmitedOrUpdated,
       [EventType.TICKET_UPDATED]: handleTicketEmitedOrUpdated,
@@ -645,65 +425,62 @@ const RecepcaoPage: React.FC = () => {
       [EventType.PREPARATION_REQUEST]: handlePreparationRequest,
     } as any);
 
-    // Cleanup
     return () => {
       unregister();
-      // NÃO fecha socket aqui - deixa singleton gerenciar
     };
-  }, [conectado, unidadeSelecionada, salaSelecionada]);
-
-  // Cleanup ao desmontar componente
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-      closeSocket();
-    };
-  }, []);
+  }, [socket, unidadeSelecionada, salaSelecionada]);
 
   const handleModal = useCallback(() => {
     setModalAtendimentoAberto((prev) => !prev);
   }, []);
 
   const calcularEstatisticas = useCallback(() => {
+    // Sempre usa os tickets locais (do Supabase) para as estatísticas da recepção
     const senhasFiltradas = getAll();
 
+    const recepcao = senhasFiltradas.filter(
+      (s) => s.grupo === TicketGroups.RECEPCAO,
+    );
+
+    const aguardando = recepcao.filter(
+      (s) =>
+        s.status !== TicketStatus.EM_PREPARACAO &&
+        s.status !== TicketStatus.ENCAMINHADO_RX &&
+        s.status !== TicketStatus.EM_ATENDIMENTO &&
+        s.status !== TicketStatus.FINALIZADO,
+    ).length;
+
+    const preparacao = recepcao.filter(
+      (s) => s.status === TicketStatus.EM_PREPARACAO,
+    ).length;
+
+    const raiox = recepcao.filter(
+      (s) => s.status === TicketStatus.ENCAMINHADO_RX,
+    ).length;
+
+    const finalizados = senhasFiltradas.filter(
+      (s) => s.grupo === TicketGroups.EXAME,
+    ).length;
+
+    const total = recepcao.length;
+
     setEstatisticas({
-      recepcaoAguardando:
-        senhasFiltradas.filter(
-          (s) =>
-            s.status === TicketStatus.AGUARDANDO &&
-            s.grupo === TicketGroups.RECEPCAO,
-        ).length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.PREPARO_OK)
-          .length,
-      examesAguardando: senhasFiltradas.filter(
-        (s) =>
-          s.status === TicketStatus.AGUARDANDO &&
-          s.grupo === TicketGroups.EXAME,
-      ).length,
-      emAtendimento:
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_ATENDIMENTO)
-          .length +
-        senhasFiltradas.filter((s) => s.status === TicketStatus.EM_CHAMADA)
-          .length,
-      preparacao: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.EM_PREPARACAO,
-      ).length,
-      raiox: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.ENCAMINHADO_RX,
-      ).length,
-      finalizados: senhasFiltradas.filter(
-        (s) => s.status === TicketStatus.FINALIZADO,
-      ).length,
-      total: senhasFiltradas.length,
+      aguardando,
+      preparacao,
+      raiox,
+      finalizados,
+      total,
+      pendentes: 0,
+      aguardandoRecepcao: 0,
+      recepcaoAguardando: aguardando,
+      examesAguardando: 0,
+      emAtendimento: 0,
     });
   }, [getAll]);
 
   useEffect(() => {
     calcularEstatisticas();
-  }, [tickets, calcularEstatisticas]);
+  }, [tickets, empreparacao, calcularEstatisticas]);
 
   if (!user) {
     return <CmsoLoading />;
@@ -719,10 +496,8 @@ const RecepcaoPage: React.FC = () => {
       >
         {conectado && (
           <SenhasEstatisticas
-            agendamentos={agendamentos}
+            context="recepcao"
             estatisticasSenhas={estatisticas}
-            preparationRequests={empreparacao}
-            tickets={tickets}
             onSetStatsModalOpen={setIsStatsModalOpen}
           />
         )}
@@ -758,9 +533,14 @@ const RecepcaoPage: React.FC = () => {
           aria-label="Conteúdo principal da recepção"
           className="flex-1 overflow-y-auto p-6 sm:p-8 lg:p-10 bg-gray-50"
         >
-          {conectado && socketState && !isLoading ? (
-            salaSelecionada.includes("PREPARO") ? (
-              <PreparationGrid requests={empreparacao} socket={socketState} />
+          {conectado && socket ? (
+            isLoading ? (
+              <CmsoCircularLoading
+                title="Conectando..."
+                description="Estabelecendo conexão com o servidor"
+              />
+            ) : salaSelecionada.includes("PREPARO") ? (
+              <PreparationGrid requests={empreparacao} socket={socket} />
             ) : (
               <MainContent
                 agendamentos={agendamentos}
@@ -768,7 +548,7 @@ const RecepcaoPage: React.FC = () => {
                 preparacoesFinalizadas={preparacaoFinalizada}
                 salaSelecionada={salaSelecionada}
                 setTicketSelecionado={setTicketSelecionado}
-                socket={socketState}
+                socket={socket}
                 tickets={tickets.filter(
                   (t) => t.grupo === TicketGroups.RECEPCAO,
                 )}
@@ -791,7 +571,7 @@ const RecepcaoPage: React.FC = () => {
         isOpen={modalAtendimentoAberto}
         salaSelecionada={salaSelecionada}
         socCompanies={socCompanies}
-        socket={socketState}
+        socket={socket}
         ticketSelecionado={ticketSelecionado}
         unidadeSelecionada={unidadeSelecionada}
         user={user}

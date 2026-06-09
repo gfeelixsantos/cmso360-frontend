@@ -126,8 +126,8 @@ const ExamUploadModal: React.FC<{
 
       if (!response.ok) {
         const errorText = await response.text();
-
-        throw new Error(errorText || "Erro no upload");
+        console.error("[ExamUploadModal] Erro do backend:", errorText);
+        throw new Error("Falha no upload. Verifique o arquivo e tente novamente.");
       }
 
       const updatedScheduling: Scheduling = await response.json();
@@ -232,7 +232,7 @@ const ExamUploadModal: React.FC<{
                   <div className="flex items-center gap-2 text-green-600 text-sm">
                     <CheckCircle size={14} />
                     <span>
-                      Upload realizado com sucesso! O modal fechará em breve...
+                      Upload realizado! A janela será fechada em instantes...
                     </span>
                   </div>
                 </div>

@@ -7,6 +7,7 @@ import AtendimentoSection from "./AtendimentoSection";
 import AtendimentoCardCompacto from "./AtendimentoCardCompacto";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 
 interface SenhasListProps {
   senhasOrdenadas: Scheduling[];
@@ -19,7 +20,7 @@ interface SenhasListProps {
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  onHandleModal: (state: boolean) => void;
+  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   exameSelecionado: string;
   pendingActions: Record<
     number,
@@ -30,6 +31,12 @@ interface SenhasListProps {
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarAutenticacao?: (
+    atendimento: Scheduling,
+    metodo: "BIOMETRIA" | "FACIAL",
+  ) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  examesGrouped: Record<string, ExamToogle[]>;
 }
 
 // Componente para o estado vazio - CORRIGIDO
@@ -60,7 +67,6 @@ const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
   </Card>
 );
 
-// Componente principal - CORRIGIDO
 const AtendimentoList: React.FC<SenhasListProps> = ({
   senhasOrdenadas,
   senhasPreferenciais,
@@ -76,6 +82,9 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   exameSelecionado,
   pendingActions,
   startPendingAction,
+  onIniciarAutenticacao,
+  onIniciarTeleatendimento,
+  examesGrouped,
 }) => {
   // Correção: Verificar todas as listas, não apenas a principal
   const todasSenhasVazias =
@@ -119,6 +128,9 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Preferencial (${senhasPreferenciais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              onIniciarAutenticacao={onIniciarAutenticacao}
+              onIniciarTeleatendimento={onIniciarTeleatendimento}
+              examesGrouped={examesGrouped}
             />
           )}
 
@@ -137,6 +149,9 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Prioridade (${senhasComPrefixo.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              onIniciarAutenticacao={onIniciarAutenticacao}
+              onIniciarTeleatendimento={onIniciarTeleatendimento}
+              examesGrouped={examesGrouped}
             />
           )}
 
@@ -155,6 +170,9 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               title={`Atendimento (${senhasNormais.length})`}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              onIniciarAutenticacao={onIniciarAutenticacao}
+              onIniciarTeleatendimento={onIniciarTeleatendimento}
+              examesGrouped={examesGrouped}
             />
           )}
         </div>

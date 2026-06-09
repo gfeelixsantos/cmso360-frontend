@@ -8,6 +8,7 @@ import { ApiResponse } from "@/shared/responses/ApiResponse";
 import { HttpCodes } from "@/shared/responses/HttpCodes";
 import { JWT } from "@/lib/jwt/jwt";
 import { mapCadastroPessoasToUserInfo } from "@/lib/utils";
+import { NEST_URL } from "@/config/constants";
 
 /**
  * Service responsável por lidar com regras de negócio relacionadas a Usuários.
@@ -77,11 +78,46 @@ export class UserService {
     const userInfo = mapCadastroPessoasToUserInfo(socUser);
     const token = await JWT.generateJwt(userInfo);
 
+    // Sincroniza usuário com o backend (preserva consentimento)
+    try {
+      await fetch(`${NEST_URL}users/sync`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codigo: userInfo.codigo,
+          cpf: userInfo.cpf,
+          nome: userInfo.nome,
+          perfil: userInfo.perfil,
+          conselho: userInfo.conselho || null,
+          uf_conselho: userInfo.ufconselho || null,
+          ultimo_login: new Date().toISOString(),
+        }),
+      });
+    } catch (err) {
+      console.error('Erro ao sincronizar usuário (não crítico):', err);
+    }
+
     return new ApiResponse(
       HttpCodes.OK,
       ApiMessages.USER_LOGGED_IN_SUCCESSFULLY,
       { token: token, userInfo: userInfo },
     );
+  }
+
+  static async reauthenticate(
+    user: IUserLogin,
+  ): Promise<ApiResponse<{ valid: boolean }>> {
+    const loginResponse = await UserService.login(user);
+
+    if (loginResponse.status !== HttpCodes.OK || !loginResponse.data) {
+      return new ApiResponse(loginResponse.status, loginResponse.message, {
+        valid: false,
+      });
+    }
+
+    return new ApiResponse(HttpCodes.OK, "Reautenticacao validada", {
+      valid: true,
+    });
   }
 
   /**
@@ -153,6 +189,24 @@ export class UserService {
 
       // Mapeia para DTO de resposta
       const userInfoMapped = mapCadastroPessoasToUserInfo(socRegisterUser);
+
+      try {
+        await fetch(`${NEST_URL}users/sync`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            codigo: userInfoMapped.codigo,
+            cpf: userInfoMapped.cpf,
+            nome: userInfoMapped.nome,
+            perfil: userInfoMapped.perfil,
+            conselho: userInfoMapped.conselho || null,
+            uf_conselho: userInfoMapped.ufconselho || null,
+            ultimo_login: new Date().toISOString(),
+          }),
+        });
+      } catch (err) {
+        console.error('Erro ao criar usuário na tabela users (não crítico):', err);
+      }
 
       return new ApiResponse(
         HttpCodes.CREATED,

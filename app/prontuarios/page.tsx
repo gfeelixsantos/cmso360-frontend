@@ -713,6 +713,7 @@ export default function UnifiedProntuarioPage() {
               ))}
             </Select>
 
+
             {/* Novo campo: Médico Examinador */}
             <Select
               isDisabled={isLoadingEmpresasMedicos}

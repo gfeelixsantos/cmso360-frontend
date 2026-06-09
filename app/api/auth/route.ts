@@ -1,4 +1,3 @@
-"use server";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -9,6 +8,7 @@ import { userLoginSchema } from "@/lib/user/zod/schemas";
 import { ApiMessages } from "@/shared/responses/ApiMessages";
 import { ApiResponse, IApiResponse } from "@/shared/responses/ApiResponse";
 import { HttpCodes } from "@/shared/responses/HttpCodes";
+import { ZodError } from "zod";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
@@ -70,11 +70,28 @@ export async function POST(
   } catch (err) {
     console.error(err);
 
+    if (err instanceof ZodError) {
+      return NextResponse.json(
+        new ApiResponse(
+          HttpCodes.BAD_REQUEST,
+          ApiMessages.USER_INPUT_INVALID,
+        ),
+        { status: HttpCodes.BAD_REQUEST },
+      );
+    }
+
     return NextResponse.json(
-      new ApiResponse(
-        HttpCodes.INTERNAL_SERVER_ERROR,
-        ApiMessages.INTERNAL_ERROR,
-      ),
+      {
+        ...new ApiResponse(
+          HttpCodes.INTERNAL_SERVER_ERROR,
+          ApiMessages.INTERNAL_ERROR,
+        ),
+        details:
+          process.env.NODE_ENV === "development" && err instanceof Error
+            ? err.message
+            : undefined,
+      },
+      { status: HttpCodes.INTERNAL_SERVER_ERROR },
     );
   }
 }

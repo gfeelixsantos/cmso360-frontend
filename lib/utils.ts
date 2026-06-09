@@ -183,17 +183,21 @@ export const convertTipoAsoNome = (tipoexame: string) => {
       result = "ADMISSIONAL";
       break;
     case "1":
-      result = "PERIODICO";
+      result = "ADMISSIONAL";
       break;
     case "2":
-      result = "RETORNO TRABALHO";
+      result = "PERIODICO";
       break;
     case "3":
-      result = "MUDANCA FUNCAO";
+      result = "RETORNO TRABALHO";
       break;
     case "4":
+      result = "MUDANCA FUNCAO";
+      break;
+    case "6":
       result = "MONITORACAO PONTUAL";
       break;
+    case "5":
     case "8":
       result = "DEMISSIONAL";
       break;
@@ -269,3 +273,15 @@ export const getStatusColor = (status: string) => {
       return "primary";
   }
 };
+/**
+ * Normaliza uma string para uso como ID ou nome de sala (remove acentos e caracteres especiais)
+ * Ex: "RECEPÇÃO 2" -> "RECEPCAO_2"
+ */
+export function normalizeId(text: string): string {
+  if (!text) return "";
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-zA-Z0-9]/g, "_") // Substitui não-alfanuméricos por _
+    .toUpperCase();
+}

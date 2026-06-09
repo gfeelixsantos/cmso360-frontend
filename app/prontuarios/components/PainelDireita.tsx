@@ -10,6 +10,9 @@ import React, {
 } from "react";
 import {
   addToast,
+  Autocomplete,
+  AutocompleteItem,
+  AutocompleteSection,
   Button,
   Card,
   CardBody,
@@ -18,6 +21,7 @@ import {
   Input,
   Select,
   SelectItem,
+  SelectSection,
   Textarea,
   Alert,
   Accordion,
@@ -53,11 +57,10 @@ import {
   ParecerTrabalhoAltura,
 } from "@/lib/scheduling/enum/scheduling.enum";
 import {
-  CODIGOS_ESPACO_CONFINADO,
-  CODIGOS_RISCO_ALTURA,
   USER_PROFILE,
   NEST_URL,
 } from "@/config/constants";
+import { fetchRiscosConfig, IRiscoConfig } from "@/lib/riscos-config/services/riscos-config.service";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
 import { addDaysToISODate, getBrazilDateISO } from "@/lib/utils";
 
@@ -68,17 +71,8 @@ import { PscProviderSelector } from "@/app/atendimento/components/PscProviderSel
 /* ---------------------- Tipos ---------------------- */
 
 enum LaudoTipo {
-  PCD = "PCD",
   RESTRICAO_TEMPORARIA = "RESTRICAO_TEMPORARIA",
 }
-
-type LaudoPCDData = {
-  cid: string;
-  descricaoCid: string;
-  limitacoes: string;
-  adaptacoesNecessarias: string;
-  observacoes: string;
-};
 
 type LaudoRestricaoData = {
   cid: string;
@@ -93,12 +87,90 @@ type LaudoRestricaoData = {
 export type MedicalOpinionData = {
   opinionType: ParecerMedico | null;
   details?: string | null;
-  laudoPCD?: LaudoPCDData | null;
   laudoRestricao?: LaudoRestricaoData | null;
   altura?: ParecerTrabalhoAltura | null;
   confinado?: ParecerEspaçoConfinado | null;
   examesParaRepetir?: string[];
 };
+
+const PREDEFINED_ORIENTACOES = [
+  {
+    category: "Acompanhamento / Retorno",
+    items: [
+      "Orientar acompanhamento com oftalmologista",
+      "Orientar acompanhamento com cardiologista",
+      "Orientar acompanhamento com endocrinologista",
+      "Orientar acompanhamento com ortopedista",
+      "Manter acompanhamento com médico assistente",
+      "Retorno em 30 dias para reavaliação",
+      "Retorno em 60 dias para reavaliação",
+      "Retorno em 90 dias para reavaliação",
+    ],
+  },
+  {
+    category: "Visão / Oftalmologia",
+    items: [
+      "Visão monocular — apto com orientação",
+      "Uso de óculos obrigatório para atividades laborais",
+      "Necessita de avaliação oftalmológica",
+    ],
+  },
+  {
+    category: "Cardiologia",
+    items: [
+      "Controle de pressão arterial com cardiologista",
+      "HAS — manter tratamento e acompanhamento",
+    ],
+  },
+  {
+    category: "Trabalho em Altura",
+    items: [
+      "Inapto para trabalho em altura",
+      "Apto para trabalho em altura — utilizar cinto de segurança",
+      "Encaminhar para avaliação psicológica para trabalho em altura",
+    ],
+  },
+  {
+    category: "PCD / Deficiência",
+    items: [
+      "PCD — deficiência auditiva",
+      "PCD — deficiência visual / monocular",
+      "PCD — deficiência física",
+      "Enquadramento em cota PCD — laudo anexo",
+    ],
+  },
+  {
+    category: "Peso / Obesidade",
+    items: [
+      "Peso excessivo — orientar reeducação alimentar",
+      "Controle de peso com nutricionista / endocrinologista",
+    ],
+  },
+  {
+    category: "Audição",
+    items: [
+      "Perda auditiva — encaminhar a otorrinolaringologista",
+      "Prótese auditiva — manter uso durante expediente",
+    ],
+  },
+  {
+    category: "Diabetes / Glicemia",
+    items: [
+      "Hemoglobina glicada alterada — controle com endocrinologista",
+      "Glicemia — manter acompanhamento e medicação",
+    ],
+  },
+  {
+    category: "Restrições Físicas",
+    items: [
+      "Evitar esforços físicos intensos",
+      "Não carregar peso excessivo",
+      "Alternar posição sentada e em pé",
+      "Evitar movimentos repetitivos com MMSS",
+      "Não elevar braços acima do nível dos ombros",
+    ],
+  },
+];
 
 interface RightPanelProps {
   selectedRecord: MedicalRecord | null;
@@ -441,17 +513,12 @@ const ConfirmacaoParecerModal = memo(
                       </div>
                     )}
 
-                  {(opinion.laudoPCD || opinion.laudoRestricao) && (
+                  {(opinion.laudoRestricao) && (
                     <div>
                       <p className="text-xs text-default-500 mb-2">
                         Laudos Emitidos:
                       </p>
                       <div className="space-y-1">
-                        {opinion.laudoPCD && (
-                          <Chip color="primary" size="sm" variant="flat">
-                            Laudo PCD - CID: {opinion.laudoPCD.cid}
-                          </Chip>
-                        )}
                         {opinion.laudoRestricao && (
                           <Chip color="warning" size="sm" variant="flat">
                             Restrição Temporária - CID:{" "}
@@ -493,6 +560,50 @@ const ConfirmacaoParecerModal = memo(
 
 ConfirmacaoParecerModal.displayName = "ConfirmacaoParecerModal";
 
+/* ---------------------- Tipos de Restrições (mesmo modelo da FichaClinicaOcupacional) ---------------------- */
+
+interface RestricoesMedicas {
+  evitarCarregarPeso: boolean;
+  pesoMaximoKg?: string;
+  evitarElevacaoBracos: boolean;
+  tipoElevacaoBracos?: "direito" | "esquerdo" | "ambos";
+  evitarCurvarTronco: boolean;
+  evitarEscadas: boolean;
+  evitarLongasCaminhadas: boolean;
+  evitarAlterarPostura: boolean;
+  outros: boolean;
+  descricaoOutros?: string;
+}
+
+interface RestricaoFormData {
+  cid: string;
+  descricaoCid: string;
+  duracaoRestricaoDias: string;
+  dataInicioRestricao: string;
+  observacoesMedicas: string;
+  restricoes: RestricoesMedicas;
+}
+
+const RESTRICAO_INICIAL: RestricaoFormData = {
+  cid: "",
+  descricaoCid: "",
+  duracaoRestricaoDias: "30",
+  dataInicioRestricao: "",
+  observacoesMedicas: "",
+  restricoes: {
+    evitarCarregarPeso: false,
+    pesoMaximoKg: "",
+    evitarElevacaoBracos: false,
+    tipoElevacaoBracos: undefined,
+    evitarCurvarTronco: false,
+    evitarEscadas: false,
+    evitarLongasCaminhadas: false,
+    evitarAlterarPostura: false,
+    outros: false,
+    descricaoOutros: "",
+  },
+};
+
 /* ---------------------- Modal de Laudos ---------------------- */
 
 const LaudosModal = memo(
@@ -505,49 +616,65 @@ const LaudosModal = memo(
     onClose: () => void;
     onSave: (tipo: LaudoTipo, data: any) => void;
   }) => {
-    const todayIso = useCallback(() => getBrazilDateISO(), []);
-    const calcularDataFim = useCallback((inicio: string, dias: number) => {
-      return addDaysToISODate(inicio, dias);
+    const [restricaoForm, setRestricaoForm] = useState<RestricaoFormData>(RESTRICAO_INICIAL);
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+    // Reset ao abrir
+    useEffect(() => {
+      if (isOpen) {
+        setRestricaoForm(RESTRICAO_INICIAL);
+        setFormErrors({});
+      }
+    }, [isOpen]);
+
+    const handleRestricoesChange = useCallback((field: keyof RestricoesMedicas, value: any) => {
+      setRestricaoForm((prev) => ({
+        ...prev,
+        restricoes: { ...prev.restricoes, [field]: value },
+      }));
     }, []);
 
-    const [tipoLaudo, setTipoLaudo] = useState<LaudoTipo>(
-      LaudoTipo.RESTRICAO_TEMPORARIA,
-    );
-    const [laudoPCD, setLaudoPCD] = useState<LaudoPCDData>({
-      cid: "",
-      descricaoCid: "",
-      limitacoes: "",
-      adaptacoesNecessarias: "",
-      observacoes: "",
-    });
-    const [laudoRestricao, setLaudoRestricao] = useState<LaudoRestricaoData>({
-      cid: "",
-      descricaoCid: "",
-      restricoes: "",
-      periodoDias: 30,
-      dataInicio: todayIso(),
-      dataFim: calcularDataFim(todayIso(), 30),
-      recomendacoes: "",
-    });
+    const validateRestricao = useCallback((): boolean => {
+      const errors: Record<string, string> = {};
+      const dias = parseInt(restricaoForm.duracaoRestricaoDias, 10);
+      if (!Number.isInteger(dias) || dias <= 0) {
+        errors.duracaoRestricaoDias = "Duração deve ser um número inteiro positivo";
+      }
+      if (!restricaoForm.dataInicioRestricao) {
+        errors.dataInicioRestricao = "Data de início é obrigatória";
+      }
+      setFormErrors(errors);
+      return Object.keys(errors).length === 0;
+    }, [restricaoForm]);
 
     const handleSave = useCallback(() => {
-      if (tipoLaudo === LaudoTipo.PCD) {
-        onSave(tipoLaudo, laudoPCD);
-      } else {
-        onSave(tipoLaudo, laudoRestricao);
-      }
+      if (!validateRestricao()) return;
+      // Converte para o formato esperado pelo backend (LaudoRestricaoData)
+      // e também mantém os campos estruturados para o worker gerar o PDF corretamente
+      const payload = {
+        cid: restricaoForm.cid,
+        descricaoCid: restricaoForm.descricaoCid,
+        periodoDias: parseInt(restricaoForm.duracaoRestricaoDias, 10),
+        dataInicio: restricaoForm.dataInicioRestricao,
+        dataFim: "",
+        recomendacoes: restricaoForm.observacoesMedicas,
+        // Campos estruturados para o template PDF do worker
+        restricoes: restricaoForm.restricoes,
+        duracaoRestricaoDias: restricaoForm.duracaoRestricaoDias,
+        dataInicioRestricao: restricaoForm.dataInicioRestricao,
+        observacoesMedicas: restricaoForm.observacoesMedicas,
+      };
+      onSave(LaudoTipo.RESTRICAO_TEMPORARIA, payload);
       onClose();
-    }, [laudoPCD, laudoRestricao, onClose, onSave, tipoLaudo]);
+    }, [restricaoForm, validateRestricao, onSave, onClose]);
 
     return (
       <HeroModal
         backdrop="blur"
-        classNames={{
-          base: "max-h-[90vh]",
-        }}
+        classNames={{ base: "max-h-[95vh]" }}
         isOpen={isOpen}
         scrollBehavior="inside"
-        size="2xl"
+        size="3xl"
         onClose={onClose}
       >
         <ModalContent>
@@ -555,187 +682,196 @@ const LaudosModal = memo(
             <div className="flex items-center gap-2">
               <ClipboardList className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
               <h3 className="text-base sm:text-lg md:text-xl font-bold">
-                Emitir Laudo Médico
+                Emitir Laudo de Restrição Temporária
               </h3>
             </div>
           </ModalHeader>
           <ModalBody>
             <div className="space-y-4 sm:space-y-6">
-              <RadioGroup
-                classNames={{
-                  label: "text-xs sm:text-sm",
-                }}
-                label="Tipo de Laudo"
-                orientation="horizontal"
-                value={tipoLaudo}
-                onValueChange={(value) => setTipoLaudo(value as LaudoTipo)}
-              >
-                <Radio value={LaudoTipo.RESTRICAO_TEMPORARIA}>
-                  Restrição Temporária
-                </Radio>
-                <Radio value={LaudoTipo.PCD}>Laudo PCD</Radio>
-              </RadioGroup>
-
-              <Divider />
-
-              {tipoLaudo === LaudoTipo.RESTRICAO_TEMPORARIA ? (
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <Input
-                      label="CID"
-                      placeholder="Ex: M54.5"
-                      size="sm"
-                      value={laudoRestricao.cid}
-                      onValueChange={(value) =>
-                        setLaudoRestricao((prev) => ({ ...prev, cid: value }))
-                      }
-                    />
-                    <Input
-                      label="Período (dias)"
-                      size="sm"
-                      type="number"
-                      value={laudoRestricao.periodoDias.toString()}
-                      onValueChange={(value) => {
-                        const dias = parseInt(value) || 30;
-
-                        setLaudoRestricao((prev) => ({
-                          ...prev,
-                          periodoDias: dias,
-                          dataFim: calcularDataFim(prev.dataInicio, dias),
-                        }));
-                      }}
-                    />
-                  </div>
-
+              <div className="space-y-4">
+                {/* CID e Descrição */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Input
+                    label="CID"
+                    placeholder="Ex: M54.5"
+                    size="sm"
+                    value={restricaoForm.cid}
+                    onValueChange={(v) => setRestricaoForm((p) => ({ ...p, cid: v }))}
+                  />
                   <Input
                     label="Descrição do CID"
                     placeholder="Descrição da condição médica"
                     size="sm"
-                    value={laudoRestricao.descricaoCid}
-                    onValueChange={(value) =>
-                      setLaudoRestricao((prev) => ({
-                        ...prev,
-                        descricaoCid: value,
-                      }))
-                    }
+                    value={restricaoForm.descricaoCid}
+                    onValueChange={(v) => setRestricaoForm((p) => ({ ...p, descricaoCid: v }))}
                   />
+                </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {/* Duração e Data Início */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
                     <Input
-                      label="Data Início"
+                      isInvalid={!!formErrors.duracaoRestricaoDias}
+                      label="Duração (dias) *"
+                      min={1}
                       size="sm"
-                      type="date"
-                      value={laudoRestricao.dataInicio}
-                      onValueChange={(value) =>
-                        setLaudoRestricao((prev) => ({
-                          ...prev,
-                          dataInicio: value,
-                          dataFim: calcularDataFim(value, prev.periodoDias),
-                        }))
-                      }
+                      type="number"
+                      value={restricaoForm.duracaoRestricaoDias}
+                      onValueChange={(v) => setRestricaoForm((p) => ({ ...p, duracaoRestricaoDias: v }))}
                     />
-                    <Input
-                      label="Data Fim"
-                      size="sm"
-                      type="date"
-                      value={laudoRestricao.dataFim}
-                      onValueChange={(value) =>
-                        setLaudoRestricao((prev) => ({
-                          ...prev,
-                          dataFim: value,
-                        }))
-                      }
-                    />
+                    {formErrors.duracaoRestricaoDias && (
+                      <p className="text-xs text-danger mt-1">{formErrors.duracaoRestricaoDias}</p>
+                    )}
                   </div>
-
-                  <Textarea
-                    label="Restrições Específicas"
-                    placeholder="Descreva as restrições temporárias para o trabalho..."
-                    rows={3}
-                    size="sm"
-                    value={laudoRestricao.restricoes}
-                    onValueChange={(value) =>
-                      setLaudoRestricao((prev) => ({
-                        ...prev,
-                        restricoes: value,
-                      }))
-                    }
-                  />
-
-                  <Textarea
-                    label="Recomendações"
-                    placeholder="Recomendações e orientações para o período..."
-                    rows={2}
-                    size="sm"
-                    value={laudoRestricao.recomendacoes}
-                    onValueChange={(value) =>
-                      setLaudoRestricao((prev) => ({
-                        ...prev,
-                        recomendacoes: value,
-                      }))
-                    }
-                  />
+                  <div>
+                    <Input
+                      isInvalid={!!formErrors.dataInicioRestricao}
+                      label="Data de Início *"
+                      size="sm"
+                      type="date"
+                      value={restricaoForm.dataInicioRestricao}
+                      onValueChange={(v) => setRestricaoForm((p) => ({ ...p, dataInicioRestricao: v }))}
+                    />
+                    {formErrors.dataInicioRestricao && (
+                      <p className="text-xs text-danger mt-1">{formErrors.dataInicioRestricao}</p>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  <Input
-                    className="sm:w-1/2"
-                    label="CID"
-                    placeholder="Ex: G80.9"
-                    size="sm"
-                    value={laudoPCD.cid}
-                    onValueChange={(value) =>
-                      setLaudoPCD((prev) => ({ ...prev, cid: value }))
-                    }
-                  />
 
-                  <Input
-                    label="Descrição do CID"
-                    placeholder="Descrição da condição de deficiência"
-                    size="sm"
-                    value={laudoPCD.descricaoCid}
-                    onValueChange={(value) =>
-                      setLaudoPCD((prev) => ({ ...prev, descricaoCid: value }))
-                    }
-                  />
+                {/* Restrições estruturadas — mesmo modelo da FichaClinicaOcupacional */}
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200 space-y-3">
+                  <h3 className="text-sm font-semibold text-amber-800">Restrições Médicas</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-                  <Textarea
-                    label="Limitações Funcionais"
-                    placeholder="Descreva as limitações funcionais do paciente..."
-                    rows={3}
-                    size="sm"
-                    value={laudoPCD.limitacoes}
-                    onValueChange={(value) =>
-                      setLaudoPCD((prev) => ({ ...prev, limitacoes: value }))
-                    }
-                  />
+                    {/* Carregar peso */}
+                    <div className="space-y-2">
+                      <Checkbox
+                        classNames={{ label: "text-sm font-medium text-gray-700" }}
+                        color="danger"
+                        isSelected={restricaoForm.restricoes.evitarCarregarPeso}
+                        size="sm"
+                        onValueChange={(v) => handleRestricoesChange("evitarCarregarPeso", v)}
+                      >
+                        Evitar carregar peso excessivo
+                      </Checkbox>
+                      {restricaoForm.restricoes.evitarCarregarPeso && (
+                        <div className="ml-6">
+                          <Input
+                            className="w-32"
+                            label="Peso máximo (kg)"
+                            size="sm"
+                            type="number"
+                            value={restricaoForm.restricoes.pesoMaximoKg || ""}
+                            onValueChange={(v) => handleRestricoesChange("pesoMaximoKg", v)}
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                  <Textarea
-                    label="Adaptações Necessárias"
-                    placeholder="Descreva as adaptações necessárias no ambiente de trabalho..."
-                    rows={3}
-                    size="sm"
-                    value={laudoPCD.adaptacoesNecessarias}
-                    onValueChange={(value) =>
-                      setLaudoPCD((prev) => ({
-                        ...prev,
-                        adaptacoesNecessarias: value,
-                      }))
-                    }
-                  />
+                    {/* Elevação dos braços */}
+                    <div className="space-y-2">
+                      <Checkbox
+                        classNames={{ label: "text-sm font-medium text-gray-700" }}
+                        color="danger"
+                        isSelected={restricaoForm.restricoes.evitarElevacaoBracos}
+                        size="sm"
+                        onValueChange={(v) => handleRestricoesChange("evitarElevacaoBracos", v)}
+                      >
+                        Evitar elevação dos braços acima dos ombros
+                      </Checkbox>
+                      {restricaoForm.restricoes.evitarElevacaoBracos && (
+                        <div className="ml-6 flex gap-3">
+                          {(["direito", "esquerdo", "ambos"] as const).map((tipo) => (
+                            <Checkbox
+                              key={tipo}
+                              classNames={{ label: "text-xs text-gray-700" }}
+                              color="warning"
+                              isSelected={restricaoForm.restricoes.tipoElevacaoBracos === tipo}
+                              size="sm"
+                              onValueChange={(v) => handleRestricoesChange("tipoElevacaoBracos", v ? tipo : undefined)}
+                            >
+                              {tipo.charAt(0).toUpperCase() + tipo.slice(1)}
+                            </Checkbox>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
-                  <Textarea
-                    label="Observações Adicionais"
-                    placeholder="Outras observações relevantes..."
-                    rows={2}
-                    size="sm"
-                    value={laudoPCD.observacoes}
-                    onValueChange={(value) =>
-                      setLaudoPCD((prev) => ({ ...prev, observacoes: value }))
-                    }
-                  />
+                    <Checkbox
+                      classNames={{ label: "text-sm font-medium text-gray-700" }}
+                      color="danger"
+                      isSelected={restricaoForm.restricoes.evitarCurvarTronco}
+                      size="sm"
+                      onValueChange={(v) => handleRestricoesChange("evitarCurvarTronco", v)}
+                    >
+                      Evitar curvar tronco com frequência
+                    </Checkbox>
+
+                    <Checkbox
+                      classNames={{ label: "text-sm font-medium text-gray-700" }}
+                      color="danger"
+                      isSelected={restricaoForm.restricoes.evitarEscadas}
+                      size="sm"
+                      onValueChange={(v) => handleRestricoesChange("evitarEscadas", v)}
+                    >
+                      Evitar subir/descer escadas ou degraus
+                    </Checkbox>
+
+                    <Checkbox
+                      classNames={{ label: "text-sm font-medium text-gray-700" }}
+                      color="danger"
+                      isSelected={restricaoForm.restricoes.evitarLongasCaminhadas}
+                      size="sm"
+                      onValueChange={(v) => handleRestricoesChange("evitarLongasCaminhadas", v)}
+                    >
+                      Evitar longas caminhadas
+                    </Checkbox>
+
+                    <Checkbox
+                      classNames={{ label: "text-sm font-medium text-gray-700" }}
+                      color="danger"
+                      isSelected={restricaoForm.restricoes.evitarAlterarPostura}
+                      size="sm"
+                      onValueChange={(v) => handleRestricoesChange("evitarAlterarPostura", v)}
+                    >
+                      Evitar alterar postura sentado e em pé
+                    </Checkbox>
+
+                    {/* Outros */}
+                    <div className="space-y-2">
+                      <Checkbox
+                        classNames={{ label: "text-sm font-medium text-gray-700" }}
+                        color="danger"
+                        isSelected={restricaoForm.restricoes.outros}
+                        size="sm"
+                        onValueChange={(v) => handleRestricoesChange("outros", v)}
+                      >
+                        Outros
+                      </Checkbox>
+                      {restricaoForm.restricoes.outros && (
+                        <div className="ml-6">
+                          <Input
+                            label="Descrição"
+                            size="sm"
+                            value={restricaoForm.restricoes.descricaoOutros || ""}
+                            onValueChange={(v) => handleRestricoesChange("descricaoOutros", v)}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              )}
+
+                {/* Observações / Recomendações */}
+                <Textarea
+                  label="Observações / Recomendações"
+                  placeholder="Recomendações e orientações para o período de restrição..."
+                  rows={3}
+                  size="sm"
+                  value={restricaoForm.observacoesMedicas}
+                  onValueChange={(v) => setRestricaoForm((p) => ({ ...p, observacoesMedicas: v }))}
+                />
+              </div>
             </div>
           </ModalBody>
           <ModalFooter>
@@ -769,7 +905,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const initialOpinion: MedicalOpinionData = {
     opinionType: null,
     details: "",
-    laudoPCD: null,
     laudoRestricao: null,
     altura: null,
     confinado: null,
@@ -801,6 +936,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const [modalPscAvisoOpen, setModalPscAvisoOpen] = useState(false);
   const [isWaitingForAuthToSave, setIsWaitingForAuthToSave] = useState(false);
   const [pscAuthWindowUrl, setPscAuthWindowUrl] = useState<string>("");
+  const [riscosConfigs, setRiscosConfigs] = useState<IRiscoConfig[]>([]);
   const pscWindowRef = useRef<Window | null>(null);
   const pscPollingRef = useRef<NodeJS.Timeout | null>(null);
   const previousPscStatusRef = useRef(pscAuthStatus.status);
@@ -810,6 +946,13 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     return () => {
       if (pscPollingRef.current) clearInterval(pscPollingRef.current);
     };
+  }, []);
+
+  // Carregar configurações de risco da API
+  useEffect(() => {
+    fetchRiscosConfig()
+      .then(setRiscosConfigs)
+      .catch(() => setRiscosConfigs([]));
   }, []);
 
   // Polling para detectar sucesso ou fechamento da janela
@@ -1068,6 +1211,20 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       return;
     }
 
+    // APTO_COM_RESTRICAO requer laudo preenchido com periodoDias e dataInicio
+    if (opinion.opinionType === ParecerMedico.APTO_COM_RESTRICAO) {
+      if (!opinion.laudoRestricao || !opinion.laudoRestricao.dataInicio || opinion.laudoRestricao.periodoDias <= 0) {
+        addToast({
+          variant: "solid",
+          title: "Laudo de restrição obrigatório",
+          description: "Preencha o laudo de Restrição Temporária (CID, período e data de início) antes de salvar.",
+          color: "danger",
+        });
+        setLaudoModalOpen(true);
+        return;
+      }
+    }
+
     // Verifica se precisa de autenticação PSC
     let requiresPscAuth = false;
 
@@ -1152,14 +1309,24 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     return [];
   }, [selectedRecord?.RISCOSASO]);
 
+  const alturaCodigos = useMemo(
+    () => new Set(riscosConfigs.find((c) => c.tipo === "ALTURA")?.codigos ?? []),
+    [riscosConfigs],
+  );
+
+  const confinadoCodigos = useMemo(
+    () => new Set(riscosConfigs.find((c) => c.tipo === "CONFINADO")?.codigos ?? []),
+    [riscosConfigs],
+  );
+
   const hasHeightRisk = useMemo(
-    () => riscos.some((r: any) => CODIGOS_RISCO_ALTURA.has(r?.codigo)),
-    [riscos],
+    () => riscos.some((r: any) => alturaCodigos.has(r?.codigo)),
+    [riscos, alturaCodigos],
   );
 
   const hasConfinedRisk = useMemo(
-    () => riscos.some((r: any) => CODIGOS_ESPACO_CONFINADO.has(r?.codigo)),
-    [riscos],
+    () => riscos.some((r: any) => confinadoCodigos.has(r?.codigo)),
+    [riscos, confinadoCodigos],
   );
 
   const agruparRiscos = (riscos: RiscosAso[]) => {
@@ -1288,6 +1455,20 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       });
 
       return;
+    }
+
+    // APTO_COM_RESTRICAO requer laudo preenchido com periodoDias e dataInicio
+    if (opinion.opinionType === ParecerMedico.APTO_COM_RESTRICAO) {
+      if (!opinion.laudoRestricao || !opinion.laudoRestricao.dataInicio || opinion.laudoRestricao.periodoDias <= 0) {
+        addToast({
+          variant: "solid",
+          title: "Laudo de restrição obrigatório",
+          description: "Preencha o laudo de Restrição Temporária (CID, período e data de início) antes de salvar.",
+          color: "danger",
+        });
+        setLaudoModalOpen(true);
+        return;
+      }
     }
 
     if (
@@ -1462,8 +1643,12 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
   const showDetailsField = opinionRequiresDetails(opinion);
   const showExamesSelector = opinionRequiresExames(opinion);
+  const normalizeStr = (s: string) =>
+    s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+  const perfilNorm = normalizeStr(user.perfil);
   const isMedicoOrMaster =
-    user.perfil === USER_PROFILE.MEDICO || user.perfil === USER_PROFILE.MASTER;
+    perfilNorm === normalizeStr(USER_PROFILE.MEDICO) ||
+    perfilNorm === normalizeStr(USER_PROFILE.MASTER);
   const isAwaitingMedical =
     selectedRecord.ATENDIMENTOSTATUS === AtendimentoStatus.AVALIACAO_MEDICA;
 
@@ -1526,7 +1711,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
                       {Object.entries(agruparRiscos(riscos)).map(
                         ([grupo, lista]) => (
-                          <ul className="list-none pl-4 text-[0.65rem] sm:text-[0.7rem]">
+                          <ul key={grupo} className="list-none pl-4 text-[0.65rem] sm:text-[0.7rem]">
                             {lista.map((risco, index) => (
                               <li
                                 key={index}
@@ -1655,11 +1840,21 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     opinionType: value,
                     details:
                       value === ParecerMedico.APTO ? "" : (prev?.details ?? ""),
+                    // Limpa laudoRestricao ao trocar para outro parecer que não seja APTO_COM_RESTRICAO
+                    laudoRestricao:
+                      value === ParecerMedico.APTO_COM_RESTRICAO
+                        ? (prev?.laudoRestricao ?? null)
+                        : null,
                     examesParaRepetir:
                       value === ParecerMedico.SOLICITAR_REPETICAO
                         ? prev?.examesParaRepetir
                         : [],
                   }));
+
+                  // Abre o modal de laudo automaticamente ao selecionar APTO_COM_RESTRICAO
+                  if (value === ParecerMedico.APTO_COM_RESTRICAO) {
+                    setLaudoModalOpen(true);
+                  }
                 }}
               >
                 <SelectItem key={ParecerMedico.APTO}>
@@ -1667,6 +1862,9 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                 </SelectItem>
                 <SelectItem key={ParecerMedico.APTO_COM_ORIENTACAO}>
                   {ParecerMedico.APTO_COM_ORIENTACAO.replace(/_/g, " ")}
+                </SelectItem>
+                <SelectItem key={ParecerMedico.APTO_COM_RESTRICAO}>
+                  APTO COM RESTRIÇÃO TEMPORÁRIA
                 </SelectItem>
                 {/* <SelectItem key={ParecerMedico.SOLICITAR_REPETICAO}>
                   {ParecerMedico.SOLICITAR_REPETICAO.replace(/_/g, " ")}
@@ -1823,7 +2021,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                 )}
 
               {/* Indicadores de Laudos */}
-              {(opinion?.laudoPCD || opinion?.laudoRestricao) && (
+              {opinion?.laudoRestricao && (
                 <>
                   <Divider />
                   <Card className="bg-primary-50 border-primary-200">
@@ -1835,11 +2033,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         </span>
                       </div>
                       <div className="space-y-2">
-                        {opinion.laudoPCD && (
-                          <Chip color="primary" size="sm" variant="flat">
-                            Laudo PCD - CID: {opinion.laudoPCD.cid}
-                          </Chip>
-                        )}
                         {opinion.laudoRestricao && (
                           <Chip color="warning" size="sm" variant="flat">
                             Restrição Temporária - CID:{" "}
@@ -1856,6 +2049,28 @@ const PainelDireita: React.FC<RightPanelProps> = ({
               {showDetailsField && (
                 <>
                   <Divider />
+                  <Autocomplete
+                    label="Modelo de Orientação"
+                    placeholder="Digite para buscar ou clique para selecionar..."
+                    size="sm"
+                    defaultItems={PREDEFINED_ORIENTACOES}
+                    onSelectionChange={(key) => {
+                      if (key) {
+                        setOpinion((prev) => ({
+                          ...(prev || {}),
+                          details: String(key),
+                        }));
+                      }
+                    }}
+                  >
+                    {(group) => (
+                      <AutocompleteSection key={group.category} title={group.category} showDivider>
+                        {group.items.map((text) => (
+                          <AutocompleteItem key={text}>{text}</AutocompleteItem>
+                        ))}
+                      </AutocompleteSection>
+                    )}
+                  </Autocomplete>
                   <Textarea
                     classNames={{
                       label: "text-xs sm:text-sm",
@@ -1863,6 +2078,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     }}
                     label="Justificativa / Detalhes"
                     placeholder="Descreva a justificativa do parecer..."
+                    description="Selecione um modelo acima ou digite livremente."
                     rows={4}
                     size="sm"
                     value={opinion?.details ?? ""}
@@ -1968,24 +2184,16 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         onSave={(t, d) => {
           setOpinion((prev) => ({
             ...(prev || {}),
+            // Se o parecer já é APTO_COM_RESTRICAO, mantém; caso contrário usa o padrão anterior
             opinionType:
-              prev?.opinionType ||
-              (t === LaudoTipo.PCD
-                ? ParecerMedico.APTO_COM_ORIENTACAO
-                : ParecerMedico.INAPTO_TEMPORARIAMENTE),
-            laudoPCD: t === LaudoTipo.PCD ? d : (prev?.laudoPCD ?? null),
-            laudoRestricao:
-              t !== LaudoTipo.PCD ? d : (prev?.laudoRestricao ?? null),
+              prev?.opinionType === ParecerMedico.APTO_COM_RESTRICAO
+                ? ParecerMedico.APTO_COM_RESTRICAO
+                : prev?.opinionType || ParecerMedico.INAPTO_TEMPORARIAMENTE,
+            laudoRestricao: d,
           }));
           addToast({
-            title:
-              t === LaudoTipo.PCD
-                ? "Laudo PCD emitido"
-                : "Laudo de Restrição emitido",
-            description:
-              t === LaudoTipo.PCD
-                ? "Laudo PCD adicionado ao parecer médico"
-                : "Laudo de restrição temporária adicionado ao parecer",
+            title: "Laudo de Restrição emitido",
+            description: "Laudo de restrição temporária adicionado ao parecer",
             color: "foreground",
           });
         }}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { Socket } from "socket.io-client";
 
 import DisconnectedState from "../../recepcao/components/DisconnectedState";
@@ -14,9 +14,11 @@ import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import ContentLoading from "@/app/atendimento/components/ContentLoading";
 import { ESTIMATIVA_EXAMES } from "@/config/constants";
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 
 interface MainContentProps {
   conectado: boolean;
+  aguardandoPrimeirosAtendimentos: boolean;
   agendamentos: Scheduling[];
   socket: Socket;
   salaSelecionada: string;
@@ -24,7 +26,7 @@ interface MainContentProps {
   unidadeSelecionada: string;
   operationalUserName?: string;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  onHandleModal: (state: boolean) => void;
+  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   exameSelecionado: string;
   pendingActions: Record<
     number,
@@ -35,10 +37,17 @@ interface MainContentProps {
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarAutenticacao?: (
+    atendimento: Scheduling,
+    metodo: "BIOMETRIA" | "FACIAL",
+  ) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  examesGrouped: Record<string, ExamToogle[]>;
 }
 
 const AtendimentoContent: React.FC<MainContentProps> = ({
   conectado,
+  aguardandoPrimeirosAtendimentos,
   agendamentos,
   socket,
   salaSelecionada,
@@ -50,50 +59,10 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   exameSelecionado,
   pendingActions,
   startPendingAction,
+  onIniciarAutenticacao,
+  onIniciarTeleatendimento,
+  examesGrouped,
 }) => {
-  const [estaCarregando, setEstaCarregando] = useState(true);
-  const [dadosIniciaisCarregados, setDadosIniciaisCarregados] = useState(false);
-
-  // Efeito para controlar o estado de carregamento inicial
-  useEffect(() => {
-    if (conectado && agendamentos) {
-      const timer = setTimeout(() => {
-        setEstaCarregando(false);
-        setDadosIniciaisCarregados(true);
-      }, 200);
-
-      return () => clearTimeout(timer);
-    }
-
-    // Reset loading state when disconnected
-    if (!conectado) {
-      setEstaCarregando(true);
-      setDadosIniciaisCarregados(false);
-    }
-  }, [conectado, agendamentos]);
-
-  // Efeito para mostrar loading durante atualizações via socket
-  useEffect(() => {
-    if (dadosIniciaisCarregados && socket) {
-      const handleAtualizacao = () => {
-        setEstaCarregando(true);
-        const timer = setTimeout(() => setEstaCarregando(false), 300);
-
-        return () => clearTimeout(timer);
-      };
-
-      socket.on("ticketAtualizado", handleAtualizacao);
-      socket.on("novoTicket", handleAtualizacao);
-      socket.on("atendimentoIniciado", handleAtualizacao);
-
-      return () => {
-        socket.off("ticketAtualizado", handleAtualizacao);
-        socket.off("novoTicket", handleAtualizacao);
-        socket.off("atendimentoIniciado", handleAtualizacao);
-      };
-    }
-  }, [socket, dadosIniciaisCarregados]);
-
   const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
     return exames
       .filter((ex) => ex.status !== ExamStatus.FINALIZADO)
@@ -222,16 +191,21 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     return <DisconnectedState />;
   }
 
-  // Loading elegante com HeroUI durante o carregamento
-  if (estaCarregando || !agendamentos) {
-    return <ContentLoading />;
-  }
-
   const totalAtendimentos = AtendimentosOrdenados.length;
   const totalPreferenciais = senhasPreferenciais.length;
   const totalComPrefixo = senhasComPrefixo.length;
   const totalNormais = senhasNormais.length;
   const totalOutrasSalas = atendimentoOutrasSalas.length;
+  const deveExibirLoading = aguardandoPrimeirosAtendimentos || !agendamentos;
+
+  if (deveExibirLoading) {
+    return (
+      <ContentLoading
+        description="Aguarde enquanto recebemos os atendimentos da unidade."
+        title="Recebendo atendimentos"
+      />
+    );
+  }
 
   const ariaLabelMain = `Sistema de atendimento medico - ${totalAtendimentos} pacientes aguardando: ${totalPreferenciais} preferenciais, ${totalComPrefixo} com prioridade, ${totalNormais} normais. ${totalOutrasSalas} em atendimento em outras salas.`;
 
@@ -263,6 +237,9 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         startPendingAction={startPendingAction}
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
+        onIniciarAutenticacao={onIniciarAutenticacao}
+        onIniciarTeleatendimento={onIniciarTeleatendimento}
+        examesGrouped={examesGrouped}
       />
     </main>
   );

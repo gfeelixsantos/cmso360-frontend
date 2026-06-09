@@ -130,7 +130,7 @@ const InformacoesGerais: React.FC<{
       );
     }
 
-    return <span className="text-gray-900">{value || "Não informado"}</span>;
+    return <span className="text-sm text-gray-900 uppercase">{value || "Não informado"}</span>;
   };
 
   const hasAsoData = Boolean(
@@ -240,7 +240,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Empresa
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.NOMEEMPRESA || "Não informado"}
                 </span>
               </div>
@@ -248,7 +248,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   CNPJ/CPF
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.CNPJEMPRESA ||
                     atendimento.CPFEMPRESA ||
                     "Não informado"}
@@ -258,7 +258,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Cargo
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.NOMECARGO || "Não informado"}
                 </span>
               </div>
@@ -266,7 +266,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Setor
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.NOMESETOR || "Não informado"}
                 </span>
               </div>
@@ -274,7 +274,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Unidade
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.NOMEUNIDADE || "Não informado"}
                 </span>
               </div>
@@ -291,7 +291,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Data e Hora
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.TICKET
                     ? new Date(atendimento.TICKET?.emissao).toLocaleString(
                         "pt-BR",
@@ -306,7 +306,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Tipo Exame
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.TIPOEXAMENOME || "Não informado"}
                 </span>
               </div>
@@ -314,7 +314,7 @@ const InformacoesGerais: React.FC<{
                 <label className="text-sm font-medium text-gray-500 block mb-1">
                   Unidade de Atendimento
                 </label>
-                <span className="text-gray-900">
+                <span className="text-sm text-gray-900 uppercase">
                   {atendimento.UNIDADEATENDIMENTO || "Não informado"}
                 </span>
               </div>
@@ -323,11 +323,11 @@ const InformacoesGerais: React.FC<{
                   <label className="text-sm font-medium text-gray-500 block mb-1">
                     Senha
                   </label>
-                  <span className="text-gray-900">
+                  <span className="text-sm text-gray-900 uppercase">
                     {`${atendimento.TICKET?.prefixo}${atendimento.TICKET?.numero}` ||
                       "Não informado"}
                   </span>
-                  <span className="text-gray-900">
+                  <span className="text-sm text-gray-900 uppercase">
                     {atendimento.TICKET?.preferencialTipo}
                   </span>
                 </div>
@@ -337,7 +337,7 @@ const InformacoesGerais: React.FC<{
                   <label className="text-sm font-medium text-gray-500 block mb-1">
                     Atendente
                   </label>
-                  <span className="text-gray-900">
+                  <span className="text-sm text-gray-900 uppercase">
                     {atendimento.TICKET?.atendente || "Não informado"}
                   </span>
                 </div>
@@ -349,6 +349,7 @@ const InformacoesGerais: React.FC<{
         <Divider className="my-6" />
 
         <AtendimentoStatusCard
+          autenticacaoAtendimento={atendimento.AUTENTICACAOATENDIMENTO}
           asoErrorMessage={asoErrorMessage}
           asoStatusColor={asoStatusColor}
           asoStatusLabel={asoStatusLabel}
@@ -356,7 +357,6 @@ const InformacoesGerais: React.FC<{
           atendimentoStatusColor={atendimentoStatusColor}
           atendimentoStatusLabel={atendimentoStatusLabel}
           emailLabel={emailLabel}
-          emailSent={atendimento.ASOINFO?.emailSent}
           hasAsoData={hasAsoData}
           hasAsoError={hasAsoError}
           observacoesParecer={observacoesParecer}

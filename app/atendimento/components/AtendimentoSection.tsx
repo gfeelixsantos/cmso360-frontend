@@ -7,6 +7,8 @@ import AtendimentoCard from "./AtendimentoCard";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+
 interface SenhasSectionProps {
   title: string;
   senhas: Scheduling[];
@@ -15,7 +17,7 @@ interface SenhasSectionProps {
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  onHandleModal: (state: boolean) => void;
+  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
   pendingActions: Record<
@@ -27,6 +29,12 @@ interface SenhasSectionProps {
     }
   >;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarAutenticacao?: (
+    atendimento: Scheduling,
+    metodo: "BIOMETRIA" | "FACIAL",
+  ) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  examesGrouped: Record<string, ExamToogle[]>;
 }
 
 // Helper para determinar ícone e cor baseado no tipo de seção
@@ -109,6 +117,9 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   exameSelecionado,
   pendingActions,
   startPendingAction,
+  onIniciarAutenticacao,
+  onIniciarTeleatendimento,
+  examesGrouped,
 }) => {
   const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
   const style = getSectionStyle(title);
@@ -161,13 +172,14 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
                 key={key}
                 atendimento={atendimento}
                 exameSelecionado={exameSelecionado}
-                pendingAction={pendingActions[atendimento.TICKET.id]}
                 salaSelecionada={salaSelecionada}
-                setFuncionarioSelecionado={setFuncionarioSelecionado}
                 socket={socket}
-                startPendingAction={startPendingAction}
                 unidadeSelecionada={unidadeSelecionada}
                 onHandleModal={onHandleModal}
+                startPendingAction={startPendingAction}
+                onIniciarAutenticacao={onIniciarAutenticacao}
+                onIniciarTeleatendimento={onIniciarTeleatendimento}
+                examesGrouped={examesGrouped}
               />
             </div>
           );

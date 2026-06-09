@@ -7,6 +7,13 @@ import {
 import { getCurrentUser } from "@/lib/utils";
 import { NEST_USER_SETTINGS_URL } from "@/config/constants";
 
+// Cache simples em memória: chave = codigo do usuário
+const settingsCache = new Map<string, {
+  data: { user: IUserInfo; settings: IUserInfoSettings | null; pscAuthStatus: IPscAuthStatus };
+  expires: number;
+}>();
+const SETTINGS_CACHE_TTL = 60_000; // 60 segundos
+
 export async function getUserSettings(): Promise<{
   user: IUserInfo;
   settings: IUserInfoSettings | null;
@@ -29,6 +36,12 @@ export async function getUserSettings(): Promise<{
     };
   }
 
+  const cacheKey = String(user.codigo);
+  const cached = settingsCache.get(cacheKey);
+  if (cached && cached.expires > Date.now()) {
+    return cached.data;
+  }
+
   try {
     const response = await fetch(`${NEST_USER_SETTINGS_URL}${user.codigo}`);
 
@@ -38,11 +51,18 @@ export async function getUserSettings(): Promise<{
 
     const data = await response.json();
 
-    return {
+    const result = {
       user: data.user,
       settings: data.settings,
       pscAuthStatus: data.pscAuthStatus,
     };
+
+    settingsCache.set(cacheKey, {
+      data: result,
+      expires: Date.now() + SETTINGS_CACHE_TTL,
+    });
+
+    return result;
   } catch (error) {
     console.error("Erro ao buscar configurações:", error);
 
@@ -91,6 +111,9 @@ export async function saveUserSettings(
 
       throw new Error(errorData.message || "Erro ao salvar configurações");
     }
+
+    // Invalida cache após salvar
+    settingsCache.delete(String(user.codigo));
 
     return { success: true };
   } catch (error) {

@@ -1,14 +1,12 @@
 import { Chip, Tooltip } from "@heroui/react";
 import {
   AlertTriangle,
-  CircleHelp,
   FileText,
-  MailCheck,
-  MailX,
   ShieldCheck,
-  UserCheck,
 } from "lucide-react";
 import React from "react";
+
+import { AtendimentoAuthInfo } from "@/lib/scheduling/interface/scheduling";
 
 type StatusColor =
   | "default"
@@ -29,29 +27,18 @@ interface AtendimentoStatusCardProps {
   signatureLabel: string;
   signatureDate: string;
   emailLabel: string;
-  emailSent?: boolean;
   asoUrl?: string | null;
   validacaoUrl?: string | null;
   observacoesParecer: string[];
   hasAsoError: boolean;
   asoErrorMessage?: string | null;
+  autenticacaoAtendimento?: AtendimentoAuthInfo | null;
 }
 
-const getAsoStatusTextColor = (statusColor: string) => {
-  if (statusColor === "success") return "text-emerald-700";
-  if (statusColor === "danger") return "text-red-700";
-
-  return "text-gray-900";
+const toProxyUrl = (url: string | null | undefined): string | undefined => {
+  if (!url) return undefined;
+  return `/api/blob/proxy?url=${encodeURIComponent(url)}`;
 };
-
-const ASO_PHASES_TOOLTIP = [
-  "Aguardando Geracao: backend reconheceu que o ASO precisa ser emitido.",
-  "Aguardando Assinatura: PDF base foi gerado e aguarda assinatura/enriquecimento.",
-  "Assinado - Enriquecimento: assinatura iniciou e o documento esta sendo finalizado.",
-  "Digitalizada: PDF existe, mas sem assinatura digital concluida.",
-  "Liberado: ASO concluido e pronto para consulta/envio.",
-  "Falha na assinatura: fluxo encontrou erro e precisa intervencao.",
-].join("\n");
 
 const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   hasAsoData,
@@ -64,13 +51,23 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   signatureLabel,
   signatureDate,
   emailLabel,
-  emailSent,
   asoUrl,
   validacaoUrl,
   observacoesParecer,
   hasAsoError,
   asoErrorMessage,
+  autenticacaoAtendimento,
 }) => {
+  const metodoAutenticacao = autenticacaoAtendimento?.metodo || "SOC";
+  const termoCienciaUrl =
+    autenticacaoAtendimento?.evidencias?.termoCienciaUrl || null;
+  const termoLabel =
+    metodoAutenticacao === "SOC"
+      ? "Verificar SOCGED"
+      : termoCienciaUrl
+        ? "Disponível para consulta"
+        : "Não disponível neste atendimento";
+
   return (
     <div className="mt-2">
       <div className="p-1">
@@ -80,8 +77,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
           }`}
         >
           <section className="space-y-3">
-            <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
-              <UserCheck size={16} />
+            <h4 className="font-medium text-sm text-gray-600">
               Status do Atendimento
             </h4>
             <Chip
@@ -91,16 +87,44 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
             >
               {atendimentoStatusLabel}
             </Chip>
+
+            <div className="space-y-3">
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-1">
+                  Autenticação do atendimento
+                </label>
+                <span className="text-sm text-gray-900 uppercase">
+                  {metodoAutenticacao || "Não informado"}
+                </span>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500 block mb-1">
+                  Termo de aceite
+                </label>
+                {termoCienciaUrl ? (
+                  <a
+                    className="text-sm font-medium text-[#44735e] hover:underline uppercase"
+                    href={toProxyUrl(termoCienciaUrl)}
+                    rel="noopener noreferrer"
+                    target="_blank"
+                  >
+                    Visualizar
+                  </a>
+                ) : (
+                  <span className="text-sm text-gray-900 uppercase">{termoLabel}</span>
+                )}
+              </div>
+            </div>
           </section>
 
           {hasAsoData && (
             <section className="space-y-3">
-              <h4 className="text-sm font-medium text-gray-600">
+              <h4 className="font-medium text-sm text-gray-600">
                 Parecer ASO
               </h4>
 
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium text-gray-900">{parecerAso}</p>
+                <p className="text-sm text-gray-900 uppercase">{parecerAso}</p>
                 <div className="flex items-center gap-1">
                   {asoUrl && (
                     <Tooltip
@@ -110,7 +134,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                     >
                       <a
                         className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                        href={asoUrl}
+                        href={toProxyUrl(asoUrl)}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
@@ -126,7 +150,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                     >
                       <a
                         className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                        href={validacaoUrl}
+                        href={toProxyUrl(validacaoUrl)}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
@@ -137,41 +161,23 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                  Situação
-                  <Tooltip
-                    color="foreground"
-                    content={
-                      <div className="max-w-xs whitespace-pre-line text-xs">
-                        {ASO_PHASES_TOOLTIP}
-                      </div>
-                    }
-                    disableAnimation={true}
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Situação
+                  </label>
+                  <p
+                    className="text-sm text-gray-900 uppercase"
                   >
-                    <span className="inline-flex cursor-help text-gray-400 transition-colors hover:text-gray-600">
-                      <CircleHelp size={14} />
-                    </span>
-                  </Tooltip>
-                </h4>
-                <p
-                  className={`text-xs font-medium ${getAsoStatusTextColor(asoStatusColor)}`}
-                >
-                  {asoStatusLabel}
-                </p>
-              </div>
+                    {asoStatusLabel}
+                  </p>
+                </div>
 
-              <div className="space-y-2">
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                  E-mail
-                </h4>
-                <div className="flex items-center gap-2">
-                  {emailSent ? (
-                    <MailCheck className="text-emerald-600" size={14} />
-                  ) : (
-                    <MailX className="text-amber-600" size={14} />
-                  )}
-                  <p className="text-xs font-medium text-gray-900">{emailLabel}</p>
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    E-mail
+                  </label>
+                  <p className="text-sm text-gray-900 uppercase">{emailLabel}</p>
                 </div>
               </div>
             </section>
@@ -179,23 +185,27 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
 
           {hasAsoData && (
             <section className="space-y-3">
-              <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
+              <h4 className="font-medium text-sm text-gray-600">
                 Médico Responsável
               </h4>
-              <p className="text-sm text-gray-900">
-                {profissionalAso || "Nao informado"}
+              <p className="text-sm text-gray-900 uppercase">
+                {profissionalAso || "Não informado"}
               </p>
-              <div className="space-y-1 pt-1">
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                  Tipo de assinatura
-                </h4>
-                <p className="text-xs text-gray-900">{signatureLabel}</p>
-                <h4 className="flex items-center gap-2 text-sm font-medium text-gray-600">
-                  Atualização
-                </h4>
-                <p className="text-xs normal-case text-gray-600">
-                  {signatureDate}
-                </p>
+              <div className="space-y-3 pt-1">
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Tipo de Assinatura
+                  </label>
+                  <p className="text-sm text-gray-900 uppercase">{signatureLabel}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    Atualização
+                  </label>
+                  <p className="text-sm text-gray-600">
+                    {signatureDate}
+                  </p>
+                </div>
               </div>
             </section>
           )}
@@ -204,7 +214,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
         {observacoesParecer.length > 0 && (
           <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
             <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
-              Observacoes do parecer
+              Observações do parecer
             </p>
             <p className="text-xs text-amber-900">
               {observacoesParecer.join(" | ")}

@@ -19,8 +19,8 @@ import {
   NEST_URL,
   NEXT_WS_URL,
   SERVICES_KEY,
-  UNIDADES_ATENDIMENTO,
 } from "@/config/constants";
+import { useUnits } from "@/lib/config/useUnits";
 import painelAudioFallback from "@/lib/painel/painel-audio-fallback";
 import { getReceptionToneByTicket } from "@/lib/ticket/ticket-colors";
 
@@ -495,6 +495,7 @@ const ConfigModal = ({
   unidadeSelecionada,
   filtroChamada,
   onSave,
+  unidades,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -506,6 +507,7 @@ const ConfigModal = ({
     filtro: "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO";
     audioHabilitado: boolean;
   }) => void;
+  unidades: string[];
 }) => {
   const [draftUnidade, setDraftUnidade] = useState(unidadeSelecionada);
   const [draftFiltroChamada, setDraftFiltroChamada] = useState(filtroChamada);
@@ -566,7 +568,7 @@ const ConfigModal = ({
               value={draftUnidade}
               onChange={(e) => setDraftUnidade(e.target.value)}
             >
-              {UNIDADES_ATENDIMENTO.map((unidade) => (
+              {unidades.map((unidade) => (
                 <option key={unidade} value={unidade}>
                   {unidade}
                 </option>
@@ -697,6 +699,7 @@ const exitFullscreen = () => {
 };
 
 export default function PainelPage() {
+  const { unidades } = useUnits();
   const [chamadaAtual, setChamadaAtual] = useState<PainelCall>();
   const [anteriores, setAnteriores] = useState<PainelCall[]>([]);
   const [hora, setHora] = useState<string>("");
@@ -1517,7 +1520,7 @@ export default function PainelPage() {
                   <option disabled value="">
                     Selecione a unidade
                   </option>
-                  {UNIDADES_ATENDIMENTO.map((unidade) => (
+                  {unidades.map((unidade) => (
                     <option key={unidade} value={unidade}>
                       {unidade}
                     </option>
@@ -1651,6 +1654,7 @@ export default function PainelPage() {
         onSave={handleSaveConfig}
         unidadeSelecionada={unidadeSelecionada}
         onClose={() => setShowConfig(false)}
+        unidades={unidades}
       />
 
       {/* Idle Screen */}

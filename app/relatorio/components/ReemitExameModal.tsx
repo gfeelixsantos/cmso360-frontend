@@ -70,7 +70,7 @@ const ReemitExameModal: React.FC<ReemitExameModalProps> = ({
                   </span>
                 </p>
                 <p className="text-xs text-[#2a4a3a] mt-3 bg-[#e8f4e3] border border-[#b8d864] p-2 rounded">
-                  O exame será reenviado para processamento no SOC.
+                  O exame será reenviado para processamento no sistema.
                 </p>
               </div>
             </ModalBody>

@@ -270,21 +270,22 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
 
   // Filtrar agendamentos com base na busca
   const agendamentosFiltrados = useMemo(() => {
-    if (!buscaSenha.trim()) {
-      return agendadosFiltrados.filter(
-        (a) => a.UNIDADEATENDIMENTO === unidadeSelecionada,
-      );
-    }
+    const base = agendadosFiltrados.filter(
+      (a) =>
+        a.UNIDADEATENDIMENTO === unidadeSelecionada ||
+        !a.UNIDADEATENDIMENTO,
+    );
+
+    if (!buscaSenha.trim()) return base;
 
     const termoBusca = normalizeString(buscaSenha.trim());
 
-    return agendadosFiltrados.filter(
+    return base.filter(
       (agendamento) =>
-        agendamento.UNIDADEATENDIMENTO === unidadeSelecionada &&
-        (normalizeString(agendamento.NOME).includes(termoBusca) ||
-          normalizeString(agendamento.NOMEEMPRESA).includes(termoBusca) ||
-          (agendamento.NOMECARGO &&
-            normalizeString(agendamento.NOMECARGO).includes(termoBusca))),
+        normalizeString(agendamento.NOME).includes(termoBusca) ||
+        normalizeString(agendamento.NOMEEMPRESA).includes(termoBusca) ||
+        (agendamento.NOMECARGO &&
+          normalizeString(agendamento.NOMECARGO).includes(termoBusca)),
     );
   }, [agendadosFiltrados, unidadeSelecionada, buscaSenha]);
 
@@ -407,8 +408,7 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
               </h2>
             </div>
             <p className="text-sm text-gray-600 mt-2">
-              {agendamentosFiltrados.length} agendamento(s) em{" "}
-              {unidadeSelecionada}
+              {agendamentosFiltrados.length} agendamento(s)
               {buscaSenha && (
                 <span className="ml-2 text-blue-600 font-medium">
                   • Busca: "{buscaSenha}"
@@ -467,16 +467,14 @@ const AgendamentosList: React.FC<AgendamentosListProps> = ({
                     <p className="text-lg font-medium mb-1">
                       {buscaSenha
                         ? "Nenhum agendamento encontrado"
-                        : "Nenhum agendamento para esta unidade"}
+                        : "Nenhum agendamento para hoje"}
                     </p>
                     <p className="text-sm text-center text-gray-600">
                       {buscaSenha
                         ? 'Nenhum agendamento encontrado para a busca "' +
                           buscaSenha +
                           '". Tente ajustar os termos.'
-                        : "Não há agendamentos para a unidade " +
-                          unidadeSelecionada +
-                          " no momento."}
+                        : "Não há agendamentos cadastrados para hoje."}
                     </p>
                     {buscaSenha && (
                       <Button

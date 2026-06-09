@@ -225,7 +225,7 @@ export default function EmPreparacaoModal({
     if (!socket?.connected) {
       addToast({
         title: "Erro de conexão",
-        description: "Socket não conectado. Tente novamente mais tarde.",
+        description: "Sem conexão com o servidor. Tente novamente mais tarde.",
         severity: "danger",
         color: "danger",
         variant: "flat",

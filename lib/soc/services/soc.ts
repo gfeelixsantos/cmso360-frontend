@@ -7,7 +7,9 @@ export class SOC {
     const response = await fetch(SOC_ED_CADASTRO_PESSOAS_URL!);
 
     if (response.ok) {
-      const listaCadastroPessoas: ICadastroPessoas[] = await response.json();
+      const buffer = await response.arrayBuffer();
+      const decoded = new TextDecoder('iso-8859-1').decode(buffer);
+      const listaCadastroPessoas: ICadastroPessoas[] = JSON.parse(decoded);
 
       return listaCadastroPessoas;
     }

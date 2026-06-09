@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 
 import { NEST_URL } from "@/config/constants";
 import { JWT } from "@/lib/jwt/jwt";
+import { resolveAuthProxyContextFromTokens } from "../../../_authContext.mjs";
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {
@@ -10,31 +11,29 @@ export async function POST(req: Request): Promise<NextResponse> {
     const ck = await cookies();
     const authToken = ck.get("auth_token")?.value;
     const refreshToken = ck.get("refresh_token")?.value;
-    const tokenToVerify = authToken ?? refreshToken;
+    const { bearerToken, authUser } = await resolveAuthProxyContextFromTokens({
+      authToken,
+      refreshToken,
+      verifyJwt: JWT.verifyJwt,
+    });
 
     const headers = new Headers({
       "Content-Type": "application/json",
     });
 
-    if (authToken) {
-      headers.set("Authorization", `Bearer ${authToken}`);
+    if (bearerToken) {
+      headers.set("Authorization", `Bearer ${bearerToken}`);
     }
 
     let requestBody = body;
 
-    if (tokenToVerify) {
-      const payload = await JWT.verifyJwt(tokenToVerify);
+    if (authUser) {
+      headers.set("x-auth-user", JSON.stringify(authUser));
 
-      if (payload) {
-        const { exp, iat, ...authUser } = payload;
-
-        headers.set("x-auth-user", JSON.stringify(authUser));
-
-        requestBody = {
-          ...body,
-          user: body?.user ?? authUser,
-        };
-      }
+      requestBody = {
+        ...body,
+        user: body?.user ?? authUser,
+      };
     }
 
     const response = await fetch(`${NEST_URL}psc/auth/start`, {

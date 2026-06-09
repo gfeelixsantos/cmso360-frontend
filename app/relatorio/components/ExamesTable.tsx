@@ -39,6 +39,8 @@ import ExamUploadModal from "./ExamUploadModal";
 import ReemitExameModal from "./ReemitExameModal";
 import { SelectedFile } from "./SelectedFilesList";
 
+import { toProxyUrl } from "@/lib/blob/blob-proxy";
+
 import {
   NEST_RELATORIO_FUNCIONARIO,
   NEST_SCHEDULINGS_EXAM_REISSUE,
@@ -139,22 +141,12 @@ const ExamesTable: React.FC<{
     setLocalExames(exames || []);
   }, [exames]);
 
-  const buildFreshPdfUrl = (url?: string) => {
-    const normalizedUrl = String(url || "").trim();
-
-    if (!normalizedUrl) return "";
-
-    const separator = normalizedUrl.includes("?") ? "&" : "?";
-
-    return `${normalizedUrl}${separator}t=${Date.now()}`;
-  };
-
   const handleOpenExamResult = (url?: string) => {
-    const freshUrl = buildFreshPdfUrl(url);
+    const proxyUrl = toProxyUrl(url);
 
-    if (!freshUrl) return;
+    if (!proxyUrl) return;
 
-    window.open(freshUrl, "_blank", "noopener,noreferrer");
+    window.open(proxyUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleUploadSuccess = (updatedScheduling: Scheduling) => {
