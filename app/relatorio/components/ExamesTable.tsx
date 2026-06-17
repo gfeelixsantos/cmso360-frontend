@@ -39,7 +39,7 @@ import ExamUploadModal from "./ExamUploadModal";
 import ReemitExameModal from "./ReemitExameModal";
 import { SelectedFile } from "./SelectedFilesList";
 
-import { toProxyUrl } from "@/lib/blob/blob-proxy";
+import { buildViewerUrl, buildDocFilename } from "@/lib/blob/blob-proxy";
 
 import {
   NEST_RELATORIO_FUNCIONARIO,
@@ -141,12 +141,24 @@ const ExamesTable: React.FC<{
     setLocalExames(exames || []);
   }, [exames]);
 
-  const handleOpenExamResult = (url?: string) => {
-    const proxyUrl = toProxyUrl(url);
+  const formatDateCompact = (d?: string) => {
+    if (!d) return "";
+    try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return ""; }
+  };
 
-    if (!proxyUrl) return;
-
-    window.open(proxyUrl, "_blank", "noopener,noreferrer");
+  const handleOpenExamResult = (url?: string, exame?: ExamRegister) => {
+    const displayName =
+      exame && atendimento.NOME
+        ? buildDocFilename([
+            'CMSO_RESULTADO',
+            exame.nomeExame || exame.codigoExame || 'EXAME',
+            atendimento.NOME,
+            formatDateCompact(exame.dataExame),
+          ])
+        : undefined;
+    const viewerUrl = buildViewerUrl(url, displayName);
+    if (!viewerUrl) return;
+    window.open(viewerUrl, "_blank", "noopener,noreferrer");
   };
 
   const handleUploadSuccess = (updatedScheduling: Scheduling) => {
@@ -332,7 +344,7 @@ const ExamesTable: React.FC<{
     );
   }, [localExames, searchTerm]);
 
-  const getExamStatusColor = (status: string) => {
+  const getExamStatusColor = (status?: string) => {
     switch (status) {
       case ExamStatus.FINALIZADO:
         return "success";
@@ -345,7 +357,7 @@ const ExamesTable: React.FC<{
     }
   };
 
-  const getExamStatusIcon = (status: string) => {
+  const getExamStatusIcon = (status?: string) => {
     switch (status) {
       case ExamStatus.FINALIZADO:
         return <CheckCircle size={14} />;
@@ -631,7 +643,7 @@ const ExamesTable: React.FC<{
                       </div>
                       {hasExecutionData ? (
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
-                          <div>{formatDate(exame.dataExame)}</div>
+                          <div>{formatDate(exame.dataExame || "")}</div>
                           <div>
                             {exame.sala || "-"} - {exame.profissional || "-"}
                           </div>
@@ -690,7 +702,7 @@ const ExamesTable: React.FC<{
                             size="sm"
                             startContent={<Eye size={14} />}
                             variant="light"
-                            onPress={() => handleOpenExamResult(exame.url)}
+                            onPress={() => handleOpenExamResult(exame.url, exame)}
                           >
                             Visualizar
                           </Button>

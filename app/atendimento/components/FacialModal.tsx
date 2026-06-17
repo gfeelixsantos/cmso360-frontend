@@ -300,7 +300,7 @@ const FacialModal: React.FC<FacialModalProps> = ({
       hideCloseButton={inProgress}
       isDismissable={isTerminal}
       isOpen={isOpen}
-      size="md"
+      size="lg"
       onClose={() => onClose(status === "success")}
     >
       <ModalContent className="border border-[#44735e]/20">

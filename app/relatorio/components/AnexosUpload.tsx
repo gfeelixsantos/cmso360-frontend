@@ -20,7 +20,7 @@ import {
   Paperclip,
 } from "lucide-react";
 
-import { toProxyUrl } from "@/lib/blob/blob-proxy";
+import { buildViewerUrl, buildDocFilename } from "@/lib/blob/blob-proxy";
 import { FileUpload } from "@/lib/scheduling/interface/scheduling";
 
 interface AnexosUploadProps {
@@ -154,7 +154,10 @@ const AnexosUpload: React.FC<AnexosUploadProps> = ({
 
   const handleOpenAttachment = useCallback((anexo: FileUpload) => {
     if (anexo.StoragePath) {
-      window.open(toProxyUrl(anexo.StoragePath), "_blank", "noopener,noreferrer");
+      const displayName = anexo.Name
+        ? buildDocFilename(['CMSO_ANEXO', anexo.Name.replace(/\.[^.]+$/, '')], anexo.Name.match(/\.[^.]+$/)?.[0] || '.pdf')
+        : undefined;
+      window.open(buildViewerUrl(anexo.StoragePath, displayName), "_blank", "noopener,noreferrer");
     } else if (anexo.Content) {
       // Convert base64 to blob and open
       const base64 = anexo.Content as string;

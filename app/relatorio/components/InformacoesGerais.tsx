@@ -357,6 +357,7 @@ const InformacoesGerais: React.FC<{
           atendimentoStatusColor={atendimentoStatusColor}
           atendimentoStatusLabel={atendimentoStatusLabel}
           emailLabel={emailLabel}
+          employeeNome={atendimento.NOME}
           hasAsoData={hasAsoData}
           hasAsoError={hasAsoError}
           observacoesParecer={observacoesParecer}

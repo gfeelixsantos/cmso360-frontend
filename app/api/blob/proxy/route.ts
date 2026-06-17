@@ -4,9 +4,14 @@ import { NEST_URL } from "@/config/constants";
 import { JWT } from "@/lib/jwt/jwt";
 import { resolveAuthProxyContextFromTokens } from "../../_authContext.mjs";
 
+function isBlobStorageUrl(url: string): boolean {
+  return url.includes("blob.core.windows.net");
+}
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const urlParam = req.nextUrl.searchParams.get("url");
+    const filenameParam = req.nextUrl.searchParams.get("filename");
     if (!urlParam || !urlParam.trim()) {
       return NextResponse.json(
         { message: "Parâmetro 'url' é obrigatório" },
@@ -31,8 +36,55 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       proxyHeaders.set("x-auth-user", JSON.stringify(authUser));
     }
 
-    const nestUrl = `${NEST_URL}blob/proxy?url=${encodeURIComponent(urlParam.trim())}`;
-    const response = await fetch(nestUrl, {
+    const targetUrl = urlParam.trim();
+
+    if (isBlobStorageUrl(targetUrl)) {
+      let nestUrl = `${NEST_URL}blob/proxy?url=${encodeURIComponent(targetUrl)}`;
+      if (filenameParam) {
+        nestUrl += `&filename=${encodeURIComponent(filenameParam)}`;
+      }
+      const response = await fetch(nestUrl, {
+        headers: proxyHeaders,
+        signal: AbortSignal.timeout(30000),
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        return NextResponse.json(
+          { message: text || "Erro ao acessar documento" },
+          { status: response.status },
+        );
+      }
+
+      const contentType =
+        response.headers.get("content-type") || "application/octet-stream";
+      const contentDisposition =
+        response.headers.get("content-disposition") || "inline";
+
+      if (response.body) {
+        return new NextResponse(response.body, {
+          status: 200,
+          headers: {
+            "Content-Type": contentType,
+            "Content-Disposition": contentDisposition,
+            "Cache-Control": "public, max-age=300, immutable",
+          },
+        });
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      return new NextResponse(arrayBuffer, {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": contentDisposition,
+          "Content-Length": String(arrayBuffer.byteLength),
+          "Cache-Control": "public, max-age=300, immutable",
+        },
+      });
+    }
+
+    const response = await fetch(targetUrl, {
       headers: proxyHeaders,
       signal: AbortSignal.timeout(30000),
     });
@@ -45,17 +97,30 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const arrayBuffer = await response.arrayBuffer();
     const contentType =
       response.headers.get("content-type") || "application/octet-stream";
+    const contentDisposition =
+      response.headers.get("content-disposition") || "inline";
 
+    if (response.body) {
+      return new NextResponse(response.body, {
+        status: 200,
+        headers: {
+          "Content-Type": contentType,
+          "Content-Disposition": contentDisposition,
+          "Cache-Control": "public, max-age=300, immutable",
+        },
+      });
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
     return new NextResponse(arrayBuffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Content-Disposition": response.headers.get("content-disposition") || "inline",
+        "Content-Disposition": contentDisposition,
         "Content-Length": String(arrayBuffer.byteLength),
-        "Cache-Control": "no-store",
+        "Cache-Control": "public, max-age=300, immutable",
       },
     });
   } catch (error) {

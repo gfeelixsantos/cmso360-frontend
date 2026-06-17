@@ -29,6 +29,7 @@ import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // fun�
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { IUserInfo } from "@/hooks/useUser";
+import { buildViewerUrl, buildDocFilename } from "@/lib/blob/blob-proxy";
 
 interface LazyModalContentProps {
   atendimento: Scheduling;
@@ -172,48 +173,13 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
   // HANDLERS EXISTENTES
   // ============================================
 
-  const handleViewMedicalRecord = async () => {
-    const newWin = window.open("", "_blank", "noopener,noreferrer");
-
-    if (!newWin) {
-      setAlertModal({
-        open: true,
-        type: "error",
-        message: "Não foi possível abrir o prontuário em nova aba",
-      });
-
-      return;
-    }
-
-    try {
-      setLoadingViewMedicalRecord(true);
-      const response = await fetch(
-        `${NEST_SCHEDULINGS_PRONTUARIO}${atendimento._id}`,
-      );
-
-      if (!response.ok) {
-        newWin.close();
-        const txt = await response.text();
-
-        throw new Error(`Erro ao buscar prontuário: ${txt}`);
-      }
-
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-
-      newWin.location.href = blobUrl;
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (error) {
-      newWin.close();
-      console.error("Erro ao visualizar prontuário:", error);
-      setAlertModal({
-        open: true,
-        type: "error",
-        message: "Não foi possível carregar o prontuário",
-      });
-    } finally {
-      setLoadingViewMedicalRecord(false);
-    }
+  const handleViewMedicalRecord = () => {
+    const prontuarioUrl = `${NEST_SCHEDULINGS_PRONTUARIO}${atendimento._id}`;
+    const viewerUrl = buildViewerUrl(
+      prontuarioUrl,
+      buildDocFilename(['CMSO_PRONTUARIO', atendimento.NOME, atendimento.CODIGOPRONTUARIO]),
+    );
+    window.open(viewerUrl, "_blank", "noopener,noreferrer");
   };
 
   // handler para carregar relatório do Mongo e abrir em nova aba

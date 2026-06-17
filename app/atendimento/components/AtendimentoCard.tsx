@@ -41,7 +41,7 @@ import {
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 
-import { toProxyUrl } from "@/lib/blob/blob-proxy";
+import { buildViewerUrl, buildDocFilename } from "@/lib/blob/blob-proxy";
 import { FALLBACK_EXAMES_GROUPED } from "@/lib/exames/utils/fallback-exames";
 import { getCurrentUser } from "@/lib/utils";
 import { Ticket, TicketActionType, TicketStatus } from "@/lib/ticket/ticket";
@@ -413,13 +413,29 @@ const useSortedExams = (
 const ExamDetails: React.FC<{
   exames: ExamRegister[];
   examesGrouped?: Record<string, ExamToogle[]>;
-}> = ({ exames, examesGrouped }) => {
+  employeeNome?: string;
+}> = ({ exames, examesGrouped, employeeNome }) => {
   const sortedExams = useSortedExams(exames, examesGrouped);
 
-  const handleViewResult = (url: string) => {
-    const proxyUrl = toProxyUrl(url);
-    if (proxyUrl) {
-      window.open(proxyUrl, "_blank", "noopener,noreferrer");
+  const formatDateCompact = (d?: string) => {
+    if (!d) return "";
+    try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return ""; }
+  };
+
+  const handleViewResult = (url: string | undefined, exame?: ExamRegister) => {
+    if (!url) return;
+    const displayName =
+      exame && employeeNome
+        ? buildDocFilename([
+            'CMSO_RESULTADO',
+            exame.nomeExame || exame.codigoExame || 'EXAME',
+            employeeNome,
+            formatDateCompact(exame.dataExame),
+          ])
+        : undefined;
+    const viewerUrl = buildViewerUrl(url, displayName);
+    if (viewerUrl) {
+      window.open(viewerUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -453,7 +469,7 @@ const ExamDetails: React.FC<{
                 exame.grupo ||
                 exame.codigoExame;
               const formattedTime = shouldShowCompletedTime(exame)
-                ? formatExamTime(exame.dataExame)
+                ? formatExamTime(exame.dataExame ?? null)
                 : "";
 
               return (
@@ -466,7 +482,7 @@ const ExamDetails: React.FC<{
                   <TableCell>
                     <div className="flex justify-center">
                       <span className="font-medium text-xs text-gray-900 text-center">
-                        {exame.status.replace(/_/g, " ")}
+                        {exame.status?.replace(/_/g, " ") ?? "-"}
                       </span>
                     </div>
                   </TableCell>
@@ -502,7 +518,7 @@ const ExamDetails: React.FC<{
                             size="sm"
                             startContent={<Eye className="h-3 w-3" />}
                             variant="light"
-                            onPress={() => handleViewResult(exame.url)}
+                            onPress={() => handleViewResult(exame.url, exame)}
                           >
                             Ver
                           </Button>
@@ -522,14 +538,14 @@ const ExamDetails: React.FC<{
       {/* Versão mobile responsiva */}
       <div className="lg:hidden space-y-2">
         {sortedExams.map((exame, index) => {
-          const statusColors = getStatusColor(exame.status);
+          const statusColors = getStatusColor(exame.status ?? "");
           const examName =
             getExamNameByCode(exame.codigoExame, examesGrouped) ||
             exame.nomeExame ||
             exame.grupo ||
             exame.codigoExame;
           const formattedTime = shouldShowCompletedTime(exame)
-            ? formatExamTime(exame.dataExame)
+            ? formatExamTime(exame.dataExame ?? null)
             : "";
 
           return (
@@ -540,7 +556,7 @@ const ExamDetails: React.FC<{
                 </div>
                 <div className="col-span-2">
                   <Badge className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`} size="sm" variant="flat">
-                    {exame.status}
+                    {exame.status ?? "-"}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1">
@@ -564,7 +580,7 @@ const ExamDetails: React.FC<{
                       size="sm"
                       startContent={<Eye className="h-3 w-3" />}
                       variant="light"
-                      onPress={() => handleViewResult(exame.url)}
+                      onPress={() => handleViewResult(exame.url, exame)}
                     >
                       Ver Resultado
                     </Button>
@@ -585,13 +601,18 @@ const ExamDetails: React.FC<{
 };
 
 // Componente para anexos do atendimento
-const Anexos: React.FC<{ anexos: any[] }> = ({ anexos }) => {
+const Anexos: React.FC<{ anexos: any[]; employeeNome?: string }> = ({ anexos, employeeNome }) => {
   if (!anexos || anexos.length === 0) return null;
 
-  const handleOpenAnexo = (url: string, _nome: string) => {
-    const proxyUrl = toProxyUrl(url);
-    if (proxyUrl) {
-      window.open(proxyUrl, "_blank", "noopener,noreferrer");
+  const handleOpenAnexo = (url: string, nome: string) => {
+    const ext = nome.match(/\.[^.]+$/)?.[0] || '.pdf';
+    const base = nome.replace(/\.[^.]+$/, '');
+    const displayName = employeeNome
+      ? buildDocFilename(['CMSO_ANEXO', employeeNome, base], ext)
+      : buildDocFilename(['CMSO_ANEXO', base], ext);
+    const viewerUrl = buildViewerUrl(url, displayName);
+    if (viewerUrl) {
+      window.open(viewerUrl, "_blank", "noopener,noreferrer");
     }
   };
 
@@ -896,7 +917,7 @@ const AtendimentoCard = ({
           </Button>
         )}
 
-        {showExamDetails && <ExamDetails exames={atendimento.EXAMES} examesGrouped={examesGrouped} />}
+        {showExamDetails && <ExamDetails employeeNome={atendimento.NOME} exames={atendimento.EXAMES} examesGrouped={examesGrouped} />}
 
         <div aria-label="Informações adicionais do atendimento" className="space-y-3 pt-4 border-t border-gray-200" role="contentinfo">
           {atendimento.ANEXOS && atendimento.ANEXOS.length > 0 && (
@@ -905,7 +926,7 @@ const AtendimentoCard = ({
                 <Paperclip className="h-3 w-3" />
                 <span className="font-medium">Anexos:</span>
               </div>
-              <Anexos anexos={atendimento.ANEXOS} />
+              <Anexos anexos={atendimento.ANEXOS} employeeNome={atendimento.NOME} />
             </div>
           )}
 
@@ -973,7 +994,7 @@ const AtendimentoCard = ({
                       </DropdownItem>
                       <DropdownItem
                         key="FACIAL"
-                        description="Captura facial com termo de aceite"
+                        description="Abrir captura facial do funcionário"
                         startContent={<Camera className="h-4 w-4" />}
                       >
                         Facial

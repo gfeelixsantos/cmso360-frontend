@@ -7,6 +7,7 @@ import {
 import React from "react";
 
 import { AtendimentoAuthInfo } from "@/lib/scheduling/interface/scheduling";
+import { buildViewerUrl, buildDocFilename } from "@/lib/blob/blob-proxy";
 
 type StatusColor =
   | "default"
@@ -33,12 +34,8 @@ interface AtendimentoStatusCardProps {
   hasAsoError: boolean;
   asoErrorMessage?: string | null;
   autenticacaoAtendimento?: AtendimentoAuthInfo | null;
+  employeeNome?: string;
 }
-
-const toProxyUrl = (url: string | null | undefined): string | undefined => {
-  if (!url) return undefined;
-  return `/api/blob/proxy?url=${encodeURIComponent(url)}`;
-};
 
 const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   hasAsoData,
@@ -57,6 +54,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   hasAsoError,
   asoErrorMessage,
   autenticacaoAtendimento,
+  employeeNome,
 }) => {
   const metodoAutenticacao = autenticacaoAtendimento?.metodo || "SOC";
   const termoCienciaUrl =
@@ -67,6 +65,9 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
       : termoCienciaUrl
         ? "Disponível para consulta"
         : "Não disponível neste atendimento";
+
+  const dataPart = signatureDate?.split(",")[0]?.trim() || "";
+  const nomePart = employeeNome || "";
 
   return (
     <div className="mt-2">
@@ -104,7 +105,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                 {termoCienciaUrl ? (
                   <a
                     className="text-sm font-medium text-[#44735e] hover:underline uppercase"
-                    href={toProxyUrl(termoCienciaUrl)}
+                    href={buildViewerUrl(termoCienciaUrl, buildDocFilename(['CMSO_TERMO_CIENCIA', nomePart, dataPart]))}
                     rel="noopener noreferrer"
                     target="_blank"
                   >
@@ -134,7 +135,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                     >
                       <a
                         className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                        href={toProxyUrl(asoUrl)}
+                        href={buildViewerUrl(asoUrl, buildDocFilename(['CMSO_ASO', nomePart, dataPart]))}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
@@ -150,7 +151,7 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                     >
                       <a
                         className="rounded-full p-1.5 text-[#44735e] transition-colors hover:bg-green-50"
-                        href={toProxyUrl(validacaoUrl)}
+                        href={buildViewerUrl(validacaoUrl, buildDocFilename(['CMSO_VALIDACAO', metodoAutenticacao, nomePart, dataPart]))}
                         rel="noopener noreferrer"
                         target="_blank"
                       >
