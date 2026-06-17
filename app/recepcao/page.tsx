@@ -1,6 +1,5 @@
 "use client";
 import { useRouter } from "next/navigation";
-import { Socket } from "socket.io-client";
 import { useSocket } from "@/lib/websocket/hooks/useSocket";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion } from "framer-motion";
@@ -234,17 +233,6 @@ const RecepcaoPage: React.FC = () => {
 
       setTimeout(() => {
         setConectado(true);
-
-        const conectionType = salaSelecionada.includes("PREPARO")
-          ? WebsocketType.USER_PREPARO
-          : WebsocketType.USER_RECEPCAO;
-
-        connect({
-          nome: user?.nome!,
-          sala: salaSelecionada,
-          type: conectionType,
-          unidade: unidadeSelecionada,
-        });
       }, 300);
     }, 500);
 
@@ -302,6 +290,11 @@ const RecepcaoPage: React.FC = () => {
     }
 
     setConectado(true);
+  };
+
+  // Auto-conecta via socket quando conectado=true
+  useEffect(() => {
+    if (!conectado || !unidadeSelecionada || !salaSelecionada) return;
 
     const conectionType = salaSelecionada.includes("PREPARO")
       ? WebsocketType.USER_PREPARO
@@ -313,14 +306,7 @@ const RecepcaoPage: React.FC = () => {
       type: conectionType,
       unidade: unidadeSelecionada,
     });
-  };
-
-  // Referência do socket para uso em callbacks (evita stale closure)
-  const socketRef = useRef<Socket | null>(null);
-
-  useEffect(() => {
-    socketRef.current = socket;
-  }, [socket]);
+  }, [conectado]);
 
   // Registro de handlers de eventos do socket
   useEffect(() => {
@@ -402,7 +388,7 @@ const RecepcaoPage: React.FC = () => {
             request.request.ticketId!,
             TicketActionType.PREPARO_OK,
             unidadeSelecionada,
-            socketRef.current!,
+            socket,
           );
           setEmPreparacao((prev) =>
             prev.filter((req) => req.ticketId !== request.request.ticketId),

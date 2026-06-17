@@ -4,7 +4,7 @@ import { Socket } from "socket.io-client";
 import SenhasList from "./SenhaList";
 import DisconnectedState from "./DisconnectedState";
 
-import { PreparationRequest, Ticket, TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
+import { PreparationRequest, Ticket, TicketStatus } from "@/lib/ticket/ticket";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
 // Interface para tipagem robusta
@@ -45,21 +45,9 @@ const MainContent: React.FC<MainContentProps> = ({
   preparacoesFinalizadas,
 }) => {
   // Filtragem/organização tickets
-  // Remove cards já enviados para atendimento ou finalizados
-  const senhasRecepcao = useMemo(() => {
-    return tickets.filter((t) => {
-      // Manter apenas tickets que ainda estão na fila de recepção
-      if (t.status === TicketStatus.FINALIZADO) return false;
-      if (t.status === TicketStatus.EM_ATENDIMENTO) return false;
-      // Tickets AGUARDANDO com grupo EXAME já foram para atendimento
-      if (t.status === TicketStatus.AGUARDANDO && t.grupo === TicketGroups.EXAME) return false;
-      return true;
-    });
-  }, [tickets]);
-
   const senhasOrdenadas = useMemo(() => {
-    return [...senhasRecepcao].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
-  }, [senhasRecepcao]);
+    return [...tickets].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+  }, [tickets]);
 
   const senhasPrepracao = tickets.filter(
     (t) =>
