@@ -108,9 +108,9 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
       className="space-y-6 p-4 bg-gray-50 rounded-lg"
       role="main"
     >
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row lg:items-start gap-6">
         {/* Coluna principal - senhas aguardando */}
-        <div className="space-y-6 w-[720]">
+        <div className="space-y-6 w-full lg:w-[720px] lg:shrink-0">
           <h2 className="sr-only">Senhas aguardando atendimento</h2>
 
           {senhasPreferenciais.length > 0 && (
@@ -179,7 +179,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
 
         {/* Coluna lateral - senhas em atendimento */}
         {senhasEmAtendimento.length > 0 && (
-          <div className="lg:w-96 space-y-4">
+          <div className="lg:w-96 lg:shrink-0 space-y-4">
             <div
               aria-label={`Pacientes em atendimento (${senhasEmAtendimento.length})`}
               className="p-4 shadow-sm"

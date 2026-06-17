@@ -125,6 +125,8 @@ const RecepcaoPage: React.FC = () => {
     emAtendimento: 0,
   });
 
+  const [totalTicketsEmitidos, setTotalTicketsEmitidos] = useState(0);
+
   // ---------------------------------------------------------
   // Verifica usuário logado
   // ---------------------------------------------------------
@@ -146,6 +148,7 @@ const RecepcaoPage: React.FC = () => {
   interface initialTicketsRequest {
     tickets: Ticket[];
     preparationRequests: PreparationRequest[];
+    totalTickets: number;
   }
 
   const loadInitialTickets = useCallback(
@@ -165,6 +168,8 @@ const RecepcaoPage: React.FC = () => {
         if (Array.isArray(data.tickets)) setAll(data.tickets);
         if (Array.isArray(data.preparationRequests))
           setEmPreparacao(data.preparationRequests);
+        if (typeof data.totalTickets === 'number')
+          setTotalTicketsEmitidos(data.totalTickets);
       } catch (error) {
         console.error("Erro ao carregar tickets:", error);
       }
@@ -459,10 +464,10 @@ const RecepcaoPage: React.FC = () => {
     ).length;
 
     const finalizados = senhasFiltradas.filter(
-      (s) => s.grupo === TicketGroups.EXAME,
+      (s) => s.grupo === TicketGroups.EXAME && s.atendente === user?.nome,
     ).length;
 
-    const total = recepcao.length;
+    const total = totalTicketsEmitidos;
 
     setEstatisticas({
       aguardando,
@@ -476,7 +481,7 @@ const RecepcaoPage: React.FC = () => {
       examesAguardando: 0,
       emAtendimento: 0,
     });
-  }, [getAll]);
+  }, [getAll, user, totalTicketsEmitidos]);
 
   useEffect(() => {
     calcularEstatisticas();
@@ -535,10 +540,7 @@ const RecepcaoPage: React.FC = () => {
         >
           {conectado && socket ? (
             isLoading ? (
-              <CmsoCircularLoading
-                title="Conectando..."
-                description="Estabelecendo conexão com o servidor"
-              />
+              <CmsoCircularLoading />
             ) : salaSelecionada.includes("PREPARO") ? (
               <PreparationGrid requests={empreparacao} socket={socket} />
             ) : (

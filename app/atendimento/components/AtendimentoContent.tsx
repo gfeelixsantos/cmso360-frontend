@@ -67,7 +67,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     return exames
       .filter((ex) => ex.status !== ExamStatus.FINALIZADO)
       .reduce((total, ex) => {
-        return total + (ESTIMATIVA_EXAMES[ex.grupo] ?? 20);
+        return total + (ESTIMATIVA_EXAMES[ex.grupo ?? ''] ?? 20);
       }, 0);
   };
 
@@ -210,7 +210,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   const ariaLabelMain = `Sistema de atendimento medico - ${totalAtendimentos} pacientes aguardando: ${totalPreferenciais} preferenciais, ${totalComPrefixo} com prioridade, ${totalNormais} normais. ${totalOutrasSalas} em atendimento em outras salas.`;
 
   return (
-    <main aria-label={ariaLabelMain} className="min-h-screen" role="main">
+    <main aria-label={ariaLabelMain} role="main">
       <div
         aria-atomic="true"
         aria-live="polite"

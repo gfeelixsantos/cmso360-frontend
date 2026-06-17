@@ -962,28 +962,29 @@ const AtendimentoPage: React.FC = () => {
       setEstatisticas({ pendentes: 0, finalizados: 0, aguardandoRecepcao: getAll().filter((s) => s.status === TicketStatus.AGUARDANDO && s.grupo === TicketGroups.RECEPCAO).length, total: 0, aguardando: 0, preparacao: 0, raiox: 0, recepcaoAguardando: 0, examesAguardando: 0, emAtendimento: 0 });
       return;
     }
-    const temExameComStatus = (ag: Scheduling, status: ExamStatus) =>
-      ag.EXAMES?.some((ex) => matchesSelectedExam(ex) && ex.status === status);
-    const agendamentosFluxo = agendamentosGeral.filter(
-      (a) =>
-        a.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO &&
-        a.TICKET?.emissao != null,
-    );
+    let countPendentes = 0;
+    let countFinalizados = 0;
+    for (const agendamento of agendamentosGeral) {
+      if (!Array.isArray(agendamento.EXAMES)) continue;
+      const isEmAtendimento =
+        agendamento.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO &&
+        agendamento.TICKET?.emissao != null;
+      for (const exame of agendamento.EXAMES) {
+        if (!matchesSelectedExam(exame)) continue;
+        if (exame.status === ExamStatus.FINALIZADO) countFinalizados++;
+        if (exame.status === ExamStatus.PENDENTE && isEmAtendimento) countPendentes++;
+      }
+    }
+    const countTotal = countPendentes + countFinalizados;
     setEstatisticas({
-      pendentes: agendamentosFluxo.filter((a) =>
-        temExameComStatus(a, ExamStatus.PENDENTE),
-      ).length,
-      finalizados: agendamentosFluxo.filter((a) =>
-        temExameComStatus(a, ExamStatus.FINALIZADO),
-      ).length,
+      pendentes: countPendentes,
+      finalizados: countFinalizados,
       aguardandoRecepcao: getAll().filter(
         (s) =>
           s.status === TicketStatus.AGUARDANDO &&
           s.grupo === TicketGroups.RECEPCAO,
       ).length,
-      total: agendamentosFluxo.filter((a) =>
-        a.EXAMES?.some((ex) => matchesSelectedExam(ex)),
-      ).length,
+      total: countTotal,
       aguardando: 0,
       preparacao: 0,
       raiox: 0,
@@ -1026,24 +1027,9 @@ const AtendimentoPage: React.FC = () => {
           pscStatusElement={null}
           examesGrouped={examesData}
         />
-        <main className="flex-1 overflow-auto bg-[#f8fbfa] p-6 lg:p-10">
+        <main className="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
           {isLoading ? (
-            <CmsoCircularLoading
-              title={
-                loadingPhase === "conectando"
-                  ? "Conectando..."
-                  : loadingPhase === "carregando-tickets"
-                    ? "Carregando tickets..."
-                    : "Recebendo atendimentos..."
-              }
-              description={
-                loadingPhase === "conectando"
-                  ? "Estabelecendo conexão com o servidor"
-                  : loadingPhase === "carregando-tickets"
-                    ? "Buscando tickets da unidade"
-                    : "Aguardando dados dos atendimentos"
-              }
-            />
+            <CmsoCircularLoading />
           ) : conectado && socket ? (
             <AtendimentoContent
               agendamentos={agendamentos}

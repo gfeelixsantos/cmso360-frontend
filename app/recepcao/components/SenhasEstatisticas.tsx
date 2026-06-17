@@ -116,7 +116,6 @@ const RECEPCAO_CARDS: CardConfig[] = [
   { key: "aguardando", label: "Aguardando", tooltip: "Aguardando atendimento", icon: <Clock size={12} />, color: "bg-amber-100 text-amber-600" },
   { key: "preparacao", label: "Preparo", tooltip: "Em preparação da documentação", icon: <Pause size={12} />, color: "bg-blue-100 text-blue-600" },
   { key: "raiox", label: "Raio-X", tooltip: "Encaminhados para Raio-X", icon: <Eye size={12} />, color: "bg-purple-100 text-purple-600" },
-  { key: "finalizados", label: "Concluídos", tooltip: "Encaminhados para atendimento (exame)", icon: <CheckCircle size={12} />, color: "bg-green-100 text-green-600" },
   { key: "total", label: "Totais", tooltip: "Total de senhas", icon: <Users size={12} />, color: "bg-gradient-to-r from-[#104e35] to-[#a6ce39] text-white" },
 ];
 
