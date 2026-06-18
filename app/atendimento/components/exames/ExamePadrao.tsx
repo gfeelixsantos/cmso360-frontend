@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Button, Radio, RadioGroup, Textarea } from "@heroui/react";
+import { Card, Button, Radio, RadioGroup, Spinner, Textarea } from "@heroui/react";
 import { FileText } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
@@ -53,24 +53,50 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
       const examesFiltrados = atendimentoData.EXAMES.filter(
         (exameItem: any) =>
           exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
-      );
+      ).map((exameItem: any) => ({
+        ...exameItem,
+        realizado: true,
+      }));
 
       setExamesFiltrados(examesFiltrados);
     },
     [],
   );
 
-  const handleSave = useCallback(() => {
-    const anotacoesExistentes = agendamento?.ANOTACOES || "";
-    const anotacoesFinais = anotacoesExistentes
-      ? `${anotacoesExistentes}\n${observacoes}`
-      : observacoes;
+  // Função para atualizar o status de realização do exame
+  const handleRealizacaoExameChange = useCallback(
+    (sequencialResultadoExame: string, realizado: boolean) => {
+      setExamesFiltrados((prev) =>
+        prev.map((exame) =>
+          exame.sequencialResultadoExame === sequencialResultadoExame
+            ? { ...exame, realizado }
+            : exame,
+        ),
+      );
+    },
+    [],
+  );
 
-    onSave?.({
-      status: "concluded",
-      anotacoes: anotacoesFinais,
-    });
-  }, [onSave, observacoes, agendamento?.ANOTACOES]);
+  const handleSave = useCallback(async () => {
+    setLoading(true);
+    try {
+      const anotacoesExistentes = agendamento?.ANOTACOES || "";
+      const anotacoesFinais = anotacoesExistentes
+        ? `${anotacoesExistentes}\n${observacoes}`
+        : observacoes;
+
+      await onSave?.({
+        status: "concluded",
+        anotacoes: anotacoesFinais,
+        examesRealizados: examesFiltrados.map((exame) => ({
+          sequencialResultadoExame: exame.sequencialResultadoExame,
+          realizado: exame.realizado,
+        })),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [onSave, observacoes, agendamento?.ANOTACOES, examesFiltrados]);
 
   const SectionTitle: React.FC<{
     number: string;
@@ -170,12 +196,13 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={loading}
+          startContent={loading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          Concluir Atendimento
+          {loading ? "Salvando..." : "Concluir Atendimento"}
         </Button>
       </div>
     </div>

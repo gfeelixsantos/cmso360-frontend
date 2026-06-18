@@ -9,6 +9,7 @@ import {
   RadioGroup,
   Radio,
   Checkbox,
+  Spinner,
 } from "@heroui/react";
 import { FileText } from "lucide-react";
 
@@ -64,7 +65,9 @@ const Espirometria: React.FC<EspirometriaProps> = ({
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
+  const [isLoading, setIsLoading] = useState(false);
   const [mostrarQuestionarioTabagismo, setMostrarQuestionarioTabagismo] =
+
     useState(false);
 
   const [formData, setFormData] = useState<EspirometriaData>({
@@ -134,8 +137,13 @@ const Espirometria: React.FC<EspirometriaProps> = ({
     }
   }, []);
 
-  const handleSave = useCallback(() => {
-    onSave?.(formData);
+  const handleSave = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await onSave?.(formData);
+    } finally {
+      setIsLoading(false);
+    }
   }, [onSave, formData]);
 
   const SectionTitle: React.FC<{
@@ -465,12 +473,13 @@ const Espirometria: React.FC<EspirometriaProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={isLoading}
+          startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          Salvar / Concluir Questionário
+          {isLoading ? "Salvando..." : "Salvar / Concluir Questionário"}
         </Button>
       </div>
     </div>

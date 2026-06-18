@@ -113,8 +113,6 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
   if (isLoading && records.length === 0) {
     return (
       <CmsoCircularLoading
-        title="Carregando auditoria..."
-        description="Aguarde um momento"
         fullHeight={false}
       />
     );

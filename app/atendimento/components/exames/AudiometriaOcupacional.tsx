@@ -1370,7 +1370,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
 
     setIsLoading(true);
     try {
-      onSave?.(formData);
+      await onSave?.(formData);
     } finally {
       setIsLoading(false);
     }
@@ -2350,7 +2350,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
           isDisabled={
             !formData.resultadoOD ||

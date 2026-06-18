@@ -80,6 +80,7 @@ import BiometriaModal, {
 import FacialModal, {
   FacialContext,
 } from "@/app/atendimento/components/FacialModal";
+import LazyModalContent from "@/app/relatorio/LazyModalContent";
 import { usePushNotification } from "@/hooks/usePushNotification";
 
 const SenhasEstatisticas = dynamic<import("@/app/recepcao/components/SenhasEstatisticas").SenhasEstatisticasProps>(
@@ -140,6 +141,10 @@ const AtendimentoPage: React.FC = () => {
   const [modalAlert, setModalAlert] = useState<boolean>(false);
   const [modalText, setModalText] = useState<React.ReactNode>("");
   const [isStatsModalOpen, setIsStatsModalOpen] = useState(false);
+  const [relatorioModal, setRelatorioModal] = useState<{
+    open: boolean;
+    atendimento: Scheduling | null;
+  }>({ open: false, atendimento: null });
   const [isLoading, setIsLoading] = useState(false);
   const [aguardandoPrimeirosAtendimentos, setAguardandoPrimeirosAtendimentos] =
     useState(false);
@@ -535,6 +540,10 @@ const AtendimentoPage: React.FC = () => {
     },
     [exameSelecionado, salaSelecionada, unidadeSelecionada, user?.codigo, user?.nome],
   );
+
+  const handleViewRelatorio = useCallback((atendimento: Scheduling) => {
+    setRelatorioModal({ open: true, atendimento });
+  }, []);
 
   useEffect(() => {
     if (
@@ -1037,7 +1046,8 @@ const AtendimentoPage: React.FC = () => {
               aguardandoPrimeirosAtendimentos={aguardandoPrimeirosAtendimentos}
               conectado={conectado}
               exameSelecionado={exameSelecionado}
-              onIniciarAutenticacao={iniciarAutenticacaoAtendimento}
+               onIniciarAutenticacao={iniciarAutenticacaoAtendimento}
+              onViewRelatorio={handleViewRelatorio}
               onHandleModal={handleHandleModal}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
@@ -1079,6 +1089,28 @@ const AtendimentoPage: React.FC = () => {
         pscAuthStatus={pscAuthStatus}
         onPscAuth={handlePscAuth}
       />
+      {relatorioModal.atendimento && (
+        <Modal
+          aria-label="Modal de detalhes do atendimento"
+          classNames={{
+            base: "max-h-[90vh] border border-[#104e35]/20",
+            wrapper: "z-[500]",
+            backdrop: "z-[400]",
+          }}
+          isOpen={relatorioModal.open}
+          scrollBehavior="inside"
+          size="5xl"
+          onClose={() => setRelatorioModal({ open: false, atendimento: null })}
+        >
+          <ModalContent>
+            <LazyModalContent
+              atendimento={relatorioModal.atendimento}
+              userApp={user}
+              onClose={() => setRelatorioModal({ open: false, atendimento: null })}
+            />
+          </ModalContent>
+        </Modal>
+      )}
       <BiometriaModal
         onClose={fecharBiometriaModal}
         onRetry={() => {

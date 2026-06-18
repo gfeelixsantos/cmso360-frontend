@@ -122,7 +122,7 @@ const Ultrassom: React.FC<UltrassomProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors disabled:opacity-50"
           color="primary"
           disabled={isSubmitting}
           startContent={isSubmitting ? null : <FileText className="h-4 w-4" />}

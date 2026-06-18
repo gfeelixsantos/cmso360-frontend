@@ -180,7 +180,7 @@ function getAuthMethodVisual(
       icon: <Fingerprint className="h-4 w-4" />,
       badge:
         status === "VALIDADO" ? (
-          <span className="text-[10px] text-green-600 font-medium">✓ OK</span>
+          <span className="text-[10px] text-green-600 font-medium">✓ Registrada</span>
         ) : (
           <span className="text-[10px] text-amber-600">Pendente</span>
         ),
@@ -193,7 +193,7 @@ function getAuthMethodVisual(
       icon: <Camera className="h-4 w-4" />,
       badge:
         status === "VALIDADO" ? (
-          <span className="text-[10px] text-green-600 font-medium">✓ OK</span>
+          <span className="text-[10px] text-green-600 font-medium">✓ Registrada</span>
         ) : (
           <span className="text-[10px] text-amber-600">Pendente</span>
         ),
@@ -250,7 +250,7 @@ function getAuthMethodVisualClean(
         icon: <Fingerprint className="h-4 w-4" />,
         badge:
           status === "VALIDADO" ? (
-            <span className="text-[10px] text-green-600 font-medium">OK</span>
+            <span className="text-[10px] text-green-600 font-medium">Registrada</span>
           ) : (
             <span className="text-[10px] text-amber-600">Pendente</span>
           ),
@@ -261,7 +261,7 @@ function getAuthMethodVisualClean(
         icon: <Camera className="h-4 w-4" />,
         badge:
           status === "VALIDADO" ? (
-            <span className="text-[10px] text-green-600 font-medium">OK</span>
+            <span className="text-[10px] text-green-600 font-medium">Registrada</span>
           ) : (
             <span className="text-[10px] text-amber-600">Pendente</span>
           ),
@@ -1254,7 +1254,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       const updatedFuncionario = {
         ...funcionarioSelecionado,
         EXAMES: funcionarioSelecionado.EXAMES?.map((exam) => {
-          if (exam.grupo.includes("Psicossocial")) {
+          if (exam.grupo?.includes("Psicossocial")) {
             return {
               ...exam,
               preparacao: novoValor ? "Entrevista presencial" : "",

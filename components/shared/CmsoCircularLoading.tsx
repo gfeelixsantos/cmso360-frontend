@@ -11,8 +11,8 @@ interface CmsoCircularLoadingProps {
 }
 
 export default function CmsoCircularLoading({
-  title = "Carregando...",
-  description = "Aguarde um momento",
+  title = "Carregando",
+  description = "Aguarde um momento...",
   iconSize = 64,
   spinnerColor = "#B9D764",
   fullHeight = true,

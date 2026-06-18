@@ -34,6 +34,7 @@ interface SenhasSectionProps {
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
   onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
 
@@ -119,6 +120,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
   startPendingAction,
   onIniciarAutenticacao,
   onIniciarTeleatendimento,
+  onViewRelatorio,
   examesGrouped,
 }) => {
   const sectionId = `section-${title.toLowerCase().replace(/\s/g, "-")}`;
@@ -179,6 +181,7 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
                 startPendingAction={startPendingAction}
                 onIniciarAutenticacao={onIniciarAutenticacao}
                 onIniciarTeleatendimento={onIniciarTeleatendimento}
+                onViewRelatorio={onViewRelatorio}
                 examesGrouped={examesGrouped}
               />
             </div>

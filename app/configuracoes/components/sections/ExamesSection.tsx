@@ -19,6 +19,7 @@ const TEMPLATE_OPTIONS = [
   { value: "espirometria", label: "Espirometria" },
   { value: "exameClinico", label: "Exame Clínico" },
   { value: "psicossocial", label: "Psicossocial" },
+  { value: "fichaAssistencial", label: "Ficha Assistencial Especialista" },
 ];
 
 const STATUS_OPTIONS = [
@@ -222,7 +223,7 @@ export function ExamesSection() {
   }
 
   if (loading) {
-    return <CmsoCircularLoading title="Carregando exames..." description="Aguarde um momento" fullHeight={false} />;
+    return <CmsoCircularLoading fullHeight={false} />;
   }
 
   return (

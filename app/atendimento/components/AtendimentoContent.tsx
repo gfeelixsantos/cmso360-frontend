@@ -42,6 +42,7 @@ interface MainContentProps {
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
   onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
 
@@ -61,6 +62,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   startPendingAction,
   onIniciarAutenticacao,
   onIniciarTeleatendimento,
+  onViewRelatorio,
   examesGrouped,
 }) => {
   const calcularTempoEstimado = (exames: ExamRegister[] = []) => {
@@ -239,6 +241,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         onHandleModal={onHandleModal}
         onIniciarAutenticacao={onIniciarAutenticacao}
         onIniciarTeleatendimento={onIniciarTeleatendimento}
+        onViewRelatorio={onViewRelatorio}
         examesGrouped={examesGrouped}
       />
     </main>

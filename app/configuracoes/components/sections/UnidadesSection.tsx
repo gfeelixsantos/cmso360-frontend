@@ -170,7 +170,7 @@ export function UnidadesSection() {
   }
 
   if (loading) {
-    return <CmsoCircularLoading title="Carregando unidades..." description="Aguarde um momento" fullHeight={false} />;
+    return <CmsoCircularLoading fullHeight={false} />;
   }
 
   return (

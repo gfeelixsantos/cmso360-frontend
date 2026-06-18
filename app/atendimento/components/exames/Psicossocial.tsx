@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Button, RadioGroup, Radio, Textarea } from "@heroui/react";
+import { Card, Button, RadioGroup, Radio, Spinner, Textarea } from "@heroui/react";
 import { FileText } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
@@ -48,6 +48,7 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
 }) => {
   const user = useUser();
   const [agendamento, setAgendamento] = useState<Scheduling>();
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState<PsicossocialData>({
     // Saúde Mental e Hábitos
@@ -91,8 +92,13 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
     [],
   );
 
-  const handleSave = useCallback(() => {
-    onSave?.(formData);
+  const handleSave = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      await onSave?.(formData);
+    } finally {
+      setIsLoading(false);
+    }
   }, [formData, onSave]);
 
   const SectionTitle: React.FC<{
@@ -369,12 +375,13 @@ const Psicossocial: React.FC<PsicossocialProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={isLoading}
+          startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          Salvar / Concluir Avaliação
+          {isLoading ? "Salvando..." : "Salvar / Concluir Avaliação"}
         </Button>
       </div>
     </div>

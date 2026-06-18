@@ -38,6 +38,7 @@ import {
   Monitor,
   Globe,
   ShieldCheck,
+  Wrench,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 
@@ -67,6 +68,7 @@ interface AtendimentoCardProps {
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
   onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
 
@@ -217,7 +219,7 @@ const BiometriaIndicator = ({ status }: { status: BiometriaStatusType }) => {
   const config = configs[status] || configs.nao_cadastrado;
 
   return (
-    <Tooltip content={config.label} placement="top">
+    <Tooltip color="foreground" content={config.label} placement="top">
       <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bg} ${config.color} border border-current/20`}>
         {config.icon}
         <span className="text-[10px] font-bold uppercase tracking-wider">{status === 'nao_cadastrado' ? 'NÃO CAD' : status.replace('_', ' ')}</span>
@@ -512,7 +514,7 @@ const ExamDetails: React.FC<{
                   <TableCell>
                     <div className="flex justify-center">
                       {exame.url ? (
-                        <Tooltip content="Visualizar resultado" placement="top">
+                        <Tooltip color="foreground" content="Visualizar resultado" placement="top">
                           <Button
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 min-w-20"
                             size="sm"
@@ -706,6 +708,12 @@ const TicketActions: React.FC<{
   onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   exameSelecionado: string;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarAutenticacao?: (
+    atendimento: Scheduling,
+    metodo: "BIOMETRIA" | "FACIAL",
+  ) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  onViewRelatorio?: (atendimento: Scheduling) => void;
 }> = ({
   ticket,
   salaSelecionada,
@@ -715,6 +723,9 @@ const TicketActions: React.FC<{
   onHandleModal,
   exameSelecionado,
   startPendingAction,
+  onIniciarAutenticacao,
+  onIniciarTeleatendimento,
+  onViewRelatorio,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
   const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>({});
@@ -783,10 +794,12 @@ const TicketActions: React.FC<{
   };
 
   const isDisabled = handleDisabledStatus(ticket);
+  const authInfo = atendimento.AUTENTICACAOATENDIMENTO;
+  const isAuthenticated = authInfo?.status === "VALIDADO";
 
   return (
     <div aria-label="Ações do ticket" className="flex items-center gap-2" role="group">
-      <Tooltip content="Chamar" placement="bottom">
+      <Tooltip color="foreground" content="Chamar" placement="bottom">
         <Button
           isIconOnly
           aria-label="Chamar paciente"
@@ -799,7 +812,7 @@ const TicketActions: React.FC<{
         </Button>
       </Tooltip>
 
-      <Tooltip content="Atender" placement="bottom">
+      <Tooltip color="foreground" content="Atender" placement="bottom">
         <Button
           isIconOnly
           aria-label="Atender paciente"
@@ -812,7 +825,7 @@ const TicketActions: React.FC<{
         </Button>
       </Tooltip>
 
-      <Tooltip content="Retornar" placement="bottom">
+      <Tooltip color="foreground" content="Retornar" placement="bottom">
         <Button
           isIconOnly
           aria-label="Retornar paciente à fila"
@@ -824,6 +837,75 @@ const TicketActions: React.FC<{
           <ArrowLeft className="h-4 w-4" />
         </Button>
       </Tooltip>
+      <Dropdown placement="bottom-end">
+        <DropdownTrigger>
+          <Button
+            isIconOnly
+            aria-label="Ferramentas"
+            title="Ferramentas"
+            className="min-w-8 h-8 bg-sky-400 hover:bg-sky-500 text-white shadow-lg transition-all"
+            isDisabled={isDisabled}
+            size="md"
+          >
+            <Wrench className="h-4 w-4" />
+          </Button>
+        </DropdownTrigger>
+        <DropdownMenu
+          aria-label="Ferramentas do atendimento"
+          onAction={(key) => {
+            if (key === "RELATORIO") {
+              onViewRelatorio?.(atendimento);
+              return;
+            }
+            if (key === "VIDEOCHAMADA") {
+              onIniciarTeleatendimento?.(atendimento);
+              return;
+            }
+            onIniciarAutenticacao?.(
+              atendimento,
+              key as "BIOMETRIA" | "FACIAL",
+            );
+          }}
+          disabledKeys={isAuthenticated ? ["BIOMETRIA", "FACIAL"] : []}
+        >
+          <DropdownItem
+            key="RELATORIO"
+            description="Ver atendimento completo"
+            startContent={<FileText className="h-4 w-4" />}
+          >
+            Atendimento
+          </DropdownItem>
+          <DropdownItem
+            key="BIOMETRIA"
+            description={
+              isAuthenticated
+                ? "Autenticação já realizada"
+                : "Captura pelo leitor biométrico"
+            }
+            startContent={<Fingerprint className="h-4 w-4" />}
+          >
+            Biometria
+          </DropdownItem>
+          <DropdownItem
+            key="FACIAL"
+            description={
+              isAuthenticated
+                ? "Autenticação já realizada"
+                : "Abrir captura facial do funcionário"
+            }
+            startContent={<Camera className="h-4 w-4" />}
+          >
+            Facial
+          </DropdownItem>
+          <DropdownItem
+            key="VIDEOCHAMADA"
+            description="Abrir sala de teleatendimento"
+            startContent={<Monitor className="h-4 w-4" />}
+          >
+            Videochamada
+          </DropdownItem>
+        </DropdownMenu>
+      </Dropdown>
     </div>
   );
 };
@@ -838,32 +920,22 @@ const AtendimentoCard = ({
   startPendingAction,
   onIniciarAutenticacao,
   onIniciarTeleatendimento,
+  onViewRelatorio,
   examesGrouped,
 }: AtendimentoCardProps) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg, textColor, pillBg } = getStatusVisual(atendimento.TICKET?.status);
   const authInfo = atendimento.AUTENTICACAOATENDIMENTO;
   const isAuthenticated = authInfo?.status === "VALIDADO";
-  const authDescriptor =
-    authInfo?.metodo === "SOC"
-      ? {
-          label: "SOC",
-          icon: <Globe className="h-4 w-4" />,
-        }
+  const authDescriptor = !isAuthenticated
+    ? null
+    : authInfo?.metodo === "SOC"
+      ? { label: "SOC", icon: <Globe aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
       : authInfo?.metodo === "BIOMETRIA"
-        ? {
-            label: "Biometria",
-            icon: <Fingerprint className="h-4 w-4" />,
-          }
+        ? { label: "Biometria", icon: <Fingerprint aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
         : authInfo?.metodo === "FACIAL"
-          ? {
-              label: "Facial",
-              icon: <Camera className="h-4 w-4" />,
-            }
-          : {
-              label: "Não autenticado",
-              icon: <ShieldCheck className="h-4 w-4" />,
-            };
+          ? { label: "Facial", icon: <Camera aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
+          : null;
 
   const formatarTempoEspera = (emissao: string | Date) => {
     const dataEmissao = new Date(emissao);
@@ -896,6 +968,9 @@ const AtendimentoCard = ({
               ticket={atendimento.TICKET}
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
+              onIniciarAutenticacao={onIniciarAutenticacao}
+              onIniciarTeleatendimento={onIniciarTeleatendimento}
+              onViewRelatorio={onViewRelatorio}
             />
           </div>
         </div>
@@ -944,64 +1019,12 @@ const AtendimentoCard = ({
                 : (atendimento.TICKET.prefixo || "") + atendimento.TICKET.numero}
               <Pin aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {atendimento.TICKET.unidade}
-              <div className="flex items-center gap-1">
-                <Dropdown placement="top-end">
-                    <DropdownTrigger>
-                      <Button
-                        className={[
-                          "h-6 min-w-0 px-2 text-[11px] font-medium border",
-                          isAuthenticated
-                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
-                            : "text-amber-700 bg-amber-50 border-amber-200",
-                        ].join(" ")}
-                        endContent={<ChevronDown className="h-3 w-3 opacity-70" />}
-                        startContent={authDescriptor.icon}
-                        size="sm"
-                        variant="flat"
-                      >
-                        {authDescriptor.label}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Ações de autenticação"
-                      onAction={(key) => {
-                        if (key === "VIDEOCHAMADA") {
-                          onIniciarTeleatendimento?.(atendimento);
-                          return;
-                        }
-
-                        onIniciarAutenticacao?.(
-                          atendimento,
-                          key as "BIOMETRIA" | "FACIAL",
-                        );
-                      }}
-                    >
-                      {onIniciarTeleatendimento ? (
-                        <DropdownItem
-                          key="VIDEOCHAMADA"
-                          description="Abrir sala de teleatendimento"
-                          startContent={<Monitor className="h-4 w-4" />}
-                        >
-                          Videochamada
-                        </DropdownItem>
-                      ) : null}
-                      <DropdownItem
-                        key="BIOMETRIA"
-                        description="Captura pelo leitor biométrico"
-                        startContent={<Fingerprint className="h-4 w-4" />}
-                      >
-                        Biometria
-                      </DropdownItem>
-                      <DropdownItem
-                        key="FACIAL"
-                        description="Abrir captura facial do funcionário"
-                        startContent={<Camera className="h-4 w-4" />}
-                      >
-                        Facial
-                      </DropdownItem>
-                    </DropdownMenu>
-                  </Dropdown>
-              </div>
+              {authDescriptor && (
+                <>
+                  {authDescriptor.icon}
+                  <span>{authDescriptor.label}</span>
+                </>
+              )}
             </div>
             <p className="text-xs text-gray-400">{exameSelecionado}</p>
           </div>

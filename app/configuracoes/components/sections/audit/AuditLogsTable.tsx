@@ -49,8 +49,6 @@ export function AuditLogsTable({ records, isLoading }: AuditLogsTableProps) {
                 className="px-3 py-6"
               >
                 <CmsoCircularLoading
-                  title="Carregando auditoria..."
-                  description="Aguarde um momento"
                   iconSize={40}
                   fullHeight={false}
                 />

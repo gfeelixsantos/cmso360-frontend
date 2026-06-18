@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Card, Button, Radio, RadioGroup, Textarea } from "@heroui/react";
+import { Card, Button, Radio, RadioGroup, Spinner, Textarea } from "@heroui/react";
 import { FileText, AlertCircle } from "lucide-react";
 
 import HeaderExame from "./HeaderExame";
@@ -82,22 +82,27 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
     [],
   );
 
-  const handleSave = useCallback(() => {
-    const anotacoesExistentes = agendamento?.ANOTACOES || "";
-    const observacoesCompleta = `KIT ATENDIMENTO\n${observacoes ? observacoes : "Nenhuma observação registrada"}`;
+  const handleSave = useCallback(async () => {
+    setLoading(true);
+    try {
+      const anotacoesExistentes = agendamento?.ANOTACOES || "";
+      const observacoesCompleta = `KIT ATENDIMENTO\n${observacoes ? observacoes : "Nenhuma observação registrada"}`;
 
-    const anotacoesFinais = anotacoesExistentes
-      ? `${anotacoesExistentes}\n${observacoesCompleta}`
-      : observacoesCompleta;
+      const anotacoesFinais = anotacoesExistentes
+        ? `${anotacoesExistentes}\n${observacoesCompleta}`
+        : observacoesCompleta;
 
-    onSave?.({
-      status: "concluded",
-      anotacoes: anotacoesFinais,
-      examesRealizados: examesFiltrados.map((exame) => ({
-        sequencialResultadoExame: exame.sequencialResultadoExame,
-        realizado: exame.realizado,
-      })),
-    });
+      await onSave?.({
+        status: "concluded",
+        anotacoes: anotacoesFinais,
+        examesRealizados: examesFiltrados.map((exame) => ({
+          sequencialResultadoExame: exame.sequencialResultadoExame,
+          realizado: exame.realizado,
+        })),
+      });
+    } finally {
+      setLoading(false);
+    }
   }, [onSave, observacoes, agendamento?.ANOTACOES, examesFiltrados]);
 
   const SectionTitle: React.FC<{
@@ -213,12 +218,13 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-blue-600 text-white shadow-sm hover:bg-blue-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={loading}
+          startContent={loading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          Concluir Atendimento
+          {loading ? "Salvando..." : "Concluir Atendimento"}
         </Button>
       </div>
     </div>

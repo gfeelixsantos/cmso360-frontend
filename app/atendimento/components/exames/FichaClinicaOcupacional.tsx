@@ -681,7 +681,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
 
     setIsLoading(true);
     try {
-      onSave?.({
+      await onSave?.({
         ...formData,
         codigoMedico: codigoMedicoFinal,
         medico: medicoFinal,
@@ -1618,7 +1618,7 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
           isDisabled={isLoading}
           startContent={

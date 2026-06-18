@@ -68,12 +68,16 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
   const [search, setSearch] = useState("");
   const [filterPerfil, setFilterPerfil] = useState<string>("");
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isCreate, setIsCreate] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState({
+    codigo: "",
+    cpf: "",
     nome: "",
     email: "",
     telefone: "",
-    perfil: "",
+    perfil: "CONVIDADO",
     conselho: "",
     uf_conselho: "",
     registro_conselho: "",
@@ -96,9 +100,30 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
     return matchSearch && matchPerfil;
   });
 
+  function openCreate() {
+    setIsCreate(true);
+    setEditingUser(null);
+    setEditForm({
+      codigo: "",
+      cpf: "",
+      nome: "",
+      email: "",
+      telefone: "",
+      perfil: "CONVIDADO",
+      conselho: "",
+      uf_conselho: "",
+      registro_conselho: "",
+      ativo: true,
+    });
+    setModalOpen(true);
+  }
+
   function openEdit(user: User) {
+    setIsCreate(false);
     setEditingUser(user);
     setEditForm({
+      codigo: user.codigo,
+      cpf: user.cpf || "",
       nome: user.nome,
       email: user.email || "",
       telefone: user.telefone || "",
@@ -108,35 +133,66 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
       registro_conselho: user.registro_conselho || "",
       ativo: user.ativo,
     });
+    setModalOpen(true);
   }
 
   async function handleSaveEdit() {
-    if (!editingUser) return;
+    if (isCreate && (!editForm.codigo.trim() || !editForm.cpf.trim() || !editForm.nome.trim())) {
+      setError("Código, CPF e Nome são campos obrigatórios.");
+      return;
+    }
+    if (!isCreate && !editingUser) return;
+
     setSaving(true);
     setError(null);
     try {
-      await fetch(`${NEST_URL}users/${editingUser.codigo}`, {
-        method: "PUT",
+      const url = isCreate ? `${NEST_URL}users` : `${NEST_URL}users/${editingUser!.codigo}`;
+      const method = isCreate ? "POST" : "PUT";
+      
+      const payload = isCreate
+        ? {
+            codigo: editForm.codigo,
+            cpf: editForm.cpf,
+            nome: editForm.nome,
+            email: editForm.email || null,
+            telefone: editForm.telefone || null,
+            perfil: editForm.perfil,
+            conselho: editForm.conselho || null,
+            uf_conselho: editForm.uf_conselho || null,
+            registro_conselho: editForm.registro_conselho || null,
+            criado_por: user.nome,
+          }
+        : {
+            nome: editForm.nome,
+            email: editForm.email || null,
+            telefone: editForm.telefone || null,
+            perfil: editForm.perfil,
+            conselho: editForm.conselho || null,
+            uf_conselho: editForm.uf_conselho || null,
+            registro_conselho: editForm.registro_conselho || null,
+            ativo: editForm.ativo,
+            atualizado_por: user.nome,
+          };
+
+      const res = await fetch(url, {
+        method,
         headers: {
           "Content-Type": "application/json",
           "x-auth-user": JSON.stringify(user),
         },
-        body: JSON.stringify({
-          nome: editForm.nome,
-          email: editForm.email || null,
-          telefone: editForm.telefone || null,
-          perfil: editForm.perfil,
-          conselho: editForm.conselho || null,
-          uf_conselho: editForm.uf_conselho || null,
-          registro_conselho: editForm.registro_conselho || null,
-          ativo: editForm.ativo,
-        }),
+        body: JSON.stringify(payload),
       });
-      setEditingUser(null);
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.message || "Erro ao salvar usuário.");
+      }
+
+      setModalOpen(false);
       refetch();
-    } catch (err) {
-      console.error("Erro ao atualizar usuário:", err);
-      setError("Erro ao salvar alterações.");
+    } catch (err: any) {
+      console.error("Erro ao salvar usuário:", err);
+      setError(err.message || "Erro ao salvar alterações.");
     } finally {
       setSaving(false);
     }
@@ -201,16 +257,27 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
   }
 
   if (loading) {
-    return <CmsoCircularLoading title="Carregando profissionais..." description="Aguarde um momento" fullHeight={false} />;
+    return <CmsoCircularLoading fullHeight={false} />;
   }
 
   return (
     <>
       <Card className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <CardBody className="p-6">
-          <div className="flex items-center gap-3 mb-6">
-            <ShieldAlert size={28} aria-hidden="true" style={{ color: "#44735e" }} />
-            <h2 className="text-xl font-semibold text-gray-800">Profissionais</h2>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <ShieldAlert size={28} aria-hidden="true" style={{ color: "#44735e" }} />
+              <h2 className="text-xl font-semibold text-gray-800">Profissionais</h2>
+            </div>
+            {isMaster && (
+              <Button
+                color="primary"
+                onPress={openCreate}
+                style={{ backgroundColor: "#44735e" }}
+              >
+                Novo Profissional
+              </Button>
+            )}
           </div>
 
           {error && (
@@ -343,15 +410,33 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
       </Card>
 
       <Modal
-        isOpen={!!editingUser}
-        onOpenChange={() => setEditingUser(null)}
+        isOpen={modalOpen}
+        onOpenChange={setModalOpen}
         size="lg"
         scrollBehavior="inside"
       >
         <ModalContent>
-          <ModalHeader>Editar Usuário</ModalHeader>
+          <ModalHeader>{isCreate ? "Novo Profissional" : "Editar Usuário"}</ModalHeader>
           <ModalBody>
             <div className="grid grid-cols-2 gap-4 pt-2">
+              {isCreate && (
+                <>
+                  <Input
+                    label="Código"
+                    value={editForm.codigo}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, codigo: v }))}
+                    isRequired
+                    placeholder="Ex: Código SOC ou único"
+                  />
+                  <Input
+                    label="CPF"
+                    value={editForm.cpf}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, cpf: v }))}
+                    isRequired
+                    placeholder="Apenas números"
+                  />
+                </>
+              )}
               <Input
                 label="Nome"
                 value={editForm.nome}
@@ -405,26 +490,28 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
                 onValueChange={(v) => setEditForm((f) => ({ ...f, registro_conselho: v }))}
                 placeholder="Número do registro"
               />
-              <div className="flex items-center gap-3 pt-2">
-                <Switch
-                  isSelected={editForm.ativo}
-                  onValueChange={(v) => setEditForm((f) => ({ ...f, ativo: v }))}
-                  color="success"
-                >
-                  <span className="text-sm font-medium text-gray-700">Ativo</span>
-                </Switch>
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  color={editForm.ativo ? "success" : "danger"}
-                >
-                  {editForm.ativo ? "Ativo" : "Inativo"}
-                </Chip>
-              </div>
+              {!isCreate && (
+                <div className="flex items-center gap-3 pt-2">
+                  <Switch
+                    isSelected={editForm.ativo}
+                    onValueChange={(v) => setEditForm((f) => ({ ...f, ativo: v }))}
+                    color="success"
+                  >
+                    <span className="text-sm font-medium text-gray-700">Ativo</span>
+                  </Switch>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={editForm.ativo ? "success" : "danger"}
+                  >
+                    {editForm.ativo ? "Ativo" : "Inativo"}
+                  </Chip>
+                </div>
+              )}
             </div>
           </ModalBody>
           <ModalFooter>
-            <Button variant="flat" onPress={() => setEditingUser(null)}>
+            <Button variant="flat" onPress={() => setModalOpen(false)}>
               Cancelar
             </Button>
             <Button

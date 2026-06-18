@@ -129,7 +129,7 @@ export function PrestadoresSection() {
   }
 
   if (loading) {
-    return <CmsoCircularLoading title="Carregando prestadores..." description="Aguarde um momento" />;
+    return <CmsoCircularLoading />;
   }
 
   return (

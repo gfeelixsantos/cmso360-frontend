@@ -36,6 +36,7 @@ interface SenhasListProps {
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
   onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
+  onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
 
@@ -84,6 +85,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   startPendingAction,
   onIniciarAutenticacao,
   onIniciarTeleatendimento,
+  onViewRelatorio,
   examesGrouped,
 }) => {
   // Correção: Verificar todas as listas, não apenas a principal
@@ -130,6 +132,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onHandleModal={onHandleModal}
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
+              onViewRelatorio={onViewRelatorio}
               examesGrouped={examesGrouped}
             />
           )}
@@ -151,6 +154,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onHandleModal={onHandleModal}
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
+              onViewRelatorio={onViewRelatorio}
               examesGrouped={examesGrouped}
             />
           )}
@@ -172,6 +176,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onHandleModal={onHandleModal}
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
+              onViewRelatorio={onViewRelatorio}
               examesGrouped={examesGrouped}
             />
           )}

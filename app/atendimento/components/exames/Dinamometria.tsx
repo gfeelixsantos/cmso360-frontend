@@ -7,6 +7,7 @@ import {
   Textarea,
   RadioGroup,
   Radio,
+  Spinner,
 } from "@heroui/react";
 import { FileText } from "lucide-react";
 
@@ -83,6 +84,7 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
   const user = useUser();
   const effectiveUser = operationalUser ?? user;
   const [agendamento, setAgendamento] = useState<Scheduling>();
+  const [isLoading, setIsLoading] = useState(false);
   const [formErrors, setFormErrors] = useState<{
     ladoDominante?: string;
     sexo?: string;
@@ -512,11 +514,16 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
     [],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!validarFormulario()) {
       return;
     }
-    onSave?.(formData);
+    setIsLoading(true);
+    try {
+      await onSave?.(formData);
+    } finally {
+      setIsLoading(false);
+    }
   }, [formData, onSave, validarFormulario]);
 
   const SectionTitle: React.FC<{
@@ -1043,12 +1050,13 @@ const Dinamometria: React.FC<DinamometriaProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={isLoading}
+          startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          Salvar / Concluir Exame
+          {isLoading ? "Salvando..." : "Salvar / Concluir Exame"}
         </Button>
       </div>
     </div>

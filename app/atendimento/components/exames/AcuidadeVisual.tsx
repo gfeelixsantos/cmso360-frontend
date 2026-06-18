@@ -8,6 +8,7 @@ import {
   RadioGroup,
   Radio,
   Checkbox,
+  Spinner,
 } from "@heroui/react";
 import {
   FileText,
@@ -315,6 +316,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
   const effectiveUser = operationalUser ?? user;
   const [agendamento, setAgendamento] = useState<Scheduling>();
   const [isAcuidadeConcluida, setIsAcuidadeConcluida] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState<AcuidadeVisualData>({
     // Dados do exame
@@ -611,7 +613,7 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
     [handleInputChange],
   );
 
-  const handleSave = useCallback(() => {
+  const handleSave = useCallback(async () => {
     if (!isAcuidadeConcluida) {
       alert(
         "A acuidade visual é obrigatória para conclusão do exame. Preencha os campos de Olho Direito (OD) e Olho Esquerdo (OE) para longe.",
@@ -619,7 +621,12 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
 
       return;
     }
-    onSave?.(formData);
+    setIsLoading(true);
+    try {
+      await onSave?.(formData);
+    } finally {
+      setIsLoading(false);
+    }
   }, [formData, onSave, isAcuidadeConcluida]);
 
   // Função para lidar com as respostas do teste de profundidade
@@ -1272,13 +1279,13 @@ const AcuidadeVisual: React.FC<AcuidadeVisualProps> = ({
           Cancelar
         </Button>
         <Button
-          className="px-8 bg-gray-800 text-white shadow-sm hover:bg-gray-700 transition-colors"
+          className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          isDisabled={!isAcuidadeConcluida}
-          startContent={<FileText className="h-4 w-4" />}
+          isDisabled={!isAcuidadeConcluida || isLoading}
+          startContent={isLoading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
-          {isAcuidadeConcluida
+          {isLoading ? "Salvando..." : isAcuidadeConcluida
             ? "Salvar / Concluir Exame"
             : "Preencha a Acuidade Visual"}
         </Button>
