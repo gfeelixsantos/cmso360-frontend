@@ -8,6 +8,7 @@ interface ResolveFormularioParams {
     KitAtendimento: React.FC<any>;
     FichaClinicaWhirlpool: React.FC<any>;
   };
+  templateKey?: string | null;
 }
 
 export class AtendimentoRules {
@@ -53,10 +54,11 @@ export class AtendimentoRules {
     exame,
     funcionario,
     forms,
+    templateKey,
   }: ResolveFormularioParams) {
     const { EXAME_FORM_MAP, KitAtendimento, FichaClinicaWhirlpool } = forms;
 
-    let Formulario = EXAME_FORM_MAP[exame];
+    let Formulario = (templateKey && EXAME_FORM_MAP[templateKey]) || EXAME_FORM_MAP[exame];
 
     if (!funcionario) return Formulario;
 

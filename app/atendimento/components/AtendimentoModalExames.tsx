@@ -22,7 +22,9 @@ import AudiometriaOcupacional from "./exames/AudiometriaOcupacional";
 import KitAtendimento from "./exames/KitAtendimento";
 import Ultrassom from "./exames/Ultrassom";
 import FichaClinicaWhirlpool from "./exames/FichaClinicaWhirlpool";
+import FichaAssistencial from "./exames/FichaAssistencial";
 import { AtendimentoRules } from "./AtendimentoRules";
+import { fetchExames, IExame } from "@/lib/exames/services/exames.service";
 
 import { IPscAuthStatus } from "@/lib/user/interfaces/IUser";
 import { TicketActionType } from "@/lib/ticket/ticket";
@@ -86,7 +88,25 @@ const AtendimentoModalExames = ({
   const [exameParaAtualizar, setExameParaAtualizar] = useState<ExamRegister[]>(
     [],
   );
+  const [examesCatalog, setExamesCatalog] = useState<IExame[]>([]);
+  const [isLoadingCatalog, setIsLoadingCatalog] = useState(true);
   const [entrevistaPsico, setEntrevistaPsico] = useState<boolean>(false);
+
+  // Carrega catálogo de exames para identificação de templates
+  useEffect(() => {
+    if (isOpen) {
+      setIsLoadingCatalog(true);
+      fetchExames()
+        .then((data) => {
+          setExamesCatalog(data);
+          setIsLoadingCatalog(false);
+        })
+        .catch((err) => {
+          console.error(err);
+          setIsLoadingCatalog(false);
+        });
+    }
+  }, [isOpen]);
 
   // Rascunho local: protege dados em caso de queda de rede
   const draftCodigosExame = useMemo(
@@ -116,7 +136,6 @@ const AtendimentoModalExames = ({
       isLoading: false,
     });
 
-  // Memoriza o mapeamento de formulários
   const EXAME_FORM_MAP: Record<string, React.FC<any>> = useMemo(
     () => ({
       "Acuidade Visual": AcuidadeVisual,
@@ -139,6 +158,15 @@ const AtendimentoModalExames = ({
       Psicossocial: Psicossocial,
       Triagem: FichaClinicaOcupacional,
       Ultrassom: Ultrassom,
+
+      // Mapeamento dinâmico por template_key
+      acuidade: AcuidadeVisual,
+      audiometria: AudiometriaOcupacional,
+      dinamometria: Dinamometria,
+      espirometria: Espirometria,
+      exameClinico: FichaClinicaOcupacional,
+      psicossocial: Psicossocial,
+      fichaAssistencial: FichaAssistencial,
     }),
     [entrevistaPsico, psicossocial],
   );
@@ -159,7 +187,7 @@ const AtendimentoModalExames = ({
 
     if (hasPsico) {
       setPsicossocial(true);
-      setEntrevistaPsico(hasPsico.preparacao.includes("Entrevista"));
+      setEntrevistaPsico(hasPsico.preparacao?.includes("Entrevista") ?? false);
     } else {
       // Limpa os estados quando não tem Psicossocial pendente
       setPsicossocial(false);
@@ -337,6 +365,24 @@ const AtendimentoModalExames = ({
     ],
   );
 
+  const templateKey = useMemo(() => {
+    if (
+      !exameParaAtualizar ||
+      exameParaAtualizar.length === 0 ||
+      !examesCatalog ||
+      examesCatalog.length === 0
+    ) {
+      return null;
+    }
+    const currentExamReg = exameParaAtualizar[0];
+    const match = examesCatalog.find(
+      (e) =>
+        e.codigos.includes(currentExamReg.codigoExame) ||
+        e.nome === currentExamReg.nomeExame,
+    );
+    return match?.template_key || null;
+  }, [exameParaAtualizar, examesCatalog]);
+
   const Formulario = useMemo(() => {
     if (!funcionarioSelecionado) return null;
 
@@ -348,8 +394,9 @@ const AtendimentoModalExames = ({
         KitAtendimento,
         FichaClinicaWhirlpool,
       },
+      templateKey,
     });
-  }, [exame, funcionarioSelecionado, EXAME_FORM_MAP]);
+  }, [exame, funcionarioSelecionado, EXAME_FORM_MAP, templateKey]);
 
   // Renderiza o modal de notificação
   const renderNotificationModal = () => {
@@ -445,6 +492,34 @@ const AtendimentoModalExames = ({
   }, [initialFormulario]);
 
   // Protege contra mapeamento inexistente
+  if (isLoadingCatalog) {
+    return (
+      <Modal
+        backdrop="blur"
+        classNames={{
+          wrapper: "z-[1000]",
+          backdrop: "z-[1000]",
+        }}
+        disableAnimation={true}
+        isOpen={isOpen}
+        size="2xl"
+        onClose={onClose}
+      >
+        <ModalContent className="border border-[#44735e]/20">
+          <ModalHeader className="bg-gradient-to-r from-[#104e35] to-[#0d3d29] text-white">
+            Carregando formulário...
+          </ModalHeader>
+          <ModalBody className="py-8">
+            <div className="flex justify-center items-center">
+              <Spinner color="primary" size="lg" />
+              <span className="ml-4">Carregando dados do exame...</span>
+            </div>
+          </ModalBody>
+        </ModalContent>
+      </Modal>
+    );
+  }
+
   if (!Formulario) {
     return (
       <>

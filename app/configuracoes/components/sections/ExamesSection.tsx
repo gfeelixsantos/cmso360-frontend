@@ -9,6 +9,7 @@ import {
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
 import { getCurrentUser } from "@/lib/utils";
 import { fetchExames, createExame, updateExame, deleteExame, IExame, IExameFormData } from "@/lib/exames/services/exames.service";
+import { invalidateExamsCatalog } from "@/lib/exames/utils/exames-catalog-cache";
 import { fetchGruposFromAPI, createGrupo, updateGrupo, deleteGrupo, IGrupo } from "@/lib/grupos/services/grupos.service";
 
 const TEMPLATE_OPTIONS = [
@@ -148,6 +149,7 @@ export function ExamesSection() {
       } else {
         await createExame(payload);
       }
+      invalidateExamsCatalog();
       setModalOpen(false);
       load();
     } catch (err: any) {
@@ -160,6 +162,7 @@ export function ExamesSection() {
   async function handleToggleAtivo(exame: IExame) {
     try {
       await updateExame(exame.id, { ativo: !exame.ativo });
+      invalidateExamsCatalog();
       load();
     } catch (err) {
       console.error("Erro ao alterar status do exame:", err);
@@ -170,6 +173,7 @@ export function ExamesSection() {
     if (!confirm(`Desativar "${exame.nome}"?`)) return;
     try {
       await deleteExame(exame.id);
+      invalidateExamsCatalog();
       load();
     } catch (err) {
       console.error("Erro ao desativar exame:", err);
