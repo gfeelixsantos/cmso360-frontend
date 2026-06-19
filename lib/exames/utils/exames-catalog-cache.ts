@@ -51,7 +51,7 @@ function loadFromSession(): ExamsCatalogGrouped | null {
 
 async function fetchFromApi(): Promise<ExamsCatalogGrouped> {
   const exames = await fetchExames();
-  if (!isValidExamesArray(exames)) {
+  if (!isValidExamsArray(exames)) {
     throw new Error('Lista de exames vazia ou invalida');
   }
   return toGrouped(exames);

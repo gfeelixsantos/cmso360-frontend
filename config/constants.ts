@@ -43,12 +43,12 @@ export const isLoopbackUrl = (value: string) =>
   isLoopbackHost(getHostnameFromUrl(value));
 
 export const resolveTeleatendimentoWsUrl = () => {
-  if (typeof window === "undefined" || process.env.NODE_ENV !== "development") {
+  if (typeof window === "undefined") {
     return NEXT_WS_URL;
   }
 
   const pageHost = window.location.hostname.toLowerCase();
-  const configuredHost = getHostnameFromUrl(NEST_URL_DEVELOP);
+  const configuredHost = getHostnameFromUrl(NEXT_WS_URL || NEST_URL_DEVELOP);
 
   if (!isLoopbackHost(pageHost) && isLoopbackHost(configuredHost)) {
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
@@ -56,6 +56,22 @@ export const resolveTeleatendimentoWsUrl = () => {
   }
 
   return NEXT_WS_URL;
+};
+
+export const getDynamicNestUrl = () => {
+  if (typeof window === "undefined") {
+    return NEST_URL;
+  }
+
+  const pageHost = window.location.hostname.toLowerCase();
+  const configuredHost = getHostnameFromUrl(NEST_URL);
+
+  if (!isLoopbackHost(pageHost) && isLoopbackHost(configuredHost)) {
+    const protocol = window.location.protocol === "https:" ? "https" : "http";
+    return `${protocol}://${pageHost}:${PORT}/`;
+  }
+
+  return NEST_URL;
 };
 
 // ---------------------------------------------------------

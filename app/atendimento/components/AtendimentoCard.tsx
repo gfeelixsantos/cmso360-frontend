@@ -63,11 +63,11 @@ interface AtendimentoCardProps {
   socket: Socket;
   onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
   startPendingAction: (ticketId: number, action: string) => void;
+  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
   onIniciarAutenticacao?: (
     atendimento: Scheduling,
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
-  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
   onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
@@ -712,7 +712,6 @@ const TicketActions: React.FC<{
     atendimento: Scheduling,
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
-  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
   onViewRelatorio?: (atendimento: Scheduling) => void;
 }> = ({
   ticket,
@@ -724,7 +723,6 @@ const TicketActions: React.FC<{
   exameSelecionado,
   startPendingAction,
   onIniciarAutenticacao,
-  onIniciarTeleatendimento,
   onViewRelatorio,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
@@ -837,6 +835,7 @@ const TicketActions: React.FC<{
           <ArrowLeft className="h-4 w-4" />
         </Button>
       </Tooltip>
+      {/* Dropdown Ferramentas temporariamente comentado
       <Dropdown placement="bottom-end">
         <DropdownTrigger>
           <Button
@@ -855,10 +854,6 @@ const TicketActions: React.FC<{
           onAction={(key) => {
             if (key === "RELATORIO") {
               onViewRelatorio?.(atendimento);
-              return;
-            }
-            if (key === "VIDEOCHAMADA") {
-              onIniciarTeleatendimento?.(atendimento);
               return;
             }
             onIniciarAutenticacao?.(
@@ -897,15 +892,9 @@ const TicketActions: React.FC<{
           >
             Facial
           </DropdownItem>
-          <DropdownItem
-            key="VIDEOCHAMADA"
-            description="Abrir sala de teleatendimento"
-            startContent={<Monitor className="h-4 w-4" />}
-          >
-            Videochamada
-          </DropdownItem>
         </DropdownMenu>
       </Dropdown>
+      */}
     </div>
   );
 };
@@ -919,21 +908,21 @@ const AtendimentoCard = ({
   onHandleModal,
   startPendingAction,
   onIniciarAutenticacao,
-  onIniciarTeleatendimento,
   onViewRelatorio,
   examesGrouped,
 }: AtendimentoCardProps) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
   const { cardBg, border, hoverBg, textColor, pillBg } = getStatusVisual(atendimento.TICKET?.status);
   const authInfo = atendimento.AUTENTICACAOATENDIMENTO;
-  const isAuthenticated = authInfo?.status === "VALIDADO";
-  const authDescriptor = !isAuthenticated
+  const isAuthenticated =
+    authInfo?.status === "VALIDADO" || authInfo?.metodo === "SOC";
+  const authDescriptor = !authInfo?.metodo
     ? null
-    : authInfo?.metodo === "SOC"
+    : authInfo.metodo === "SOC"
       ? { label: "SOC", icon: <Globe aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
-      : authInfo?.metodo === "BIOMETRIA"
+      : authInfo.metodo === "BIOMETRIA" && authInfo.status === "VALIDADO"
         ? { label: "Biometria", icon: <Fingerprint aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
-        : authInfo?.metodo === "FACIAL"
+        : authInfo.metodo === "FACIAL" && authInfo.status === "VALIDADO"
           ? { label: "Facial", icon: <Camera aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
           : null;
 
@@ -969,7 +958,6 @@ const AtendimentoCard = ({
               unidadeSelecionada={unidadeSelecionada}
               onHandleModal={onHandleModal}
               onIniciarAutenticacao={onIniciarAutenticacao}
-              onIniciarTeleatendimento={onIniciarTeleatendimento}
               onViewRelatorio={onViewRelatorio}
             />
           </div>

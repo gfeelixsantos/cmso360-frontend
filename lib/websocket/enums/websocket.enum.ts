@@ -8,6 +8,7 @@ export enum WebsocketType {
   SCRAPER = "SCRAPER",
   BIOMETRIA_AGENT = "BIOMETRIA_AGENT",
   TELEATENDIMENTO = "TELEATENDIMENTO",
+  GED_BATCH = "GED_BATCH",
 }
 
 export enum PreparationRequestTypes {

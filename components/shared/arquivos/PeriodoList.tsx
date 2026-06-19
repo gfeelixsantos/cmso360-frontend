@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { CalendarRange, Download, ExternalLink, Loader2 } from "lucide-react";
+import { CalendarRange, Download, ExternalLink, FileText, Loader2 } from "lucide-react";
 import { Button, Card, CardBody, Spinner } from "@heroui/react";
 
 import type { PeriodoNode } from "@/hooks/useBlobExplorer";
@@ -11,13 +11,9 @@ interface PeriodoListProps {
   periodos: PeriodoNode[];
   isLoading: boolean;
   onSelect: (periodo: PeriodoNode) => void;
-  onDownload?: (periodo: PeriodoNode) => void;
-  /**
-   * Job de lote ativo (ou mais recente) referente a um período.
-   * Quando não-nulo e o período (ano+mes) coincide, o botão exibe o estado do job.
-   */
+  onDownloadProntuarios?: (periodo: PeriodoNode) => void;
+  onDownloadAsos?: (periodo: PeriodoNode) => void;
   currentJob?: GedBatchJob | null;
-  /** Indica que um novo job está sendo criado (loading transitório antes do job existir) */
   isCreatingJob?: boolean;
 }
 
@@ -48,7 +44,8 @@ const PeriodoList: React.FC<PeriodoListProps> = ({
   periodos,
   isLoading,
   onSelect,
-  onDownload,
+  onDownloadProntuarios,
+  onDownloadAsos,
   currentJob,
   isCreatingJob = false,
 }) => {
@@ -126,63 +123,68 @@ const PeriodoList: React.FC<PeriodoListProps> = ({
                 <div className="flex items-center justify-between border-t border-default-200 pt-3">
                   <span className="text-xs text-default-500">Arquivos</span>
                   <div className="flex items-center gap-2">
-                    {onDownload && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        role="none"
+                    {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
+                      <Button
+                        className={
+                          jobStatus === "partial"
+                            ? "bg-warning/15 text-warning hover:bg-warning/25"
+                            : "bg-success/15 text-success hover:bg-success/25"
+                        }
+                        size="sm"
+                        as="a"
+                        href={zipUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        startContent={<ExternalLink className="h-3.5 w-3.5" />}
                       >
-                        {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
-                          <Button
-                            className={
-                              jobStatus === "partial"
-                                ? "bg-warning/15 text-warning hover:bg-warning/25"
-                                : "bg-success/15 text-success hover:bg-success/25"
-                            }
-                            size="sm"
-                            as="a"
-                            href={zipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            startContent={<ExternalLink className="h-3.5 w-3.5" />}
-                          >
-                            Baixar ZIP
-                          </Button>
-                        ) : isActive ? (
-                          <Button
-                            className="bg-brand-primary/15 text-brand-primary"
-                            size="sm"
-                            isDisabled
-                            startContent={
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            }
-                          >
-                            {isCreatingJob
-                              ? "Iniciando…"
-                              : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
-                          </Button>
-                        ) : isTerminal && !zipUrl ? (
-                          <Button
-                            className="bg-danger/15 text-danger hover:bg-danger/25"
-                            size="sm"
-                            startContent={<Download className="h-3.5 w-3.5" />}
-                            onPress={() => onDownload(periodo)}
-                          >
-                            Tentar novamente
-                          </Button>
-                        ) : (
+                        Baixar ZIP
+                      </Button>
+                    ) : isActive ? (
+                      <Button
+                        className="bg-brand-primary/15 text-brand-primary"
+                        size="sm"
+                        isDisabled
+                        startContent={
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        }
+                      >
+                        {isCreatingJob
+                          ? "Iniciando…"
+                          : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
+                      </Button>
+                    ) : isTerminal && !zipUrl ? (
+                      <Button
+                        className="bg-danger/15 text-danger hover:bg-danger/25"
+                        size="sm"
+                        startContent={<Download className="h-3.5 w-3.5" />}
+                        onPress={() => onDownloadProntuarios?.(periodo)}
+                      >
+                        Tentar novamente
+                      </Button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        {onDownloadProntuarios && (
                           <Button
                             className="bg-brand-primary text-white hover:bg-brand-primary-hover"
                             size="sm"
-                            startContent={<Download className="h-3.5 w-3.5" />}
-                            onPress={() => onDownload(periodo)}
+                            startContent={<FileText className="h-3.5 w-3.5" />}
+                            onPress={() => onDownloadProntuarios(periodo)}
                           >
-                            Baixar período
+                            Prontuários
+                          </Button>
+                        )}
+                        {onDownloadAsos && (
+                          <Button
+                            className="bg-success/15 text-success hover:bg-success/25"
+                            size="sm"
+                            startContent={<Download className="h-3.5 w-3.5" />}
+                            onPress={() => onDownloadAsos(periodo)}
+                          >
+                            ASOs
                           </Button>
                         )}
                       </div>
                     )}
-
                   </div>
                 </div>
               </div>

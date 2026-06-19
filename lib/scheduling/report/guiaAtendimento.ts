@@ -373,7 +373,7 @@ async function buildPrestadorGuideHtmlV2(
   codigoToGrupoMap?: Record<string, string>,
   examesPreparacaoMap?: Record<string, string>,
 ): Promise<string> {
-  const qrDataUrl = await buildQrCode(prestador.endereco);
+  const qrDataUrl = await buildQrCode(prestador.endereco || undefined);
   const matchedExams = filtrarExamesDoFuncionarioPorPrestador(employee, prestador).map(
     (exame: any) => {
       const codigoExame = String(exame.codigoExame ?? exame.CODIGOEXAME ?? "").trim();

@@ -69,6 +69,10 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
         <span>
           Tem certeza que deseja remover o resultado do exame{" "}
           <strong>{examName}</strong>?
+          <br />
+          <span className="text-red-500 font-semibold text-xs mt-1 block">
+            O exame voltará a ficar pendente de resultado.
+          </span>
         </span>
       }
       confirmTitle="Remover resultado"
@@ -80,7 +84,6 @@ const DeleteAttachmentModal: React.FC<DeleteAttachmentModalProps> = ({
       onConfirm={handleDelete}
       successMessage="Resultado removido com sucesso."
       successTitle="Resultado removido"
-      warningText="O exame voltará a ficar pendente de resultado."
     />
   );
 };

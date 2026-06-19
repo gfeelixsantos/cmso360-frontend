@@ -54,6 +54,7 @@ import {
   Ticket,
   TicketGroups,
   TicketStatus,
+  TicketActionType,
 } from "@/lib/ticket/ticket";
 import { IndexDb } from "@/lib/indexDb/indexdb";
 import {
@@ -82,6 +83,7 @@ import FacialModal, {
 } from "@/app/atendimento/components/FacialModal";
 import LazyModalContent from "@/app/relatorio/LazyModalContent";
 import { usePushNotification } from "@/hooks/usePushNotification";
+import TeleatendimentoPanel from "@/app/teleatendimento/components/TeleatendimentoPanel";
 
 const SenhasEstatisticas = dynamic<import("@/app/recepcao/components/SenhasEstatisticas").SenhasEstatisticasProps>(
   () => import("@/app/recepcao/components/SenhasEstatisticas"),
@@ -206,6 +208,8 @@ const AtendimentoPage: React.FC = () => {
   const [facialContext, setFacialContext] = useState<FacialContext | null>(
     null,
   );
+  const [teleatendimentoSessionId, setTeleatendimentoSessionId] = useState<string | null>(null);
+  const [isTelemedicinaModo, setIsTelemedicinaModo] = useState<boolean>(false);
 
   usePushNotification({
     enabled: conectado,
@@ -464,82 +468,6 @@ const AtendimentoPage: React.FC = () => {
     [exameSelecionado, iniciarBiometria, salaSelecionada, unidadeSelecionada, user?.codigo, user?.nome],
   );
 
-  const iniciarTeleatendimento = useCallback(
-    async (atendimento: Scheduling) => {
-      if (!user?.nome) {
-        addToast({
-          title: "Teleatendimento indisponivel",
-          description: "Identifique o profissional antes de iniciar a videochamada.",
-          severity: "warning",
-          color: "foreground",
-          variant: "flat",
-        });
-        return;
-      }
-
-      try {
-        const response = await fetch(NEST_TELEATENDIMENTO_SESSION, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-app-origin": window.location.origin,
-          },
-          body: JSON.stringify({
-            schedulingId: String(atendimento._id || ""),
-            professionalId: String(user.codigo || ""),
-            professionalName: user.nome,
-            unidade: unidadeSelecionada || atendimento.UNIDADEATENDIMENTO || "",
-            sala: salaSelecionada || atendimento.TICKET?.sala || "",
-            exame: atendimento.TIPOEXAMENOME || exameSelecionado || "",
-            employeeId: String(
-              atendimento.CODIGO || atendimento.CODIGOPRONTUARIO || atendimento._id || "",
-            ),
-            employeeName: atendimento.NOME || "Funcionario",
-            companyCode: atendimento.CODIGOEMPRESA || "",
-            prontuarioCode: atendimento.CODIGOPRONTUARIO || "",
-            examType: atendimento.TIPOEXAMENOME || exameSelecionado || "",
-          }),
-        });
-
-        if (!response.ok) {
-          throw new Error("Nao foi possivel iniciar a sessao de teleatendimento.");
-        }
-
-        const data = await response.json();
-
-        const targetUrl = `/atendimento/videochamada/${data.sessionId}`;
-        const opened = window.open(
-          targetUrl,
-          `teleatendimento_${data.sessionId}`,
-          "width=1480,height=960,resizable=yes,scrollbars=no,status=yes",
-        );
-
-        if (!opened) {
-          throw new Error("O navegador bloqueou a abertura da janela da videochamada.");
-        }
-
-        addToast({
-          title: "Sala criada",
-          description: "A janela da videochamada foi aberta para o profissional.",
-          severity: "success",
-          color: "foreground",
-          variant: "flat",
-        });
-      } catch (error) {
-        addToast({
-          title: "Falha ao iniciar videochamada",
-          description:
-            error instanceof Error
-              ? error.message
-              : "Nao foi possivel criar a sala de teleatendimento.",
-          severity: "danger",
-          color: "foreground",
-          variant: "flat",
-        });
-      }
-    },
-    [exameSelecionado, salaSelecionada, unidadeSelecionada, user?.codigo, user?.nome],
-  );
 
   const handleViewRelatorio = useCallback((atendimento: Scheduling) => {
     setRelatorioModal({ open: true, atendimento });
@@ -719,6 +647,7 @@ const AtendimentoPage: React.FC = () => {
     },
     [resyncAttendimentos],
   );
+
 
   const findSchedulingIndex = useCallback((list: Scheduling[], schedule: Scheduling) =>
     list.findIndex((item) => (item._id && schedule._id && item._id === schedule._id) || (item.CODIGOPRONTUARIO && schedule.CODIGOPRONTUARIO && item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO)),
@@ -931,6 +860,10 @@ const AtendimentoPage: React.FC = () => {
           };
         });
       },
+      [EventType.TELEATENDIMENTO_PULL_TO_CALL]: (payload: { sessionId: string }) => {
+         setIsTelemedicinaModo(true);
+         setTeleatendimentoSessionId(payload.sessionId);
+      },
     } as any);
 
     return () => unregister();
@@ -1035,6 +968,8 @@ const AtendimentoPage: React.FC = () => {
           isReconnecting={isReconnecting}
           pscStatusElement={null}
           examesGrouped={examesData}
+          isTelemedicinaModo={isTelemedicinaModo}
+          toggleTelemedicinaModo={() => setIsTelemedicinaModo((prev) => !prev)}
         />
         <main className="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
           {isLoading ? (
@@ -1055,7 +990,6 @@ const AtendimentoPage: React.FC = () => {
               socket={socket!}
               startPendingAction={startPendingAction}
               unidadeSelecionada={unidadeSelecionada}
-              onIniciarTeleatendimento={iniciarTeleatendimento}
               examesGrouped={examesData}
             />
           ) : (
@@ -1177,6 +1111,30 @@ const AtendimentoPage: React.FC = () => {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {(isTelemedicinaModo || teleatendimentoSessionId) && (
+        <div className="fixed bottom-6 right-6 w-[400px] max-h-[85vh] shadow-2xl z-[600] rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col">
+          <div className="bg-[#114e34] text-white text-sm font-semibold p-3 flex justify-between items-center cursor-move shadow-md relative z-10">
+            <span>Videochamada em Andamento</span>
+            <Button isIconOnly variant="light" size="sm" className="text-white hover:bg-white/20" onPress={() => { setIsTelemedicinaModo(false); setTeleatendimentoSessionId(null); }}>
+              X
+            </Button>
+          </div>
+          <div className="flex-1 overflow-auto bg-gray-50">
+             <TeleatendimentoPanel
+                sessionId={teleatendimentoSessionId || undefined}
+                layout="pip"
+                role="PROFESSIONAL"
+                unidade={unidadeSelecionada}
+                sala={salaSelecionada}
+                exame={exameSelecionado}
+                onEndSession={() => {
+                  setTeleatendimentoSessionId(null);
+                }}
+             />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

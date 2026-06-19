@@ -151,19 +151,20 @@ export type AtendimentoAuthInfo = {
 export class ExamRegister {
   codigoExame: string;
   nomeExame: string;
-  status: string;
-  preparacao: string = "";
-  dataExame: string = "";
+  status?: string;
+  preparacao?: string = "";
+  dataExame?: string = "";
   sequencialResultadoExame?: string = "";
   sala?: string = "";
   profissional?: string = "";
   codigoProfissional?: string = "";
-  url: string = "";
-  formulario: any;
-  grupo: string = "";
+  url?: string = "";
+  formulario?: any;
+  grupo?: string = "";
   signature?: DocumentSignatureInfo;
+  realizado?: boolean;
 
-  constructor(codigoExame: string, nomeExame: string, status: string) {
+  constructor(codigoExame: string, nomeExame: string, status?: string) {
     this.codigoExame = codigoExame;
     this.nomeExame = nomeExame;
     this.status = status;

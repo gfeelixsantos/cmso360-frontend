@@ -26,7 +26,7 @@ export async function GET(): Promise<NextResponse> {
     const text = await response.text();
     return new NextResponse(text, {
       status: response.status,
-      headers: { "Content-Type": "application/json", "Cache-Control": "private, max-age=60, stale-while-revalidate=300" },
+      headers: { "Content-Type": "application/json", "Cache-Control": "no-store, no-cache, must-revalidate" },
     });
   } catch (error) {
     console.error("[BFF:exames:GET]", error);

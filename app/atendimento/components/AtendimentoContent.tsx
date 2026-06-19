@@ -41,7 +41,6 @@ interface MainContentProps {
     atendimento: Scheduling,
     metodo: "BIOMETRIA" | "FACIAL",
   ) => void;
-  onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
   onViewRelatorio?: (atendimento: Scheduling) => void;
   examesGrouped: Record<string, ExamToogle[]>;
 }
@@ -61,7 +60,6 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
   pendingActions,
   startPendingAction,
   onIniciarAutenticacao,
-  onIniciarTeleatendimento,
   onViewRelatorio,
   examesGrouped,
 }) => {
@@ -240,7 +238,6 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onIniciarAutenticacao={onIniciarAutenticacao}
-        onIniciarTeleatendimento={onIniciarTeleatendimento}
         onViewRelatorio={onViewRelatorio}
         examesGrouped={examesGrouped}
       />

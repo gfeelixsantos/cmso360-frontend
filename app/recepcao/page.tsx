@@ -323,6 +323,14 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handleTicketEmitedOrUpdated = (ticket: Ticket) => {
+      console.info("[RECEPCAO][TICKET_SYNC]", {
+        id: ticket.id,
+        status: ticket.status,
+        grupo: ticket.grupo,
+        ativo: (ticket as any).ativo,
+        unidade: ticket.unidade,
+        sala: ticket.sala,
+      });
       addOrUpdate(ticket);
     };
 

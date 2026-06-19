@@ -33,7 +33,6 @@ export interface PedidoExame {
   NOMEEXAME: string;
   DATAEXAME: string;
   RISCOSFUNCIONARIO: string;
-  MEDICOCOORDENADOR: string;
   UFMEDICO?: string;
   CRM?: string;
   RESPONSAVELPEDIDOEXAME?: string;

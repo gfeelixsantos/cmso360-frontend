@@ -26,11 +26,20 @@ async function getDb() {
 }
 
 export async function listChatMessages(sessionId: string) {
-  const db = await getDb();
-  return db.getAllFromIndex(STORE_NAME, "sessionId", sessionId);
+  try {
+    const db = await getDb();
+    return await db.getAllFromIndex(STORE_NAME, "sessionId", sessionId);
+  } catch (err) {
+    console.warn("IndexedDB not available for chat storage:", err);
+    return [];
+  }
 }
 
 export async function saveChatMessage(message: TeleatendimentoChatMessage) {
-  const db = await getDb();
-  await db.put(STORE_NAME, message);
+  try {
+    const db = await getDb();
+    await db.put(STORE_NAME, message);
+  } catch (err) {
+    console.warn("IndexedDB not available to save chat message:", err);
+  }
 }

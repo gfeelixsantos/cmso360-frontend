@@ -35,6 +35,19 @@ export const ACAO_LABELS: Record<string, string> = {
   USUARIO_SINCRONIZADO: "Usuário sincronizado",
   USUARIO_EXCLUIDO: "Usuário excluído",
   EXCLUIR_UNIDADE: "Unidade excluída",
+  VISUALIZAR_DOCUMENTO_PROXY: "Documento visualizado",
+  VISUALIZAR_DOCUMENTO_PROXY_FALLBACK: "Documento visualizado (fallback)",
+  CRIAR_RISCO_CONFIG: "Configuração de risco criada",
+  EDITAR_RISCO_CONFIG: "Configuração de risco editada",
+  EXCLUIR_RISCO_CONFIG: "Configuração de risco excluída",
+  CRIAR_PRESTADOR: "Prestador criado",
+  EDITAR_PRESTADOR: "Prestador editado",
+  EXCLUIR_PRESTADOR: "Prestador excluído",
+  CRIAR_GRUPO: "Grupo criado",
+  EDITAR_GRUPO: "Grupo editado",
+  EXCLUIR_GRUPO: "Grupo excluído",
+  CONSENTIMENTO_ACEITO: "Consentimento aceito",
+  CONSENTIMENTO_REJEITADO: "Consentimento rejeitado",
 };
 
 export function getAcaoLabel(acao: string): string {

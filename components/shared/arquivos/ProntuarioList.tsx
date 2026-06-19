@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Download, ExternalLink, FolderOpen, Loader2 } from "lucide-react";
+import { CheckSquare, Download, ExternalLink, FileText, FolderOpen, Loader2, Square } from "lucide-react";
 import { Button, Card, CardBody, Spinner } from "@heroui/react";
 
 import type { ProntuarioNode } from "@/hooks/useBlobExplorer";
@@ -12,12 +12,10 @@ interface ProntuarioListProps {
   isLoading: boolean;
   onSelect: (prontuario: ProntuarioNode) => void;
   onDownload?: (codigoProntuario: string, nomeFuncionario: string) => void;
-  /**
-   * Job de lote ativo (ou mais recente) referente a um prontuário.
-   * Quando não-nulo e o codigoProntuario coincide, o botão exibe o estado do job.
-   */
+  selectedSet?: Set<string>;
+  onToggleSelect?: (codigoProntuario: string) => void;
+  onBatchDownload?: (tipo: "prontuario" | "aso") => void;
   currentJob?: GedBatchJob | null;
-  /** Indica que um novo job está sendo criado (loading transitório antes do job existir) */
   isCreatingJob?: boolean;
 }
 
@@ -34,6 +32,9 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
   isLoading,
   onSelect,
   onDownload,
+  selectedSet = new Set(),
+  onToggleSelect,
+  onBatchDownload,
   currentJob,
   isCreatingJob = false,
 }) => {
@@ -55,142 +56,196 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
     );
   }
 
+  const hasSelection = selectedSet.size > 0;
+
   return (
-    <div className="grid auto-rows-fr gap-3 md:grid-cols-2 xl:grid-cols-3">
-      {prontuarios.map((prontuario) => {
-        const isJobForThisProntuario =
-          currentJob?.scope === "prontuario" &&
-          currentJob.items[0]?.codigoProntuario === prontuario.codigoProntuario;
-
-        const jobStatus = isJobForThisProntuario ? currentJob?.status : undefined;
-        const isActive =
-          isCreatingJob ||
-          (isJobForThisProntuario &&
-            (jobStatus === "queued" || jobStatus === "processing"));
-        const isTerminal =
-          isJobForThisProntuario &&
-          (jobStatus === "completed" ||
-            jobStatus === "partial" ||
-            jobStatus === "failed");
-        const zipUrl =
-          isJobForThisProntuario && isTerminal
-            ? currentJob?.result?.zipUrl
-            : undefined;
-
-        return (
-          <div
-            key={prontuario.codigoProntuario}
-            role="button"
-            tabIndex={0}
-            className="min-h-[148px] cursor-pointer"
-            onClick={() => onSelect(prontuario)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                onSelect(prontuario);
-              }
-            }}
-          >
-            <Card className="min-h-[148px] border border-default-200 bg-white transition-colors duration-150 hover:border-brand-primary/40 hover:shadow-sm">
-            <CardBody className="p-4">
-              <div className="flex h-full flex-col justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-medium bg-brand-primary/10 text-brand-primary">
-                    <FolderOpen className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-default-800">
-                      {prontuario.nomeFuncionario || prontuario.codigoProntuario}
-                    </p>
-                    <p className="mt-1 truncate text-xs text-default-500">
-                      {prontuario.codigoProntuario}
-                    </p>
-                    {prontuario.dataAgendamento && (
-                      <p className="text-xs text-default-400">
-                        {prontuario.dataAgendamento}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between border-t border-default-200 pt-3">
-                  <span className="text-xs text-default-500">Arquivos</span>
-                  <div className="flex items-center gap-2">
-                    {onDownload && (
-                      <div
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.stopPropagation()}
-                        role="none"
-                      >
-                        {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
-                          <Button
-                            className={
-                              jobStatus === "partial"
-                                ? "bg-warning/15 text-warning hover:bg-warning/25"
-                                : "bg-success/15 text-success hover:bg-success/25"
-                            }
-                            size="sm"
-                            as="a"
-                            href={zipUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            startContent={<ExternalLink className="h-3.5 w-3.5" />}
-                          >
-                            Baixar ZIP
-                          </Button>
-                        ) : isActive ? (
-                          <Button
-                            className="bg-brand-primary/15 text-brand-primary"
-                            size="sm"
-                            isDisabled
-                            startContent={
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            }
-                          >
-                            {isCreatingJob
-                              ? "Iniciando…"
-                              : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
-                          </Button>
-                        ) : isTerminal && !zipUrl ? (
-                          <Button
-                            className="bg-danger/15 text-danger hover:bg-danger/25"
-                            size="sm"
-                            startContent={<Download className="h-3.5 w-3.5" />}
-                            onPress={() =>
-                              onDownload(
-                                prontuario.codigoProntuario,
-                                prontuario.nomeFuncionario || prontuario.codigoProntuario,
-                              )
-                            }
-                          >
-                            Tentar novamente
-                          </Button>
-                        ) : (
-                          <Button
-                            className="bg-brand-primary text-white hover:bg-brand-primary-hover"
-                            size="sm"
-                            startContent={<Download className="h-3.5 w-3.5" />}
-                            onPress={() =>
-                              onDownload(
-                                prontuario.codigoProntuario,
-                                prontuario.nomeFuncionario || prontuario.codigoProntuario,
-                              )
-                            }
-                          >
-                            Baixar ZIP
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
-                  </div>
-                </div>
-              </div>
-            </CardBody>
-            </Card>
+    <div className="flex flex-col gap-3">
+      {hasSelection && onBatchDownload && (
+        <div className="sticky top-0 z-10 flex items-center justify-between rounded-large border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
+          <span className="text-sm font-medium text-brand-primary">
+            {selectedSet.size} selecionado(s)
+          </span>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+              startContent={<FileText className="h-4 w-4" />}
+              onPress={() => onBatchDownload("prontuario")}
+            >
+              Baixar Prontuários
+            </Button>
+            <Button
+              size="sm"
+              className="bg-success/15 text-success hover:bg-success/25"
+              startContent={<Download className="h-4 w-4" />}
+              onPress={() => onBatchDownload("aso")}
+            >
+              Baixar ASOs
+            </Button>
           </div>
-        );
-      })}
+        </div>
+      )}
+
+      <div className="grid auto-rows-fr gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {prontuarios.map((prontuario) => {
+          const isJobForThisProntuario =
+            currentJob?.scope === "prontuario" &&
+            currentJob.items[0]?.codigoProntuario === prontuario.codigoProntuario;
+
+          const jobStatus = isJobForThisProntuario ? currentJob?.status : undefined;
+          const isActive =
+            isCreatingJob ||
+            (isJobForThisProntuario &&
+              (jobStatus === "queued" || jobStatus === "processing"));
+          const isTerminal =
+            isJobForThisProntuario &&
+            (jobStatus === "completed" ||
+              jobStatus === "partial" ||
+              jobStatus === "failed");
+          const zipUrl =
+            isJobForThisProntuario && isTerminal
+              ? currentJob?.result?.zipUrl
+              : undefined;
+
+          const isSelected = selectedSet.has(prontuario.codigoProntuario);
+
+          return (
+            <div
+              key={prontuario.codigoProntuario}
+              role="button"
+              tabIndex={0}
+              className={`min-h-[148px] cursor-pointer ${isSelected ? "ring-2 ring-brand-primary" : ""}`}
+              onClick={() => onSelect(prontuario)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  onSelect(prontuario);
+                }
+              }}
+            >
+              <Card className="min-h-[148px] border border-default-200 bg-white transition-colors duration-150 hover:border-brand-primary/40 hover:shadow-sm">
+              <CardBody className="p-4">
+                <div className="flex h-full flex-col justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-medium bg-brand-primary/10 text-brand-primary">
+                      <FolderOpen className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold text-default-800">
+                        {prontuario.nomeFuncionario || prontuario.codigoProntuario}
+                      </p>
+                      <p className="mt-1 truncate text-xs text-default-500">
+                        {prontuario.codigoProntuario}
+                      </p>
+                      {prontuario.dataAgendamento && (
+                        <p className="text-xs text-default-400">
+                          {prontuario.dataAgendamento}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between border-t border-default-200 pt-3">
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      className="flex cursor-pointer items-center gap-1 text-xs text-default-500 hover:text-brand-primary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleSelect?.(prontuario.codigoProntuario);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onToggleSelect?.(prontuario.codigoProntuario);
+                        }
+                      }}
+                    >
+                      {isSelected ? (
+                        <CheckSquare className="h-4 w-4 text-brand-primary" />
+                      ) : (
+                        <Square className="h-4 w-4" />
+                      )}
+                      <span>{isSelected ? "Selecionado" : "Selecionar"}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {onDownload && (
+                        <div
+                          onClick={(e) => e.stopPropagation()}
+                          onKeyDown={(e) => e.stopPropagation()}
+                          role="none"
+                        >
+                          {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
+                            <Button
+                              className={
+                                jobStatus === "partial"
+                                  ? "bg-warning/15 text-warning hover:bg-warning/25"
+                                  : "bg-success/15 text-success hover:bg-success/25"
+                              }
+                              size="sm"
+                              as="a"
+                              href={zipUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              startContent={<ExternalLink className="h-3.5 w-3.5" />}
+                            >
+                              Baixar ZIP
+                            </Button>
+                          ) : isActive ? (
+                            <Button
+                              className="bg-brand-primary/15 text-brand-primary"
+                              size="sm"
+                              isDisabled
+                              startContent={
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              }
+                            >
+                              {isCreatingJob
+                                ? "Iniciando…"
+                                : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
+                            </Button>
+                          ) : isTerminal && !zipUrl ? (
+                            <Button
+                              className="bg-danger/15 text-danger hover:bg-danger/25"
+                              size="sm"
+                              startContent={<Download className="h-3.5 w-3.5" />}
+                              onPress={() =>
+                                onDownload(
+                                  prontuario.codigoProntuario,
+                                  prontuario.nomeFuncionario || prontuario.codigoProntuario,
+                                )
+                              }
+                            >
+                              Tentar novamente
+                            </Button>
+                          ) : (
+                            <Button
+                              className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                              size="sm"
+                              startContent={<Download className="h-3.5 w-3.5" />}
+                              onPress={() =>
+                                onDownload(
+                                  prontuario.codigoProntuario,
+                                  prontuario.nomeFuncionario || prontuario.codigoProntuario,
+                                )
+                              }
+                            >
+                              Baixar ZIP
+                            </Button>
+                          )}
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+              </Card>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

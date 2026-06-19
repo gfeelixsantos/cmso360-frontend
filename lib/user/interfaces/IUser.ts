@@ -46,9 +46,9 @@ export interface IUserSettingsResponse {
 }
 
 export interface IUserWebsocket {
-  unidade: string;
+  unidade?: string;
   exame?: string;
-  sala: string;
+  sala?: string;
   id?: string;
   nome: string;
   type: WebsocketType;

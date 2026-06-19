@@ -419,7 +419,6 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                       Configurações
                     </button>
 
-                    {/*
                     <button
                       className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
                       onClick={() => handleNavigate("/servicos")}
@@ -427,7 +426,6 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                       <LayoutGrid className="mr-3 h-4 w-4" />
                       Serviços
                     </button>
-                    */}
 
                     <button
                       aria-expanded={view === "notifications"}

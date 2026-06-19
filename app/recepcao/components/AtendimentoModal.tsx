@@ -1160,29 +1160,35 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   }, [handleDeselecionarAgendamento]);
 
   // ---------------------------------------------------------
-  // Load exames data on mount
+  // Load exames data when modal is open
   // ---------------------------------------------------------
   useEffect(() => {
-    fetchExamesGrouped().then(setExamesData).catch(console.error);
-  }, []);
+    if (isOpen) {
+      fetchExamesGrouped().then(setExamesData).catch(console.error);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
-    fetchPrestadores().then(setPrestadores).catch(console.error);
-  }, []);
+    if (isOpen) {
+      fetchPrestadores().then(setPrestadores).catch(console.error);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
-    fetchExames().then((exames) => {
-      const map: Record<string, string> = {};
-      for (const exame of exames) {
-        if (exame.preparacao) {
-          for (const codigo of exame.codigos) {
-            map[codigo] = exame.preparacao;
+    if (isOpen) {
+      fetchExames().then((exames) => {
+        const map: Record<string, string> = {};
+        for (const exame of exames) {
+          if (exame.preparacao) {
+            for (const codigo of exame.codigos) {
+              map[codigo] = exame.preparacao;
+            }
           }
         }
-      }
-      setExamesPreparacaoMap(map);
-    }).catch(console.error);
-  }, []);
+        setExamesPreparacaoMap(map);
+      }).catch(console.error);
+    }
+  }, [isOpen]);
 
   // ---------------------------------------------------------
   // Reset form when modal opens/closes
@@ -1962,6 +1968,16 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
     setIsSubmitting(true);
     const formData = new FormData();
 
+    console.info("[RECEPCAO][ATENDIMENTO_SUBMIT][START]", {
+      ticketId: funcionarioSelecionado.TICKET?.id ?? null,
+      schedulingId: funcionarioSelecionado._id ?? null,
+      unidade: unidadeSelecionada,
+      sala: salaSelecionada,
+      statusAtual: funcionarioSelecionado.TICKET?.status ?? null,
+      grupoAtual: funcionarioSelecionado.TICKET?.grupo ?? null,
+      metodoValidacao,
+    });
+
     await updateTicketFuncionarioSelecionado(ticketSelecionado!);
     funcionarioSelecionado.UNIDADEATENDIMENTO = unidadeSelecionada;
     funcionarioSelecionado.ANOTACOES = anotacoes.toUpperCase();
@@ -2040,7 +2056,22 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         body: formData,
       });
 
+      console.info("[RECEPCAO][ATENDIMENTO_SUBMIT][SCHEDULING_RESPONSE]", {
+        ok: submmitResponse.ok,
+        status: submmitResponse.status,
+        ticketId: funcionarioSelecionado.TICKET?.id ?? null,
+        schedulingId: funcionarioSelecionado._id ?? null,
+      });
+
       if (submmitResponse.ok) {
+        console.info("[RECEPCAO][ATENDIMENTO_SUBMIT][TICKET_ACTION_EMIT]", {
+          ticketId: funcionarioSelecionado.TICKET.id,
+          action: TicketActionType.EXAME,
+          unidade: unidadeSelecionada,
+          sala: salaSelecionada,
+          schedulingId: funcionarioSelecionado._id,
+        });
+
         onExecutarAcao(
           funcionarioSelecionado.TICKET.id,
           TicketActionType.EXAME,
@@ -2059,6 +2090,14 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
           </p>,
         );
         setModalAlert(true);
+      } else {
+        const responseText = await submmitResponse.text().catch(() => "");
+        console.warn("[RECEPCAO][ATENDIMENTO_SUBMIT][SCHEDULING_FAILED]", {
+          status: submmitResponse.status,
+          ticketId: funcionarioSelecionado.TICKET?.id ?? null,
+          schedulingId: funcionarioSelecionado._id ?? null,
+          responseText,
+        });
       }
     } catch (err) {
       console.error("[AtendimentoModal] Erro ao submeter atendimento:", err);
@@ -3089,7 +3128,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
                         funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.status ===
                           "VALIDADO" ? (
                           <span className="text-[10px] text-green-600 font-medium">
-                            OK
+                            Registrada
                             {funcionarioSelecionado?.AUTENTICACAOATENDIMENTO?.biometria
                               ?.dedo
                               ? ` - ${formatDedoLabel(

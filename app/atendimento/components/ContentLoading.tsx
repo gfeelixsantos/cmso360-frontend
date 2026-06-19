@@ -1,6 +1,14 @@
 import { Spinner } from "@heroui/react";
 
-export default function ContentLoading() {
+interface ContentLoadingProps {
+  title?: string;
+  description?: string;
+}
+
+export default function ContentLoading({
+  title = "Recebendo Atendimentos",
+  description = "Aguarde...",
+}: ContentLoadingProps) {
   return (
     <div
       aria-label="Carregando atendimentos"
@@ -26,10 +34,10 @@ export default function ContentLoading() {
         {/* Conteúdo textual com animação sutil */}
         <div className="space-y-2">
           <h3 className="text-xl font-semibold text-default-700">
-            Recebendo Atendimentos
+            {title}
           </h3>
           <p className="text-default-500 text-medium" id="loading-description">
-            Aguarde...
+            {description}
           </p>
         </div>
       </div>

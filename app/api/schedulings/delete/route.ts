@@ -26,7 +26,7 @@ export async function DELETE(request: Request) {
       cpf: string;
       password: string;
     }) => {
-      const response = await UserService.reauthenticate({ cpf, password });
+      const response = await UserService.reauthenticateOnly({ cpf, password });
       return { ok: response.status === HttpCodes.OK };
     },
     fetchImpl: fetch,

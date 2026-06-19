@@ -120,6 +120,37 @@ export class UserService {
     });
   }
 
+  static async reauthenticateOnly(
+    user: IUserLogin,
+  ): Promise<ApiResponse<{ valid: boolean }>> {
+    const userRegister = await SupabaseService.getUserByCpf(user.cpf);
+
+    if (!userRegister) {
+      return new ApiResponse(
+        HttpCodes.BAD_REQUEST,
+        ApiMessages.USER_INPUT_INVALID,
+        { valid: false },
+      );
+    }
+
+    const passwordIsValid = await Bcrypt.comparePasswords(
+      user.password,
+      userRegister.password,
+    );
+
+    if (!passwordIsValid) {
+      return new ApiResponse(
+        HttpCodes.UNAUTHORIZED,
+        ApiMessages.USER_INPUT_INVALID,
+        { valid: false },
+      );
+    }
+
+    return new ApiResponse(HttpCodes.OK, "Reautenticacao validada", {
+      valid: true,
+    });
+  }
+
   /**
    * Registra um novo usuário no sistema.
    *

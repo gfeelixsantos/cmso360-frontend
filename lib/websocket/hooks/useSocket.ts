@@ -5,7 +5,7 @@ import { addToast } from "@heroui/react";
 
 import { IUserWebsocket } from "@/lib/user/interfaces/IUser";
 import { CustomEventMap } from "@/lib/websocket/events/events";
-import { NEST_URL } from "@/config/constants";
+import { getDynamicNestUrl } from "@/config/constants";
 
 type SocketState = "disconnected" | "connecting" | "connected" | "reconnecting";
 
@@ -125,7 +125,7 @@ export function useSocket() {
       wasEverConnectedRef.current = false;
       updateState("connecting");
 
-      const s = io(NEST_URL, {
+      const s = io(getDynamicNestUrl(), {
         auth,
         transports: ["websocket"],
         reconnection: true,

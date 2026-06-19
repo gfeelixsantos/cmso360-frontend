@@ -36,7 +36,9 @@ interface SidebarRecepcaoProps {
   pscStatusElement?: React.ReactNode;
   pscAuthButtonElement?: React.ReactNode;
   isReconnecting?: boolean;
-  examesGrouped: Record<string, ExamToogle[]>;
+  examesGrouped?: Record<string, ExamToogle[]>;
+  isTelemedicinaModo?: boolean;
+  toggleTelemedicinaModo?: () => void;
 }
 
 /* SelectField CMSO */
@@ -137,6 +139,8 @@ export function SidebarRecepcao({
   isReconnecting = false,
   pscAuthButtonElement,
   examesGrouped,
+  isTelemedicinaModo = false,
+  toggleTelemedicinaModo,
 }: SidebarRecepcaoProps) {
   const pathname = usePathname();
   const isAtendimento = pathname?.includes("atendimento") ?? false;
@@ -312,6 +316,20 @@ export function SidebarRecepcao({
         {/* Botão Novo Atendimento - só na recepção */}
         {conectado && pathname?.includes("recepcao") && (
           <ActionButtonGroup onAddAtendimento={handleAddAtendimento} />
+        )}
+
+        {/* Botão Vídeochamada - só no atendimento */}
+        {conectado && pathname?.includes("atendimento") && toggleTelemedicinaModo && (
+          <div className="flex flex-col gap-2 mt-4 mb-6">
+            <Button
+              aria-label="Ativar Vídeochamada"
+              className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl font-medium bg-[#e8f4e3] text-[#104e35] border border-[#104e35]/30 hover:bg-[#d4e8d0] focus:ring-2 focus:ring-[#104e35]/20"
+              onPress={toggleTelemedicinaModo}
+            >
+              <Users className="h-4 w-4" />
+              <span>{isTelemedicinaModo ? "Fechar Vídeochamada" : "Vídeochamada"}</span>
+            </Button>
+          </div>
         )}
 
         {/* Lista de Agendamentos */}

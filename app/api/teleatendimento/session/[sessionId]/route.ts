@@ -27,7 +27,7 @@ export async function GET(req: NextRequest, context: RouteContext) {
     backendBaseUrl: NEST_URL,
     endpoint: `teleatendimento/session/${sessionId}`,
     method: "GET",
-    requiresAuth: true,
+    requiresAuth: false,
   });
 
   return new NextResponse(response.body, {

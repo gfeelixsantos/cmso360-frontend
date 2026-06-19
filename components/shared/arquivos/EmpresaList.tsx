@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Building2, Download, ExternalLink, Loader2, Search } from "lucide-react";
+import { Building2, Download, ExternalLink, FileText, Loader2, Search } from "lucide-react";
 import { Button, Card, CardBody, Input, Spinner } from "@heroui/react";
 
 import type { EmpresaNode } from "@/hooks/useBlobExplorer";
@@ -13,13 +13,9 @@ interface EmpresaListProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
   onSelect: (codigoEmpresa: string) => void;
-  onDownload?: (codigoEmpresa: string, razaoSocial: string) => void;
-  /**
-   * Job de lote ativo (ou mais recente) referente a uma empresa.
-   * Quando não-nulo e o codigoEmpresa coincide, o botão exibe o estado do job.
-   */
+  onDownloadProntuarios?: (codigoEmpresa: string, razaoSocial: string) => void;
+  onDownloadAsos?: (codigoEmpresa: string, razaoSocial: string) => void;
   currentJob?: GedBatchJob | null;
-  /** Indica que um novo job está sendo criado (loading transitório antes do job existir) */
   isCreatingJob?: boolean;
 }
 
@@ -37,7 +33,8 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
   searchQuery,
   onSearchChange,
   onSelect,
-  onDownload,
+  onDownloadProntuarios,
+  onDownloadAsos,
   currentJob,
   isCreatingJob = false,
 }) => {
@@ -130,67 +127,74 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
                           onClick={(event) => event.stopPropagation()}
                           onKeyDown={(event) => event.stopPropagation()}
                         >
-                          {onDownload && (
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              onKeyDown={(e) => e.stopPropagation()}
-                              role="none"
+                          {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
+                            <Button
+                              className={
+                                jobStatus === "partial"
+                                  ? "bg-warning/15 text-warning hover:bg-warning/25"
+                                  : "bg-success/15 text-success hover:bg-success/25"
+                              }
+                              size="sm"
+                              as="a"
+                              href={zipUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              startContent={<ExternalLink className="h-3.5 w-3.5" />}
                             >
-                              {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
-                                <Button
-                                  className={
-                                    jobStatus === "partial"
-                                      ? "bg-warning/15 text-warning hover:bg-warning/25"
-                                      : "bg-success/15 text-success hover:bg-success/25"
-                                  }
-                                  size="sm"
-                                  as="a"
-                                  href={zipUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  startContent={<ExternalLink className="h-3.5 w-3.5" />}
-                                >
-                                  Baixar ZIP
-                                </Button>
-                              ) : isActive ? (
-                                <Button
-                                  className="bg-brand-primary/15 text-brand-primary"
-                                  size="sm"
-                                  isDisabled
-                                  startContent={
-                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                  }
-                                >
-                                  {isCreatingJob
-                                    ? "Iniciando…"
-                                    : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
-                                </Button>
-                              ) : isTerminal && !zipUrl ? (
-                                <Button
-                                  className="bg-danger/15 text-danger hover:bg-danger/25"
-                                  size="sm"
-                                  startContent={<Download className="h-3.5 w-3.5" />}
-                                  onPress={() =>
-                                    onDownload(empresa.codigoEmpresa, empresa.razaoSocial)
-                                  }
-                                >
-                                  Tentar novamente
-                                </Button>
-                              ) : (
+                              Baixar ZIP
+                            </Button>
+                          ) : isActive ? (
+                            <Button
+                              className="bg-brand-primary/15 text-brand-primary"
+                              size="sm"
+                              isDisabled
+                              startContent={
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              }
+                            >
+                              {isCreatingJob
+                                ? "Iniciando…"
+                                : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
+                            </Button>
+                          ) : isTerminal && !zipUrl ? (
+                            <Button
+                              className="bg-danger/15 text-danger hover:bg-danger/25"
+                              size="sm"
+                              startContent={<Download className="h-3.5 w-3.5" />}
+                              onPress={() =>
+                                onDownloadProntuarios?.(empresa.codigoEmpresa, empresa.razaoSocial)
+                              }
+                            >
+                              Tentar novamente
+                            </Button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              {onDownloadProntuarios && (
                                 <Button
                                   className="bg-brand-primary text-white hover:bg-brand-primary-hover"
                                   size="sm"
-                                  startContent={<Download className="h-3.5 w-3.5" />}
+                                  startContent={<FileText className="h-3.5 w-3.5" />}
                                   onPress={() =>
-                                    onDownload(empresa.codigoEmpresa, empresa.razaoSocial)
+                                    onDownloadProntuarios(empresa.codigoEmpresa, empresa.razaoSocial)
                                   }
                                 >
-                                  Baixar todos
+                                  Prontuários
+                                </Button>
+                              )}
+                              {onDownloadAsos && (
+                                <Button
+                                  className="bg-success/15 text-success hover:bg-success/25"
+                                  size="sm"
+                                  startContent={<Download className="h-3.5 w-3.5" />}
+                                  onPress={() =>
+                                    onDownloadAsos(empresa.codigoEmpresa, empresa.razaoSocial)
+                                  }
+                                >
+                                  ASOs
                                 </Button>
                               )}
                             </div>
                           )}
-
                         </div>
                       </div>
                     </div>

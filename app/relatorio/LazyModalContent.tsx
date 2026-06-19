@@ -9,15 +9,24 @@ import {
   ModalFooter,
   Button,
   Spinner,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  DropdownSection,
 } from "@heroui/react";
-import { Eye, Trash, RefreshCw, FileText } from "lucide-react"; // ícone para relatório
+import {
+  Trash,
+  RefreshCw,
+  FolderOpen,
+} from "lucide-react";
 
 import DeleteConfirmationModal from "./components/DeleteConfirmationModal";
 import InformacoesGerais, {
   EditModeState,
 } from "./components/InformacoesGerais";
 import ExamesTable from "./components/ExamesTable";
-import AnexosUpload from "./components/AnexosUpload"; // Importe o novo componente
+import AnexosUpload from "./components/AnexosUpload";
 
 import {
   NEST_SCHEDULINGS_UPDATE,
@@ -25,7 +34,8 @@ import {
   NEST_SCHEDULINGS_PRONTUARIO,
   NEST_RELATORIO_FUNCIONARIO,
 } from "@/config/constants";
-import { reportInternal } from "@/lib/scheduling/report/reportInternal"; // função de geração de relatório
+import { reportInternal } from "@/lib/scheduling/report/reportInternal";
+import { guiaAtendimento } from "@/lib/scheduling/report/guiaAtendimento";
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 import { AtendimentoStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { IUserInfo } from "@/hooks/useUser";
@@ -88,9 +98,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     isEditing: false,
     editedData: {},
   });
-  const [loadingViewMedicalRecord, setLoadingViewMedicalRecord] =
-    useState(false);
   const [loadingViewReport, setLoadingViewReport] = useState(false);
+  const [loadingViewGuia, setLoadingViewGuia] = useState(false);
   const [loadingSyncSoc, setLoadingSyncSoc] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [removeAttachmentModal, setRemoveAttachmentModal] = useState<{
@@ -98,6 +107,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
     fileName: string;
   }>({ isOpen: false, fileName: "" });
   const [loadingAttachments, setLoadingAttachments] = useState(false);
+
+  const asoUrl = atendimento.ASOINFO?.url;
 
   // Estado para modal de alerta
   const [alertModal, setAlertModal] = useState<{
@@ -180,6 +191,36 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
       buildDocFilename(['CMSO_PRONTUARIO', atendimento.NOME, atendimento.CODIGOPRONTUARIO]),
     );
     window.open(viewerUrl, "_blank", "noopener,noreferrer");
+  };
+
+  const handleViewGuia = async () => {
+    if (!atendimento?._id) return;
+    try {
+      setLoadingViewGuia(true);
+      const html = await guiaAtendimento(atendimento);
+      const newWin = window.open("", "_blank");
+      if (newWin) {
+        newWin.document.open();
+        newWin.document.write(html);
+        newWin.document.close();
+        newWin.onload = () => newWin.focus();
+      } else {
+        setAlertModal({
+          open: true,
+          type: "error",
+          message: "Não foi possível abrir a guia em nova aba",
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao gerar guia:", error);
+      setAlertModal({
+        open: true,
+        type: "error",
+        message: "Não foi possível carregar a guia de atendimento",
+      });
+    } finally {
+      setLoadingViewGuia(false);
+    }
   };
 
   // handler para carregar relatório do Mongo e abrir em nova aba
@@ -424,47 +465,186 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
               </span>
             </div>
             <div className="flex items-center gap-1">
-              <Button
-                color="default"
-                disabled={loadingViewMedicalRecord || loadingViewReport}
-                size="sm"
-                startContent={
-                  loadingViewMedicalRecord ? (
-                    <Spinner color="current" size={"sm"} />
-                  ) : (
-                    <Eye size={16} />
-                  )
-                }
-                variant="light"
-                onPress={handleViewMedicalRecord}
-              >
-                {loadingViewMedicalRecord ? "Carregando" : "Ver Prontuário"}
-              </Button>
+              <Dropdown placement="bottom-start">
+                <DropdownTrigger>
+                  <Button
+                    color="default"
+                    size="sm"
+                    startContent={<FolderOpen size={16} />}
+                    variant="light"
+                  >
+                    Documentos
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  aria-label="Documentos do atendimento"
+                  disabledKeys={
+                    [
+                      !asoUrl ? "ASO" : null,
+                      !atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                        ?.relatorioEvidenciasUrl
+                        ? "EVIDENCIAS"
+                        : null,
+                      !atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                        ?.termoCienciaUrl
+                        ? "TERMO_ACEITE"
+                        : null,
+                      !atendimento.ASOINFO?.validacao &&
+                      !atendimento.ASOINFO?.validacaoUrl
+                        ? "VALIDACAO"
+                        : null,
+                    ].filter(Boolean) as string[]
+                  }
+                  onAction={(key) => {
+                    switch (key) {
+                      case "ASO": {
+                        const url = asoUrl;
+                        if (url) {
+                          const viewerUrl = buildViewerUrl(
+                            url,
+                            buildDocFilename([
+                              "CMSO_ASO",
+                              atendimento.NOME,
+                            ]),
+                          );
+                          if (viewerUrl)
+                            window.open(viewerUrl, "_blank", "noopener,noreferrer");
+                        }
+                        break;
+                      }
+                      case "GUIA":
+                        handleViewGuia();
+                        break;
+                      case "PRONTUARIO":
+                        handleViewMedicalRecord();
+                        break;
+                      case "RELATORIO":
+                        handleViewReport();
+                        break;
+                      case "EVIDENCIAS": {
+                        const url =
+                          atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                            ?.relatorioEvidenciasUrl;
+                        if (url) {
+                          const viewerUrl = buildViewerUrl(
+                            url,
+                            buildDocFilename([
+                              "CMSO_EVIDENCIAS",
+                              atendimento.NOME,
+                            ]),
+                          );
+                          if (viewerUrl)
+                            window.open(
+                              viewerUrl,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                        }
+                        break;
+                      }
+                      case "TERMO_ACEITE": {
+                        const url =
+                          atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                            ?.termoCienciaUrl;
+                        if (url) {
+                          const viewerUrl = buildViewerUrl(
+                            url,
+                            buildDocFilename([
+                              "CMSO_TERMO_CIENCIA",
+                              atendimento.NOME,
+                            ]),
+                          );
+                          if (viewerUrl)
+                            window.open(
+                              viewerUrl,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                        }
+                        break;
+                      }
+                      case "VALIDACAO": {
+                        const url =
+                          atendimento.ASOINFO?.validacao ||
+                          atendimento.ASOINFO?.validacaoUrl;
+                        if (url) {
+                          const metodo =
+                            atendimento.AUTENTICACAOATENDIMENTO?.metodo ||
+                            "SOC";
+                          const viewerUrl = buildViewerUrl(
+                            url,
+                            buildDocFilename([
+                              "CMSO_VALIDACAO",
+                              metodo,
+                              atendimento.NOME,
+                            ]),
+                          );
+                          if (viewerUrl)
+                            window.open(
+                              viewerUrl,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                        }
+                        break;
+                      }
+                    }
+                  }}
+                >
+                  <DropdownSection title="ASO" showDivider>
+                    <DropdownItem
+                      key="ASO"
+                      description="Visualizar o documento ASO em PDF"
+                    >
+                      ASO
+                    </DropdownItem>
+                  </DropdownSection>
+                  <DropdownSection title="Exame" showDivider>
+                    <DropdownItem
+                      key="GUIA"
+                      description="Imprimir guia de atendimento"
+                    >
+                      Guia de Atendimento
+                    </DropdownItem>
+                    <DropdownItem
+                      key="PRONTUARIO"
+                      description="Visualizar o prontuário completo"
+                    >
+                      Ver Prontuário
+                    </DropdownItem>
+                  </DropdownSection>
+                  <DropdownSection title="Relatórios">
+                    <DropdownItem
+                      key="RELATORIO"
+                      description="Relatório completo do atendimento"
+                    >
+                      Atendimento
+                    </DropdownItem>
+                    <DropdownItem
+                      key="EVIDENCIAS"
+                      description="Relatório de evidências da autenticação"
+                    >
+                      Evidências
+                    </DropdownItem>
+                    <DropdownItem
+                      key="TERMO_ACEITE"
+                      description="Termo de ciência da autenticação"
+                    >
+                      Termo de Aceite
+                    </DropdownItem>
+                    <DropdownItem
+                      key="VALIDACAO"
+                      description="Validar assinatura digital do ASO"
+                    >
+                      Validação
+                    </DropdownItem>
+                  </DropdownSection>
+                </DropdownMenu>
+              </Dropdown>
 
               <Button
                 color="default"
-                disabled={loadingViewReport}
-                size="sm"
-                startContent={
-                  loadingViewReport ? (
-                    <Spinner color="current" size={"sm"} />
-                  ) : (
-                    <FileText size={16} />
-                  )
-                }
-                variant="light"
-                onPress={handleViewReport}
-              >
-                {loadingViewReport ? "Carregando" : "Relatório"}
-              </Button>
-
-              <Button
-                color="default"
-                disabled={
-                  loadingSyncSoc ||
-                  loadingViewMedicalRecord ||
-                  loadingViewReport
-                }
+                disabled={loadingSyncSoc || loadingViewReport}
                 isLoading={loadingSyncSoc}
                 size="sm"
                 startContent={<RefreshCw size={16} />}

@@ -1,4 +1,4 @@
-﻿import { Scheduling } from "../interface/scheduling";
+import { Scheduling } from "../interface/scheduling";
 
 import { formatCPF } from "@/lib/utils";
 
@@ -20,7 +20,8 @@ export function reportInternal(employee: Scheduling): string {
     }
   }
 
-  function formatExamDate(dataExame: string): string {
+  function formatExamDate(dataExame?: string): string {
+    if (!dataExame) return "Pendente";
     const date = parseDateTime(dataExame);
 
     if (!date) return "Pendente";
