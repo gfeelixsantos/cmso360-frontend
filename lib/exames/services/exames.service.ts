@@ -26,10 +26,33 @@ export interface IExameFormData {
   preparacao: string | null;
 }
 
+let cachedExames: IExame[] | null = null;
+let cachedExamesPromise: Promise<IExame[]> | null = null;
+
+export function invalidateExamesCache(): void {
+  cachedExames = null;
+  cachedExamesPromise = null;
+}
+
 export async function fetchExames(): Promise<IExame[]> {
-  const res = await fetch('/api/exames');
-  if (!res.ok) throw new Error('Falha ao carregar exames');
-  return res.json();
+  if (cachedExames) {
+    return cachedExames;
+  }
+  if (cachedExamesPromise) {
+    return cachedExamesPromise;
+  }
+  cachedExamesPromise = (async () => {
+    try {
+      const res = await fetch('/api/exames');
+      if (!res.ok) throw new Error('Falha ao carregar exames');
+      cachedExames = await res.json();
+      return cachedExames!;
+    } catch (error) {
+      cachedExamesPromise = null;
+      throw error;
+    }
+  })();
+  return cachedExamesPromise;
 }
 
 export async function fetchExameById(id: string): Promise<IExame> {
@@ -45,6 +68,7 @@ export async function fetchGrupos(): Promise<string[]> {
 }
 
 export async function createExame(data: IExameFormData): Promise<IExame> {
+  invalidateExamesCache();
   const res = await fetch('/api/exames', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -58,6 +82,7 @@ export async function createExame(data: IExameFormData): Promise<IExame> {
 }
 
 export async function updateExame(id: string, data: Partial<IExameFormData & { ativo: boolean }>): Promise<IExame> {
+  invalidateExamesCache();
   const res = await fetch(`/api/exames/${id}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
@@ -71,6 +96,7 @@ export async function updateExame(id: string, data: Partial<IExameFormData & { a
 }
 
 export async function deleteExame(id: string): Promise<void> {
+  invalidateExamesCache();
   const res = await fetch(`/api/exames/${id}`, { method: 'DELETE' });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Erro ao excluir exame' }));
