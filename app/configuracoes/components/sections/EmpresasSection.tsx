@@ -1789,6 +1789,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                             label="Contatos para notificação"
                             placeholder="Selecione os contatos da empresa"
                             selectionMode="multiple"
+                            items={[
+                              {
+                                email: "__all__",
+                                nome: "Todos os Contatos",
+                                textValue: "Todos os Contatos",
+                                descricao: "Enviar para todos os contatos registrados",
+                              },
+                              ...contatos.map((c) => ({
+                                ...c,
+                                textValue: `${c.nome} (${c.email})`,
+                              })),
+                            ]}
                             selectedKeys={
                               contatos.length > 0 &&
                               newDocData.contatosNotificados.length === contatos.length &&
@@ -1806,25 +1818,28 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                                   ...newDocData,
                                   contatosNotificados: allSelected ? [] : contatos.map(c => c.email),
                                 });
-                              } else {
-                                setNewDocData({ ...newDocData, contatosNotificados: selected });
-                              }
-                            }}
-                          >
-                            <SelectItem key="__all__" textValue="Todos os Contatos">
-                              <div className="flex flex-col">
-                                <span className="font-semibold">Todos os Contatos</span>
-                                <span className="text-tiny text-default-400">Enviar para todos os contatos registrados</span>
-                              </div>
-                            </SelectItem>
-                            {contatos.map((c) => (
-                              <SelectItem key={c.email} textValue={`${c.nome} (${c.email})`}>
-                                <div className="flex flex-col">
-                                  <span>{c.nome}</span>
-                                  <span className="text-tiny text-default-400">{c.email}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
+                                } else {
+                                  setNewDocData({ ...newDocData, contatosNotificados: selected });
+                                }
+                              }}
+                            >
+                            {(c) =>
+                              c.email === "__all__" ? (
+                                <SelectItem key="__all__" textValue={c.textValue}>
+                                  <div className="flex flex-col">
+                                    <span className="font-semibold">{c.nome}</span>
+                                    <span className="text-tiny text-default-400">{c.descricao}</span>
+                                  </div>
+                                </SelectItem>
+                              ) : (
+                                <SelectItem key={c.email} textValue={c.textValue}>
+                                  <div className="flex flex-col">
+                                    <span>{c.nome}</span>
+                                    <span className="text-tiny text-default-400">{c.email}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            }
                           </Select>
                         )}
                       </div>
