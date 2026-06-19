@@ -12,6 +12,10 @@ import {
   fetchRiscosConfig, createRiscoConfig, updateRiscoConfig, deleteRiscoConfig,
   IRiscoConfig, IRiscoConfigFormData, GRUPOS_RISCOS,
 } from "@/lib/riscos-config/services/riscos-config.service";
+import {
+  normalizeRiskCode,
+  normalizeRiskType,
+} from "@/lib/riscos-config/utils";
 
 const INITIAL_FORM: IRiscoConfigFormData = {
   tipo: "",
@@ -124,7 +128,22 @@ export function RiscosConfigSection() {
   }
 
   async function handleSave() {
-    const codigosArray = formCodigosStr.split(",").map((s) => s.trim()).filter(Boolean);
+    const codigosArray = Array.from(
+      new Set(
+        formCodigosStr
+          .split(",")
+          .map(normalizeRiskCode)
+          .filter(Boolean),
+      ),
+    );
+    const parecerOpcoes = Array.from(
+      new Set(
+        formParecerStr
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+      ),
+    );
     if (!form.tipo.trim() || !form.descricao.trim() || codigosArray.length === 0 || !form.grupo) return;
 
     setSaving(true);
@@ -132,8 +151,9 @@ export function RiscosConfigSection() {
     try {
       const payload: IRiscoConfigFormData = {
         ...form,
+        tipo: normalizeRiskType(form.tipo),
         codigos: codigosArray,
-        parecer_opcoes: formParecerStr.split(",").map(s => s.trim()).filter(Boolean) || undefined,
+        parecer_opcoes: parecerOpcoes.length > 0 ? parecerOpcoes : undefined,
       };
 
       if (creatingNew) {

@@ -57,10 +57,17 @@ import {
   ParecerTrabalhoAltura,
 } from "@/lib/scheduling/enum/scheduling.enum";
 import {
+  CODIGOS_ESPACO_CONFINADO,
+  CODIGOS_RISCO_ALTURA,
   USER_PROFILE,
   NEST_URL,
 } from "@/config/constants";
 import { fetchRiscosConfig, IRiscoConfig } from "@/lib/riscos-config/services/riscos-config.service";
+import {
+  getRiskOpinionOptions,
+  hasConfiguredRisk,
+  parseSchedulingRisks,
+} from "@/lib/riscos-config/utils";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
 import { addDaysToISODate, getBrazilDateISO } from "@/lib/utils";
 
@@ -1099,42 +1106,46 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }, [selectedRecord?.EXAMES]);
 
   // normaliza a propriedade RISCOSASO como array seguro
-  const riscos = useMemo(() => {
-    const raw = selectedRecord?.RISCOSASO;
-
-    if (Array.isArray(raw)) return raw;
-    // se for string JSON, tentar parse (caso venha serializado)
-    if (typeof raw === "string") {
-      try {
-        const parsed = JSON.parse(raw);
-
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        // ignore parse error — retorna array vazio
-      }
-    }
-
-    return [];
-  }, [selectedRecord?.RISCOSASO]);
-
-  const alturaCodigos = useMemo(
-    () => new Set(riscosConfigs.find((c) => c.tipo === "ALTURA")?.codigos ?? []),
-    [riscosConfigs],
-  );
-
-  const confinadoCodigos = useMemo(
-    () => new Set(riscosConfigs.find((c) => c.tipo === "CONFINADO")?.codigos ?? []),
-    [riscosConfigs],
+  const riscos = useMemo(
+    () => parseSchedulingRisks(selectedRecord?.RISCOSASO),
+    [selectedRecord?.RISCOSASO],
   );
 
   const hasHeightRisk = useMemo(
-    () => riscos.some((r: any) => alturaCodigos.has(r?.codigo)),
-    [riscos, alturaCodigos],
+    () =>
+      hasConfiguredRisk(riscos, riscosConfigs, "ALTURA", CODIGOS_RISCO_ALTURA),
+    [riscos, riscosConfigs],
   );
 
   const hasConfinedRisk = useMemo(
-    () => riscos.some((r: any) => confinadoCodigos.has(r?.codigo)),
-    [riscos, confinadoCodigos],
+    () =>
+      hasConfiguredRisk(
+        riscos,
+        riscosConfigs,
+        "CONFINADO",
+        CODIGOS_ESPACO_CONFINADO,
+      ),
+    [riscos, riscosConfigs],
+  );
+
+  const alturaParecerOpcoes = useMemo(
+    () =>
+      getRiskOpinionOptions(
+        riscosConfigs,
+        "ALTURA",
+        Object.values(ParecerTrabalhoAltura),
+      ),
+    [riscosConfigs],
+  );
+
+  const confinadoParecerOpcoes = useMemo(
+    () =>
+      getRiskOpinionOptions(
+        riscosConfigs,
+        "CONFINADO",
+        Object.values(ParecerEspaçoConfinado),
+      ),
+    [riscosConfigs],
   );
 
   const agruparRiscos = (riscos: RiscosAso[]) => {
@@ -1678,9 +1689,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           }));
                         }}
                       >
-                        {(riscosConfigs.find((c) => c.tipo === "ALTURA")
-                          ?.parecer_opcoes ?? []
-                        ).map((opt) => (
+                        {alturaParecerOpcoes.map((opt) => (
                           <SelectItem key={opt}>{opt}</SelectItem>
                         ))}
                       </Select>
@@ -1710,9 +1719,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           }));
                         }}
                       >
-                        {(riscosConfigs.find((c) => c.tipo === "CONFINADO")
-                          ?.parecer_opcoes ?? []
-                        ).map((opt) => (
+                        {confinadoParecerOpcoes.map((opt) => (
                           <SelectItem key={opt}>{opt}</SelectItem>
                         ))}
                       </Select>
