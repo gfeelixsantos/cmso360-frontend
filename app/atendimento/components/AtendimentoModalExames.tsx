@@ -351,7 +351,6 @@ const AtendimentoModalExames = ({
         message: "Deseja confirmar a conclusão deste exame?",
         showCancel: true,
         onConfirm: () => {
-          closeNotificationModal();
           processarAtualizacaoExame(data);
         },
         onCancel: closeNotificationModal,
