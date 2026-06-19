@@ -255,172 +255,7 @@ ExameCard.displayName = "ExameCard";
 
 /* ---------------------- Modal de Seleção de Exames ---------------------- */
 
-const ExamesRepeticaoModal = memo(
-  ({
-    isOpen,
-    onClose,
-    onSave,
-    examesDisponiveis,
-  }: {
-    isOpen: boolean;
-    onClose: () => void;
-    onSave: (exames: string[]) => void;
-    examesDisponiveis: string[];
-  }) => {
-    const [selectedExames, setSelectedExames] = useState<string[]>([]);
-    const [searchTerm, setSearchTerm] = useState("");
 
-    const examesFiltrados = useMemo(() => {
-      if (!searchTerm) return examesDisponiveis || [];
-
-      return (examesDisponiveis || []).filter((e) =>
-        e.toLowerCase().includes(searchTerm.toLowerCase()),
-      );
-    }, [examesDisponiveis, searchTerm]);
-
-    const handleSave = useCallback(() => {
-      if (selectedExames.length === 0) {
-        addToast({
-          title: "Seleção obrigatória",
-          description: "Selecione ao menos um exame para repetição.",
-          color: "warning",
-          variant: "solid",
-        });
-
-        return;
-      }
-      onSave(selectedExames);
-      onClose();
-    }, [selectedExames, onSave, onClose]);
-
-    const handleClose = useCallback(() => {
-      setSelectedExames([]);
-      setSearchTerm("");
-      onClose();
-    }, [onClose]);
-
-    return (
-      <HeroModal
-        backdrop="blur"
-        classNames={{
-          base: "max-h-[90vh]",
-          body: "py-6",
-        }}
-        isOpen={isOpen}
-        scrollBehavior="inside"
-        size="2xl"
-        onClose={handleClose}
-      >
-        <ModalContent>
-          <ModalHeader>
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
-              <h3 className="text-base sm:text-lg md:text-xl font-bold">
-                Selecionar Exames para Repetição
-              </h3>
-            </div>
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Alert
-                className="text-xs sm:text-sm"
-                color="primary"
-                variant="flat"
-              >
-                Selecione ao menos um exame que deverá ser repetido pelo
-                paciente.
-              </Alert>
-
-              <Input
-                isClearable
-                className="w-full"
-                placeholder="Buscar exames..."
-                size="sm"
-                value={searchTerm}
-                onClear={() => setSearchTerm("")}
-                onValueChange={setSearchTerm}
-              />
-
-              <Card className="border border-default-200">
-                <CardBody className="p-3 max-h-[400px] overflow-y-auto">
-                  <CheckboxGroup
-                    classNames={{
-                      base: "w-full",
-                    }}
-                    value={selectedExames}
-                    onValueChange={setSelectedExames}
-                  >
-                    {examesFiltrados.length > 0 ? (
-                      <div className="grid grid-cols-1 gap-2">
-                        {examesFiltrados.map((exame) => (
-                          <Checkbox
-                            key={exame}
-                            classNames={{
-                              label: "text-xs sm:text-sm",
-                            }}
-                            value={exame}
-                          >
-                            {exame}
-                          </Checkbox>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-center text-default-400 text-sm py-4">
-                        Nenhum exame encontrado
-                      </p>
-                    )}
-                  </CheckboxGroup>
-                </CardBody>
-              </Card>
-
-              {selectedExames.length > 0 && (
-                <Card className="bg-primary-50 border-primary-200">
-                  <CardBody className="p-3">
-                    <p className="text-xs font-semibold text-primary mb-2">
-                      {selectedExames.length} exame(s) selecionado(s):
-                    </p>
-                    <div className="flex flex-wrap gap-1">
-                      {selectedExames.map((exame) => (
-                        <Chip
-                          key={exame}
-                          color="primary"
-                          size="sm"
-                          variant="flat"
-                          onClose={() =>
-                            setSelectedExames((prev) =>
-                              prev.filter((e) => e !== exame),
-                            )
-                          }
-                        >
-                          {exame}
-                        </Chip>
-                      ))}
-                    </div>
-                  </CardBody>
-                </Card>
-              )}
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button size="sm" variant="light" onPress={handleClose}>
-              Cancelar
-            </Button>
-            <Button
-              color="warning"
-              isDisabled={selectedExames.length === 0}
-              size="sm"
-              onPress={handleSave}
-            >
-              Confirmar Seleção
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </HeroModal>
-    );
-  },
-);
-
-ExamesRepeticaoModal.displayName = "ExamesRepeticaoModal";
 
 /* ---------------------- Modal de Confirmação ---------------------- */
 
@@ -916,8 +751,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const [isSavingOpinion, setIsSavingOpinion] = useState(false);
   const [laudoModalOpen, setLaudoModalOpen] = useState(false);
   const [examesAccordionOpen, setExamesAccordionOpen] = useState<string[]>([]);
-  const [examesRepeticaoModalOpen, setExamesRepeticaoModalOpen] =
-    useState(false);
   const [confirmacaoModalOpen, setConfirmacaoModalOpen] = useState(false);
 
   /* ---------------------- Estados para Autenticação PSC ---------------------- */
@@ -1197,20 +1030,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       return;
     }
 
-    if (
-      opinionRequiresExames(opinion) &&
-      (!opinion.examesParaRepetir || opinion.examesParaRepetir.length === 0)
-    ) {
-      addToast({
-        variant: "solid",
-        title: "Exames não selecionados",
-        description: "Para solicitar repetição, selecione ao menos um exame.",
-        color: "danger",
-      });
-
-      return;
-    }
-
     // APTO_COM_RESTRICAO requer laudo preenchido com periodoDias e dataInicio
     if (opinion.opinionType === ParecerMedico.APTO_COM_RESTRICAO) {
       if (!opinion.laudoRestricao || !opinion.laudoRestricao.dataInicio || opinion.laudoRestricao.periodoDias <= 0) {
@@ -1277,17 +1096,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   // exames com sala — depende explicitamente de EXAMES (defensivo)
   const examesComSala = useMemo(() => {
     return selectedRecord?.EXAMES ?? [];
-  }, [selectedRecord?.EXAMES]);
-
-  // exames disponíveis para repetição — depende explicitamente de EXAMES
-  const examesDisponiveisParaRepeticao = useMemo(() => {
-    const grupos = new Set<string>();
-
-    (selectedRecord?.EXAMES ?? []).forEach((exame: any) => {
-      if (exame?.grupo) grupos.add(exame.grupo);
-    });
-
-    return Array.from(grupos).sort();
   }, [selectedRecord?.EXAMES]);
 
   // normaliza a propriedade RISCOSASO como array seguro
@@ -1406,7 +1214,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         !!op.opinionType &&
         [
           ParecerMedico.APTO_COM_ORIENTACAO,
-          ParecerMedico.SOLICITAR_REPETICAO,
           ParecerMedico.INAPTO,
           ParecerMedico.INAPTO_TEMPORARIAMENTE,
         ].includes(op.opinionType);
@@ -1419,10 +1226,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     },
     [],
   );
-
-  const opinionRequiresExames = useCallback((op: MedicalOpinionData | null) => {
-    return op?.opinionType === ParecerMedico.SOLICITAR_REPETICAO;
-  }, []);
 
   const opinionHasInvalidAptoDetails = useCallback(
     (op: MedicalOpinionData | null) =>
@@ -1486,26 +1289,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       return;
     }
 
-    if (
-      opinionRequiresExames(opinion) &&
-      (!opinion.examesParaRepetir || opinion.examesParaRepetir.length === 0)
-    ) {
-      addToast({
-        variant: "solid",
-        title: "Exames não selecionados",
-        description: "Para solicitar repetição, selecione ao menos um exame.",
-        color: "danger",
-      });
-
-      return;
-    }
-
     setConfirmacaoModalOpen(true);
   }, [
     opinion,
     opinionHasInvalidAptoDetails,
     opinionRequiresDetails,
-    opinionRequiresExames,
   ]);
 
   const saveOpinion = useCallback(async () => {
@@ -1589,18 +1377,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     setSelectedRecord,
   ]);
 
-  const handleSaveExamesRepeticao = useCallback((exames: string[]) => {
-    setOpinion((prev) => ({
-      ...prev,
-      examesParaRepetir: exames,
-    }));
-    addToast({
-      title: "Exames selecionados",
-      description: `${exames.length} exame(s) marcado(s) para repetição.`,
-      color: "success",
-    });
-  }, []);
-
   const handleLimparParecer = useCallback(() => {
     setOpinion(initialOpinion);
   }, []);
@@ -1642,7 +1418,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }
 
   const showDetailsField = opinionRequiresDetails(opinion);
-  const showExamesSelector = opinionRequiresExames(opinion);
   const normalizeStr = (s: string) =>
     s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
   const perfilNorm = normalizeStr(user.perfil);
@@ -1654,7 +1429,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
 
   const hasPendentes =
     selectedRecord.EXAMES?.some(
-      (e: { status: string }) => e.status === "PENDENTE",
+      (e) => e.status === "PENDENTE",
     ) ?? false;
 
   const canFinish = isAwaitingMedical && opinion?.opinionType && !hasPendentes;
@@ -1845,10 +1620,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                       value === ParecerMedico.APTO_COM_RESTRICAO
                         ? (prev?.laudoRestricao ?? null)
                         : null,
-                    examesParaRepetir:
-                      value === ParecerMedico.SOLICITAR_REPETICAO
-                        ? prev?.examesParaRepetir
-                        : [],
                   }));
 
                   // Abre o modal de laudo automaticamente ao selecionar APTO_COM_RESTRICAO
@@ -1866,9 +1637,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                 <SelectItem key={ParecerMedico.APTO_COM_RESTRICAO}>
                   APTO COM RESTRIÇÃO TEMPORÁRIA
                 </SelectItem>
-                {/* <SelectItem key={ParecerMedico.SOLICITAR_REPETICAO}>
-                  {ParecerMedico.SOLICITAR_REPETICAO.replace(/_/g, " ")}
-                </SelectItem> */}
                 <SelectItem key={ParecerMedico.INAPTO}>
                   {ParecerMedico.INAPTO}
                 </SelectItem>
@@ -1876,65 +1644,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                   {ParecerMedico.INAPTO_TEMPORARIAMENTE.replace(/_/g, " ")}
                 </SelectItem>
               </Select>
-
-              {/* Seletor de Exames para Repetição */}
-              {showExamesSelector && (
-                <div className="space-y-2">
-                  <Button
-                    fullWidth
-                    color="warning"
-                    size="sm"
-                    startContent={<FileText className="w-4 h-4" />}
-                    variant="flat"
-                    onPress={() => setExamesRepeticaoModalOpen(true)}
-                  >
-                    Selecionar exames para repetir
-                    {opinion.examesParaRepetir &&
-                      opinion.examesParaRepetir.length > 0 && (
-                        <Chip
-                          className="ml-2"
-                          color="warning"
-                          size="sm"
-                          variant="solid"
-                        >
-                          {opinion.examesParaRepetir.length}
-                        </Chip>
-                      )}
-                  </Button>
-
-                  {opinion.examesParaRepetir &&
-                    opinion.examesParaRepetir.length > 0 && (
-                      <Card className="bg-warning-50 border-warning-200">
-                        <CardBody className="p-3">
-                          <p className="text-xs font-semibold text-warning-700 mb-2">
-                            Exames selecionados para repetição:
-                          </p>
-                          <div className="flex flex-wrap gap-1">
-                            {opinion.examesParaRepetir.map((exame) => (
-                              <Chip
-                                key={exame}
-                                color="warning"
-                                size="sm"
-                                variant="flat"
-                                onClose={() =>
-                                  setOpinion((prev) => ({
-                                    ...prev,
-                                    examesParaRepetir:
-                                      prev.examesParaRepetir?.filter(
-                                        (e) => e !== exame,
-                                      ) || [],
-                                  }))
-                                }
-                              >
-                                {exame}
-                              </Chip>
-                            ))}
-                          </div>
-                        </CardBody>
-                      </Card>
-                    )}
-                </div>
-              )}
 
               {/* Pareceres Complementares - Trabalho em altura e espaço confinado, exibidos se não for RT e DEM */}
               {(hasHeightRisk || hasConfinedRisk) &&
@@ -1969,17 +1678,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           }));
                         }}
                       >
-                        <SelectItem key={ParecerTrabalhoAltura.APTO_ALTURA}>
-                          {ParecerTrabalhoAltura.APTO_ALTURA}
-                        </SelectItem>
-                        <SelectItem
-                          key={ParecerTrabalhoAltura.APTO_ALTURA_CINTO_100KG}
-                        >
-                          {ParecerTrabalhoAltura.APTO_ALTURA_CINTO_100KG}
-                        </SelectItem>
-                        <SelectItem key={ParecerTrabalhoAltura.INAPTO_ALTURA}>
-                          {ParecerTrabalhoAltura.INAPTO_ALTURA}
-                        </SelectItem>
+                        {(riscosConfigs.find((c) => c.tipo === "ALTURA")
+                          ?.parecer_opcoes ?? []
+                        ).map((opt) => (
+                          <SelectItem key={opt}>{opt}</SelectItem>
+                        ))}
                       </Select>
                     )}
 
@@ -2007,14 +1710,11 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                           }));
                         }}
                       >
-                        <SelectItem key={ParecerEspaçoConfinado.APTO_CONFINADO}>
-                          {ParecerEspaçoConfinado.APTO_CONFINADO}
-                        </SelectItem>
-                        <SelectItem
-                          key={ParecerEspaçoConfinado.INAPTO_CONFINADO}
-                        >
-                          {ParecerEspaçoConfinado.INAPTO_CONFINADO}
-                        </SelectItem>
+                        {(riscosConfigs.find((c) => c.tipo === "CONFINADO")
+                          ?.parecer_opcoes ?? []
+                        ).map((opt) => (
+                          <SelectItem key={opt}>{opt}</SelectItem>
+                        ))}
                       </Select>
                     )}
                   </div>
@@ -2163,13 +1863,6 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       </div>
 
       {/* Modais */}
-      <ExamesRepeticaoModal
-        examesDisponiveis={examesDisponiveisParaRepeticao}
-        isOpen={examesRepeticaoModalOpen}
-        onClose={() => setExamesRepeticaoModalOpen(false)}
-        onSave={handleSaveExamesRepeticao}
-      />
-
       <ConfirmacaoParecerModal
         isLoading={isSavingOpinion}
         isOpen={confirmacaoModalOpen}

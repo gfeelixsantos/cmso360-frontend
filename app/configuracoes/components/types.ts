@@ -8,6 +8,7 @@ export type SectionId =
   | "prestadores"
   | "usuario"
   | "auditoria"
+  | "empresas"
   | "riscos";
 
 export interface NavItem {

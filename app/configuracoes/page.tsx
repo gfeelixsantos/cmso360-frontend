@@ -24,6 +24,7 @@ import { PrestadoresSection } from "./components/sections/PrestadoresSection";
 import { UsuarioSection } from "./components/sections/UsuarioSection";
 import { AuditoriaSection } from "./components/sections/AuditoriaSection";
 import { RiscosConfigSection } from "./components/sections/RiscosConfigSection";
+import { EmpresasSection } from "./components/sections/EmpresasSection";
 
 const defaultPscAuthStatus: IPscAuthStatus = {
   status: "NOT_AUTHENTICATED",
@@ -100,6 +101,8 @@ export default function ConfiguracoesPage() {
         return <UsuarioSection user={user!} />;
       case "auditoria":
         return <AuditoriaSection user={user!} />;
+      case "empresas":
+        return <EmpresasSection user={user!} />;
       case "riscos":
         return <RiscosConfigSection />;
     }

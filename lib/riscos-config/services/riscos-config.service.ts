@@ -3,7 +3,25 @@ export interface IRiscoConfig {
   tipo: string;
   descricao: string;
   codigos: string[];
+  grupo: string;
+  parecer_opcoes?: string[];
+  observacao?: string;
   ativo: boolean;
+  // Perigo integrado (1:1)
+  perigo_nome?: string;
+  perigo_tipo_exposicao?: string;
+  perigo_fonte_geradora?: string;
+  perigo_trajetoria_acao?: string;
+  perigo_tecnica_utilizada?: string;
+  perigo_possiveis_danos?: string;
+  perigo_medidas_administrativas?: string;
+  perigo_epc_eficaz?: boolean;
+  perigo_epc_descricao?: string;
+  perigo_epi_eficaz?: boolean;
+  perigo_epi_descricao?: string;
+  perigo_acoes_necessarias?: string;
+  perigo_criterio_monitoracao?: string;
+  perigo_observacao?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -12,7 +30,33 @@ export interface IRiscoConfigFormData {
   tipo: string;
   descricao: string;
   codigos: string[];
+  grupo: string;
+  parecer_opcoes?: string[];
+  observacao?: string;
+  // Perigo integrado
+  perigo_nome?: string;
+  perigo_tipo_exposicao?: string;
+  perigo_fonte_geradora?: string;
+  perigo_trajetoria_acao?: string;
+  perigo_tecnica_utilizada?: string;
+  perigo_possiveis_danos?: string;
+  perigo_medidas_administrativas?: string;
+  perigo_epc_eficaz?: boolean;
+  perigo_epc_descricao?: string;
+  perigo_epi_eficaz?: boolean;
+  perigo_epi_descricao?: string;
+  perigo_acoes_necessarias?: string;
+  perigo_criterio_monitoracao?: string;
+  perigo_observacao?: string;
 }
+
+export const GRUPOS_RISCOS = [
+  { value: 'FISICOS', label: 'Físicos' },
+  { value: 'QUIMICOS', label: 'Químicos' },
+  { value: 'BIOLOGICOS', label: 'Biológicos' },
+  { value: 'ACIDENTES', label: 'Acidentes' },
+  { value: 'ERGONOMICOS', label: 'Ergonômicos' },
+] as const;
 
 export async function fetchRiscosConfig(): Promise<IRiscoConfig[]> {
   const res = await fetch('/api/riscos-config');
