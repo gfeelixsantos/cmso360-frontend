@@ -34,8 +34,8 @@ const TERMS_CONTENT: Record<ConsentType, { title: string; text: string }> = {
 5. O prazo de guarda legal de 20 anos para prontuários ocupacionais (CFM 1.821/2007).`,
   },
   LGPD_DADOS_SAUDE: {
-    title: "Consentimento para Dados de Saúde",
-    text: `Você consente expressamente com o tratamento dos seus dados de saúde (classificados como dados sensíveis pela LGPD Art. 11) para as seguintes finalidades:
+    title: "Ciência e Registro para Dados de Saúde",
+    text: `Você declara estar ciente do tratamento dos seus dados de saúde (classificados como dados sensíveis pela LGPD Art. 11) para as seguintes finalidades:
 
 1. Realização de exames ocupacionais admissionais, periódicos, de retorno ao trabalho, de mudança de função e demissionais.
 2. Emissão de Atestado de Saúde Ocupacional (ASO).
@@ -43,7 +43,7 @@ const TERMS_CONTENT: Record<ConsentType, { title: string; text: string }> = {
 4. Compartilhamento com o sistema SOC para integração de dados ocupacionais.
 
 Base legal: LGPD Art. 11, II, "a" (cumprimento de obrigação legal) e "f" (proteção à saúde).
-O consentimento pode ser revogado a qualquer momento, respeitadas as hipóteses de guarda legal.`,
+Este registro de ciência não se confunde com consentimento — a base legal é o cumprimento de obrigação legal (NR-7, CLT Art. 168). Você pode solicitar a revisão do tratamento a qualquer momento, respeitadas as hipóteses de guarda legal obrigatória.`,
   },
 };
 

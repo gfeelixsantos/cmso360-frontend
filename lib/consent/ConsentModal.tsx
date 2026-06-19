@@ -12,6 +12,12 @@ import {
 import { useState } from "react";
 import { useConsent, ConsentType } from "./useConsent";
 
+const DOC_LINKS: Record<ConsentType, { href: string; label: string; suffix: string }> = {
+  TERMOS_DE_USO: { href: "/termos-de-uso", label: "Termos de Uso", suffix: "na íntegra" },
+  POLITICA_PRIVACIDADE: { href: "/privacidade", label: "Política de Privacidade", suffix: "completa" },
+  LGPD_DADOS_SAUDE: { href: "/privacidade", label: "Política de Privacidade", suffix: "completa" },
+};
+
 export function ConsentModal() {
   const { needsConsent, pendingTipo, accept, getContent, error } = useConsent();
   const [checked, setChecked] = useState(false);
@@ -21,6 +27,8 @@ export function ConsentModal() {
 
   const content = getContent(pendingTipo);
   if (!content) return null;
+
+  const docLink = DOC_LINKS[pendingTipo];
 
   async function handleAccept() {
     setAccepting(true);
@@ -59,12 +67,12 @@ export function ConsentModal() {
               feche esta janela e entre em contato com o DPO.
             </p>
             <a
-              href="/privacidade"
+              href={docLink.href}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-blue-600 hover:underline"
             >
-              Ler Política de Privacidade completa &rarr;
+              Ler {docLink.label} {docLink.suffix} &rarr;
             </a>
           </div>
         </ModalBody>
@@ -85,10 +93,10 @@ export function ConsentModal() {
           <div className="flex justify-end gap-2 w-full">
             <Button
               variant="flat"
-              onPress={() => window.open("/privacidade", "_blank")}
+              onPress={() => window.open(docLink.href, "_blank")}
               size="sm"
             >
-              Ver Política Completa
+              Ver {docLink.label} {docLink.suffix}
             </Button>
             <Button
               color="primary"

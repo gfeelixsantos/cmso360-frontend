@@ -187,16 +187,28 @@ export function UsuarioSection({ user }: UsuarioSectionProps) {
             </div>
           )}
 
-          <Link
-            href="/privacidade"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-          >
-            <FileText size={16} />
-            Política de Privacidade
-            <ExternalLink size={14} />
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/termos-de-uso"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              <FileText size={16} />
+              Termos de Uso
+              <ExternalLink size={14} />
+            </Link>
+            <Link
+              href="/privacidade"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+            >
+              <FileText size={16} />
+              Política de Privacidade
+              <ExternalLink size={14} />
+            </Link>
+          </div>
 
           <div className="text-xs text-gray-400 border-t border-gray-100 pt-3">
             <p className="mb-1">

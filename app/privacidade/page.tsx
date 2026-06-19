@@ -53,9 +53,9 @@ const sections = [
         <ul className="list-disc pl-5 space-y-1">
           <li><strong>Cumprimento de obrigação legal ou regulatória (Art. 7º, II e Art. 11, II, a):</strong> para atendimento às normas regulamentadoras do Ministério do Trabalho</li>
           <li><strong>Execução de contrato (Art. 7º, V):</strong> gestão de exames ocupacionais no vínculo empregatício</li>
-          <li><strong>Proteção da saúde (Art. 11, II, f):</strong> procedimentos realizados por profissionais de saúde</li>
-          <li><strong>Consentimento (Art. 7º, I e Art. 11, I):</strong> para dados biométricos e faciais com termo de ciência específico</li>
-          <li><strong>Exercício regular de direitos em processo judicial ou administrativo (Art. 7º, VI)</strong></li>
+           <li><strong>Proteção da saúde (Art. 11, II, f):</strong> procedimentos realizados por profissionais de saúde</li>
+           <li><strong>Cumprimento de obrigação legal / proteção da saúde (Art. 11, II, "a" e "c"):</strong> dados biométricos e faciais para autenticação e rastreabilidade do atendimento ocupacional, registrados em termo de ciência e aceite operacional</li>
+           <li><strong>Exercício regular de direitos em processo judicial ou administrativo (Art. 7º, VI)</strong></li>
         </ul>
       </>
     ),
