@@ -1791,12 +1791,14 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                             selectionMode="multiple"
                             items={[
                               {
+                                kind: "all" as const,
                                 email: "__all__",
                                 nome: "Todos os Contatos",
                                 textValue: "Todos os Contatos",
                                 descricao: "Enviar para todos os contatos registrados",
                               },
                               ...contatos.map((c) => ({
+                                kind: "contact" as const,
                                 ...c,
                                 textValue: `${c.nome} (${c.email})`,
                               })),
@@ -1818,28 +1820,28 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                                   ...newDocData,
                                   contatosNotificados: allSelected ? [] : contatos.map(c => c.email),
                                 });
-                                } else {
+                              } else {
                                   setNewDocData({ ...newDocData, contatosNotificados: selected });
                                 }
                               }}
                             >
-                            {(c) =>
-                              c.email === "__all__" ? (
-                                <SelectItem key="__all__" textValue={c.textValue}>
-                                  <div className="flex flex-col">
-                                    <span className="font-semibold">{c.nome}</span>
-                                    <span className="text-tiny text-default-400">{c.descricao}</span>
-                                  </div>
-                                </SelectItem>
-                              ) : (
-                                <SelectItem key={c.email} textValue={c.textValue}>
-                                  <div className="flex flex-col">
-                                    <span>{c.nome}</span>
-                                    <span className="text-tiny text-default-400">{c.email}</span>
-                                  </div>
-                                </SelectItem>
-                              )
-                            }
+                              {(c) =>
+                                c.kind === "all" ? (
+                                  <SelectItem key="__all__" textValue={c.textValue}>
+                                    <div className="flex flex-col">
+                                      <span className="font-semibold">{c.nome}</span>
+                                      <span className="text-tiny text-default-400">{c.descricao}</span>
+                                    </div>
+                                  </SelectItem>
+                                ) : (
+                                  <SelectItem key={c.email} textValue={c.textValue}>
+                                    <div className="flex flex-col">
+                                      <span>{c.nome}</span>
+                                      <span className="text-tiny text-default-400">{c.email}</span>
+                                    </div>
+                                  </SelectItem>
+                                )
+                              }
                           </Select>
                         )}
                       </div>
