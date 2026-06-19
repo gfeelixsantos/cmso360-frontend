@@ -1,8 +1,15 @@
 ﻿"use client";
 
 import { useEffect } from "react";
+import { usePushNotification } from "@/hooks/usePushNotification";
 
 export function PwaRegister() {
+  usePushNotification({
+    enabled: true,
+    unidade: "ged_servicos",
+    contexto: { contexto: "ged", pagina: "global" },
+  });
+
   useEffect(() => {
     if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
       return;

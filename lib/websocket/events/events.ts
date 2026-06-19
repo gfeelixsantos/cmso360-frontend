@@ -13,6 +13,35 @@ import {
   SchedulingChange,
 } from "@/lib/scheduling/interface/scheduling";
 
+// ─────────────────────────────────────────────────────────────────────
+// GED Batch
+// ─────────────────────────────────────────────────────────────────────
+
+export interface GedBatchStatusPayload {
+  jobId: string;
+  status: "pending" | "queued" | "processing" | "completed" | "failed" | "partial";
+  totalFuncionarios: number;
+  processedFuncionarios: number;
+  succeededFuncionarios: number;
+  failedFuncionarios: number;
+  result?: {
+    zipBlobName?: string;
+    zipUrl?: string;
+  };
+  updatedAt: string;
+}
+
+export interface GedBatchProgressPayload {
+  jobId: string;
+  itemCodigoProntuario: string;
+  itemNome: string;
+  itemStatus: "completed" | "failed";
+  error?: string;
+  processedFuncionarios: number;
+  totalFuncionarios: number;
+  updatedAt: string;
+}
+
 export interface BiometriaOperadorModel {
   id?: string;
   nome?: string;
@@ -378,6 +407,16 @@ export enum EventType {
   TELEATENDIMENTO_CHAT_MESSAGE = "teleatendimento:chat_message",
   TELEATENDIMENTO_CALL_STATUS = "teleatendimento:call_status",
   TELEATENDIMENTO_END = "teleatendimento:end",
+  TELEATENDIMENTO_VIRTUAL_WAITING_ROOM_STATUS = "teleatendimento:virtual_waiting_room_status",
+  TELEATENDIMENTO_PULL_TO_CALL = "teleatendimento:pull_to_call",
+  TELEATENDIMENTO_JOIN_VIRTUAL_WAITING_ROOM = "teleatendimento:join_virtual_waiting_room",
+  TELEATENDIMENTO_SUBSCRIBE_QUEUE = "teleatendimento:subscribe_queue",
+  TELEATENDIMENTO_QUEUE_UPDATE = "teleatendimento:queue_update",
+  TELEATENDIMENTO_CALL_FROM_QUEUE = "teleatendimento:call_from_queue",
+
+  // GED Batch
+  GED_BATCH_STATUS = "ged-batch:status",
+  GED_BATCH_PROGRESS = "ged-batch:progress",
 }
 
 // Mapeamento de eventos para seus payloads
@@ -439,6 +478,16 @@ export interface EventPayloadMap {
   [EventType.TELEATENDIMENTO_CHAT_MESSAGE]: TeleatendimentoChatPayload;
   [EventType.TELEATENDIMENTO_CALL_STATUS]: TeleatendimentoCallStatusPayload;
   [EventType.TELEATENDIMENTO_END]: { sessionId: string };
+  [EventType.TELEATENDIMENTO_VIRTUAL_WAITING_ROOM_STATUS]: { status: string; message: string; schedulingId?: string };
+  [EventType.TELEATENDIMENTO_PULL_TO_CALL]: { sessionId: string };
+  [EventType.TELEATENDIMENTO_JOIN_VIRTUAL_WAITING_ROOM]: { cpf: string };
+  [EventType.TELEATENDIMENTO_SUBSCRIBE_QUEUE]: { unidade: string; sala: string; exame?: string };
+  [EventType.TELEATENDIMENTO_QUEUE_UPDATE]: { queue: any[] };
+  [EventType.TELEATENDIMENTO_CALL_FROM_QUEUE]: { schedulingId: string; professionalName: string; unidade: string; sala: string; exame?: string };
+
+  // GED Batch
+  [EventType.GED_BATCH_STATUS]: GedBatchStatusPayload;
+  [EventType.GED_BATCH_PROGRESS]: GedBatchProgressPayload;
 }
 
 // Estender os tipos do Socket.IO para eventos personalizados
@@ -519,22 +568,32 @@ export interface CustomEventMap {
   [EventType.TELEATENDIMENTO_CHAT_MESSAGE]: (payload: TeleatendimentoChatPayload) => void;
   [EventType.TELEATENDIMENTO_CALL_STATUS]: (payload: TeleatendimentoCallStatusPayload) => void;
   [EventType.TELEATENDIMENTO_END]: (payload: { sessionId: string }) => void;
+  [EventType.TELEATENDIMENTO_VIRTUAL_WAITING_ROOM_STATUS]: (payload: { status: string; message: string; schedulingId?: string }) => void;
+  [EventType.TELEATENDIMENTO_PULL_TO_CALL]: (payload: { sessionId: string }) => void;
+  [EventType.TELEATENDIMENTO_JOIN_VIRTUAL_WAITING_ROOM]: (payload: { cpf: string; unidade?: string; sala?: string; exame?: string }) => void;
+  [EventType.TELEATENDIMENTO_SUBSCRIBE_QUEUE]: (payload: { unidade: string; sala: string; exame?: string }) => void;
+  [EventType.TELEATENDIMENTO_QUEUE_UPDATE]: (payload: { queue: any[] }) => void;
+  [EventType.TELEATENDIMENTO_CALL_FROM_QUEUE]: (payload: { schedulingId: string; professionalName: string; unidade: string; sala: string; exame?: string }) => void;
+
+  // GED Batch
+  [EventType.GED_BATCH_STATUS]: (payload: GedBatchStatusPayload) => void;
+  [EventType.GED_BATCH_PROGRESS]: (payload: GedBatchProgressPayload) => void;
 }
 
 // Função genérica para emitir eventos tipados
-export function emitEvent<T extends EventType>(
+export function emitEvent<T extends keyof EventPayloadMap>(
   socket: Socket<CustomEventMap>,
   event: T,
   payload: EventPayloadMap[T],
 ) {
-  socket.emit(event, ...([payload] as any));
+  socket.emit(event as any, ...([payload] as any));
 }
 
 // Função genérica para ouvir eventos tipados
-export function onEvent<T extends EventType>(
+export function onEvent<T extends keyof EventPayloadMap>(
   socket: Socket<CustomEventMap>,
   event: T,
   callback: (payload: EventPayloadMap[T]) => void,
 ) {
-  socket.on(event, callback as any); // Type assertion para compatibilidade
+  socket.on(event as any, callback as any); // Type assertion para compatibilidade
 }

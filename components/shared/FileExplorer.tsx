@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useMemo } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import {
   addToast,
   Button,
@@ -10,7 +10,7 @@ import {
   Divider,
   Spinner,
 } from "@heroui/react";
-import { Download, FolderOpen, Package } from "lucide-react";
+import { Download, Package } from "lucide-react";
 
 import { useBlobExplorer } from "@/hooks/useBlobExplorer";
 import { useGedBatchJob } from "@/hooks/useGedBatchJob";
@@ -126,14 +126,103 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     },
   });
 
-  const handleDownloadEmpresa = useCallback(
+  const [selectedProntuarios, setSelectedProntuarios] = useState<Set<string>>(new Set());
+
+  const handleToggleSelectProntuario = useCallback(
+    (codigoProntuario: string) => {
+      setSelectedProntuarios((prev) => {
+        const next = new Set(prev);
+        if (next.has(codigoProntuario)) {
+          next.delete(codigoProntuario);
+        } else {
+          next.add(codigoProntuario);
+        }
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleBatchProntuarios = useCallback(
+    (tipo: "prontuario" | "aso") => {
+      if (!selectedEmpresa || !selectedPeriodo || selectedProntuarios.size === 0) return;
+
+      const items = prontuarios
+        .filter((p) => selectedProntuarios.has(p.codigoProntuario))
+        .map((p) => ({
+          codigoProntuario: p.codigoProntuario,
+          nome: p.nomeFuncionario || p.codigoProntuario,
+        }));
+
+      void startBatch({
+        scope: "prontuario",
+        codigoEmpresa: selectedEmpresa.codigoEmpresa,
+        razaoSocial: selectedEmpresa.razaoSocial,
+        periodo: {
+          ano: selectedPeriodo.ano,
+          mes: selectedPeriodo.mes,
+        },
+        prontuarios: items,
+        tipo,
+      });
+    },
+    [selectedEmpresa, selectedPeriodo, selectedProntuarios, prontuarios, startBatch],
+  );
+
+  const handleDownloadEmpresaProntuarios = useCallback(
     (codigoEmpresa: string, razaoSocial: string) => {
       void startBatch({
         codigoEmpresa,
         razaoSocial,
+        tipo: "prontuario",
       });
     },
     [startBatch],
+  );
+
+  const handleDownloadEmpresaAsos = useCallback(
+    (codigoEmpresa: string, razaoSocial: string) => {
+      void startBatch({
+        codigoEmpresa,
+        razaoSocial,
+        tipo: "aso",
+      });
+    },
+    [startBatch],
+  );
+
+  const handleDownloadPeriodoProntuarios = useCallback(
+    (periodo: { ano: string; mes: string }) => {
+      if (!selectedEmpresa) return;
+      void startBatch({
+        scope: "periodo",
+        codigoEmpresa: selectedEmpresa.codigoEmpresa,
+        razaoSocial: selectedEmpresa.razaoSocial,
+        periodo: {
+          ano: periodo.ano,
+          mes: periodo.mes,
+        },
+        tipo: "prontuario",
+      });
+    },
+    [selectedEmpresa, startBatch],
+  );
+
+  const handleDownloadPeriodoAsos = useCallback(
+    (periodo: { ano: string; mes: string }) => {
+      if (!selectedEmpresa) return;
+      void startBatch({
+        scope: "periodo",
+        codigoEmpresa: selectedEmpresa.codigoEmpresa,
+        razaoSocial: selectedEmpresa.razaoSocial,
+        periodo: {
+          ano: periodo.ano,
+          mes: periodo.mes,
+        },
+        tipo: "aso",
+      });
+    },
+    [selectedEmpresa, startBatch],
   );
 
   const handleDownloadPeriodo = useCallback(
@@ -249,11 +338,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       {showHeader && (
         <>
           <CardHeader className="flex flex-col items-start gap-3 border-b border-default-200">
-            <div className="flex items-center gap-2 text-default-800">
-              <FolderOpen className="h-5 w-5 text-brand-primary" />
-              <h2 className="text-lg font-semibold">Explorador de Arquivos</h2>
-            </div>
-
             <BreadcrumbNav
               level={level}
               razaoSocial={selectedEmpresa?.razaoSocial || ""}
@@ -367,7 +451,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               isLoading={isLoadingCompanies}
               searchQuery={searchQuery}
               onSearchChange={setSearchQuery}
-              onDownload={handleDownloadEmpresa}
+              onDownloadProntuarios={handleDownloadEmpresaProntuarios}
+              onDownloadAsos={handleDownloadEmpresaAsos}
               currentJob={currentJob}
               isCreatingJob={isCreatingBatch}
               onSelect={(codigoEmpresa) => {
@@ -388,7 +473,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             <PeriodoList
               isLoading={isLoadingPeriods}
               periodos={periods}
-              onDownload={handleDownloadPeriodo}
+              onDownloadProntuarios={handleDownloadPeriodoProntuarios}
+              onDownloadAsos={handleDownloadPeriodoAsos}
               onSelect={(periodo) => void selectPeriodo(periodo)}
               currentJob={currentJob}
               isCreatingJob={isCreatingBatch}
@@ -405,6 +491,9 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               onSelect={(prontuario) => void selectProntuario(prontuario)}
               currentJob={currentJob}
               isCreatingJob={isCreatingBatch}
+              selectedSet={selectedProntuarios}
+              onToggleSelect={handleToggleSelectProntuario}
+              onBatchDownload={handleBatchProntuarios}
             />
           </>
         )}

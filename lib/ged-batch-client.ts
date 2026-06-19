@@ -1,8 +1,10 @@
 import { NEST_GED_BATCH } from "@/config/constants";
 
 export type GedBatchScope = "empresa" | "periodo" | "prontuario";
+export type GedBatchTipo = "prontuario" | "aso";
 
 export type GedBatchJobStatus =
+  | "pending"
   | "queued"
   | "processing"
   | "completed"
@@ -69,6 +71,7 @@ export interface CreateBatchRequest {
     codigoProntuario: string;
     nome: string;
   }>;
+  tipo?: GedBatchTipo;
 }
 
 export async function createBatchJob(
@@ -112,5 +115,5 @@ export function isJobTerminal(status: GedBatchJobStatus): boolean {
 }
 
 export function isJobActive(status: GedBatchJobStatus): boolean {
-  return status === "queued" || status === "processing";
+  return status === "pending" || status === "queued" || status === "processing";
 }
