@@ -243,6 +243,7 @@ const BiometriaValidacaoModal: React.FC<BiometriaValidacaoModalProps> = ({ state
     if (!context) return null;
     const items = [
       context.funcionarioNome && { icon: <User className="h-3.5 w-3.5 shrink-0" />, label: context.funcionarioNome },
+      context.funcionarioCpf && { icon: <User className="h-3.5 w-3.5 shrink-0" />, label: context.funcionarioCpf },
     ].filter(Boolean) as { icon: React.ReactNode; label: string }[];
 
     if (items.length === 0) return null;
@@ -326,22 +327,16 @@ const BiometriaValidacaoModal: React.FC<BiometriaValidacaoModalProps> = ({ state
               <XCircle className="h-14 w-14 text-red-500 mx-auto" />
               <p className="font-semibold text-red-800 text-base">Agente não encontrado</p>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Nenhum agente online para {context?.unidade || "esta unidade"}.
+                Nenhum agente online para {context?.unidade || "esta unidade"}. Verifique se o aplicativo CMSO360 Biometria está aberto.
               </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 text-left w-full leading-normal">
-                <strong>Orientação:</strong> Verifique se o aplicativo CMSO360 Biometria está aberto.
-              </div>
             </div>
           ) : visualStatus === "reader_unavailable" ? (
             <div className="flex flex-col items-center gap-3 text-center">
               <XCircle className="h-14 w-14 text-amber-500 mx-auto" />
               <p className="font-semibold text-amber-800 text-base">Leitor indisponível</p>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Agente conectado, mas leitor não encontrado.
+                Agente conectado mas leitor não encontrado. Verifique o cabo USB e tente novamente
               </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 text-left w-full leading-normal">
-                <strong>Orientação:</strong> Verifique o cabo USB do leitor.
-              </div>
             </div>
           ) : isError ? (
             <div className="flex flex-col items-center gap-3 text-center">
@@ -360,7 +355,7 @@ const BiometriaValidacaoModal: React.FC<BiometriaValidacaoModalProps> = ({ state
               {score != null && threshold != null && (
                 <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2 w-full">
                   <p className="text-xs text-emerald-700">
-                    Confiança: <span className="font-bold">{(score / threshold * 100).toFixed(0)}%</span>
+                    Confiança: <span className="font-bold">{Math.min(100, (score / threshold * 100)).toFixed(0)}%</span>
                   </p>
                 </div>
               )}
@@ -373,7 +368,7 @@ const BiometriaValidacaoModal: React.FC<BiometriaValidacaoModalProps> = ({ state
               {score != null && threshold != null && (
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-2 w-full">
                   <p className="text-xs text-red-700">
-                    Confiança: <span className="font-bold">{(score / threshold * 100).toFixed(0)}%</span>
+                    Confiança: <span className="font-bold">{Math.min(100, (score / threshold * 100)).toFixed(0)}%</span>
                   </p>
                 </div>
               )}

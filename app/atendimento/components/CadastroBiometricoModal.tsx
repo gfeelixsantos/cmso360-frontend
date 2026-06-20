@@ -164,6 +164,10 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
         icon: <User className="h-3 w-3 shrink-0" />,
         label: context.funcionarioNome,
       },
+      context.funcionarioCpf && {
+        icon: <User className="h-3 w-3 shrink-0" />,
+        label: context.funcionarioCpf,
+      },
       activeDedo && status !== "selecionando_dedo" && {
         icon: <Fingerprint className="h-3 w-3 shrink-0 text-emerald-600" />,
         label: `${activeDedo.nome} ${activeDedo.lado}`,
@@ -246,7 +250,6 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
           <Fingerprint className="h-5 w-5 shrink-0" />
           <div className="flex flex-col text-left">
             <span className="text-base font-semibold text-white leading-tight">Cadastro Biométrico</span>
-            <span className="text-[10px] text-white/70 font-normal">CADASTRO DE DIGITAL</span>
           </div>
         </ModalHeader>
 
@@ -255,15 +258,6 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
 
           {status === "selecionando_dedo" ? (
             <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 flex gap-3 items-start">
-                <div className="bg-blue-600 rounded-full p-1 mt-0.5">
-                  <Fingerprint className="h-4 w-4 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-blue-900">Selecione o dedo</p>
-                </div>
-              </div>
-
               <div className="pt-2">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3 text-center">Toque para selecionar</p>
                 <FingerSelector />
@@ -276,11 +270,8 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
               </div>
               <h3 className="text-lg font-bold text-red-800">Agente não encontrado</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Nenhum agente biométrico online para {context?.unidade || "esta unidade"}.
+                Nenhum agente biométrico online para {context?.unidade || "esta unidade"}. Verifique se o aplicativo CMSO360 Biometria está aberto e conectado na unidade correta.
               </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 text-left w-full leading-normal">
-                Verifique se o aplicativo CMSO360 Biometria está aberto e conectado na unidade correta.
-              </div>
             </div>
           ) : status === "reader_unavailable" ? (
             <div className="flex flex-col items-center text-center py-6 gap-4">
@@ -289,11 +280,8 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
               </div>
               <h3 className="text-lg font-bold text-amber-800">Leitor indisponível</h3>
               <p className="text-sm text-gray-600 leading-relaxed">
-                Agente conectado, mas leitor de digital não encontrado.
+                Agente conectado mas leitor não encontrado. Verifique o cabo USB e tente novamente
               </p>
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-xs text-gray-500 text-left w-full leading-normal">
-                Verifique o cabo USB do leitor Futronic.
-              </div>
             </div>
           ) : (
             <div className="space-y-5">
