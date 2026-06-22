@@ -30,7 +30,6 @@ interface IConsentStatus {
 const CONSENT_LABELS: Record<string, string> = {
   TERMOS_DE_USO: "Termos de Uso",
   POLITICA_PRIVACIDADE: "Política de Privacidade",
-  LGPD_DADOS_SAUDE: "LGPD — Dados de Saúde",
 };
 
 export function UsuarioSection({ user }: UsuarioSectionProps) {

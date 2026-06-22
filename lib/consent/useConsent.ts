@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { getCurrentUser } from "@/lib/utils";
 
-export type ConsentType = "TERMOS_DE_USO" | "POLITICA_PRIVACIDADE" | "LGPD_DADOS_SAUDE";
+export type ConsentType = "TERMOS_DE_USO" | "POLITICA_PRIVACIDADE";
 
 export interface ConsentStatus {
   tipo: ConsentType;
@@ -32,18 +32,6 @@ const TERMS_CONTENT: Record<ConsentType, { title: string; text: string }> = {
 3. O compartilhamento com sistemas SOC, Supabase, Azure e BRy para operação da plataforma.
 4. Seus direitos como titular (LGPD Art. 18): acesso, correção, anonimização, exclusão.
 5. O prazo de guarda legal de 20 anos para prontuários ocupacionais (CFM 1.821/2007).`,
-  },
-  LGPD_DADOS_SAUDE: {
-    title: "Ciência e Registro para Dados de Saúde",
-    text: `Você declara estar ciente do tratamento dos seus dados de saúde (classificados como dados sensíveis pela LGPD Art. 11) para as seguintes finalidades:
-
-1. Realização de exames ocupacionais admissionais, periódicos, de retorno ao trabalho, de mudança de função e demissionais.
-2. Emissão de Atestado de Saúde Ocupacional (ASO).
-3. Registro e guarda de prontuário ocupacional.
-4. Compartilhamento com o sistema SOC para integração de dados ocupacionais.
-
-Base legal: LGPD Art. 11, II, "a" (cumprimento de obrigação legal) e "f" (proteção à saúde).
-Este registro de ciência não se confunde com consentimento — a base legal é o cumprimento de obrigação legal (NR-7, CLT Art. 168). Você pode solicitar a revisão do tratamento a qualquer momento, respeitadas as hipóteses de guarda legal obrigatória.`,
   },
 };
 

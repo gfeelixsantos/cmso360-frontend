@@ -15,7 +15,6 @@ import { useConsent, ConsentType } from "./useConsent";
 const DOC_LINKS: Record<ConsentType, { href: string; label: string; suffix: string }> = {
   TERMOS_DE_USO: { href: "/termos-de-uso", label: "Termos de Uso", suffix: "na íntegra" },
   POLITICA_PRIVACIDADE: { href: "/privacidade", label: "Política de Privacidade", suffix: "completa" },
-  LGPD_DADOS_SAUDE: { href: "/privacidade", label: "Política de Privacidade", suffix: "completa" },
 };
 
 export function ConsentModal() {
@@ -37,7 +36,7 @@ export function ConsentModal() {
     setAccepting(false);
   }
 
-  const isLast = pendingTipo === "LGPD_DADOS_SAUDE";
+  const isLast = pendingTipo === "POLITICA_PRIVACIDADE";
 
   return (
     <Modal

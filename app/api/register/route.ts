@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     const response = await UserService.register(data);
 
     if (response.status === 201 && response.data?.codigo) {
-      const tipos = ["TERMOS_DE_USO", "POLITICA_PRIVACIDADE", "LGPD_DADOS_SAUDE"];
+      const tipos = ["TERMOS_DE_USO", "POLITICA_PRIVACIDADE"];
 
       for (const tipo of tipos) {
         try {
