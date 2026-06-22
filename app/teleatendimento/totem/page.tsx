@@ -1,22 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Button, Spinner, addToast } from "@heroui/react";
+import { User, Video, Laptop, PhoneCall, CheckCircle } from "lucide-react";
+import { motion } from "framer-motion";
 import Image from "next/image";
-import {
-  Card,
-  CardBody,
-  Input,
-  Button,
-  Spinner,
-  addToast,
-} from "@heroui/react";
-import { User, Video } from "lucide-react";
 import { useSocket } from "@/lib/websocket/hooks/useSocket";
 import { EventType } from "@/lib/websocket/events/events";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import TeleatendimentoPanel from "@/app/teleatendimento/components/TeleatendimentoPanel";
-import { useSearchParams } from "next/navigation";
 
+// Funções de validação e formatação de CPF
 const formatCPF = (value: string) => {
   const digits = value.replace(/\D/g, "");
   return digits
@@ -52,13 +47,77 @@ const validateCPF = (cpf: string) => {
   return true;
 };
 
+// Componente de Input unificado com o design do login
+interface InputFieldProps {
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  startIcon?: React.ReactNode;
+  disabled?: boolean;
+  required?: boolean;
+}
+
+const InputField: React.FC<InputFieldProps> = ({
+  label,
+  placeholder,
+  value,
+  onChange,
+  type = "text",
+  startIcon,
+  disabled,
+  required,
+}) => (
+  <div className="space-y-2">
+    <label className="block text-sm font-medium text-gray-700">{label}</label>
+    <div className="relative">
+      {startIcon && (
+        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+          {startIcon}
+        </span>
+      )}
+
+      <input
+        aria-label={label}
+        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl
+        focus:ring-2 focus:ring-[#104e35] focus:border-[#104e35] focus:outline-none
+        disabled:bg-gray-100 disabled:cursor-not-allowed
+        transition-all duration-200 text-lg tracking-wider"
+        disabled={disabled}
+        placeholder={placeholder}
+        required={required}
+        type={type}
+        value={value}
+        onChange={onChange}
+      />
+    </div>
+  </div>
+);
+
+// Ícone de seta para o botão
+const ArrowRight = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      d="M14 5l7 7m0 0l-7 7m7-7H3"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={2}
+    />
+  </svg>
+);
+
 function TotemContent() {
   const [cpf, setCpf] = useState("");
   const [status, setStatus] = useState<"idle" | "connecting" | "waiting" | "in_call">("idle");
   const [waitingMessage, setWaitingMessage] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [inviteToken, setInviteToken] = useState<string | null>(null);
-  const [sessionSummary, setSessionSummary] = useState<{ professional?: { name?: string } } | null>(null);
 
   const { socket, connected, connect, disconnect, registerHandlers } = useSocket();
   const socketRef = useRef<any>(null);
@@ -108,7 +167,6 @@ function TotemContent() {
           if (payload.inviteToken) {
             setInviteToken(payload.inviteToken);
           }
-          setSessionSummary(null);
           setStatus("in_call");
           addToast({
             title: "Chamada Iniciada",
@@ -124,45 +182,18 @@ function TotemContent() {
     return () => unregister();
   }, [registerHandlers, disconnect]);
 
+  // Quando conectar ao websocket, enviamos a solicitação para entrar na fila
   useEffect(() => {
     if (connected && status === "connecting" && socketRef.current) {
       const cpfDigits = cpf.replace(/\D/g, "");
-      socketRef.current.emit(EventType.TELEATENDIMENTO_JOIN_VIRTUAL_WAITING_ROOM, {
+      socketRef.current.emit(EventType.TELEATENDIMENTO_JOIN_VIRTUAL_WAITING_ROOM, { 
         cpf: cpfDigits,
         unidade: unidade || undefined,
         sala: sala || undefined,
-        exame: exame || undefined,
+        exame: exame || undefined
       });
     }
   }, [connected, status, cpf, unidade, sala, exame]);
-
-  useEffect(() => {
-    if (status !== "in_call" || !sessionId) return;
-
-    let cancelled = false;
-
-    const loadSessionSummary = async () => {
-      try {
-        const route = inviteToken
-          ? `/api/teleatendimento/invite/${inviteToken}`
-          : `/api/teleatendimento/session/${sessionId}`;
-        const response = await fetch(route);
-        if (!response.ok) return;
-        const data = await response.json();
-        if (!cancelled) {
-          setSessionSummary(data);
-        }
-      } catch (error) {
-        console.warn("Could not load teleatendimento session summary:", error);
-      }
-    };
-
-    void loadSessionSummary();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [status, sessionId, inviteToken]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,7 +230,6 @@ function TotemContent() {
         layout="full"
         sessionId={sessionId}
         inviteToken={inviteToken || undefined}
-        headerNote={sessionSummary?.professional?.name ? `Médico: ${sessionSummary.professional.name}` : undefined}
         onEndSession={() => {
           disconnect();
           setStatus("idle");
@@ -211,175 +241,211 @@ function TotemContent() {
     );
   }
 
+  const renderTitle = () => {
+    if (status === "connecting") {
+      return {
+        title: "Conectando ao Atendimento",
+        subtitle: "Aguarde enquanto preparamos seu acesso...",
+      };
+    }
+    if (status === "waiting") {
+      return {
+        title: "Sala de Espera Virtual",
+        subtitle: "Você está na fila de atendimento",
+      };
+    }
+    return {
+      title: "Telemedicina",
+      subtitle: "Acesso ao atendimento online",
+    };
+  };
+
+  const { title, subtitle } = renderTitle();
+
   return (
-    <div className="min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(16,185,129,0.16),_transparent_34%),linear-gradient(180deg,_#f5fbf8_0%,_#e7f6ef_48%,_#f8fbfa_100%)] px-4 py-6 sm:px-6 lg:px-8">
-      <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center">
-        <div className="grid w-full gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-[#0f5132] p-8 text-white shadow-[0_24px_80px_rgba(15,81,50,0.22)]">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(255,255,255,0.16),_transparent_30%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.24),_transparent_32%)]" />
-            <div className="relative z-10 flex h-full flex-col justify-between gap-8">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/95 shadow-lg">
-                  <Image
-                    src="/images/logo.png"
-                    alt="CMSO360"
-                    width={48}
-                    height={48}
-                    className="h-10 w-10 object-contain"
-                  />
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl mx-auto flex flex-col md:flex-row rounded-2xl shadow-xl overflow-hidden bg-white border border-gray-200">
+        
+        {/* COL ESQUERDA - INSTRUÇÕES DE ATENDIMENTO */}
+        <div className="md:w-2/5 bg-gradient-to-b from-[#104e35]/5 to-transparent p-8 flex flex-col justify-between border-r border-gray-200">
+          <div className="space-y-8">
+            {/* Logo */}
+            <div className="text-center md:text-left">
+              <Image
+                priority
+                alt="CMSO 360 - Telemedicina"
+                className="w-auto mx-auto md:mx-0"
+                height={50}
+                src="/images/logo.png"
+                width={150}
+              />
+            </div>
+
+            {/* Título do Atendimento */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-bold text-[#104e35]">
+                Seu Atendimento Online
+              </h3>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Siga as orientações abaixo para realizar a sua consulta médica de forma rápida e segura:
+              </p>
+            </div>
+
+            {/* Passos do Processo */}
+            <div className="space-y-4">
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#104e35]/10 flex items-center justify-center text-[#104e35] flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">1</span>
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-100/75">
-                    CMSO360
-                  </p>
-                  <h1 className="text-2xl font-semibold leading-tight text-white sm:text-3xl">
-                    Centro Médico de Saúde Ocupacional
-                  </h1>
+                  <h4 className="text-xs font-semibold text-gray-800">Identificação</h4>
+                  <p className="text-[11px] text-gray-500">Digite seu CPF e entre na sala de espera virtual.</p>
                 </div>
               </div>
 
-              <div className="max-w-xl space-y-4">
-                <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-sm font-medium text-emerald-50 backdrop-blur">
-                  <Video className="h-4 w-4" />
-                  Telemedicina integrada ao CMSO360
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#104e35]/10 flex items-center justify-center text-[#104e35] flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">2</span>
                 </div>
-                <p className="text-sm leading-6 text-emerald-50/85 sm:text-base">
-                  A experiência do cliente fica mais consistente quando a tela de acesso repete a
-                  identidade da aplicação, com o mesmo nome, logo e paleta visual.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/70">
-                    Fluxo
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    Sala de espera e videochamada
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
-                  <p className="text-[11px] uppercase tracking-[0.18em] text-emerald-100/70">
-                    Identidade
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-white">
-                    Cores e marca da aplicação
-                  </p>
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-800">Sala de Espera</h4>
+                  <p className="text-[11px] text-gray-500">Aguarde na tela. O médico iniciará a chamada automaticamente.</p>
                 </div>
               </div>
 
-              {unidade && sala ? (
-                <div className="flex flex-col gap-2">
-                  <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-white backdrop-blur">
-                    <span className="text-emerald-100/75">Local:</span>
-                    <span>
-                      {unidade} • {sala}
-                    </span>
-                  </div>
-                  {exame ? (
-                    <div className="inline-flex w-fit items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-medium text-emerald-50/85 backdrop-blur">
-                      <span className="text-emerald-100/75">Exame:</span>
-                      <span>{exame}</span>
-                    </div>
-                  ) : null}
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#104e35]/10 flex items-center justify-center text-[#104e35] flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">3</span>
                 </div>
-              ) : null}
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-800">Permissões de Mídia</h4>
+                  <p className="text-[11px] text-gray-500">Quando solicitado, permita o acesso à câmera e ao microfone.</p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 items-start">
+                <div className="w-6 h-6 rounded-full bg-[#104e35]/10 flex items-center justify-center text-[#104e35] flex-shrink-0 mt-0.5">
+                  <span className="text-xs font-bold">4</span>
+                </div>
+                <div>
+                  <h4 className="text-xs font-semibold text-gray-800">Assinatura Facial</h4>
+                  <p className="text-[11px] text-gray-500">Ao final da consulta, assine o termo de ciência através da captura facial.</p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <Card className="overflow-hidden border border-emerald-100/80 bg-white/96 shadow-[0_24px_70px_rgba(15,81,50,0.12)] backdrop-blur">
-            <CardBody className="p-0">
-              <div className="border-b border-emerald-100 bg-gradient-to-r from-emerald-50 to-white px-6 py-5 sm:px-8">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700">
-                  Entrada do cliente
-                </p>
-                <h2 className="mt-1 text-xl font-semibold text-[#114e34]">
-                  Acesso ao atendimento online
-                </h2>
-                <p className="mt-1 text-sm text-slate-500">
-                  Informe seu CPF para entrar na sala de espera virtual.
-                </p>
-              </div>
-
-              <div className="p-6 sm:p-8">
-                {status === "idle" && (
-                  <form onSubmit={handleSubmit} className="space-y-6">
-                    <div>
-                      <label htmlFor="cpf" className="mb-2 block text-sm font-medium text-slate-700">
-                        Digite seu CPF para iniciar
-                      </label>
-                      <Input
-                        id="cpf"
-                        type="text"
-                        value={cpf}
-                        onChange={handleCpfChange}
-                        placeholder="000.000.000-00"
-                        maxLength={14}
-                        size="lg"
-                        startContent={<User className="w-5 h-5 text-gray-400" />}
-                        classNames={{
-                          base: "shadow-sm",
-                          inputWrapper:
-                            "border-emerald-100 bg-white data-[hover=true]:border-emerald-300 group-data-[focus=true]:border-emerald-500",
-                          input: "text-lg tracking-wider text-slate-900",
-                        }}
-                        autoFocus
-                      />
-                    </div>
-                    <Button
-                      type="submit"
-                      className="h-14 w-full bg-gradient-to-r from-emerald-600 to-emerald-500 text-lg font-medium text-white shadow-lg shadow-emerald-200 transition-all hover:from-emerald-700 hover:to-emerald-600"
-                      isDisabled={cpf.replace(/\D/g, "").length !== 11}
-                    >
-                      Acessar Sala de Espera
-                    </Button>
-                  </form>
-                )}
-
-                {status === "connecting" && (
-                  <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                    <Spinner color="success" size="lg" />
-                    <p className="animate-pulse font-medium text-emerald-800">
-                      Conectando ao sistema...
-                    </p>
-                  </div>
-                )}
-
-                {status === "waiting" && (
-                  <div className="flex flex-col items-center justify-center py-8 space-y-6 text-center">
-                    <div className="relative">
-                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 ring-8 ring-emerald-100/60">
-                        <User className="h-10 w-10 text-emerald-600" />
-                      </div>
-                      <span className="absolute bottom-0 right-0 h-5 w-5 rounded-full border-2 border-white bg-yellow-400" />
-                    </div>
-                    <div>
-                      <h3 className="mb-2 text-xl font-bold text-[#114e34]">Você está na fila</h3>
-                      <p className="text-sm text-slate-600">{waitingMessage}</p>
-                    </div>
-                    <div className="w-full max-w-xs rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
-                      <p className="text-xs font-medium text-emerald-700">
-                        Por favor, aguarde. O médico iniciará a chamada em instantes.
-                      </p>
-                    </div>
-                    <Button
-                      variant="light"
-                      color="danger"
-                      className="mt-4"
-                      onPress={() => {
-                        disconnect();
-                        setStatus("idle");
-                        setCpf("");
-                      }}
-                    >
-                      Cancelar Espera
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </CardBody>
-          </Card>
+          {/* Dica no rodapé */}
+          <div className="mt-8 p-3.5 bg-emerald-50/50 rounded-xl border border-emerald-100/50 text-[11px] text-emerald-800 leading-relaxed">
+            <strong className="text-emerald-900 block mb-0.5">Dica importante:</strong>
+            Para uma boa consulta, procure um ambiente silencioso, bem iluminado e tenha um documento com foto em mãos.
+          </div>
         </div>
+
+        {/* COL DIREITA - FORM E STATUS */}
+        <div className="md:w-3/5 p-8 flex flex-col justify-center min-h-[460px]">
+          <motion.div
+            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, x: 15 }}
+            transition={{ duration: 0.5 }}
+          >
+            {/* Título */}
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+              <p className="text-gray-600 mt-2">{subtitle}</p>
+              
+              {/* Informações da Sala (se presentes) */}
+              {status === "idle" && exame && (
+                <div className="mt-3 flex flex-wrap gap-2 justify-center">
+                  <div className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-250 px-3 py-1 rounded-full text-emerald-800 text-xs font-semibold">
+                    <span className="opacity-70">Exame:</span>
+                    <span>{exame}</span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* FORMULÁRIO DE IDENTIFICAÇÃO (STATUS: IDLE) */}
+            {status === "idle" && (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <InputField
+                  required
+                  disabled={false}
+                  label="CPF do Funcionário"
+                  placeholder="000.000.000-00"
+                  startIcon={<User className="h-5 w-5" />}
+                  value={cpf}
+                  onChange={handleCpfChange}
+                />
+
+                <button
+                  className="w-full py-3 px-4 bg-[#104e35] text-white font-semibold rounded-xl
+                  hover:bg-[#0d3d29] focus:ring-2 focus:ring-[#104e35] focus:outline-none
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  flex items-center justify-center gap-2
+                  transition-all duration-300 shadow-md hover:shadow-lg cursor-pointer"
+                  disabled={cpf.replace(/\D/g, "").length !== 11}
+                  type="submit"
+                >
+                  Entrar na Sala de Espera
+                  <ArrowRight className="h-5 w-5" />
+                </button>
+              </form>
+            )}
+
+            {/* CONECTANDO (STATUS: CONNECTING) */}
+            {status === "connecting" && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Spinner color="success" size="lg" />
+                <p className="text-emerald-800 font-medium animate-pulse">
+                  Conectando e localizando agendamento...
+                </p>
+              </div>
+            )}
+
+            {/* ESPERANDO NA FILA (STATUS: WAITING) */}
+            {status === "waiting" && (
+              <div className="flex flex-col items-center justify-center py-4 space-y-6 text-center">
+                <div className="relative">
+                  <div className="w-20 h-20 bg-emerald-50 rounded-full flex items-center justify-center border border-emerald-100 shadow-inner">
+                    <User className="w-10 h-10 text-emerald-600" />
+                  </div>
+                  <span className="absolute bottom-0 right-0 w-5 h-5 bg-yellow-400 border-2 border-white rounded-full animate-pulse"></span>
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-emerald-900 mb-1">Você está na fila virtual</h3>
+                  <p className="text-emerald-700 text-sm">{waitingMessage}</p>
+                </div>
+
+                <div className="w-full max-w-sm bg-emerald-50/70 p-4 rounded-xl border border-emerald-250/50">
+                  <p className="text-xs text-emerald-800 leading-relaxed">
+                    Por favor, permaneça nesta tela com seus dispositivos de áudio e vídeo conectados. O médico iniciará a chamada em instantes.
+                  </p>
+                </div>
+
+                <Button
+                  variant="light"
+                  color="danger"
+                  className="font-medium hover:bg-rose-50"
+                  onPress={() => {
+                    disconnect();
+                    setStatus("idle");
+                    setCpf("");
+                  }}
+                >
+                  Cancelar Espera e Sair
+                </Button>
+              </div>
+            )}
+
+            {/* FOOTER */}
+            <div className="mt-8 pt-6 border-t border-gray-200 text-center text-xs text-gray-500">
+              Centro Médico de Saúde Ocupacional &copy; {new Date().getFullYear()}
+            </div>
+          </motion.div>
+        </div>
+
       </div>
     </div>
   );
@@ -387,13 +453,7 @@ function TotemContent() {
 
 export default function TotemPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-emerald-50 to-teal-100">
-          <Spinner color="success" size="lg" />
-        </div>
-      }
-    >
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 flex items-center justify-center"><Spinner color="success" size="lg" /></div>}>
       <TotemContent />
     </Suspense>
   );

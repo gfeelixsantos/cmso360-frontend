@@ -1021,6 +1021,7 @@ export default function TeleatendimentoPanel({
                 <p className="text-sm text-gray-500">
                   {session.employee.name} • {employeeExamLabel}
                   {employeeMetaLabel ? ` • ${employeeMetaLabel}` : ""}
+                  {role === "EMPLOYEE" && session.professional.name ? ` • Profissional: ${session.professional.name}` : ""}
                 </p>
               )}
               {!isIdle && (
