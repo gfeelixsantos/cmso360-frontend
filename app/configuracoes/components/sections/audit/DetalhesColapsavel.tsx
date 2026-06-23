@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 
 import { AuditLogRecord } from "@/lib/audit-log/types";
 
@@ -26,8 +26,7 @@ function renderValue(value: unknown) {
 }
 
 export function DetalhesColapsavel({ record }: DetalhesColapsavelProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const contentId = useId();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   if (!hasExpandedAuditDetails(record)) {
     return <span className="text-xs text-gray-400">Sem detalhes</span>;
@@ -36,68 +35,90 @@ export function DetalhesColapsavel({ record }: DetalhesColapsavelProps) {
   const details = buildAuditExpandedDetails(record);
 
   return (
-    <div className="space-y-2">
+    <>
       <button
         type="button"
-        onClick={() => setIsOpen((prev) => !prev)}
-        aria-expanded={isOpen}
-        aria-controls={contentId}
-        className="text-xs text-blue-600 hover:text-blue-800"
+        onClick={() => setIsModalOpen(true)}
+        className="text-xs text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
       >
-        {isOpen ? "Ocultar detalhes" : "Ver detalhes"}
+        Ver detalhes
       </button>
 
-      {isOpen && (
-        <div
-          id={contentId}
-          className="space-y-3 rounded border border-gray-200 bg-gray-50 p-3"
-        >
-          <div className="grid gap-2 text-xs text-gray-700 md:grid-cols-2">
-            <div>
-              <span className="font-semibold">Perfil:</span>{" "}
-              {renderValue(details.perfil)}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">Detalhes do Registro</h3>
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             </div>
-            <div>
-              <span className="font-semibold">Unidade:</span>{" "}
-              {renderValue(details.unidade)}
-            </div>
-            <div>
-              <span className="font-semibold">Funcionário:</span>{" "}
-              {details.paciente_nome || details.paciente_codigo
-                ? `${renderValue(details.paciente_nome)}${details.paciente_nome && details.paciente_codigo ? " (" : ""}${renderValue(details.paciente_codigo)}${details.paciente_nome && details.paciente_codigo ? ")" : ""}`
-                : "—"}
-            </div>
-            <div>
-              <span className="font-semibold">Tipo de recurso:</span>{" "}
-              {renderValue(details.recurso_tipo)}
-            </div>
-            <div>
-              <span className="font-semibold">Recurso ID:</span>{" "}
-              {renderValue(details.recurso_id)}
-            </div>
-            <div>
-              <span className="font-semibold">IP:</span> {renderValue(details.ip)}
-            </div>
-            <div className="md:col-span-2">
-              <span className="font-semibold">User-Agent:</span>{" "}
-              {renderValue(details.user_agent)}
-            </div>
-            <div className="md:col-span-2">
-              <span className="font-semibold">Código de rastreio:</span>{" "}
-              {renderValue(details.request_id)}
-            </div>
-          </div>
 
-          <div>
-            <div className="mb-1 text-xs font-semibold text-gray-700">
-              Detalhes sanitizados
+            <div className="p-6 overflow-y-auto max-h-[calc(80vh-100px)]">
+              <div className="grid gap-4 text-sm text-gray-700 md:grid-cols-2">
+                <div>
+                  <span className="font-semibold text-gray-900">Perfil:</span>{" "}
+                  {renderValue(details.perfil)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-900">Unidade:</span>{" "}
+                  {renderValue(details.unidade)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-900">Funcionário:</span>{" "}
+                  {details.paciente_nome || details.paciente_codigo
+                    ? `${renderValue(details.paciente_nome)}${details.paciente_nome && details.paciente_codigo ? " (" : ""}${renderValue(details.paciente_codigo)}${details.paciente_nome && details.paciente_codigo ? ")" : ""}`
+                    : "—"}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-900">Tipo de recurso:</span>{" "}
+                  {renderValue(details.recurso_tipo)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-900">Recurso ID:</span>{" "}
+                  {renderValue(details.recurso_id)}
+                </div>
+                <div>
+                  <span className="font-semibold text-gray-900">IP:</span> {renderValue(details.ip)}
+                </div>
+                <div className="md:col-span-2">
+                  <span className="font-semibold text-gray-900">User-Agent:</span>{" "}
+                  <span className="break-all">{renderValue(details.user_agent)}</span>
+                </div>
+                <div className="md:col-span-2">
+                  <span className="font-semibold text-gray-900">Código de rastreio:</span>{" "}
+                  {renderValue(details.request_id)}
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <div className="mb-2 text-sm font-semibold text-gray-900">
+                  Detalhes sanitizados
+                </div>
+                <pre className="max-h-64 overflow-auto rounded bg-gray-50 p-3 text-xs text-gray-800 border border-gray-200">
+                  {renderValue(details.detalhes)}
+                </pre>
+              </div>
             </div>
-            <pre className="max-h-56 overflow-auto rounded bg-white p-2 text-xs text-gray-800">
-              {renderValue(details.detalhes)}
-            </pre>
+
+            <div className="flex justify-end p-4 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Fechar
+              </button>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

@@ -574,6 +574,8 @@ const RecepcaoPage: React.FC = () => {
         onClose={handleModal}
         onExecutarAcao={executarAcao}
         onSetPreparacaoFinalizada={setPreparacaoFinalizada}
+        addOrUpdate={addOrUpdate}
+        setTicketSelecionado={setTicketSelecionado}
       />
 
       {/* Modal de Estatísticas */}

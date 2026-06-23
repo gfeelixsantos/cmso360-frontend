@@ -2,10 +2,8 @@ export const AUDIT_PRIMARY_COLUMNS = [
   "Data/Hora",
   "Usuário",
   "Ação",
-  "Unidade",
   "Funcionário",
   "Resultado/Detalhes",
-  "Código de rastreio",
 ];
 
 export function buildAuditExpandedDetails(record) {

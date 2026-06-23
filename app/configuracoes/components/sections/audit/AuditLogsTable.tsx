@@ -13,16 +13,7 @@ interface AuditLogsTableProps {
 }
 
 function formatFuncionario(record: AuditLogRecord) {
-  if (record.paciente_nome && record.paciente_codigo) {
-    return `${record.paciente_nome} (${record.paciente_codigo})`;
-  }
-
   return record.paciente_nome ?? record.paciente_codigo ?? "—";
-}
-
-function formatRastreio(requestId: string | null) {
-  if (!requestId) return "—";
-  return requestId.length > 24 ? `${requestId.slice(0, 24)}...` : requestId;
 }
 
 export function AuditLogsTable({ records, isLoading }: AuditLogsTableProps) {
@@ -86,19 +77,10 @@ export function AuditLogsTable({ records, isLoading }: AuditLogsTableProps) {
                   {getAcaoLabel(record.acao)}
                 </td>
                 <td className="px-3 py-2 border-t border-gray-100">
-                  {record.unidade ?? "—"}
-                </td>
-                <td className="px-3 py-2 border-t border-gray-100">
                   {formatFuncionario(record)}
                 </td>
                 <td className="px-3 py-2 border-t border-gray-100">
                   <DetalhesColapsavel record={record} />
-                </td>
-                <td
-                  className="px-3 py-2 border-t border-gray-100 font-mono text-xs"
-                  title={record.request_id ?? undefined}
-                >
-                  {formatRastreio(record.request_id)}
                 </td>
               </tr>
             ))}

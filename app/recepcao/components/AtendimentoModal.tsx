@@ -237,6 +237,8 @@ interface AtendimentoModalProps {
     user?: string,
     mongoId?: string,
   ) => void;
+  addOrUpdate: (ticket: Ticket) => void;
+  setTicketSelecionado: (ticket: Ticket | null) => void;
 }
 
 function getAuthMethodVisualClean(
@@ -295,6 +297,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   socket,
   onSetPreparacaoFinalizada,
   onExecutarAcao,
+  addOrUpdate,
+  setTicketSelecionado,
 }: AtendimentoModalProps) => {
   const [metodoValidacao, setMetodoValidacao] = useState<MetodoValidacao>("SOC");
   const [examesData, setExamesData] = useState<Record<string, { codigos: string[]; nome: string }[]> | null>(null);
@@ -1391,16 +1395,20 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
   const updateTicketFuncionarioSelecionado = useCallback(
     async (ticket: Ticket) => {
       if (ticket && funcionarioSelecionado) {
-        ticket.atendente = user.nome;
-        ticket.sala = salaSelecionada;
+        const updatedTicket: Ticket = {
+          ...ticket,
+          atendente: user.nome,
+          sala: salaSelecionada,
+          preferencialTipo: ticket.preferencialTipo || preferencialTipo,
+          status: TicketStatus.AGUARDANDO,
+          grupo: TicketGroups.EXAME,
+        };
 
-        // Mantém o tipo preferencial existente ou usa o novo
-        ticket.preferencialTipo = ticket.preferencialTipo || preferencialTipo;
-
-        ticket.status = TicketStatus.AGUARDANDO;
-        ticket.grupo = TicketGroups.EXAME;
-
-        funcionarioSelecionado.TICKET = ticket;
+        // Update the local state
+        addOrUpdate(updatedTicket);
+        setTicketSelecionado(updatedTicket);
+        // Update the scheduling object
+        funcionarioSelecionado.TICKET = updatedTicket;
       } else if (funcionarioSelecionado) {
         // Se for lançado sem vínculo de ticket, realiza a "emissão"
         // direto para o servidor como se fosse o mesmo da recepção
@@ -1411,13 +1419,13 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         const tipoPreferencial =
           ticketSelecionado?.preferencialTipo || preferencialTipo;
 
-        const ticket: TicketEmitedDto = {
+        const newTicket: TicketEmitedDto = {
           emissao: new Date(),
           numero: 0,
           prefixo: ticketPrefix,
           preferencial: ticketPrefix === "P",
           preferencialTipo: tipoPreferencial || undefined, // Adicionar o tipo preferencial
-          status: TicketStatus.EM_ATENDIMENTO,
+          status: TicketStatus.AGUARDANDO, // Fixed: was EM_ATENDIMENTO!
           type: WebsocketType.TICKET,
           unidade: unidadeSelecionada,
           grupo: TicketGroups.EXAME,
@@ -1430,7 +1438,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               "Content-Type": "application/json",
               Accept: "application/json",
             },
-            body: JSON.stringify(ticket),
+            body: JSON.stringify(newTicket),
           });
 
           if (!response.ok) {
@@ -1439,14 +1447,18 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
           const ticketResponse: Ticket = await response.json();
 
-          ticketResponse.atendente = user.nome;
-          ticketResponse.sala = salaSelecionada;
-          ticketResponse.preferencialTipo = tipoPreferencial;
-          ticketResponse.status = TicketStatus.AGUARDANDO;
-          ticketResponse.grupo = TicketGroups.EXAME;
+          const updatedTicketResponse: Ticket = {
+            ...ticketResponse,
+            atendente: user.nome,
+            sala: salaSelecionada,
+            preferencialTipo: tipoPreferencial,
+            status: TicketStatus.AGUARDANDO,
+            grupo: TicketGroups.EXAME,
+          };
 
-          funcionarioSelecionado!.TICKET = ticketResponse;
-          ticketSelecionado = ticketResponse;
+          funcionarioSelecionado.TICKET = updatedTicketResponse;
+          addOrUpdate(updatedTicketResponse);
+          setTicketSelecionado(updatedTicketResponse);
         } catch (e) {
           console.error(e);
           alert(`Erro durante processamento do ticket`);
@@ -1460,6 +1472,10 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       preferencialTipo,
       funcionarioSelecionado,
       unidadeSelecionada,
+      user,
+      salaSelecionada,
+      addOrUpdate,
+      setTicketSelecionado,
     ],
   );
 
