@@ -593,7 +593,7 @@ async function buildPrestadorGuideHtmlV2(
           '<div style="padding:18px 20px;border-bottom:2px solid #114F36;background:linear-gradient(135deg,#ffffff 0%,#fbfdfb 100%);">' +
             '<div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;">' +
               '<div style="min-width:0;flex:1;">' +
-                '<div style="margin-bottom:12px;"><img src="/images/logo.png" alt="Logo" style="height:35px;object-fit:contain;" /></div>' +
+                '<div style="margin-bottom:12px;"><img src="/images/cmso_logo.png" alt="Logo" style="height:35px;object-fit:contain;" /></div>' +
                 '<div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#64748b;">Guia do Prestador</div>' +
                 '<div style="font-size:22px;font-weight:800;line-height:1.15;margin-top:6px;color:#114F36;">' + escapeHtml(prestador.nome || "") + '</div>' +
                 '<div style="margin-top:8px;font-size:13px;line-height:1.45;color:#334155;">' +
