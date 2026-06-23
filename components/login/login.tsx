@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -643,8 +643,13 @@ export default function LoginPage() {
             )}
 
             {/* FOOTER */}
-            <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500 space-y-1">
+            <div className="mt-6 pt-6 border-t border-gray-200 text-center text-xs text-gray-500 space-y-2">
               <div>Centro Médico de Saúde Ocupacional {new Date().getFullYear()}</div>
+              <div className="flex justify-center gap-4">
+                <a href="/privacidade" className="hover:text-[#104e35] hover:underline transition-colors">Política de Privacidade</a>
+                <span>•</span>
+                <a href="/termos-de-uso" className="hover:text-[#104e35] hover:underline transition-colors">Termos de Uso</a>
+              </div>
             </div>
           </motion.div>
         </div>

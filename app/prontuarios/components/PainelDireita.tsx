@@ -225,7 +225,8 @@ const ExameCard = memo(
             </span>
             {isActive && (
               <Chip
-                className="mt-1 w-fit bg-blue-600 text-white"
+                className="mt-1 w-fit"
+                color="primary"
                 size="sm"
                 variant="flat"
               >
@@ -239,13 +240,13 @@ const ExameCard = memo(
           <span className="text-[0.65rem]">{hora}</span>
         </td>
         <td className="p-2 text-center">
-            {hasPdf && (
+          {hasPdf && (
             <Button
               isIconOnly
+              color="primary"
               size="sm"
               title="Visualizar PDF"
               variant={isActive ? "solid" : "ghost"}
-              className={isActive ? "bg-blue-600 text-white" : "text-blue-600 border-blue-300"}
               onPress={onView}
             >
               <Eye className="w-4 h-4" />
