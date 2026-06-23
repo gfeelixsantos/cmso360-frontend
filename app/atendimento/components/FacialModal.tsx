@@ -104,6 +104,7 @@ const FacialModal: React.FC<FacialModalProps> = ({
     try {
       const response = await fetch(NEST_FACIAL_SESSION, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           schedulingId: context.schedulingId,
@@ -157,7 +158,7 @@ const FacialModal: React.FC<FacialModalProps> = ({
     if (!requestId) return;
 
     try {
-      const response = await fetch(`${NEST_FACIAL_STATUS}${requestId}`);
+      const response = await fetch(`${NEST_FACIAL_STATUS}${requestId}`, { credentials: "same-origin" });
       if (!response.ok) return;
 
       const data = await response.json();
@@ -182,6 +183,7 @@ const FacialModal: React.FC<FacialModalProps> = ({
     try {
       const response = await fetch(NEST_FACIAL_FINALIZE, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           schedulingId: context.schedulingId,

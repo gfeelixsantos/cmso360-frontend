@@ -100,5 +100,6 @@ export const config = {
     "/recepcao/:path*",
     "/relatorio/:path*",
     "/servicos/:path*",
+    "/teleatendimento/:path*",
   ],
 };

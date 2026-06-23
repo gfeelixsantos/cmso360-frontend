@@ -117,6 +117,7 @@ const AtendimentoPage: React.FC = () => {
     registerHandlers,
   } = useSocket();
   const socketRef = useRef<Socket | null>(null);
+  const teleatendimentoPanelRef = useRef<any>(null);
   const loadFlowRef = useRef(createAtendimentoLoadFlow());
   const [unidadeSelecionada, setUnidadeSelecionada] = useState("");
 
@@ -704,6 +705,9 @@ const AtendimentoPage: React.FC = () => {
 
   const handleConectar = () => {
     if (connected) {
+      if (teleatendimentoPanelRef.current) {
+        teleatendimentoPanelRef.current.endSession();
+      }
       disconnect();
       socketRef.current = null;
       loadFlowRef.current.reset();
@@ -1122,6 +1126,7 @@ const AtendimentoPage: React.FC = () => {
           </div>
           <div className="flex-1 overflow-auto bg-gray-50">
              <TeleatendimentoPanel
+                ref={teleatendimentoPanelRef}
                 sessionId={teleatendimentoSessionId || undefined}
                 layout="pip"
                 role="PROFESSIONAL"

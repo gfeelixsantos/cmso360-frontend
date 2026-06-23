@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState, useImperativeHandle, forwardRef } from "react";
 import { io, Socket } from "socket.io-client";
 import {
   Button,
@@ -96,8 +96,12 @@ const describeMediaError = (error: unknown) => {
   return "Nao foi possivel preparar camera e microfone.";
 };
 
-export default function TeleatendimentoPanel({
-  role,
+export type TeleatendimentoPanelHandle = {
+  endSession: () => Promise<void>;
+};
+
+const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(function TeleatendimentoPanel(
+  { role,
   sessionId,
   inviteToken,
   layout = "full",
@@ -105,8 +109,9 @@ export default function TeleatendimentoPanel({
   unidade,
   sala,
   exame,
-  onEndSession,
-}: Props) {
+  onEndSession }: Props,
+  ref,
+) {
   const [session, setSession] = useState<SessionView | null>(null);
   const [loading, setLoading] = useState(true);
   const [joinLoading, setJoinLoading] = useState(false);
@@ -274,7 +279,7 @@ export default function TeleatendimentoPanel({
           role === "PROFESSIONAL" || (role === "EMPLOYEE" && sessionId && !inviteToken)
             ? `${NEST_TELEATENDIMENTO_SESSION}/${sessionId}`
             : `${NEST_TELEATENDIMENTO_INVITE}${inviteToken}`;
-        const response = await fetch(url);
+        const response = await fetch(url, { credentials: "same-origin" });
         if (!response.ok) throw new Error("Nao foi possivel carregar a sessao de teleatendimento.");
         const data = await response.json();
         if (!cancelled) {
@@ -359,7 +364,7 @@ export default function TeleatendimentoPanel({
     ) {
       pollingInterval = setInterval(async () => {
         try {
-          const res = await fetch(`${NEST_FACIAL_STATUS}${facialRequestId}`);
+          const res = await fetch(`${NEST_FACIAL_STATUS}${facialRequestId}`, { credentials: "same-origin" });
           if (!res.ok) return;
           const statusData = await res.json();
           if (statusData.isComplete) {
@@ -368,6 +373,7 @@ export default function TeleatendimentoPanel({
 
             const finalizeRes = await fetch(NEST_FACIAL_FINALIZE, {
               method: "POST",
+              credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 schedulingId: session.schedulingId,
@@ -696,10 +702,14 @@ export default function TeleatendimentoPanel({
       setFacialState("requesting");
       const response = await fetch(NEST_FACIAL_SESSION, {
         method: "POST",
+        credentials: "same-origin",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ schedulingId: session.schedulingId, funcionarioId: session.employee.id, signerName: session.employee.name }),
       });
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Sessao expirada. Recarregue a pagina e faca login novamente.");
+        }
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.message || "Nao foi possivel iniciar a autenticacao facial.");
       }
@@ -740,7 +750,7 @@ export default function TeleatendimentoPanel({
     }
     if (session?.sessionId) {
       try {
-        await fetch(`${NEST_TELEATENDIMENTO_SESSION}/${session.sessionId}/end`, { method: "POST" });
+        await fetch(`${NEST_TELEATENDIMENTO_SESSION}/${session.sessionId}/end`, { method: "POST", credentials: "same-origin" });
       } catch {}
     }
     // Delay disconnect slightly to ensure events flush to TCP socket
@@ -775,6 +785,8 @@ export default function TeleatendimentoPanel({
     }
     onEndSession?.();
   };
+
+  useImperativeHandle(ref, () => ({ endSession }), [endSession]);
 
   const renderActionPanel = (className = "") => (
     <div className={`rounded-xl border border-emerald-100 bg-white p-3 space-y-3 ${className}`.trim()}>
@@ -1189,4 +1201,6 @@ export default function TeleatendimentoPanel({
       </div>
     </div>
   );
-}
+});
+
+export default TeleatendimentoPanel;

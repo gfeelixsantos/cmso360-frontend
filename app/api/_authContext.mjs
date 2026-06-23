@@ -3,22 +3,21 @@ export async function resolveAuthProxyContextFromTokens({
   refreshToken,
   verifyJwt,
 }) {
-  const bearerToken = authToken ?? refreshToken;
-
-  if (!bearerToken) {
-    return {};
+  if (authToken) {
+    const payload = await verifyJwt(authToken);
+    if (payload) {
+      const { exp, iat, ...authUser } = payload;
+      return { bearerToken: authToken, authUser };
+    }
   }
 
-  const payload = await verifyJwt(bearerToken);
-
-  if (!payload) {
-    return {};
+  if (refreshToken) {
+    const payload = await verifyJwt(refreshToken);
+    if (payload) {
+      const { exp, iat, ...authUser } = payload;
+      return { bearerToken: refreshToken, authUser };
+    }
   }
 
-  const { exp, iat, ...authUser } = payload;
-
-  return {
-    bearerToken,
-    authUser,
-  };
+  return {};
 }
