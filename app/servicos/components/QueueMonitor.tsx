@@ -165,18 +165,18 @@ export const QueueMonitor: React.FC = () => {
           transition={{ duration: 0.4, delay: 0.2 }}
           className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
         >
-          <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-500" />
+          <div className="h-1 bg-gradient-to-r from-[#44735E] to-[#2a4d3d]" />
           <div className="p-5">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-500">
                   Em Processamento
                 </p>
-                <p className="mt-1 text-3xl font-bold text-blue-600">
+                <p className="mt-1 text-3xl font-bold text-[#44735E]">
                   {stats.activeQueues}
                 </p>
               </div>
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-blue-500">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#44735E]/10 text-[#44735E]">
                 <RefreshCw className="h-6 w-6" />
               </div>
             </div>

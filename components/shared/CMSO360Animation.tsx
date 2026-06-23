@@ -86,8 +86,7 @@ export default function CMSO360Animation() {
         transition={{ duration: 0.5, delay: 0.4 }}
       >
         <p className="text-sm text-gray-500">
-          <span className="font-semibold text-[#104e35]">Versão Beta</span> •
-          Última atualização: 03/2026
+          <span className="font-semibold text-[#104e35]">Atualização</span> 06/2026
         </p>
       </motion.div>
     </div>

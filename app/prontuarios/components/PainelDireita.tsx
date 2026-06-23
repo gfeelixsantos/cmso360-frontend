@@ -225,8 +225,7 @@ const ExameCard = memo(
             </span>
             {isActive && (
               <Chip
-                className="mt-1 w-fit"
-                color="primary"
+                className="mt-1 w-fit bg-blue-600 text-white"
                 size="sm"
                 variant="flat"
               >
@@ -240,13 +239,13 @@ const ExameCard = memo(
           <span className="text-[0.65rem]">{hora}</span>
         </td>
         <td className="p-2 text-center">
-          {hasPdf && (
+            {hasPdf && (
             <Button
               isIconOnly
-              color="primary"
               size="sm"
               title="Visualizar PDF"
               variant={isActive ? "solid" : "ghost"}
+              className={isActive ? "bg-blue-600 text-white" : "text-blue-600 border-blue-300"}
               onPress={onView}
             >
               <Eye className="w-4 h-4" />
@@ -259,6 +258,74 @@ const ExameCard = memo(
 );
 
 ExameCard.displayName = "ExameCard";
+
+const AnexoCard = memo(
+  ({
+    anexo,
+    isActive,
+    hasPdf,
+    onView,
+  }: {
+    anexo: any;
+    isActive: boolean;
+    hasPdf: boolean;
+    onView: () => void;
+  }) => {
+    const size =
+      anexo?.Size != null
+        ? anexo.Size > 1024 * 1024
+          ? `${(anexo.Size / (1024 * 1024)).toFixed(1)} MB`
+          : `${Math.round(anexo.Size / 1024)} KB`
+        : "";
+
+    return (
+      <tr
+        className={`transition-all border-b border-default-200 ${
+          isActive ? "bg-primary-50" : "hover:bg-default-50"
+        }`}
+      >
+        <td className="p-2 text-default-800">
+          <div className="flex items-center gap-2">
+            <FileText className="w-4 h-4 text-[#44735E] shrink-0" />
+            <div className="flex flex-col min-w-0">
+              <span className="font-medium truncate text-xs sm:text-sm">
+                {anexo.Name}
+              </span>
+              {size && (
+                <span className="text-[0.6rem] text-default-400">{size}</span>
+              )}
+            </div>
+            {isActive && (
+              <Chip
+                className="ml-auto w-fit bg-blue-600 text-white"
+                size="sm"
+                variant="flat"
+              >
+                Visualizando
+              </Chip>
+            )}
+          </div>
+        </td>
+        <td className="p-2 text-center">
+          {hasPdf && (
+            <Button
+              isIconOnly
+              size="sm"
+              title="Visualizar anexo"
+              variant={isActive ? "solid" : "ghost"}
+              className={isActive ? "bg-blue-600 text-white" : "text-blue-600 border-blue-300"}
+              onPress={onView}
+            >
+              <Eye className="w-4 h-4" />
+            </Button>
+          )}
+        </td>
+      </tr>
+    );
+  },
+);
+
+AnexoCard.displayName = "AnexoCard";
 
 /* ---------------------- Modal de Seleção de Exames ---------------------- */
 
@@ -1174,6 +1241,14 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     [selectedRecord?.pdfUrls],
   );
 
+  const hasPdfForAnexo = useCallback(
+    (anexoTitle: string) =>
+      !!(selectedRecord?.pdfUrls ?? []).some(
+        (p: any) => p.title === anexoTitle && p.type === "anexo",
+      ),
+    [selectedRecord?.pdfUrls],
+  );
+
   /* ---------------------- Lifecycle ---------------------- */
 
   // Ao trocar de prontuário, resetamos o opinion para garantir que não haja estado stale entre prontuários
@@ -1207,6 +1282,26 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     [onPdfIndexChange, selectedRecord?.pdfUrls],
   );
 
+  const selectPdfFromAnexo = useCallback(
+    (anexoTitle: string) => {
+      if (!selectedRecord) return;
+
+      const pdfIndex = (selectedRecord.pdfUrls ?? []).findIndex(
+        (pdf: any) => pdf.title === anexoTitle && pdf.type === "anexo",
+      );
+
+      if (pdfIndex !== -1) {
+        document.getElementById("pdf-viewer")?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+          inline: "nearest",
+        });
+        onPdfIndexChange(pdfIndex);
+      }
+    },
+    [onPdfIndexChange, selectedRecord?.pdfUrls],
+  );
+
   const isExamBeingDisplayed = useCallback(
     (exameGrupo: string) => {
       const currentPdf = (selectedRecord?.pdfUrls ?? [])[currentPdfIndex];
@@ -1214,6 +1309,17 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       if (!currentPdf?.grupo) return false;
 
       return currentPdf.grupo === exameGrupo;
+    },
+    [currentPdfIndex, selectedRecord?.pdfUrls],
+  );
+
+  const isAnexoBeingDisplayed = useCallback(
+    (anexoTitle: string) => {
+      const currentPdf = (selectedRecord?.pdfUrls ?? [])[currentPdfIndex];
+
+      if (!currentPdf || currentPdf.type !== "anexo") return false;
+
+      return currentPdf.title === anexoTitle;
     },
     [currentPdfIndex, selectedRecord?.pdfUrls],
   );
@@ -1593,6 +1699,36 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                       </footer>
                     </table>
                   </div>
+
+                  {selectedRecord.ANEXOS?.length > 0 && (
+                    <div className="mt-4 px-1">
+                      <Divider className="my-2" />
+                      <h5 className="text-xs font-semibold text-default-600 mb-2">
+                        Anexos ({selectedRecord.ANEXOS.length})
+                      </h5>
+                      <table className="w-full text-xs text-left border-collapse">
+                        <thead className="sticky top-0 bg-default-100 z-10">
+                          <tr className="text-default-700">
+                            <th className="p-2 font-semibold w-[50%]">Arquivo</th>
+                            <th className="p-2 font-semibold text-center w-[60px]">
+                              Ver
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {selectedRecord.ANEXOS.map((anexo: any) => (
+                            <AnexoCard
+                              key={anexo._id || anexo.Name}
+                              anexo={anexo}
+                              hasPdf={hasPdfForAnexo(anexo.Name)}
+                              isActive={isAnexoBeingDisplayed(anexo.Name)}
+                              onView={() => selectPdfFromAnexo(anexo.Name)}
+                            />
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </AccordionItem>
               </Accordion>
             )}
