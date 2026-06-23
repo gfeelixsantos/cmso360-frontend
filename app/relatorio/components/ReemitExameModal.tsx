@@ -69,9 +69,6 @@ const ReemitExameModal: React.FC<ReemitExameModalProps> = ({
                     Deseja reemitir o exame <strong>{exame?.nomeExame}</strong>?
                   </span>
                 </p>
-                <p className="text-xs text-[#2a4a3a] mt-3 bg-[#e8f4e3] border border-[#b8d864] p-2 rounded">
-                  O exame será reenviado para processamento no sistema.
-                </p>
               </div>
             </ModalBody>
             <ModalFooter className="border-t border-[#104e35]/15">
