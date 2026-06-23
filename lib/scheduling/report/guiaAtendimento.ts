@@ -175,7 +175,7 @@ async function buildQrCode(address?: string): Promise<string | null> {
       {
         width: 160,
         margin: 2,
-        color: { dark: primaryColor, light: "#FFFFFF" },
+        color: { dark: "#000000", light: "#FFFFFF" },
       },
     );
   } catch (error) {
@@ -241,9 +241,27 @@ async function buildInternalGuideHtml(
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Agendamento - Centro Médico de Saúde Ocupacional</title>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      .print-page {
+        width: 210mm !important;
+        min-height: 297mm !important;
+        padding: 15mm !important;
+        box-shadow: none !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
 </head>
 <body style="font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;margin:0;padding:0;color:#2c3e50;background-color:white;">
-  <div style="width:210mm;min-height:297mm;margin:0 auto;background-color:white;box-shadow:0 0 20px rgba(0,0,0,0.1);padding:15mm;">
+  <div class="no-print" style="width:100%;max-width:210mm;margin:15px auto 0;padding:0 15mm;box-sizing:border-box;display:flex;justify-content:flex-end;">
+    <button onclick="window.print()" style="padding:8px 16px;background-color:#114F36;color:white;border:none;border-radius:6px;font-family:inherit;font-weight:600;cursor:pointer;font-size:13px;display:inline-flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(17,79,54,0.15);transition:all 0.2s;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      Imprimir Guia
+    </button>
+  </div>
+  <div class="print-page" style="width:100%;max-width:210mm;min-height:297mm;margin:0 auto;background-color:white;box-shadow:0 0 20px rgba(0,0,0,0.1);padding:15mm;box-sizing:border-box;">
     <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-bottom:25px;border-bottom:2px solid ${primaryColor};padding-bottom:15px;">
       ${isAdendo
         ? `<tr>
@@ -372,6 +390,10 @@ async function buildPrestadorGuideHtmlV2(
   prestador: IPrestador,
   codigoToGrupoMap?: Record<string, string>,
   examesPreparacaoMap?: Record<string, string>,
+  operatorContext?: {
+    operadorNome?: string;
+    unidade?: string;
+  },
 ): Promise<string> {
   const qrDataUrl = await buildQrCode(prestador.endereco || undefined);
   const matchedExams = filtrarExamesDoFuncionarioPorPrestador(employee, prestador).map(
@@ -408,6 +430,7 @@ async function buildPrestadorGuideHtmlV2(
     },
     qrDataUrl,
     generatedAt: new Date().toISOString(),
+    operatorContext,
   });
 
   const employeeData = [
@@ -451,9 +474,6 @@ async function buildPrestadorGuideHtmlV2(
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Guia do Prestador - Centro Médico de Saúde Ocupacional</title>
   <style>
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
     html, body {
       margin: 0;
       padding: 0;
@@ -462,16 +482,46 @@ async function buildPrestadorGuideHtmlV2(
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     #guide-root {
-      width: 210mm;
+      width: 100%;
+      max-width: 210mm;
       min-height: 297mm;
       margin: 0 auto;
       background: #ffffff;
       padding: 15mm;
       box-sizing: border-box;
     }
+    .no-print {
+      width: 100%;
+      max-width: 210mm;
+      margin: 15px auto 0;
+      padding: 0 15mm;
+      box-sizing: border-box;
+    }
+    @media print {
+      body {
+        background: #ffffff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      #guide-root {
+        width: 210mm;
+        min-height: 297mm;
+        padding: 0;
+        margin: 0;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
+  <div class="no-print" style="display: flex; justify-content: flex-end;">
+    <button onclick="window.print()" style="padding: 8px 16px; background-color: #114F36; color: white; border: none; border-radius: 6px; font-family: inherit; font-weight: 600; cursor: pointer; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(17,79,54,0.15); transition: all 0.2s;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle;"><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
+      Imprimir Guia
+    </button>
+  </div>
   <div id="guide-root"></div>
   <script id="guide-data" type="application/json">${payloadJson}</script>
   <script>
@@ -519,12 +569,31 @@ async function buildPrestadorGuideHtmlV2(
       const reference = String(prestador.referencia ?? "").trim();
       const address = String(prestador.endereco ?? "").trim();
       const schedule = String(prestador.horario ?? "").trim();
+      const operatorName = payload.operatorContext?.operadorNome || "-";
+      const operatorUnit = payload.operatorContext?.unidade || "-";
+
+      const genDate = new Date(payload.generatedAt);
+      const emissionDate = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      }).format(genDate);
+
+      const emissionTime = new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Sao_Paulo",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: false,
+      }).format(genDate);
 
       root.innerHTML =
         '<div style="border:1px solid #d7e6dc;border-radius:18px;overflow:hidden;box-shadow:0 8px 30px rgba(17,79,54,0.08);background:#fff;">' +
           '<div style="padding:18px 20px;border-bottom:2px solid #114F36;background:linear-gradient(135deg,#ffffff 0%,#fbfdfb 100%);">' +
             '<div style="display:flex;justify-content:space-between;gap:18px;align-items:flex-start;">' +
               '<div style="min-width:0;flex:1;">' +
+                '<div style="margin-bottom:12px;"><img src="/images/logo.png" alt="Logo" style="height:35px;object-fit:contain;" /></div>' +
                 '<div style="font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:#64748b;">Guia do Prestador</div>' +
                 '<div style="font-size:22px;font-weight:800;line-height:1.15;margin-top:6px;color:#114F36;">' + escapeHtml(prestador.nome || "") + '</div>' +
                 '<div style="margin-top:8px;font-size:13px;line-height:1.45;color:#334155;">' +
@@ -543,6 +612,10 @@ async function buildPrestadorGuideHtmlV2(
             '<table style="width:100%;border-collapse:collapse;margin-bottom:12px;"><tbody>' + employeeDataHtml + '</tbody></table>' +
             '<div style="margin-bottom:10px;font-size:12px;font-weight:800;color:#114f36;text-transform:uppercase;letter-spacing:.05em;">Exames Solicitados</div>' +
             '<table style="width:100%;border-collapse:collapse;"><thead><tr><th style="padding:11px 10px;border:1px solid #d7e6dc;background:#f3f7f3;color:#35594a;font-size:12px;text-align:left;">Exame</th><th style="padding:11px 10px;border:1px solid #d7e6dc;background:#f3f7f3;color:#35594a;font-size:12px;text-align:left;">Preparação</th></tr></thead><tbody>' + examRowsHtml + '</tbody></table>' +
+          '</div>' +
+          '<div style="padding:10px 20px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;font-size:10px;color:#64748b;">' +
+            '<div>Operador: ' + escapeHtml(operatorName || "-") + ' | Unidade: ' + escapeHtml(operatorUnit || "-") + '</div>' +
+            '<div>Emissão: ' + escapeHtml(emissionDate) + ' às ' + escapeHtml(emissionTime) + '</div>' +
           '</div>' +
         '</div>';
 
@@ -569,6 +642,7 @@ export async function guiaAtendimento(
       prestador,
       codigoToGrupoMap,
       examesPreparacaoMap,
+      operatorContext,
     );
   }
 
