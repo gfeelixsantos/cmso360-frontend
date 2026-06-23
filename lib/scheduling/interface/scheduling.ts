@@ -24,14 +24,16 @@ type CompanyRegister = {
 };
 
 export type Client = {
-  Id: string;
+  Id?: string;
+  _id?: string;
   Name: string;
   Companys: CompanyRegister[];
   Active: boolean;
   Profile: string;
   Phone: string;
-  Contract: boolean;
+  Contract?: boolean;
   Email: string;
+  CPF?: string;
 };
 
 export type RiscosAso = {

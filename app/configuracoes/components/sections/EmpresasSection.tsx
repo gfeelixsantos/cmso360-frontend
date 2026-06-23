@@ -38,6 +38,8 @@ import {
   Switch,
   Select,
   SelectItem,
+  Autocomplete,
+  AutocompleteItem,
   Pagination,
 } from "@heroui/react";
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
@@ -179,6 +181,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   const [importingSoc, setImportingSoc] = useState(false);
   const [cnpjBusca, setCnpjBusca] = useState("");
   const [buscandoCnpj, setBuscandoCnpj] = useState(false);
+  const [socSearchTerm, setSocSearchTerm] = useState("");
 
   const [form, setForm] = useState<Partial<Company>>({
     CODIGO: "",
@@ -635,6 +638,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     setSocCompanies([]);
     setImportingSoc(false);
     setCnpjBusca("");
+    setSocSearchTerm("");
     setDocumentos([]);
     setShowUploadForm(false);
     setModalOpen(true);
@@ -798,6 +802,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       c.NOMEABREVIADO.toLowerCase().includes(searchString.toLowerCase()) ||
       c.CNPJ.includes(searchString),
   );
+
+  const filteredSocCompanies = (searchValue: string) => {
+    if (!searchValue) return socCompanies;
+    const lowerSearch = searchValue.toLowerCase();
+    return socCompanies.filter((comp) =>
+      (comp.RAZAOSOCIAL || "").toLowerCase().includes(lowerSearch) ||
+      (comp.CNPJ || "").includes(searchValue) ||
+      (comp.CODIGO || "").includes(searchValue)
+    );
+  };
 
   if (loading) {
     return <CmsoCircularLoading fullHeight={false} />;
@@ -1009,26 +1023,28 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       <Database size={14} className="text-[#44735e]" />
                       <span>Importar Dados do SOC (Opcional)</span>
                     </div>
-                    <Select
-                      placeholder={importingSoc ? "Carregando empresas..." : "Selecione uma empresa da lista do SOC..."}
+                    <Autocomplete
+                      placeholder={importingSoc ? "Carregando empresas..." : "Digite para buscar por razão social, CNPJ ou código SOC..."}
                       size="sm"
                       isLoading={importingSoc}
-                      items={socCompanies}
-                      onChange={(e) => handleImportSoc(e.target.value)}
+                      items={filteredSocCompanies(socSearchTerm)}
+                      onSelectionChange={(key) => key && handleImportSoc(String(key))}
                       variant="bordered"
+                      onInputChange={(value) => setSocSearchTerm(value)}
+                      allowsCustomValue={false}
                       classNames={{
-                        trigger: "bg-white border-gray-200 hover:border-gray-300 focus:border-[#44735e] shadow-none",
+                        selectorButton: "bg-white border-gray-200 hover:border-gray-300 focus:border-[#44735e] shadow-none",
                       }}
                     >
                       {(comp) => (
-                        <SelectItem key={comp.CODIGO} textValue={`${comp.CODIGO} - ${comp.RAZAOSOCIAL}`}>
+                        <AutocompleteItem key={comp.CODIGO} textValue={`${comp.CODIGO} - ${comp.RAZAOSOCIAL}`}>
                           <div className="flex flex-col">
                             <span className="text-sm font-semibold text-gray-800">{comp.RAZAOSOCIAL}</span>
                             <span className="text-xs text-gray-400 font-mono">SOC: {comp.CODIGO} | CNPJ: {comp.CNPJ || "-"}</span>
                           </div>
-                        </SelectItem>
+                        </AutocompleteItem>
                       )}
-                    </Select>
+                    </Autocomplete>
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-4 pt-2">

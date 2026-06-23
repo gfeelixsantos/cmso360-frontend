@@ -342,6 +342,38 @@ const InformacoesGerais: React.FC<{
                   </span>
                 </div>
               )}
+              {atendimento.CLIENT && (
+                <>
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block mb-1">
+                      Cliente que Agendou
+                    </label>
+                    <span className="text-sm text-gray-900 uppercase">
+                      {atendimento.CLIENT.Name || "Não informado"}
+                    </span>
+                  </div>
+                  {atendimento.CLIENT.Email && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-1">
+                        E-mail do Cliente
+                      </label>
+                      <span className="text-sm text-gray-900">
+                        {atendimento.CLIENT.Email}
+                      </span>
+                    </div>
+                  )}
+                  {atendimento.CLIENT.Phone && (
+                    <div>
+                      <label className="text-sm font-medium text-gray-500 block mb-1">
+                        Telefone do Cliente
+                      </label>
+                      <span className="text-sm text-gray-900">
+                        {atendimento.CLIENT.Phone}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>
