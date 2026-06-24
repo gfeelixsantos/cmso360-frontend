@@ -1,6 +1,6 @@
 "use client";
 
-import { Card, CardBody } from "@heroui/card";
+import { Card, CardBody } from "@heroui/react";
 import { ClipboardSignature, Construction } from "lucide-react";
 
 export function AssinaturaAtendimentoSection() {

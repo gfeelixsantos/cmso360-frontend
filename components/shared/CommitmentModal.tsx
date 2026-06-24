@@ -145,11 +145,11 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   selectedKeys={[type]}
                   onChange={(e) => setType(e.target.value)}
                 >
-                  <SelectItem key="EXAME" value="EXAME">Realização de Exames</SelectItem>
-                  <SelectItem key="TREINAMENTO" value="TREINAMENTO">Treinamento</SelectItem>
-                  <SelectItem key="VISITA_TECNICA" value="VISITA_TECNICA">Visita Técnica</SelectItem>
-                  <SelectItem key="PERICIA" value="PERICIA">Perícia</SelectItem>
-                  <SelectItem key="OUTRO" value="OUTRO">Outro</SelectItem>
+                  <SelectItem key="EXAME">Realização de Exames</SelectItem>
+                  <SelectItem key="TREINAMENTO">Treinamento</SelectItem>
+                  <SelectItem key="VISITA_TECNICA">Visita Técnica</SelectItem>
+                  <SelectItem key="PERICIA">Perícia</SelectItem>
+                  <SelectItem key="OUTRO">Outro</SelectItem>
                 </Select>
                 
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-2 border-default-200 hover:border-default-300 transition-colors p-4 rounded-xl bg-white shadow-sm">
@@ -292,16 +292,14 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   selectedKeys={[vehicle]}
                   onChange={(e) => setVehicle(e.target.value)}
                   isDisabled={!computedStart || !computedEnd}
-                >
-                  <SelectItem key="NENHUM" value="NENHUM">Nenhum</SelectItem>
-                  {[...availableVehicles]
+                  items={[{ key: "NENHUM", label: "Nenhum" }, ...[...availableVehicles]
                     .sort((a, b) => VEHICLE_LABEL_MAP[a].localeCompare(VEHICLE_LABEL_MAP[b]))
-                    .map(v => {
-                    const label = VEHICLE_LABEL_MAP[v] || v.replace(/_/g, " ");
-                    return (
-                      <SelectItem key={v} value={v}>{label}</SelectItem>
-                    );
-                  })}
+                    .map(v => ({
+                      key: v,
+                      label: VEHICLE_LABEL_MAP[v] || v.replace(/_/g, " ")
+                    }))]}
+                >
+                  {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
                 </Select>
 
                 <Textarea 

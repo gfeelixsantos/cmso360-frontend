@@ -1,4 +1,3 @@
-import { Input } from "@heroui/input";
 import {
   Modal,
   ModalContent,
@@ -6,6 +5,7 @@ import {
   ModalBody,
   ModalFooter,
   Button,
+  Input,
   Spinner,
   Textarea,
 } from "@heroui/react";

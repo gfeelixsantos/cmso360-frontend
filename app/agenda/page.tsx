@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, isSameDay } from "date-fns";
-import ptBR from "date-fns/locale/pt-BR";
+import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { Card, CardBody, Select, SelectItem, Button, useDisclosure } from "@heroui/react";
 import { Truck, Users } from "lucide-react";
@@ -295,11 +295,9 @@ export default function AgendaPage() {
                 size="sm"
                 selectedKeys={[selectedParticipant]}
                 onChange={(e) => setSelectedParticipant(e.target.value)}
+                items={[{ key: "TODOS", label: "Todos os Funcionários" }, ...allParticipants.map(name => ({ key: name, label: name }))]}
               >
-                <SelectItem key="TODOS" value="TODOS">Todos os Funcionários</SelectItem>
-                {allParticipants.map(name => (
-                  <SelectItem key={name} value={name}>{name}</SelectItem>
-                ))}
+                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
               </Select>
             )}
             <Select 
@@ -318,8 +316,8 @@ export default function AgendaPage() {
                 }
               }}
             >
-              <SelectItem key="FUNCIONARIO" value="FUNCIONARIO">Funcionário</SelectItem>
-              <SelectItem key="VEICULO" value="VEICULO">Veículo</SelectItem>
+              <SelectItem key="FUNCIONARIO">Funcionário</SelectItem>
+              <SelectItem key="VEICULO">Veículo</SelectItem>
             </Select>
             <Button 
               className="bg-[#44735E] text-white font-semibold hover:bg-[#355a4a] transition-colors"

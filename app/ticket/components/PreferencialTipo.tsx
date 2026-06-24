@@ -1,4 +1,4 @@
-import { Button } from "@heroui/button";
+import { Button } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import React, { useState } from "react";

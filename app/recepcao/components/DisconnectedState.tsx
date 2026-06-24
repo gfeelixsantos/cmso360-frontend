@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, CardBody } from "@heroui/card";
+import { Card, CardBody } from "@heroui/react";
 import { AlertTriangle } from "lucide-react";
 
 // Interface para tipagem robusta
