@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   LogOut,
   Settings,
+  CalendarDays,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -410,6 +411,14 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                       </p>
                       <p className="text-xs text-gray-500">{user?.perfil}</p>
                     </div>
+
+                    <button
+                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      onClick={() => handleNavigate("/agenda")}
+                    >
+                      <CalendarDays className="mr-3 h-4 w-4" />
+                      Agenda de Compromissos
+                    </button>
 
                     <button
                       className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"

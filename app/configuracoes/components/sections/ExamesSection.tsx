@@ -374,7 +374,7 @@ export function ExamesSection() {
                           <div className="flex items-center gap-2 shrink-0">
                             {exame.enviar_para_azure && (
                               <Chip size="sm" variant="flat" color="primary">
-                                Processamento em fila
+                                Integração SOC
                               </Chip>
                             )}
                             {exame.requer_assinatura && (
@@ -569,7 +569,7 @@ export function ExamesSection() {
                   onValueChange={(v) => setForm((f) => ({ ...f, enviar_para_azure: v }))}
                   color="primary"
                 >
-                  <span className="text-sm">Enviar para processamento em fila</span>
+                  <span className="text-sm">Gera PDF e Integra SOC</span>
                 </Switch>
                 <Switch
                   isSelected={form.requer_assinatura}
