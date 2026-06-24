@@ -249,6 +249,23 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
   const [buscandoContratanteCnpj, setBuscandoContratanteCnpj] = useState(false);
   const [syncingContacts, setSyncingContacts] = useState(false);
+  const [initialStateSnapshot, setInitialStateSnapshot] = useState<string>("");
+
+  const getSnapshot = (
+    f: Partial<Company>,
+    amb: AmbienteEdificacao[],
+    resp: ResponsavelTecnico[],
+    contr: ContratanteEmpresa[],
+    cont: ContatoEmpresa[]
+  ) => {
+    return JSON.stringify({
+      form: f,
+      ambientes: amb,
+      responsaveis: resp,
+      contratantes: contr,
+      contatos: cont,
+    });
+  };
 
   // Documentos states
   const [documentos, setDocumentos] = useState<any[]>([]);
@@ -593,6 +610,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     setActiveTab("dados");
     setModalOpen(true);
     fetchDocumentos(company.CODIGO);
+    setInitialStateSnapshot(getSnapshot(formValues, amb, resp, contr, conts));
   }
 
   function openCreate() {
@@ -646,6 +664,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     setShowUploadForm(false);
     setModalOpen(true);
     fetchSocCompaniesList();
+    setInitialStateSnapshot(getSnapshot(formValues, [], [], [], []));
   }
 
   async function handleSave() {
@@ -978,7 +997,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         </CardBody>
       </Card>
 
-      <Modal isOpen={modalOpen} onOpenChange={setModalOpen} size="5xl" scrollBehavior="inside">
+      <Modal isOpen={modalOpen} onOpenChange={setModalOpen} size="5xl" classNames={{ base: "max-w-[1400px]" }} isDismissable={false} isKeyboardDismissDisabled={true} scrollBehavior="inside">
         <ModalContent>
           <ModalHeader className="flex flex-col gap-1.5 border-b border-gray-100 pb-4">
             <div className="flex flex-wrap items-center gap-3">
@@ -1972,6 +1991,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               color="primary"
               onPress={handleSave}
               isLoading={saving}
+              isDisabled={!isCreate && getSnapshot(form, ambientes, responsaveis, contratantes, contatos) === initialStateSnapshot}
               style={{ backgroundColor: "#44735e" }}
             >
               Salvar Alterações
