@@ -295,10 +295,17 @@ const BiometriaFuncionarioModal: React.FC<BiometriaFuncionarioModalProps> = ({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="sm">
-      <ModalContent>
-        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex items-center gap-2">
-          <Fingerprint className="h-5 w-5 shrink-0" />
-          <span className="text-base font-semibold">Biometria do Funcionário</span>
+      <ModalContent className="border border-[#44735e]/20">
+        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold">Biometria do Funcionário</span>
+          </div>
+          {funcionario && (
+            <div className="flex items-center gap-4 text-xs text-white/80 font-normal">
+              <span>{funcionario.nome}</span>
+              {funcionario.cpf && <span>CPF: {funcionario.cpf}</span>}
+            </div>
+          )}
         </ModalHeader>
         <ModalBody className="py-6 px-6">
           {renderContent()}

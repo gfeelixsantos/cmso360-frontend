@@ -82,12 +82,12 @@ const STATUS_LABELS: Record<string, string> = {
   agent_encontrado: "Leitor encontrado",
   agent_not_found: "Leitor não encontrado",
   reader_unavailable: "Leitor indisponível",
-  aguardando_primeira_captura: "Aguardando primeira captura",
-  primeira_captura_concluida: "Primeira captura concluída",
-  aguardando_segunda_captura: "Aguardando segunda captura",
-  segunda_captura_concluida: "Segunda captura concluída",
-  processando_template: "Processando digital",
-  processando_imagens_derivadas: "Processando imagens",
+  aguardando_primeira_captura: "Coloque o dedo no leitor",
+  primeira_captura_concluida: "Primeira leitura concluída",
+  aguardando_segunda_captura: "Coloque o mesmo dedo novamente",
+  segunda_captura_concluida: "Segunda leitura concluída",
+  processando_template: "Processando a digital...",
+  processando_imagens_derivadas: "Salvando biometria...",
   concluido: "Concluído",
   erro: "Erro",
   timeout: "Tempo esgotado",
@@ -152,54 +152,11 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
     </div>
   );
 
+  const activeDedo = DEDOS_DISPONIVEIS.find(x => x.id.toString() === dedoSelecionado);
+
   // ── Context info strip ──────────────────────────────────────
   const ContextStrip = () => {
-    if (!context) return null;
-    
-    // Encontra o dedo atual se já foi selecionado/está em curso
-    const activeDedo = DEDOS_DISPONIVEIS.find(x => x.id.toString() === dedoSelecionado);
-
-    const items = [
-      context.funcionarioNome && {
-        icon: <User className="h-3 w-3 shrink-0" />,
-        label: context.funcionarioNome,
-      },
-      context.funcionarioCpf && {
-        icon: <User className="h-3 w-3 shrink-0" />,
-        label: context.funcionarioCpf,
-      },
-      activeDedo && status !== "selecionando_dedo" && {
-        icon: <Fingerprint className="h-3 w-3 shrink-0 text-emerald-600" />,
-        label: `${activeDedo.nome} ${activeDedo.lado}`,
-        highlight: true
-      },
-      context.unidade && {
-        icon: <Building2 className="h-3 w-3 shrink-0" />,
-        label: context.unidade,
-      },
-      context.sala && {
-        icon: <MapPin className="h-3 w-3 shrink-0" />,
-        label: context.sala,
-      }
-    ].filter(Boolean) as any[];
-
-    if (items.length === 0) return null;
-
-    return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 mb-4">
-        <div className="flex flex-wrap gap-x-4 gap-y-1">
-          {items.map((item, i) => (
-            <div
-              key={i}
-              className={`flex items-center gap-1 text-xs ${item.highlight ? "text-emerald-700 font-bold" : "text-gray-600 font-medium"}`}
-            >
-              {item.icon}
-              <span className="truncate max-w-[140px]">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return null;
   };
 
   const handleStart = () => {
@@ -246,11 +203,19 @@ const CadastroBiometricoModal: React.FC<CadastroBiometricoModalProps> = ({
       onClose={inProgress ? undefined : onClose}
     >
       <ModalContent className="border border-[#44735e]/20">
-        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex items-center gap-2">
-          <Fingerprint className="h-5 w-5 shrink-0" />
-          <div className="flex flex-col text-left">
+        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
+          <div className="flex items-center gap-2">
             <span className="text-base font-semibold text-white leading-tight">Cadastro Biométrico</span>
           </div>
+          {context && (
+            <div className="flex items-center gap-4 text-xs text-white/80 font-normal">
+              <span>{context.funcionarioNome}</span>
+              {context.funcionarioCpf && <span>CPF: {context.funcionarioCpf}</span>}
+              {activeDedo && status !== "selecionando_dedo" && (
+                <span>Dedo: {activeDedo.nome} ({activeDedo.lado === "Direito" ? "DIR" : "ESQ"})</span>
+              )}
+            </div>
+          )}
         </ModalHeader>
 
         <ModalBody className="py-5 px-5">

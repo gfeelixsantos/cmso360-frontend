@@ -106,25 +106,7 @@ const BiometriaModal: React.FC<BiometriaModalProps> = ({ state, onClose, onRetry
   const inProgress = !isTerminal && status !== "idle";
 
   const ContextStrip = () => {
-    if (!context) return null;
-    const items = [
-      context.funcionarioNome && { icon: <User className="h-3.5 w-3.5 shrink-0" />, label: context.funcionarioNome },
-    ].filter(Boolean) as { icon: React.ReactNode; label: string }[];
-
-    if (items.length === 0) return null;
-
-    return (
-      <div className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 mb-4 shadow-sm">
-        <div className="flex flex-col gap-1.5">
-          {items.map((item, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs font-medium text-gray-700">
-              <span className="text-[#44735e]">{item.icon}</span>
-              <span className="truncate">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return null;
   };
 
   const ResultIcon = () => {
@@ -178,9 +160,16 @@ const BiometriaModal: React.FC<BiometriaModalProps> = ({ state, onClose, onRetry
       onClose={isTerminal ? onClose : undefined}
     >
       <ModalContent className="border border-[#44735e]/20">
-        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex items-center gap-2">
-          <Fingerprint className="h-5 w-5 shrink-0" />
-          <span className="text-base font-semibold">Captura Biométrica</span>
+        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold">Captura Biométrica</span>
+          </div>
+          {context && (
+            <div className="flex items-center gap-4 text-xs text-white/80 font-normal">
+              <span>{context.funcionarioNome}</span>
+              {context.funcionarioCpf && <span>CPF: {context.funcionarioCpf}</span>}
+            </div>
+          )}
         </ModalHeader>
 
         <ModalBody className="py-5 px-5">
