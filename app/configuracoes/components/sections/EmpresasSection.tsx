@@ -566,7 +566,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   function openEdit(company: Company) {
     setIsCreate(false);
     setEditing(company);
-    setForm({
+    const formValues = {
       CODIGO: company.CODIGO,
       CNPJ: company.CNPJ || "",
       RAZAOSOCIAL: company.RAZAOSOCIAL || "",
@@ -600,11 +600,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       codigoInternoCliente: company.codigoInternoCliente || company["CÓD. CLIENTE (INT.)"] || "",
       avisos: company.avisos || "",
       observacoes: company.observacoes || "",
-    });
-    setAmbientes(company.ambientesEdificacao || []);
-    setResponsaveis(company.responsaveisTecnicos || []);
-    setContratantes(company.contratantes || []);
-    setContatos(company.contatos || []);
+    };
+    setForm(formValues);
+    const amb = company.ambientesEdificacao || [];
+    const resp = company.responsaveisTecnicos || [];
+    const contr = company.contratantes || [];
+    const conts = company.contatos || [];
+    setAmbientes(amb);
+    setResponsaveis(resp);
+    setContratantes(contr);
+    setContatos(conts);
     setEditingContactIndex(null);
     setNewContato({ nome: "", email: "", telefone: "", perfil: "" });
     setActiveTab("dados");
@@ -616,7 +621,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   function openCreate() {
     setIsCreate(true);
     setEditing(null);
-    setForm({
+    const formValues = {
       CODIGO: "",
       CNPJ: "",
       RAZAOSOCIAL: "",
@@ -643,14 +648,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         requerPsicologa: false,
         credenciadaSoc: false,
         somenteComplementares: false,
-        faturamento: "CMSO",
+        faturamento: "CMSO" as const,
         devedor: false,
         asoRapidoAutomatico: false,
       },
       codigoInternoCliente: "",
       avisos: "",
       observacoes: "",
-    });
+    };
+    setForm(formValues);
     setAmbientes([]);
     setResponsaveis([]);
     setContratantes([]);
