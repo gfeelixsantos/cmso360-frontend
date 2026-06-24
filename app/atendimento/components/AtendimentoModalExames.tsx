@@ -458,7 +458,7 @@ const AtendimentoModalExames = ({
           <ModalFooter className="px-6 pb-6">
             {isLoading ? (
               <div className="w-full flex justify-center">
-                <Spinner color="primary" size="md" />
+                <Spinner color="success" size="md" />
               </div>
             ) : (
               <div className="flex gap-2 w-full sm:w-auto">
@@ -510,7 +510,7 @@ const AtendimentoModalExames = ({
           </ModalHeader>
           <ModalBody className="py-8">
             <div className="flex justify-center items-center">
-              <Spinner color="primary" size="lg" />
+              <Spinner color="success" size="lg" />
               <span className="ml-4">Carregando dados do exame...</span>
             </div>
           </ModalBody>

@@ -885,14 +885,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 className="max-w-xs"
                 size="sm"
                 classNames={{
+                  base: "h-9",
+                  mainWrapper: "h-9",
                   inputWrapper: "h-9",
                 }}
               />
               <Button
                 color="primary"
+                startContent={<Plus size={18} />}
                 onPress={openCreate}
-                startContent={<Plus size={16} />}
-                className="bg-[#44735e] h-9 text-xs font-semibold"
+                size="sm"
+                className="h-9 px-3"
+                style={{ backgroundColor: "#44735e" }}
               >
                 Nova Empresa
               </Button>
@@ -1055,16 +1059,30 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               </div>
             )}
           </ModalHeader>
-          <ModalBody className="py-6">
+          <div className="px-6 bg-white border-b border-gray-100 shrink-0">
             <Tabs
               selectedKey={activeTab}
               onSelectionChange={(key) => setActiveTab(key as string)}
               aria-label="Dados complementares da empresa"
+              variant="underlined"
               classNames={{
-                tabList: "sticky top-0 z-50 bg-white w-full border-b border-gray-100 py-1.5",
+                tabList: "gap-6 w-full relative rounded-none p-0 border-b-0",
+                cursor: "w-full bg-[#44735e]",
+                tab: "max-w-fit px-0 h-12 text-sm font-medium",
               }}
             >
-              <Tab key="dados" title="Dados Gerais">
+              <Tab key="dados" title="Dados Gerais" />
+              <Tab key="config" title="Configurações" />
+              <Tab key="edificacao" title="Edificação (PGR)" />
+              <Tab key="responsaveis" title="Responsáveis Técnicos" />
+              <Tab key="contratantes" title="Contratantes" />
+              <Tab key="contatos" title="Contatos" />
+              <Tab key="documentos" title="Documentos" />
+            </Tabs>
+          </div>
+          <ModalBody className="py-6">
+            {activeTab === "dados" && (
+              <>
                 {isCreate && (
                   <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-slate-50 to-gray-100/80 border border-gray-200/50 shadow-sm flex flex-col gap-3">
                     <div className="flex items-center gap-2 text-default-500 font-semibold text-xs uppercase tracking-wider">
@@ -1266,9 +1284,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </div>
                   )}
                 </div>
-              </Tab>
+              </>
+            )}
 
-              <Tab key="config" title="Configurações">
+            {activeTab === "config" && (
                 <div className="flex flex-col gap-6 pt-6 pl-2">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
@@ -1378,9 +1397,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     />
                   </div>
                 </div>
-              </Tab>
+              )}
 
-              <Tab key="edificacao" title="Edificação (PGR)">
+              {activeTab === "edificacao" && (
                 <div className="pt-4 space-y-4">
                   <div className="flex gap-2 items-end bg-gray-50 p-3 rounded-lg border border-gray-100">
                     <Input
@@ -1423,9 +1442,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </TableBody>
                   </Table>
                 </div>
-              </Tab>
+              )}
 
-              <Tab key="responsaveis" title="Responsáveis Técnicos">
+              {activeTab === "responsaveis" && (
                 <div className="pt-4 space-y-4">
                   <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
@@ -1539,9 +1558,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </TableBody>
                   </Table>
                 </div>
-              </Tab>
+              )}
 
-              <Tab key="contratantes" title="Contratantes">
+              {activeTab === "contratantes" && (
                 <div className="pt-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <div className="col-span-1 md:col-span-2 flex gap-2 items-end">
@@ -1675,9 +1694,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </TableBody>
                   </Table>
                 </div>
-              </Tab>
+              )}
 
-              <Tab key="contatos" title="Contatos">
+              {activeTab === "contatos" && (
                 <div className="pt-4 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-3 bg-gray-50 p-4 rounded-xl border border-gray-200">
                     <Input
@@ -1763,9 +1782,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </TableBody>
                   </Table>
                 </div>
-              </Tab>
+              )}
 
-              <Tab key="documentos" title="Documentos">
+              {activeTab === "documentos" && (
                 <div className="pt-6 space-y-4">
                   {showUploadForm ? (
                     <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 space-y-4">
@@ -1986,8 +2005,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </>
                   )}
                 </div>
-              </Tab>
-            </Tabs>
+              )}
           </ModalBody>
           <ModalFooter className="border-t border-gray-100">
             <Button variant="flat" onPress={() => setModalOpen(false)}>

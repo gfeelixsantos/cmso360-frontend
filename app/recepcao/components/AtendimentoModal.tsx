@@ -51,7 +51,7 @@ import {
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
-import { ExclamationCircleIcon } from "@heroicons/react/24/outline";
+import { CheckCircleIcon, ExclamationCircleIcon } from "@heroicons/react/24/outline";
 import { FixedSizeList as List, ListChildComponentProps } from "react-window";
 import { InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Socket } from "socket.io-client";
@@ -2101,7 +2101,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         // Não fecha o modal aqui - mostra confirmação primeiro
         setIsSuccessModal(true);
         setModalText(
-          <p className="text-green-600 font-semibold">
+          <p>
             Atendimento enviado com sucesso!
           </p>,
         );
@@ -3227,10 +3227,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
               className="px-4 py-2 rounded bg-[#114E34] text-white hover:bg-[#0b3523] hover:shadow-lg transition-all duration-200"
               isDisabled={!validation.all || isSubmitting || isAuthBlockedForSubmit}
               isLoading={isSubmitting}
+              spinner={<Spinner color="success" size="sm" />}
               onPress={handleSubmit}
             >
               {isSubmitting ? (
-                <>Enviado...</>
+                <>Enviando...</>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" /> Enviar Atendimento
@@ -3433,7 +3434,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalAlert}>
         <ModalContent className="border border-[#114E34]/20">
           <ModalHeader className="text-[#114E34]">
-            <ExclamationCircleIcon className="h-6 w-6 text-[#114E34]" />{" "}
+            {isSuccessModal ? (
+              <CheckCircleIcon className="h-6 w-6 text-green-600" />
+            ) : (
+              <ExclamationCircleIcon className="h-6 w-6 text-[#114E34]" />
+            )}{" "}
             {isSuccessModal ? "Sucesso" : "Atenção"}
           </ModalHeader>
           <ModalBody>{modalText}</ModalBody>

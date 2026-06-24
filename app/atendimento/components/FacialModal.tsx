@@ -15,8 +15,6 @@ import {
   Clock,
   User,
   RefreshCcw,
-  Camera,
-  ShieldCheck,
 } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -306,28 +304,26 @@ const FacialModal: React.FC<FacialModalProps> = ({
       onClose={() => onClose(status === "success")}
     >
       <ModalContent className="border border-[#44735e]/20">
-        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex items-center gap-2">
-          <Camera className="h-5 w-5 shrink-0" />
-          <span className="text-base font-semibold">Autenticacao Facial</span>
-        </ModalHeader>
+        <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold">Autenticacao Facial</span>
+            </div>
+            {context && (
+              <div className="flex items-center gap-4 text-xs text-white/80">
+                <span>{context.funcionarioNome}</span>
+                {context.funcionarioCpf && <span>CPF: {context.funcionarioCpf}</span>}
+              </div>
+            )}
+          </ModalHeader>
 
-        <ModalBody className="py-5 px-5 min-h-[400px]">
-          <ContextStrip />
-
+        <ModalBody className="py-5 px-5 min-h-[450px]">
           {status === "waiting_capture" && signatureLink ? (
             <div className="flex flex-col h-full gap-4">
-              <div className="bg-emerald-50 border border-emerald-100 p-3 rounded-lg flex items-center gap-3">
-                <ShieldCheck className="h-5 w-5 text-emerald-700" />
-                <span className="text-sm font-medium text-emerald-900">
-                  {mensagem ||
-                    "Conclua a assinatura e a validacao facial no quadro abaixo."}
-                </span>
-              </div>
               <iframe
                 src={signatureLink}
                 allow="camera"
                 className="w-full flex-grow border rounded-lg shadow-inner bg-gray-50"
-                style={{ minHeight: "500px" }}
+                style={{ minHeight: "450px" }}
               />
             </div>
           ) : (

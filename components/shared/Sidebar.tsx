@@ -57,18 +57,18 @@ const SelectField = ({
   onChange: (value: string) => void;
   conectado: boolean;
 }) => (
-  <div className="space-y-2">
-    <label className="text-sm font-medium text-gray-700" htmlFor={id}>
+  <div className="space-y-1">
+    <label className="text-xs font-medium text-gray-700" htmlFor={id}>
       {label}
       {conectado && (
-        <span className="text-xs text-gray-500 ml-1">(somente leitura)</span>
+        <span className="text-[10px] text-gray-500 ml-1">(somente leitura)</span>
       )}
     </label>
 
     <div className="relative">
       <select
         aria-label={label}
-        className={`w-full px-3 py-2.5 border rounded-xl text-sm shadow-sm focus:outline-none transition-colors appearance-none ${
+        className={`w-full px-2 py-1.5 border rounded-lg text-xs shadow-sm focus:outline-none transition-colors appearance-none ${
           conectado
             ? "bg-white border-gray-200 text-gray-400 cursor-not-allowed"
             : "bg-white border-gray-300 text-gray-800 hover:border-[#104e35] focus:ring-2 focus:ring-[#104e35]"
@@ -110,10 +110,10 @@ const ActionButtonGroup = ({
 }: {
   onAddAtendimento: () => void;
 }) => (
-  <div className="flex flex-col gap-2 mt-4">
+  <div className="flex flex-col gap-1 mt-3">
     <Button
       aria-label="Iniciar atendimento do dia"
-      className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold shadow-sm bg-[#104e35] text-white hover:bg-[#7FA830] focus:ring-2 focus:ring-[#104e35]/40"
+      className="flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold shadow-sm bg-[#104e35] text-white hover:bg-[#7FA830] focus:ring-2 focus:ring-[#104e35]/40"
       onPress={onAddAtendimento}
     >
       <Users className="h-4 w-4" />
@@ -179,15 +179,15 @@ export function SidebarRecepcao({
   return (
     <aside
       aria-label="Painel lateral de filtros e controles"
-      className="w-68 bg-gradient-to-b from-white via-gray-50 to-green-50 border-r border-gray-200 shadow-lg h-full overflow-y-auto transition-all relative"
+      className="w-68 bg-white border-r border-gray-200 shadow-lg h-full overflow-y-auto transition-all relative"
       role="complementary"
     >
-      <main className="p-5 pt-6">
+      <main className="p-4 pt-4">
         {/* Header */}
-        <header className="mb-6">
-          <h2 className="text-lg font-bold text-[#104e35] mb-4">Controles</h2>
+        <header className="mb-4">
+          <h2 className="text-sm font-bold text-[#104e35] mb-3">Controles</h2>
 
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[85px_minmax(0,1fr)] items-center gap-x-2">
               <span className="text-sm font-medium text-gray-700 text-left">
                 Servidor:
@@ -233,7 +233,7 @@ export function SidebarRecepcao({
         )}
 
         {/* Filtros */}
-        <section className="space-y-4 mb-6">
+        <section className="space-y-2 mb-3">
           {/* Unidade */}
           <SelectField
             conectado={conectado}
@@ -282,10 +282,10 @@ export function SidebarRecepcao({
         </section>
 
         {/* Botão Conectar */}
-        <div className="mb-6">
+        <div className="mb-3">
           <Button
             aria-pressed={conectado}
-            className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-semibold transition-all ${
+            className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold transition-all ${
               conectado
                 ? "bg-white text-[#104e35] hover:bg-[#e8f4e3]"
                 : "bg-[#104e35] text-white hover:bg-[#7FA830] hover:text-white"
@@ -320,10 +320,10 @@ export function SidebarRecepcao({
 
         {/* Botão Vídeochamada - só no atendimento */}
         {conectado && pathname?.includes("atendimento") && toggleTelemedicinaModo && (
-          <div className="flex flex-col gap-2 mt-4 mb-6">
+          <div className="flex flex-col gap-1 mt-3 mb-3">
             <Button
               aria-label="Ativar Vídeochamada"
-              className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl font-medium bg-[#e8f4e3] text-[#104e35] border border-[#104e35]/30 hover:bg-[#d4e8d0] focus:ring-2 focus:ring-[#104e35]/20"
+              className="flex w-full items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium bg-[#e8f4e3] text-[#104e35] border border-[#104e35]/30 hover:bg-[#d4e8d0] focus:ring-2 focus:ring-[#104e35]/20"
               onPress={toggleTelemedicinaModo}
             >
               <Users className="h-4 w-4" />
@@ -334,7 +334,7 @@ export function SidebarRecepcao({
 
         {/* Lista de Agendamentos */}
         {conectado && (
-          <aside aria-label="Lista de agendamentos" className="mt-6">
+          <aside aria-label="Lista de agendamentos" className="mt-3">
             <AgendamentosList
               agendadosFiltrados={agendadosFiltrados}
               conectado={conectado}

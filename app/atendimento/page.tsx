@@ -1117,7 +1117,7 @@ const AtendimentoPage: React.FC = () => {
       </Modal>
 
       {(isTelemedicinaModo || teleatendimentoSessionId) && (
-        <div className="fixed bottom-6 right-6 w-[400px] max-h-[85vh] shadow-2xl z-[600] rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col">
+        <div className="fixed bottom-28 right-6 w-[320px] max-h-[75vh] shadow-2xl z-[600] rounded-xl overflow-hidden border border-gray-200 bg-white flex flex-col">
           <div className="bg-[#114e34] text-white text-sm font-semibold p-3 flex justify-between items-center cursor-move shadow-md relative z-10">
             <span>Videochamada em Andamento</span>
             <Button isIconOnly variant="light" size="sm" className="text-white hover:bg-white/20" onPress={() => { setIsTelemedicinaModo(false); setTeleatendimentoSessionId(null); }}>
