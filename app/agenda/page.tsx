@@ -6,7 +6,7 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card, CardBody, Select, SelectItem, Button, useDisclosure } from "@heroui/react";
+import { Card, CardBody, Select, SelectItem, Button, useDisclosure, Tooltip } from "@heroui/react";
 import { Truck, Users } from "lucide-react";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CommitmentModal } from "@/components/shared/CommitmentModal";
@@ -34,6 +34,43 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
+
+const renderCellTooltip = (dayEvents?: any[]) => {
+  if (!dayEvents || dayEvents.length === 0) return null;
+  
+  const typeLabelMap: Record<string, string> = {
+    ASSESSORIA: "Assessoria",
+    AVALIACAO_DE_CAMPO: "Avaliação de Campo",
+    IN_COMPANY: "In Company",
+    LEVA_E_TRAS: "Leva e Trás",
+    OUTRO: "Outro",
+    PERICIA: "Perícia",
+    TREINAMENTO: "Treinamento",
+    VISITA_TECNICA: "Visita Técnica",
+  };
+
+  return (
+    <div className="px-2 py-1.5 flex flex-col gap-2 max-w-[280px]">
+      <p className="font-bold text-xs border-b border-gray-150 pb-1 text-gray-800">Compromissos do Dia:</p>
+      {dayEvents.map((ev, idx) => {
+        const startStr = format(ev.start, "HH:mm");
+        const endStr = format(ev.end, "HH:mm");
+        const typeLabel = typeLabelMap[ev.type] || ev.type;
+        return (
+          <div key={ev.id || idx} className="text-[11px] leading-tight text-gray-700">
+            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
+              <span className="text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-100 font-mono text-[10px]">{startStr} – {endStr}</span>
+              <span className="truncate">{ev.title}</span>
+            </div>
+            <div className="text-[10px] text-gray-500 pl-1">
+              {typeLabel} {ev.company ? `· ${ev.company}` : ""}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
 
 export default function AgendaPage() {
   const router = useRouter();
@@ -452,13 +489,22 @@ export default function AgendaPage() {
                                 <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{v.title}</td>
                                 {weekDays.map(day => {
                                   const info = getVehicleStatusForDay(v.id, day);
+                                  const badge = (
+                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all ${info.badgeColor}`}>
+                                      {info.label}
+                                    </span>
+                                  );
                                   return (
                                     <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                       isSameDay(day, new Date()) ? "bg-emerald-50/40" : ""
                                     }`}>
-                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
-                                        {info.label}
-                                      </span>
+                                      {info.events && info.events.length > 0 ? (
+                                        <Tooltip content={renderCellTooltip(info.events)} placement="top" closeDelay={100}>
+                                          {badge}
+                                        </Tooltip>
+                                      ) : (
+                                        badge
+                                      )}
                                     </td>
                                   );
                                 })}
@@ -586,13 +632,22 @@ export default function AgendaPage() {
                                   <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{name}</td>
                                   {weekDays.map(day => {
                                     const info = getParticipantStatusForDay(name, day);
+                                    const badge = (
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all ${info.badgeColor}`}>
+                                        {info.label}
+                                      </span>
+                                    );
                                     return (
                                       <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                         isSameDay(day, new Date()) ? "bg-teal-50/40" : ""
                                       }`}>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
-                                          {info.label}
-                                        </span>
+                                        {info.events && info.events.length > 0 ? (
+                                          <Tooltip content={renderCellTooltip(info.events)} placement="top" closeDelay={100}>
+                                            {badge}
+                                          </Tooltip>
+                                        ) : (
+                                          badge
+                                        )}
                                       </td>
                                     );
                                   })}
