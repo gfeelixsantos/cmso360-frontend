@@ -953,28 +953,61 @@ const AtendimentoPage: React.FC = () => {
           />
         )}
       </HeaderApp>
+
+      <PscProviderSelector
+        isOpen={isProviderSelectorOpen}
+        onClose={() => setIsProviderSelectorOpen(false)}
+        onSelect={(provider) => {
+          setIsProviderSelectorOpen(false);
+          handlePscAuth(provider);
+        }}
+      />
+
       <div className="flex flex-1 overflow-hidden">
         <SidebarRecepcao
-          agendadosFiltrados={agendamentosGeral}
-          conectado={conectado}
-          exameSelecionado={exameSelecionado}
-          handleConectar={handleConectar}
-          onHandleExameSelecionado={setExameSelecionado}
-          onHandleModal={() => {}}
-          onLoading={isLoading}
-          salaSelecionada={salaSelecionada}
-          setSalaSelecionada={setSalaSelecionada}
-          setTicketSelecionado={() => {}}
-          unidadeSelecionada={unidadeSelecionada}
-          setUnidadeSelecionada={setUnidadeSelecionadaDebounced}
-          statusSelecionado={statusSelecionado}
-          setStatusSelecionado={setStatusSelecionado}
-          isReconnecting={isReconnecting}
-          pscStatusElement={null}
-          examesGrouped={examesData}
-          isTelemedicinaModo={isTelemedicinaModo}
-          toggleTelemedicinaModo={() => setIsTelemedicinaModo((prev) => !prev)}
-        />
+            agendadosFiltrados={agendamentosGeral}
+            conectado={conectado}
+            exameSelecionado={exameSelecionado}
+            handleConectar={handleConectar}
+            onHandleExameSelecionado={setExameSelecionado}
+            onHandleModal={() => {}}
+            onLoading={isLoading}
+            salaSelecionada={salaSelecionada}
+            setSalaSelecionada={setSalaSelecionada}
+            setTicketSelecionado={() => {}}
+            unidadeSelecionada={unidadeSelecionada}
+            setUnidadeSelecionada={setUnidadeSelecionadaDebounced}
+            statusSelecionado={statusSelecionado}
+            setStatusSelecionado={setStatusSelecionado}
+            isReconnecting={isReconnecting}
+            pscStatusElement={
+              assinaDigitalmente ? (
+                <PscProviderStatus
+                  isLoading={isPscLoading}
+                  pscAuthStatus={pscAuthStatus}
+                  settings={settings}
+                  onClick={handlePscClick}
+                />
+              ) : null
+            }
+            pscAuthButtonElement={
+              assinaDigitalmente &&
+              settings?.assinaturaProvider !== "BRYKMS" &&
+              pscAuthStatus.status !== "ACTIVE" ? (
+                <Button
+                  className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 hover:text-gray-700 transition-all"
+                  onPress={handlePscClick}
+                >
+                  {pscAuthStatus.status === "EXPIRED"
+                    ? "Renovar autenticação"
+                    : "Autenticar assinatura"}
+                </Button>
+              ) : null
+            }
+            examesGrouped={examesData}
+            isTelemedicinaModo={isTelemedicinaModo}
+            toggleTelemedicinaModo={() => setIsTelemedicinaModo((prev) => !prev)}
+          />
         <main className="flex-1 overflow-y-auto bg-gray-50 p-6 lg:p-8">
           {isLoading ? (
             <CmsoCircularLoading />
@@ -1104,14 +1137,26 @@ const AtendimentoPage: React.FC = () => {
 
       <Modal disableAnimation={true} isDismissable={false} isOpen={modalPscAvisoOpen} onClose={() => setModalPscAvisoOpen(false)}>
         <ModalContent className="border border-[#44735e]/20">
-          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"><div className="flex items-center gap-2"><UserLock className="h-8 w-8" /><span>Autenticação Necessária</span></div></ModalHeader>
+          <ModalHeader className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"><div className="flex items-center gap-2"><UserLock className="h-8 w-8" /><span className="text-lg font-semibold">Autenticação Necessária</span></div></ModalHeader>
           <ModalBody className="py-6 px-6">
             <p className="font-semibold text-lg text-gray-800">Você possui assinatura digital habilitada.</p>
-            <p className="text-gray-600 mt-2">Deseja autenticar agora para assinar os exames automaticamente?</p>
+            <p className="text-gray-600 mt-2">Sua sessão de assinatura não está ativa. Deseja autenticar agora para assinar os exames automaticamente?</p>
           </ModalBody>
           <ModalFooter className="px-6 pb-4">
-            <Button className="font-medium" color="default" variant="flat" onPress={() => { setModalPscAvisoOpen(false); }}>Não agora</Button>
-            <Button className="bg-[#44735e] text-white" onPress={() => { setModalPscAvisoOpen(false); setIsWaitingForAuthToConnect(true); handlePscClick(); }}>Autenticar agora</Button>
+            <Button className="font-medium" color="default" variant="flat" onPress={() => { 
+              setModalPscAvisoOpen(false); 
+              // "Continuar sem autenticar": just stay connected, since we already connected
+            }}>Continuar sem autenticar</Button>
+            <Button className="font-medium bg-[#44735e] text-white" onPress={() => { 
+              setModalPscAvisoOpen(false); 
+              setIsWaitingForAuthToConnect(true); 
+              const defaultPscProvider = settings?.pscPadrao ?? settings?.provedorPadrao;
+              if (defaultPscProvider) {
+                handlePscAuth(defaultPscProvider);
+              } else {
+                setIsProviderSelectorOpen(true);
+              }
+            }}>Autenticar agora</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
