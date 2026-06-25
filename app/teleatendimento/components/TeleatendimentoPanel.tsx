@@ -238,10 +238,10 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
 
   const canSendChat = Boolean(socketRef.current && socketConnected && session);
   const socketUrl = useMemo(() => resolveTeleatendimentoWsUrl(), []);
-  const joinButtonLabel = socketConnected ? "Conectado" : joinLoading ? "Entrando..." : "Preparar dispositivos e entrar";
+  const joinButtonLabel = socketConnected ? "Conectado" : joinLoading ? "Entrando..." : "Entrar na Chamada";
   const joinHint = socketConnected
-    ? "Audio, video e chat liberados nesta sessao."
-    : "Permita camera e microfone para entrar na sala e liberar o chat.";
+    ? "Áudio, vídeo e chat liberados nesta sessão."
+    : "Permita o uso da câmera e do microfone para entrar na chamada e liberar o chat.";
 
   // --- Session loader ---
   useEffect(() => {
@@ -250,7 +250,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
     const load = async () => {
       if (isIdle) {
         setLoading(false);
-        setStatusMessage("Modo Telemedicina ativado. Aguardando paciente...");
+        setStatusMessage("Teleatendimento ativado. Aguardando paciente...");
         try {
           if (idleStreamRef.current) {
             if (localVideoRef.current) {
@@ -466,7 +466,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
 
       socket.on("connect", () => {
         setSocketConnected(true);
-        setStatusMessage("Sala pronta. Aguardando o outro participante entrar.");
+        setStatusMessage(role === "PROFESSIONAL" ? "Sala pronta. Aguardando o funcionário entrar." : "Sala pronta. Aguardando o profissional entrar.");
         emitEvent(socket as any, EventType.TELEATENDIMENTO_JOIN, {
           role,
           sessionId: sessionSnap.sessionId,
@@ -477,7 +477,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
       socket.on("connect_error", (error) => {
         console.error("[VC] socket connect_error:", error.message);
         setSocketConnected(false);
-        setStatusMessage(error instanceof Error ? error.message : "Nao foi possivel conectar ao backend da videochamada.");
+        setStatusMessage(error instanceof Error ? error.message : "Não foi possível conectar ao sistema de videochamada.");
         socket.disconnect();
         socketRef.current = null;
         webRtcRef.current?.destroy();
@@ -519,7 +519,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
           webRtcRef.current = null;
           setSocketConnected(false);
           setSession(null);
-          setStatusMessage("Sessao encerrada pelo funcionario.");
+          setStatusMessage("Sessão encerrada pelo funcionário.");
           setMicEnabled(false);
           setCameraEnabled(false);
           if (localVideoRef.current) {
@@ -597,11 +597,19 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
           },
           onConnectionStateChange: (state) => {
             console.log("[VC] connectionState:", state);
-            setStatusMessage(`Estado da conexao: ${state}`);
+            const stateLabels: Record<string, string> = {
+              new: "Iniciando",
+              connecting: "Conectando",
+              connected: "Conectado",
+              disconnected: "Desconectado",
+              failed: "Falhou",
+              closed: "Fechado"
+            };
+            setStatusMessage(`Estado da conexão: ${stateLabels[state] || state}`);
           },
           onIceConnectionStateChange: (state) => {
             console.log("[VC] iceConnectionState:", state);
-            if (state === "connected") setStatusMessage("Videochamada conectada.");
+            if (state === "connected") setStatusMessage("Chamada de vídeo conectada com sucesso.");
           },
         },
         (payload) => emitEvent(socketRef.current as any, EventType.TELEATENDIMENTO_OFFER, { sessionId: session.sessionId, payload }),
@@ -646,7 +654,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
 
   const sendChat = async () => {
     if (!chatInput.trim() || !socketRef.current || !socketConnected || !session) {
-      setStatusMessage("O chat so fica disponivel quando a conexao em tempo real estiver ativa.");
+      setStatusMessage("O chat só fica disponível quando a chamada estiver ativa.");
       return;
     }
     const message: TeleatendimentoChatMessage = {
@@ -693,7 +701,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
   const copyValue = async (value: string, label: string) => {
     if (!value) return;
     await navigator.clipboard.writeText(value);
-    addToast({ title: "Copiado", description: `${label} copiado para a area de transferencia.`, severity: "success", color: "foreground", variant: "flat" });
+    addToast({ title: "Copiado", description: `${label} copiado para a área de transferência.`, severity: "success", color: "foreground", variant: "flat" });
   };
 
   const requestFacial = async () => {
@@ -708,10 +716,10 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
       });
       if (!response.ok) {
         if (response.status === 401) {
-          throw new Error("Sessao expirada. Recarregue a pagina e faca login novamente.");
+          throw new Error("Sessão expirada. Recarregue a página e faça o login novamente.");
         }
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || "Nao foi possivel iniciar a autenticacao facial.");
+        throw new Error(errorData.message || "Não foi possível iniciar a autenticação facial.");
       }
       const data = await response.json();
       const link = data.signatureLink || "";
@@ -723,7 +731,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
       setFacialLink(link);
       setFacialState("waiting");
 
-      addToast({ title: "Link de captura gerado", description: "Compartilhe o link com o funcionario.", severity: "success", color: "foreground", variant: "flat" });
+      addToast({ title: "Link de captura gerado", description: "Compartilhe o link com o funcionário.", severity: "success", color: "foreground", variant: "flat" });
 
       if (link && socketRef.current && socketConnected) {
         const message: TeleatendimentoChatMessage = {
@@ -765,7 +773,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
     offerStartedRef.current = false;
     setSocketConnected(false);
     setSession(null);
-    setStatusMessage("Sessao encerrada.");
+    setStatusMessage("Sessão encerrada.");
     setMicEnabled(false);
     setCameraEnabled(false);
     if (localVideoRef.current) {
@@ -969,7 +977,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
               </Button>
               <div className="flex items-center gap-2 flex-1 min-w-[120px]">
                 <Volume2 className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                <Slider aria-label="Volume remoto" className="flex-1" color="success" maxValue={100} minValue={0} value={remoteVolume} onChange={(value) => setRemoteVolume(Number(value))} />
+                <Slider aria-label="Volume do áudio" className="flex-1" color="success" maxValue={100} minValue={0} value={remoteVolume} onChange={(value) => setRemoteVolume(Number(value))} />
               </div>
               {!socketConnected && (
                 <Button color="success" isLoading={joinLoading} size="sm" startContent={!joinLoading ? <Video className="h-3 w-3" /> : null} variant="solid" onPress={connectCall}>
@@ -1003,7 +1011,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
             <div className="flex gap-1">
               <Input
                 isDisabled={!canSendChat}
-                placeholder="Chat..."
+                placeholder="Digite uma mensagem..."
                 size="sm"
                 value={chatInput}
                 onChange={(event) => setChatInput(event.target.value)}
@@ -1091,7 +1099,9 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
                 </div>
                 <div className="rounded-2xl overflow-hidden bg-black aspect-video relative">
                   <video ref={remoteVideoRef} autoPlay className="h-full w-full object-cover" playsInline />
-                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2 py-1 text-xs text-white">Participante remoto</span>
+                  <span className="absolute left-3 top-3 rounded-full bg-black/70 px-2 py-1 text-xs text-white">
+                    {role === "PROFESSIONAL" ? "Funcionário" : "Profissional"}
+                  </span>
                 </div>
               </div>
 
@@ -1104,7 +1114,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
                 </Button>
                 <div className="min-w-[240px] flex items-center gap-3">
                   <Volume2 className="h-4 w-4 text-gray-500" />
-                  <Slider aria-label="Volume remoto" className="max-w-xs" color="success" maxValue={100} minValue={0} value={remoteVolume} onChange={(value) => setRemoteVolume(Number(value))} />
+                  <Slider aria-label="Volume do áudio" className="max-w-xs" color="success" maxValue={100} minValue={0} value={remoteVolume} onChange={(value) => setRemoteVolume(Number(value))} />
                 </div>
                 <div className="flex flex-col gap-1">
                   {!socketConnected ? (
@@ -1191,7 +1201,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
                 </div>
                 {!canSendChat && (
                   <p className="text-xs text-amber-700">
-                    O chat será liberado quando a conexão em tempo real com o backend estiver ativa.
+                    O chat será liberado assim que você entrar na chamada.
                   </p>
                 )}
               </CardBody>
