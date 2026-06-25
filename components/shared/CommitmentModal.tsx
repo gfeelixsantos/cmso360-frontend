@@ -39,7 +39,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
   const [participantInput, setParticipantInput] = useState("");
   
   const [title, setTitle] = useState(initialData?.title || "");
-  const [type, setType] = useState(initialData?.type || "VISITA_TECNICA");
+  const [type, setType] = useState(initialData?.type || "IN_COMPANY");
   
   const [company, setCompany] = useState(initialData?.company || "");
   const [companyContact, setCompanyContact] = useState(initialData?.company_contact || "");
@@ -64,7 +64,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
     if (isOpen) {
       setParticipants(initialData?.participants || []);
       setTitle(initialData?.title || "");
-      setType(initialData?.type || "VISITA_TECNICA");
+      setType(initialData?.type || "IN_COMPANY");
       setCompany(initialData?.company || "");
       setCompanyContact(initialData?.company_contact || "");
       setEmailsComunicado(initialData?.emails_comunicado || []);
@@ -146,12 +146,13 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   selectedKeys={[type]}
                   onChange={(e) => setType(e.target.value)}
                 >
-                  <SelectItem key="EXAME">Realização de Exames</SelectItem>
-                  <SelectItem key="TREINAMENTO">Treinamento</SelectItem>
-                  <SelectItem key="VISITA_TECNICA">Visita Técnica</SelectItem>
-                  <SelectItem key="PERICIA">Perícia</SelectItem>
-                  <SelectItem key="ASSESSORIA">Assessoria</SelectItem>
-                  <SelectItem key="OUTRO">Outro</SelectItem>
+                  <SelectItem key="ASSESSORIA" value="ASSESSORIA">Assessoria</SelectItem>
+                  <SelectItem key="IN_COMPANY" value="IN_COMPANY">In Company</SelectItem>
+                  <SelectItem key="LEVA_E_TRAS" value="LEVA_E_TRAS">Leva e Trás</SelectItem>
+                  <SelectItem key="OUTRO" value="OUTRO">Outro</SelectItem>
+                  <SelectItem key="PERICIA" value="PERICIA">Perícia</SelectItem>
+                  <SelectItem key="TREINAMENTO" value="TREINAMENTO">Treinamento</SelectItem>
+                  <SelectItem key="VISITA_TECNICA" value="VISITA_TECNICA">Visita Técnica</SelectItem>
                 </Select>
                 
                 <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-4 border-2 border-default-200 hover:border-default-300 transition-colors p-4 rounded-xl bg-white shadow-sm">

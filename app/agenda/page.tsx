@@ -105,33 +105,34 @@ export default function AgendaPage() {
     let borderLeft = "4px solid #4b5563";
 
     switch (event.type) {
-      case "EXAME":
-      case "Realização de Exames":
-        backgroundColor = "#16a34a"; // green-600
+      case "ASSESSORIA":
+        backgroundColor = "#9333ea";
+        borderLeft = "4px solid #7e22ce";
+        break;
+      case "IN_COMPANY":
+        backgroundColor = "#16a34a";
         borderLeft = "4px solid #15803d";
         break;
+      case "LEVA_E_TRAS":
+        backgroundColor = "#ea580c";
+        borderLeft = "4px solid #c2410c";
+        break;
+      case "OUTRO":
+        backgroundColor = "#6b7280";
+        borderLeft = "4px solid #4b5563";
+        break;
+      case "PERICIA":
+        backgroundColor = "#dc2626";
+        borderLeft = "4px solid #b91c1c";
+        break;
       case "TREINAMENTO":
-      case "Treinamento":
-        backgroundColor = "#ca8a04"; // yellow-600
+        backgroundColor = "#ca8a04";
         borderLeft = "4px solid #a16207";
         break;
       case "VISITA_TECNICA":
-      case "Visita Técnica":
-        backgroundColor = "#2563eb"; // blue-600
+        backgroundColor = "#2563eb";
         borderLeft = "4px solid #1d4ed8";
         break;
-      case "PERICIA":
-      case "Perícia":
-        backgroundColor = "#dc2626"; // red-600
-        borderLeft = "4px solid #b91c1c";
-        break;
-      case "ASSESSORIA":
-      case "Assessoria":
-        backgroundColor = "#9333ea"; // purple-600
-        borderLeft = "4px solid #7e22ce";
-        break;
-      case "OUTRO":
-      case "Outro":
       default:
         backgroundColor = "#6b7280";
         borderLeft = "4px solid #4b5563";
@@ -605,34 +606,45 @@ export default function AgendaPage() {
           )}
         </div>
 
-        {/* Legenda de Cores */}
+        {/* Legenda de Cores — ordem alfabética */}
         <div className="mb-4 bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-5 py-3.5 flex flex-wrap items-center gap-6">
             <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Legenda de Cores:</span>
             <div className="flex flex-wrap gap-5">
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#16a34a] shadow-sm border border-[#15803d]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Realização de Exames</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Treinamento</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#2563eb] shadow-sm border border-[#1d4ed8]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Visita Técnica</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Perícia</span>
-              </div>
+              {/* Assessoria */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Assessoria</span>
               </div>
+              {/* In Company */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#16a34a] shadow-sm border border-[#15803d]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">In Company</span>
+              </div>
+              {/* Leva e Trás */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#ea580c] shadow-sm border border-[#c2410c]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Leva e Trás</span>
+              </div>
+              {/* Outro */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Outro</span>
+              </div>
+              {/* Perícia */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Perícia</span>
+              </div>
+              {/* Treinamento */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Treinamento</span>
+              </div>
+              {/* Visita Técnica */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#2563eb] shadow-sm border border-[#1d4ed8]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Visita Técnica</span>
               </div>
             </div>
           </div>
@@ -669,12 +681,13 @@ export default function AgendaPage() {
                   ),
                   event: ({ event }: any) => {
                     const typeLabelMap: Record<string, string> = {
-                      EXAME: "Realização de Exames",
+                      ASSESSORIA: "Assessoria",
+                      IN_COMPANY: "In Company",
+                      LEVA_E_TRAS: "Leva e Trás",
+                      OUTRO: "Outro",
+                      PERICIA: "Perícia",
                       TREINAMENTO: "Treinamento",
                       VISITA_TECNICA: "Visita Técnica",
-                      PERICIA: "Perícia",
-                      ASSESSORIA: "Assessoria",
-                      OUTRO: "Outro"
                     };
                     const typeLabel = typeLabelMap[event.type] || event.type;
                     
