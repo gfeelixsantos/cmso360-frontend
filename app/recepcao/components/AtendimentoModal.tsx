@@ -1698,7 +1698,7 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     setFacialContext({
       funcionarioNome: funcionarioSelecionado.NOME,
-      funcionarioId: String(funcionarioSelecionado.CODIGO),
+      funcionarioId: getBiometriaFuncionarioRef(funcionarioSelecionado),
       funcionarioCpf: funcionarioSelecionado.CPFFUNCIONARIO || "",
       schedulingId: funcionarioSelecionado._id?.toString() || "",
       user: {
