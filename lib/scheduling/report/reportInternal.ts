@@ -2,10 +2,15 @@ import { Scheduling } from "../interface/scheduling";
 
 import { formatCPF } from "@/lib/utils";
 
+const escapeHtml = (value?: string | number | null) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
 const primaryColor = "#1f5f46";
-const accentColor = "#9bc53d";
-const borderColor = "#E5E7EB";
-const subtleText = "#6B7280";
 
 export function reportInternal(employee: Scheduling): string {
   const dataAgendamento = employee.DATAAGENDAMENTO || "N/A";
@@ -35,372 +40,104 @@ export function reportInternal(employee: Scheduling): string {
     });
   }
 
-  const examesFiltrados =
-    employee.EXAMES?.filter(
-      (exame) =>
-        exame.profissional &&
-        exame.profissional.trim() !== "" &&
-        exame.sala &&
-        exame.sala.trim() !== "",
-    ) || [];
-
-  let examsTable = "";
-
-  examesFiltrados.forEach((exame) => {
-    const examDate = formatExamDate(exame.dataExame);
-
-    examsTable += `
-      <tr>
-        <td class="td">${exame.nomeExame}</td>
-        <td class="td">${exame.sala || "—"}</td>
-        <td class="td">${exame.profissional || "—"}</td>
-        <td class="td">${examDate}</td>
-      </tr>
-    `;
-  });
+  const examsTable = (employee.EXAMES || [])
+    .filter((exame) => exame.sala?.trim())
+    .map((exame) => {
+      const examDate = formatExamDate(exame.dataExame);
+      return `
+        <tr>
+          <td class="td">${escapeHtml(exame.nomeExame || "N/A")}</td>
+          <td class="td">${escapeHtml(exame.sala || "-")}</td>
+          <td class="td">${escapeHtml(examDate)}</td>
+        </tr>
+      `;
+    })
+    .join("");
 
   const recomendacaoMedica = employee.RECOMENDACAOMEDICA || "";
-  const riscos = employee.RISCOSASO || [];
   const observacoes = employee.OBSERVACOES || "";
 
-  const empresaDocumento = employee.CNPJEMPRESA
-    ? employee.CNPJEMPRESA
-    : employee.CPFEMPRESA
-      ? formatCPF(employee.CPFEMPRESA)
-      : "N/A";
+  const empresaDocumento = employee.CNPJEMPRESA || (employee.CPFEMPRESA ? formatCPF(employee.CPFEMPRESA) : "N/A");
 
   return `
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<title>Relatório - ${employee.NOME}</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-
-<style>
-
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-}
-
-body{
-font-family:'Inter',system-ui;
-background:#f3f4f6;
-color:#111827;
-padding:20px;
-}
-
-.container{
-width:210mm;
-min-height:297mm;
-margin:auto;
-background:white;
-padding:16mm;
-box-shadow:0 4px 18px rgba(0,0,0,0.08);
-border-top:4px solid ${primaryColor};
-}
-
-@media print{
-body{
-background:none;
-padding:0;
-}
-.container{
-box-shadow:none;
-}
-}
-
-.header{
-display:flex;
-justify-content:space-between;
-align-items:center;
-border-bottom:1px solid ${borderColor};
-padding-bottom:8px;
-margin-bottom:14px;
-}
-
-.employee-name{
-font-size:18px;
-font-weight:600;
-color:${primaryColor};
-}
-
-.employee-meta{
-font-size:11px;
-color:${subtleText};
-margin-top:3px;
-}
-
-.ticket{
-font-weight:600;
-font-size:11px;
-margin-top:3px;
-}
-
-.logo{
-height:36px;
-}
-
-.section{
-margin-bottom:14px;
-}
-
-.section-title{
-font-size:10px;
-text-transform:uppercase;
-letter-spacing:.08em;
-color:${primaryColor};
-margin-bottom:6px;
-font-weight:600;
-}
-
-.info-grid{
-display:grid;
-grid-template-columns:1fr 1fr;
-gap:14px;
-}
-
-.meta-table{
-width:100%;
-border-collapse:collapse;
-font-size:11px;
-}
-
-.meta-table tr{
-border-bottom:1px solid ${borderColor};
-}
-
-.meta-table td{
-padding:4px 6px;
-}
-
-.meta-label{
-width:140px;
-color:${subtleText};
-font-weight:500;
-}
-
-.risk-tag{
-display:inline-block;
-border:1px solid ${accentColor};
-border-radius:14px;
-padding:2px 7px;
-font-size:9px;
-margin:2px;
-color:#1f2937;
-}
-
-table{
-width:100%;
-border-collapse:collapse;
-font-size:11px;
-}
-
-th{
-text-align:left;
-font-size:10px;
-text-transform:uppercase;
-color:${subtleText};
-padding:6px;
-border-bottom:2px solid ${primaryColor};
-}
-
-.td{
-padding:6px;
-border-bottom:1px solid ${borderColor};
-}
-
-.observations{
-border:1px solid ${borderColor};
-padding:8px;
-font-size:11px;
-white-space:pre-line;
-}
-
-.footer{
-margin-top:18px;
-border-top:1px solid ${borderColor};
-padding-top:6px;
-font-size:9px;
-color:${subtleText};
-text-align:center;
-}
-
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Relatório - ${escapeHtml(employee.NOME || "Funcionario")}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: "Segoe UI", Arial, sans-serif; background: #f3f4f6; color: #111827; padding: 20px; }
+    .container { position: relative; width: 210mm; min-height: 297mm; margin: auto; background: white; padding: 16mm 16mm 25mm 16mm; box-shadow: 0 4px 18px rgba(0,0,0,0.08); border-top: 4px solid ${primaryColor}; }
+    .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 14px; }
+    .employee-name { font-size: 18px; font-weight: 600; color: ${primaryColor}; }
+    .employee-meta { font-size: 11px; color: #6b7280; margin-top: 3px; }
+    .logo { height: 36px; }
+    .section { margin-bottom: 14px; }
+    .section-title { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: ${primaryColor}; margin-bottom: 6px; font-weight: 600; }
+    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .meta-table, table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    .meta-table tr { border-bottom: 1px solid #e5e7eb; }
+    .meta-table td { padding: 4px 6px; }
+    .meta-label { width: 140px; color: #6b7280; font-weight: 500; }
+    th { text-align: left; font-size: 10px; text-transform: uppercase; color: #6b7280; padding: 6px; border-bottom: 2px solid ${primaryColor}; }
+    .td { padding: 6px; border-bottom: 1px solid #e5e7eb; }
+    .observations { border: 1px solid #e5e7eb; padding: 8px; font-size: 11px; white-space: pre-line; }
+    .footer { position: absolute; bottom: 16mm; left: 16mm; right: 16mm; border-top: 1px solid #e5e7eb; padding-top: 6px; font-size: 9px; color: #6b7280; text-align: center; }
+    @media print { body { background: none; padding: 0; } .container { box-shadow: none; } }
+  </style>
 </head>
-
 <body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <div class="employee-name">${escapeHtml(employee.NOME || "Funcionario")}</div>
+        <div class="employee-meta">CPF: ${escapeHtml(employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A")} | Matrícula: ${escapeHtml(employee.MATRICULAFUNCIONARIO || "N/A")}</div>
+        <div class="employee-meta"><span>Empresa: </span><span>${escapeHtml(employee.NOMEEMPRESA || "N/A")}</span></div>
+      </div>
+      <img src="https://cmsocupacional.com.br/images/logo.png" class="logo" />
+    </div>
 
-<div class="container">
+    <div class="section">
+      <div class="section-title">Informações Gerais</div>
+      <div class="info-grid">
+        <div>
+          <table class="meta-table">
+            <tr><td class="meta-label">CNPJ</td><td>${escapeHtml(empresaDocumento)}</td></tr>
+            <tr><td class="meta-label">Cargo</td><td>${escapeHtml(employee.NOMECARGO || "N/A")}</td></tr>
+            <tr><td class="meta-label">Setor</td><td>${escapeHtml(employee.NOMESETOR || "N/A")}</td></tr>
+            <tr><td class="meta-label">Unidade</td><td>${escapeHtml(employee.NOMEUNIDADE || "N/A")}</td></tr>
+          </table>
+        </div>
+        <div>
+          <table class="meta-table">
+            <tr><td class="meta-label">Data e hora</td><td>${escapeHtml(dataAgendamento)} às ${escapeHtml(horaAgendamento)}</td></tr>
+            <tr><td class="meta-label">Unidade atendimento</td><td>${escapeHtml(employee.UNIDADEATENDIMENTO || "N/A")}</td></tr>
+            <tr><td class="meta-label">Tipo Exame</td><td>${escapeHtml(employee.TIPOEXAMENOME || "N/A")}</td></tr>
+            <tr><td class="meta-label">Senha</td><td style="font-weight:600">${escapeHtml(`${employee.TICKET?.prefixo || ""}${employee.TICKET?.numero || employee.CODIGO || ""}`)}</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
 
-<div class="header">
+    ${recomendacaoMedica ? `<div class="section"><div class="section-title">Recomendação Médica</div><div class="observations">${escapeHtml(recomendacaoMedica)}</div></div>` : ""}
+    ${observacoes ? `<div class="section"><div class="section-title">Observações</div><div class="observations">${escapeHtml(observacoes).replace(/\\n/g, "<br>")}</div></div>` : ""}
 
-<div>
+    <div class="section">
+      <div class="section-title">Exames Realizados</div>
+      ${
+        examsTable
+          ? `<table><thead><tr><th>Exame</th><th>Sala</th><th>Data/Hora</th></tr></thead><tbody>${examsTable}</tbody></table>`
+          : `<div class="observations" style="text-align:center">Nenhum exame com sala designada</div>`
+      }
+    </div>
 
-<div class="employee-name">${employee.NOME}</div>
-
-<div class="employee-meta">
-CPF: ${employee.CPFFUNCIONARIO ? formatCPF(employee.CPFFUNCIONARIO) : "N/A"} • 
-Matrícula: ${employee.MATRICULAFUNCIONARIO || "N/A"}
-</div>
-
-<div class="employee-meta">
-<span>Empresa: </span>
-<span>${employee.NOMEEMPRESA}</span>
-</div>
-
-</div>
-
-<img src="https://cmsocupacional.com.br/images/logo.png" class="logo">
-
-</div>
-
-<div class="section">
-
-<div class="section-title">Informações Gerais</div>
-
-<div class="info-grid">
-
-
-
-<div>
-
-<table class="meta-table">
-
-<tr>
-<td class="meta-label">CNPJ</td>
-<td>${empresaDocumento}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Cargo</td>
-<td>${employee.NOMECARGO}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Setor</td>
-<td>${employee.NOMESETOR}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Unidade</td>
-<td>${employee.NOMEUNIDADE}</td>
-</tr>
-
-</table>
-
-</div>
-
-<div>
-
-<table class="meta-table">
-
-<tr>
-<td class="meta-label">Data e hora</td>
-<td>${dataAgendamento} às ${horaAgendamento}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Unidade atendimento</td>
-<td>${employee.UNIDADEATENDIMENTO}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Tipo Exame</td>
-<td>${employee.TIPOEXAMENOME}</td>
-</tr>
-
-<tr>
-<td class="meta-label">Senha</td>
-<td style="font-weight:600">${employee.TICKET.prefixo}${employee.TICKET.numero}</td>
-</tr>
-
-</table>
-
-</div>
-
-</div>
-
-${
-  riscos && riscos.length > 0
-    ? `
-<div style="margin-top:6px">
-${riscos.map((r) => `<span class="risk-tag">${r.risco}</span>`).join("")}
-</div>`
-    : ""
-}
-
-</div>
-
-${
-  recomendacaoMedica
-    ? `
-<div class="section">
-<div class="section-title">Recomendação Médica</div>
-<div class="observations">${recomendacaoMedica}</div>
-</div>`
-    : ""
-}
-
-${
-  observacoes
-    ? `
-<div class="section">
-<div class="section-title">Observações</div>
-<div class="observations">${observacoes.replace(/\\n/g, "<br>")}</div>
-</div>`
-    : ""
-}
-
-<div class="section">
-
-<div class="section-title">Exames Realizados</div>
-
-${
-  examsTable
-    ? `
-<table>
-
-<thead>
-<tr>
-<th>Exame</th>
-<th>Sala</th>
-<th>Profissional</th>
-<th>Data/Hora</th>
-</tr>
-</thead>
-
-<tbody>
-${examsTable}
-</tbody>
-
-</table>
-`
-    : `
-<div class="observations" style="text-align:center">
-Nenhum exame com profissional e sala designados
-</div>
-`
-}
-
-</div>
-
-<div class="footer">
-Relatório gerado em ${new Date().toLocaleString("pt-BR")} <br>
-Documento confidencial
-</div>
-
-</div>
-
+    <div class="footer">
+      Relatório gerado em ${new Date().toLocaleString("pt-BR")} <br />
+      Documento confidencial
+    </div>
+  </div>
 </body>
-</html>
-`;
+</html>`;
 }
