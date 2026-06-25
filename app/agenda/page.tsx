@@ -109,6 +109,10 @@ export default function AgendaPage() {
         backgroundColor = "#9333ea";
         borderLeft = "4px solid #7e22ce";
         break;
+      case "AVALIACAO_DE_CAMPO":
+        backgroundColor = "#0d9488";
+        borderLeft = "4px solid #0f766e";
+        break;
       case "IN_COMPANY":
         backgroundColor = "#16a34a";
         borderLeft = "4px solid #15803d";
@@ -616,6 +620,11 @@ export default function AgendaPage() {
                 <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Assessoria</span>
               </div>
+              {/* Avaliação de Campo */}
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#0d9488] shadow-sm border border-[#0f766e]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Avaliação de Campo</span>
+              </div>
               {/* In Company */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#16a34a] shadow-sm border border-[#15803d]/30 flex-shrink-0" />
@@ -682,6 +691,7 @@ export default function AgendaPage() {
                   event: ({ event }: any) => {
                     const typeLabelMap: Record<string, string> = {
                       ASSESSORIA: "Assessoria",
+                      AVALIACAO_DE_CAMPO: "Avaliação de Campo",
                       IN_COMPANY: "In Company",
                       LEVA_E_TRAS: "Leva e Trás",
                       OUTRO: "Outro",

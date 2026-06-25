@@ -56,7 +56,16 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
     .slice(0, 5);
 
   const getColorForType = (type: string) => {
-    const map: Record<string, string> = { EXAME: "#16a34a", TREINAMENTO: "#ca8a04", VISITA_TECNICA: "#2563eb", PERICIA: "#dc2626", OUTRO: "#6b7280" };
+    const map: Record<string, string> = {
+      ASSESSORIA: "#9333ea",
+      AVALIACAO_DE_CAMPO: "#0d9488",
+      IN_COMPANY: "#16a34a",
+      LEVA_E_TRAS: "#ea580c",
+      TREINAMENTO: "#ca8a04",
+      VISITA_TECNICA: "#2563eb",
+      PERICIA: "#dc2626",
+      OUTRO: "#6b7280"
+    };
     return map[type] || "#6b7280";
   };
 
@@ -170,8 +179,28 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
                   const start = new Date(ev.start);
                   const isHoje = start.toDateString() === now.toDateString();
                   const isAmanha = start.toDateString() === new Date(now.getTime() + 86400000).toDateString();
-                  const badge = ev.type === "EXAME" ? "Exame" : ev.type === "TREINAMENTO" ? "Trein." : ev.type === "VISITA_TECNICA" ? "Visita" : ev.type === "PERICIA" ? "Perícia" : "Outro";
-                  const badgeColor = ev.type === "EXAME" ? "bg-green-100 text-green-700" : ev.type === "TREINAMENTO" ? "bg-amber-100 text-amber-700" : ev.type === "VISITA_TECNICA" ? "bg-blue-100 text-blue-700" : ev.type === "PERICIA" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700";
+                  const badgeMap: Record<string, string> = {
+                    ASSESSORIA: "Assessoria",
+                    AVALIACAO_DE_CAMPO: "Aval. Campo",
+                    IN_COMPANY: "In Company",
+                    LEVA_E_TRAS: "Leva/Trás",
+                    TREINAMENTO: "Treinam.",
+                    VISITA_TECNICA: "Visita T.",
+                    PERICIA: "Perícia",
+                    OUTRO: "Outro"
+                  };
+                  const badge = badgeMap[ev.type] || "Outro";
+                  const badgeColorMap: Record<string, string> = {
+                    ASSESSORIA: "bg-purple-100 text-purple-700",
+                    AVALIACAO_DE_CAMPO: "bg-teal-100 text-teal-700",
+                    IN_COMPANY: "bg-green-100 text-green-700",
+                    LEVA_E_TRAS: "bg-orange-100 text-orange-700",
+                    TREINAMENTO: "bg-amber-100 text-amber-700",
+                    VISITA_TECNICA: "bg-blue-100 text-blue-700",
+                    PERICIA: "bg-red-100 text-red-700",
+                    OUTRO: "bg-gray-100 text-gray-700"
+                  };
+                  const badgeColor = badgeColorMap[ev.type] || "bg-gray-100 text-gray-700";
                   return (
                     <tr key={ev.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3 whitespace-nowrap">
