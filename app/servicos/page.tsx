@@ -31,7 +31,7 @@ export default function ServicosPage() {
           selectedKey={selectedTab}
           onSelectionChange={(key) => setSelectedTab(key as string)}
           variant="underlined"
-          color="primary"
+          color="success"
           size="lg"
           className="w-full"
         >
