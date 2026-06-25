@@ -233,8 +233,8 @@ export function TopEmployeesChart({ data }: { data: EmployeeData[] }) {
               type="category"
               dataKey="name"
               tick={{ fontSize: 11, fill: "#374151" }}
-              width={60}
-              tickFormatter={(value: string) => value.split(" ").map((w: string) => w.charAt(0)).join("")}
+              width={90}
+              tickFormatter={(value: string) => value.split(" ")[0]}
               axisLine={false}
               tickLine={false}
             />
@@ -322,8 +322,8 @@ export function ProfessionalWorkloadChart({ data, types }: { data: ProfessionalW
               type="category"
               dataKey="name"
               tick={{ fontSize: 11, fill: "#374151" }}
-              width={60}
-              tickFormatter={(value: string) => value.split(" ").map((w: string) => w.charAt(0)).join("")}
+              width={90}
+              tickFormatter={(value: string) => value.split(" ")[0]}
               axisLine={false}
               tickLine={false}
             />
