@@ -891,19 +891,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 }}
               />
               <Button
-                color="primary"
                 startContent={<Plus size={18} />}
                 onPress={openCreate}
                 size="sm"
-                className="h-9 px-3"
-                style={{ backgroundColor: "#44735e" }}
+                className="h-9 px-3 bg-[#44735e] text-white hover:bg-[#7FA830] transition-all duration-200 shrink-0"
               >
                 Nova Empresa
               </Button>
             </div>
           </div>
 
-          <Table aria-label="Empresas cadastradas">
+          <div className="overflow-x-auto w-full">
+            <Table aria-label="Empresas cadastradas">
             <TableHeader>
               <TableColumn width={380}>RAZÃO SOCIAL / FANTASIA</TableColumn>
               <TableColumn width={160}>CNPJ</TableColumn>
@@ -991,7 +990,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 );
               })}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
 
           {filteredCompanies.length > itemsPerPage && (
             <div className="flex justify-center mt-6">

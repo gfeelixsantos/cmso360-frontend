@@ -258,12 +258,10 @@ export function ExamesSection() {
                     Novo Grupo
                   </Button>
                   <Button
-                    color="primary"
                     startContent={<Plus size={18} />}
                     onPress={openCreate}
                     size="sm"
-                    className="h-9 px-3"
-                    style={{ backgroundColor: "#44735e" }}
+                    className="h-9 px-3 bg-[#44735e] text-white hover:bg-[#7FA830] transition-all duration-200"
                   >
                     Novo Exame
                   </Button>

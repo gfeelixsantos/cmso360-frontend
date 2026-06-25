@@ -86,6 +86,7 @@ export default function AgendaPage() {
     { id: "UNIDADE_MOVEL", title: "Unidade Móvel" },
     { id: "UNIDADE_RAIO_X", title: "Unidade Raio-X" },
     { id: "UP", title: "Up" },
+    { id: "MOBI", title: "Mobi" },
   ];
 
   const resources = viewMode === "VEICULO" ? vehicles : undefined;
@@ -123,6 +124,11 @@ export default function AgendaPage() {
       case "Perícia":
         backgroundColor = "#dc2626"; // red-600
         borderLeft = "4px solid #b91c1c";
+        break;
+      case "ASSESSORIA":
+      case "Assessoria":
+        backgroundColor = "#9333ea"; // purple-600
+        borderLeft = "4px solid #7e22ce";
         break;
       case "OUTRO":
       case "Outro":
@@ -320,7 +326,7 @@ export default function AgendaPage() {
               <SelectItem key="VEICULO">Veículo</SelectItem>
             </Select>
             <Button 
-              className="bg-[#44735E] text-white font-semibold hover:bg-[#355a4a] transition-colors"
+              className="bg-[#44735E] text-white font-semibold hover:bg-[#7FA830] hover:shadow-md transition-all duration-200"
               onPress={() => {
                 setSelectedEvent(null);
                 onOpen();
@@ -621,6 +627,10 @@ export default function AgendaPage() {
                 <span className="text-sm font-semibold text-gray-700">Perícia</span>
               </div>
               <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Assessoria</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Outro</span>
               </div>
@@ -663,6 +673,7 @@ export default function AgendaPage() {
                       TREINAMENTO: "Treinamento",
                       VISITA_TECNICA: "Visita Técnica",
                       PERICIA: "Perícia",
+                      ASSESSORIA: "Assessoria",
                       OUTRO: "Outro"
                     };
                     const typeLabel = typeLabelMap[event.type] || event.type;

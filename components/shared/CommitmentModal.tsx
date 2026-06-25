@@ -22,7 +22,8 @@ const VEHICLE_LABEL_MAP: Record<string, string> = {
   DOBLO_I: "Doblô I",
   DOBLO_II: "Doblô II",
   UP: "Up",
-  PICKUP: "Pickup"
+  PICKUP: "Pickup",
+  MOBI: "Mobi"
 };
 
 export interface CommitmentModalProps {
@@ -130,7 +131,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input 
                   label="Título" 
-                  placeholder="Ex: Visita Cliente XYZ" 
+                  placeholder="Título do compromisso" 
                   className="md:col-span-1"
                   variant="bordered"
                   value={title}
@@ -149,6 +150,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   <SelectItem key="TREINAMENTO">Treinamento</SelectItem>
                   <SelectItem key="VISITA_TECNICA">Visita Técnica</SelectItem>
                   <SelectItem key="PERICIA">Perícia</SelectItem>
+                  <SelectItem key="ASSESSORIA">Assessoria</SelectItem>
                   <SelectItem key="OUTRO">Outro</SelectItem>
                 </Select>
                 
@@ -209,7 +211,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   <div className="flex items-center gap-2">
                     <Input 
                       label="Adicionar Funcionário/Participante" 
-                      placeholder="Digite o nome e pressione Enter"
+                      placeholder="Nome do participante"
                       value={participantInput}
                       onChange={(e) => setParticipantInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -246,7 +248,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   <div className="flex items-center gap-2">
                     <Input 
                       label="E-mails para Comunicado" 
-                      placeholder="Ex: contato@empresa.com" 
+                      placeholder="email@empresa.com" 
                       variant="bordered"
                       value={emailInput}
                       onChange={(e) => setEmailInput(e.target.value)}
@@ -268,7 +270,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
 
                 <Input 
                   label="Empresa" 
-                  placeholder="Nome da empresa (Ex: Empresa ABC)" 
+                  placeholder="Nome da empresa" 
                   className="md:col-span-1"
                   variant="bordered"
                   value={company}
@@ -277,7 +279,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
 
                 <Input 
                   label="Contato na Empresa" 
-                  placeholder="Nome ou telefone de contato" 
+                  placeholder="Nome ou telefone" 
                   className="md:col-span-1"
                   variant="bordered"
                   value={companyContact}
@@ -286,7 +288,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
 
                 <Select 
                   label="Veículo Necessário?" 
-                  placeholder={!computedStart || !computedEnd ? "Selecione o horário primeiro" : "Selecione o veículo"}
+                  placeholder={!computedStart || !computedEnd ? "Selecione o horário primeiro" : "Selecione um veículo"}
                   className="md:col-span-2"
                   variant="bordered"
                   selectedKeys={[vehicle]}
@@ -304,7 +306,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
 
                 <Textarea 
                   label="Descrição / Observações" 
-                  placeholder="Detalhes adicionais do compromisso..."
+                  placeholder="Observações adicionais"
                   className="md:col-span-2"
                   variant="bordered"
                   value={description}
