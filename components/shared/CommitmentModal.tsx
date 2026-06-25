@@ -296,7 +296,11 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   onChange={(e) => setVehicle(e.target.value)}
                   isDisabled={!computedStart || !computedEnd}
                   items={[{ key: "NENHUM", label: "Nenhum" }, ...[...availableVehicles]
-                    .sort((a, b) => VEHICLE_LABEL_MAP[a].localeCompare(VEHICLE_LABEL_MAP[b]))
+                    .sort((a, b) => {
+                      const labelA = VEHICLE_LABEL_MAP[a] || a?.replace(/_/g, " ") || "";
+                      const labelB = VEHICLE_LABEL_MAP[b] || b?.replace(/_/g, " ") || "";
+                      return labelA.localeCompare(labelB);
+                    })
                     .map(v => ({
                       key: v,
                       label: VEHICLE_LABEL_MAP[v] || v.replace(/_/g, " ")

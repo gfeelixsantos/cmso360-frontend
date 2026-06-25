@@ -105,7 +105,8 @@ export function findMostDemandedVehicle(events: Event[]): { name: string; count:
     DOBLO_I: "Doblô I",
     DOBLO_II: "Doblô II",
     UP: "Up",
-    PICKUP: "Pickup"
+    PICKUP: "Pickup",
+    MOBI: "Mobi"
   };
 
   return {

@@ -47,7 +47,7 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
 
   const vehicleLabelMap: Record<string, string> = {
     UNIDADE_MOVEL: "Unidade Móvel", UNIDADE_RAIO_X: "Unidade Raio-X",
-    DOBLO_I: "Doblô I", DOBLO_II: "Doblô II", UP: "Up", PICKUP: "Pickup"
+    DOBLO_I: "Doblô I", DOBLO_II: "Doblô II", UP: "Up", PICKUP: "Pickup", MOBI: "Mobi"
   };
 
   const nextEvents = events
