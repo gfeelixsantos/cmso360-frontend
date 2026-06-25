@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { Users, Truck, Clock, CheckCircle, AlertCircle, XCircle } from "lucide-react";
-import { DistributionByTypeChart, VolumeByMonthChart, CommitmentsByVehicleChart, TopEmployeesChart } from "./charts";
+import { DistributionByTypeChart, VolumeByMonthChart, CommitmentsByVehicleChart, TopEmployeesChart, PeakHoursChart, ProfessionalWorkloadChart, ProfessionalWorkloadEntry } from "./charts";
 
 export interface MetricsDashboardProps {
   events: any[];
@@ -92,6 +92,41 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
   const employeeChartData = useMemo(() => {
     return sortedEmployees.slice(0, 10).map(([name, count]) => ({ name, compromissos: count as number }));
   }, [sortedEmployees]);
+
+  // Peak hours — count events per starting hour (07–19)
+  const peakHoursData = useMemo(() => {
+    const hours: Record<number, number> = {};
+    for (let h = 7; h <= 19; h++) hours[h] = 0;
+    events.forEach((e: any) => {
+      const h = new Date(e.start).getHours();
+      if (h >= 7 && h <= 19) hours[h] = (hours[h] || 0) + 1;
+    });
+    return Object.entries(hours).map(([h, count]) => ({
+      hour: `${String(h).padStart(2, "0")}h`,
+      compromissos: count
+    }));
+  }, [events]);
+
+  // Professional workload — top 8 employees broken down by type
+  const allTypes = useMemo(() => {
+    const types = new Set<string>();
+    events.forEach((e: any) => { if (e.type) types.add(e.type); });
+    return Array.from(types);
+  }, [events]);
+
+  const professionalWorkloadData = useMemo(() => {
+    const top8 = sortedEmployees.slice(0, 8).map(([name]) => name);
+    return top8.map(name => {
+      const entry: Record<string, string | number> = { name };
+      allTypes.forEach(type => { entry[type] = 0; });
+      events.forEach((e: any) => {
+        if (e.participants?.includes(name) && e.type) {
+          entry[e.type] = ((entry[e.type] as number) || 0) + 1;
+        }
+      });
+      return entry;
+    });
+  }, [sortedEmployees, events, allTypes]);
 
   const getStatusColor = (rate: number) => rate >= 80 ? "text-red-600" : rate >= 60 ? "text-amber-600" : "text-green-600";
   const getStatusBg = (rate: number) => rate >= 80 ? "bg-red-100" : rate >= 60 ? "bg-amber-100" : "bg-green-100";
@@ -234,6 +269,10 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
         <VolumeByMonthChart data={monthlyData} />
         <CommitmentsByVehicleChart data={vehicleChartData} />
         <TopEmployeesChart data={employeeChartData} />
+        <PeakHoursChart data={peakHoursData} />
+        {professionalWorkloadData.length > 0 && allTypes.length > 0 && (
+          <ProfessionalWorkloadChart data={professionalWorkloadData as ProfessionalWorkloadEntry[]} types={allTypes} />
+        )}
       </div>
     </div>
   );
