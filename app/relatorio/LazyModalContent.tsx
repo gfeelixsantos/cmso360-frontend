@@ -9,6 +9,7 @@ import {
   ModalFooter,
   Button,
   Spinner,
+  Divider,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -26,6 +27,7 @@ import InformacoesGerais, {
   EditModeState,
 } from "./components/InformacoesGerais";
 import ExamesTable from "./components/ExamesTable";
+import RiscosFuncionario from "./components/RiscosFuncionario";
 import AnexosUpload from "./components/AnexosUpload";
 
 import {
@@ -478,23 +480,6 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                 </DropdownTrigger>
                 <DropdownMenu
                   aria-label="Documentos do atendimento"
-                  disabledKeys={
-                    [
-                      !asoUrl ? "ASO" : null,
-                      !atendimento.AUTENTICACAOATENDIMENTO?.evidencias
-                        ?.relatorioEvidenciasUrl
-                        ? "EVIDENCIAS"
-                        : null,
-                      !atendimento.AUTENTICACAOATENDIMENTO?.evidencias
-                        ?.termoCienciaUrl
-                        ? "TERMO_ACEITE"
-                        : null,
-                      !atendimento.ASOINFO?.validacao &&
-                      !atendimento.ASOINFO?.validacaoUrl
-                        ? "VALIDACAO"
-                        : null,
-                    ].filter(Boolean) as string[]
-                  }
                   onAction={(key) => {
                     switch (key) {
                       case "ASO": {
@@ -591,15 +576,17 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                     }
                   }}
                 >
-                  <DropdownSection title="ASO" showDivider>
-                    <DropdownItem
-                      key="ASO"
-                      description="Visualizar o documento ASO em PDF"
-                    >
-                      ASO
-                    </DropdownItem>
-                  </DropdownSection>
-                  <DropdownSection title="Exame" showDivider>
+                  {asoUrl ? (
+                    <DropdownSection showDivider title="ASO">
+                      <DropdownItem
+                        key="ASO"
+                        description="Visualizar o documento ASO em PDF"
+                      >
+                        ASO
+                      </DropdownItem>
+                    </DropdownSection>
+                  ) : null}
+                  <DropdownSection showDivider title="Exame">
                     <DropdownItem
                       key="GUIA"
                       description="Imprimir guia de atendimento"
@@ -620,24 +607,33 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
                     >
                       Atendimento
                     </DropdownItem>
-                    <DropdownItem
-                      key="EVIDENCIAS"
-                      description="Relatório de evidências da autenticação"
-                    >
-                      Evidências
-                    </DropdownItem>
-                    <DropdownItem
-                      key="TERMO_ACEITE"
-                      description="Termo de ciência da autenticação"
-                    >
-                      Termo de Aceite
-                    </DropdownItem>
-                    <DropdownItem
-                      key="VALIDACAO"
-                      description="Validar assinatura digital do ASO"
-                    >
-                      Validação
-                    </DropdownItem>
+                    {atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                      ?.relatorioEvidenciasUrl ? (
+                      <DropdownItem
+                        key="EVIDENCIAS"
+                        description="Relatório de evidências da autenticação"
+                      >
+                        Evidências
+                      </DropdownItem>
+                    ) : null}
+                    {atendimento.AUTENTICACAOATENDIMENTO?.evidencias
+                      ?.termoCienciaUrl ? (
+                      <DropdownItem
+                        key="TERMO_ACEITE"
+                        description="Termo de ciência da autenticação"
+                      >
+                        Termo de Aceite
+                      </DropdownItem>
+                    ) : null}
+                    {atendimento.ASOINFO?.validacao ||
+                    atendimento.ASOINFO?.validacaoUrl ? (
+                      <DropdownItem
+                        key="VALIDACAO"
+                        description="Validar assinatura digital do ASO"
+                      >
+                        Validação
+                      </DropdownItem>
+                    ) : null}
                   </DropdownSection>
                 </DropdownMenu>
               </Dropdown>
@@ -688,6 +684,8 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
           onEditModeChange={setEditMode}
           onSave={handleSaveEmployeeData}
         />
+        <RiscosFuncionario atendimento={atendimento} />
+        <Divider className="my-6" />
         <ExamesTable
           atendimento={atendimento}
           exames={atendimento.EXAMES}

@@ -556,9 +556,9 @@ const ExamesTable: React.FC<{
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
-          <h3 className="text-lg font-semibold text-gray-900">
+          <h2 className="text-base font-bold text-gray-800">
             Exames Realizados
-          </h3>
+          </h2>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span className="flex items-center gap-1">
               <div className="h-2 w-2 rounded-full bg-green-500" />

@@ -176,7 +176,7 @@ const InformacoesGerais: React.FC<{
       <div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
+            <h4 className="font-semibold text-sm text-gray-800 mb-2 flex items-center gap-2">
               <User size={16} />
               Dados do Paciente
             </h4>
@@ -231,7 +231,7 @@ const InformacoesGerais: React.FC<{
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
+            <h4 className="font-semibold text-sm text-gray-800 mb-2 flex items-center gap-2">
               <Building size={16} />
               Dados da Empresa
             </h4>
@@ -282,7 +282,7 @@ const InformacoesGerais: React.FC<{
           </div>
 
           <div className="space-y-3">
-            <h4 className="font-medium text-sm text-gray-600 mb-2 flex items-center gap-2">
+            <h4 className="font-semibold text-sm text-gray-800 mb-2 flex items-center gap-2">
               <Calendar size={16} />
               Agendamento
             </h4>
