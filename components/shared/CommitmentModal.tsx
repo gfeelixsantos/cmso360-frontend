@@ -32,9 +32,10 @@ export interface CommitmentModalProps {
   onSubmit: (data: any) => void;
   onDelete?: () => void;
   initialData?: any;
+  suggestedParticipants?: string[];
 }
 
-export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, initialData }: CommitmentModalProps) {
+export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, initialData, suggestedParticipants = [] }: CommitmentModalProps) {
   const [participants, setParticipants] = useState<string[]>([]);
   const [participantInput, setParticipantInput] = useState("");
   
@@ -224,11 +225,42 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                       }}
                       className="flex-1"
                       variant="bordered"
+                      list="participants-datalist"
                     />
+                    <datalist id="participants-datalist">
+                      {suggestedParticipants.map((name) => (
+                        <option key={name} value={name} />
+                      ))}
+                    </datalist>
                     <Button className="bg-[#44735E] text-white font-semibold hover:bg-[#355a4a] transition-colors" onPress={handleAddParticipant} variant="solid">
                       Adicionar
                     </Button>
                   </div>
+                  
+                  {suggestedParticipants.length > 0 && suggestedParticipants.some(name => !participants.includes(name)) && (
+                    <div className="flex flex-wrap items-center gap-1.5 mt-1 bg-gray-50/50 p-2.5 rounded-lg border border-gray-150">
+                      <span className="text-xs text-gray-500 font-semibold select-none">Rápido:</span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {suggestedParticipants
+                          .filter(name => !participants.includes(name))
+                          .map(name => (
+                            <button
+                              key={name}
+                              type="button"
+                              onClick={() => {
+                                if (!participants.includes(name)) {
+                                  setParticipants([...participants, name]);
+                                }
+                              }}
+                              className="px-2 py-0.5 rounded bg-white hover:bg-emerald-50 hover:text-emerald-700 text-gray-600 text-xs font-semibold border border-gray-250 hover:border-emerald-250 transition-colors shadow-sm"
+                            >
+                              + {name}
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap gap-2 mt-2">
                     {participants.map((name, index) => (
                       <Chip 

@@ -751,6 +751,7 @@ export default function AgendaPage() {
           isOpen={isOpen} 
           onOpenChange={onOpenChange} 
           initialData={selectedEvent}
+          suggestedParticipants={allParticipants}
           onSubmit={async (data) => {
             try {
               if (selectedEvent?.id) {
