@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+﻿import { useEffect } from "react";
 
 import { NEST_NOTIFICATION_URL } from "@/config/constants";
 import { urlBase64ToUint8Array } from "@/lib/utils";
@@ -16,10 +16,8 @@ export function usePushNotification({
   unidade,
   contexto = {},
 }: UsePushNotificationOptions) {
-  const subscribedRef = useRef(false);
-
   useEffect(() => {
-    if (!enabled || !unidade || subscribedRef.current) return;
+    if (!enabled || !unidade) return;
     if (typeof window === "undefined") return;
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
 
@@ -44,7 +42,6 @@ export function usePushNotification({
           }),
         });
 
-        subscribedRef.current = true;
         console.log("[Push] Subscrito com sucesso:", { unidade, ...contexto });
       } catch (err) {
         console.error("[Push] Erro ao subscrever:", err);
