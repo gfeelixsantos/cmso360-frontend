@@ -621,28 +621,16 @@ export default function AgendaPage() {
             <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Legenda de Cores:</span>
             <div className="flex flex-wrap gap-5">
               <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Treinamento</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#2563eb] shadow-sm border border-[#1d4ed8]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Visita Técnica</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Perícia</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Assessoria</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#ea580c] shadow-sm border border-[#c2410c]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Comercial</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#0d9488] shadow-sm border border-[#0f766e]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Avaliação de Campo</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#ea580c] shadow-sm border border-[#c2410c]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Comercial</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#4f46e5] shadow-sm border border-[#4338ca]/30 flex-shrink-0" />
@@ -655,6 +643,18 @@ export default function AgendaPage() {
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Outro</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Perícia</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Treinamento</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#2563eb] shadow-sm border border-[#1d4ed8]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Visita Técnica</span>
               </div>
             </div>
           </div>
