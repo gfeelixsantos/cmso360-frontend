@@ -112,19 +112,15 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
 
   // Fetch available vehicles whenever time changes
   React.useEffect(() => {
-    console.log('Checking availability with:', { computedStart, computedEnd, initialDataId: initialData?.id });
     if (computedStart && computedEnd && new Date(computedStart) < new Date(computedEnd)) {
       const startIso = new Date(computedStart).toISOString();
       const endIso = new Date(computedEnd).toISOString();
-      console.log('Calling getAvailableVehicles with:', { startIso, endIso });
       getAvailableVehicles(startIso, endIso, initialData?.id)
         .then((vehicles) => {
-          console.log('Available vehicles received:', vehicles);
           setAvailableVehicles(vehicles);
         })
         .catch(console.error);
     } else {
-      console.log('Not fetching available vehicles (invalid time range)');
       setAvailableVehicles([]);
     }
   }, [computedStart, computedEnd, initialData?.id]);
