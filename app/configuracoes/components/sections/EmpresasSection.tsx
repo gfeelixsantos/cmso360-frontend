@@ -917,7 +917,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((company) => {
                   const uniqueDocs = Array.from(new Set(
-                    (company.RESPONSAVEISTECNICOS || []).flatMap(r => r.documentos || [])
+                    (company.RESPONSAVEISTECNICOS || []).flatMap(r => r.DOCUMENTOS || [])
                   ));
                   return (
                     <TableRow key={company.CODIGO}>
@@ -950,11 +950,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                           {company.RESPONSAVEISTECNICOS && company.RESPONSAVEISTECNICOS.length > 0 ? (
                             company.RESPONSAVEISTECNICOS.map((r, idx) => (
                               <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5">
-                                <span className="font-semibold text-gray-700 whitespace-normal line-clamp-1" title={r.nome}>
-                                  {r.nome}
+                                <span className="font-semibold text-gray-700 whitespace-normal line-clamp-1" title={r.NOME}>
+                                  {r.NOME}
                                 </span>
                                 <div className="flex gap-0.5">
-                                  {(r.documentos || []).map(doc => (
+                                  {(r.DOCUMENTOS || []).map(doc => (
                                     <span key={doc} className="inline-flex text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/50 px-1 py-0.2 rounded">
                                       {doc}
                                     </span>
@@ -1050,7 +1050,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <span className="flex items-center gap-1">
                       <Users size={12} />
                       Docs Ativos: 
-                      {Array.from(new Set(responsaveis.flatMap(r => r.documentos || []))).map(doc => (
+                      {Array.from(new Set(responsaveis.flatMap(r => r.DOCUMENTOS || []))).map(doc => (
                         <Chip key={doc} size="sm" variant="bordered" color="warning" className="h-4 text-[9px] py-0 px-1 font-semibold leading-none border-warning-200">
                           {doc}
                         </Chip>
