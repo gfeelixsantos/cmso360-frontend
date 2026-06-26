@@ -660,9 +660,9 @@ export default function AgendaPage() {
           </div>
         </div>
 
-        <Card className="shadow-sm">
+        <Card className="shadow-sm mb-8">
           <CardBody className="p-0">
-            <div className="h-[700px] w-full p-4">
+            <div className="h-[850px] w-full p-4">
               <Calendar
                 localizer={localizer}
                 events={filteredEvents}
