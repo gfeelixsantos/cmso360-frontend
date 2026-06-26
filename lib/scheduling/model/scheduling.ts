@@ -46,6 +46,8 @@ export class SchedulingClass implements Scheduling {
   NOMEUNIDADE: string = "";
   OBSERVACOES: string | null = null;
   PARECERMEDICO: string | null = null;
+  ALTURA_PARECER: string | null = null;
+  CONFINADO_PARECER: string | null = null;
   PRONTUARIOSVINCULADOS: string[] = [];
   RECOMENDACAOMEDICA: string | null = null;
   RISCOSASO: RiscosAso[] | null = null;

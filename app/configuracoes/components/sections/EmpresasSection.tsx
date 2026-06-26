@@ -1018,22 +1018,22 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               </span>
               {!isCreate && (
                 <div className="flex flex-wrap gap-1">
-                  {form.CONFIGURACOES?.requerPsicologa && (
+                  {form.CONFIGURACOES?.REQUERPSICOLOGA && (
                     <Chip size="sm" color="secondary" variant="flat">Psicologia</Chip>
                   )}
-                  {form.CONFIGURACOES?.credenciadaSoc && (
+                  {form.CONFIGURACOES?.CREDENCIADASOC && (
                     <Chip size="sm" color="primary" variant="flat">SOC</Chip>
                   )}
-                  {form.CONFIGURACOES?.asoRapidoAutomatico && (
+                  {form.CONFIGURACOES?.ASORAPIDOAUTOMATICO && (
                     <Chip size="sm" color="warning" variant="flat">ASO Auto</Chip>
                   )}
-                  {form.CONFIGURACOES?.somenteComplementares && (
+                  {form.CONFIGURACOES?.SOMENTECOMPLEMENTARES && (
                     <Chip size="sm" color="success" variant="flat">Complementar</Chip>
                   )}
                   {form.CONFIGURACOES?.FATURAMENTO && (
                     <Chip size="sm" color="default" variant="flat">Fat: {form.CONFIGURACOES.FATURAMENTO}</Chip>
                   )}
-                  {form.CONFIGURACOES?.devedor && (
+                  {form.CONFIGURACOES?.DEVEDOR && (
                     <Chip size="sm" color="danger" variant="solid" className="font-bold animate-pulse">DEVEDOR</Chip>
                   )}
                 </div>
