@@ -35,8 +35,20 @@ export function getSignatureStatusLabel(status?: string | null): string {
   return SIGNATURE_STATUS_LABELS[status] || status.replace(/_/g, " ");
 }
 
-export function getAsoStatusLabel(status?: string | null): string {
+/**
+ * Retorna o label do status do ASO.
+ * Para PENDENTE: se houver URL gerada, exibe "Aguardando Assinatura" (PDF já gerado);
+ * sem URL, exibe "Aguardando Geracao".
+ */
+export function getAsoStatusLabel(
+  status?: string | null,
+  asoUrl?: string | null,
+): string {
   if (!status) return "";
+
+  if (status === "PENDENTE" && asoUrl) {
+    return "Aguardando Assinatura";
+  }
 
   return ASO_STATUS_LABELS[status] || status.replace(/_/g, " ");
 }

@@ -164,7 +164,7 @@ const InformacoesGerais: React.FC<{
   const validacaoUrl =
     atendimento.ASOINFO?.validacao || atendimento.ASOINFO?.validacaoUrl;
   const asoStatusLabel = (
-    getAsoStatusLabel(asoStatus) || "Nao informado"
+    getAsoStatusLabel(asoStatus, asoUrl) || "Nao informado"
   ).toUpperCase();
   const asoStatusColor = getAsoStatusColor(asoStatus);
   const atendimentoStatusColor = getStatusColor(atendimento.ATENDIMENTOSTATUS);
