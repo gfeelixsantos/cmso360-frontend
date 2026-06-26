@@ -204,6 +204,8 @@ export type Scheduling = {
   NOMEUNIDADE: string;
   OBSERVACOES: string | null;
   PARECERMEDICO: string | null;
+  ALTURA_PARECER: string | null;
+  CONFINADO_PARECER: string | null;
   PRONTUARIOSVINCULADOS: string[];
   RECOMENDACAOMEDICA: string | null;
   RISCOSASO: RiscosAso[] | null;

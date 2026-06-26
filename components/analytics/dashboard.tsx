@@ -209,6 +209,16 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-50">
+              <thead>
+                <tr className="bg-gray-50/50">
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Tipo</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Quando</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Compromisso</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Horário</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Participantes</th>
+                  <th className="px-5 py-2.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Veículo</th>
+                </tr>
+              </thead>
               <tbody className="divide-y divide-gray-50">
                 {nextEvents.map((ev: any) => {
                   const start = new Date(ev.start);
@@ -239,17 +249,18 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
                   return (
                     <tr key={ev.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="px-5 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
-                          {isHoje && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">HOJE</span>}
-                          {isAmanha && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">AMANHÃ</span>}
-                        </div>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${badgeColor}`}>{badge}</span>
+                      </td>
+                      <td className="px-5 py-3 whitespace-nowrap">
+                        {isHoje && <span className="text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">HOJE</span>}
+                        {isAmanha && <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">AMANHÃ</span>}
+                        {!isHoje && !isAmanha && <span className="text-xs text-gray-500">{format(start, "dd/MM")}</span>}
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900">{ev.title}</td>
                       <td className="px-5 py-3 whitespace-nowrap text-sm text-gray-600">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3.5 w-3.5 text-gray-400" />
-                          {format(start, "dd/MM")} às {format(start, "HH:mm")}
+                          {format(start, "HH:mm")}
                         </div>
                       </td>
                       <td className="px-5 py-3 whitespace-nowrap text-sm text-gray-600">{ev.participants?.slice(0, 2).join(", ")}{ev.participants?.length > 2 ? ` +${ev.participants.length - 2}` : ""}</td>

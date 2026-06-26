@@ -4,6 +4,15 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, LabelList
 } from "recharts";
+import {
+  PieChart as PieChartIcon,
+  Calendar,
+  Car,
+  User,
+  Clock,
+  ClipboardList
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 export interface ChartData {
   name: string;
@@ -59,11 +68,11 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 // Custom chart-header style helper
-function ChartHeader({ icon, color, bg, title, subtitle }: { icon: string; color: string; bg: string; title: string; subtitle: string }) {
+function ChartHeader({ Icon, color, bg, title, subtitle }: { Icon: LucideIcon; color: string; bg: string; title: string; subtitle: string }) {
   return (
     <div className="flex items-center gap-2 mb-4">
       <div className={`w-8 h-8 rounded-lg ${bg} flex items-center justify-center`}>
-        <span className={`${color} text-xs font-bold`}>{icon}</span>
+        <Icon size={18} className={color} />
       </div>
       <div>
         <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">{title}</h3>
@@ -94,14 +103,17 @@ export function DistributionByTypeChart({ data }: { data: ChartData[] }) {
   const renderCustomLegend = (props: any) => {
     const { payload } = props;
     return (
-      <div className="flex flex-wrap justify-center gap-x-4 gap-y-2 mt-3 pt-3 border-t border-gray-100">
+      <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-gray-100">
         {payload.map((entry: any, index: number) => {
-          const pct = total > 0 ? Math.round((entry.payload.value / total) * 100) : 0;
+          const count = entry.payload.value;
+          const pct = total > 0 ? Math.round((count / total) * 100) : 0;
           return (
-            <div key={index} className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: entry.color }} />
-              <span className="text-xs font-medium text-gray-700">{entry.value}</span>
-              <span className="text-xs text-gray-400">({entry.payload.value} · {pct}%)</span>
+            <div key={index} className="flex items-center gap-2 px-2 py-1 rounded-md bg-gray-50">
+              <div className="w-3 h-3 rounded flex-shrink-0" style={{ backgroundColor: entry.color }} />
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="text-xs font-semibold text-gray-800 truncate">{entry.value}</span>
+                <span className="text-xs text-gray-500">({count} · {pct}%)</span>
+              </div>
             </div>
           );
         })}
@@ -111,17 +123,17 @@ export function DistributionByTypeChart({ data }: { data: ChartData[] }) {
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="🍩" color="text-blue-600" bg="bg-blue-50" title="Distribuição por Tipo" subtitle={`${total} compromissos no total`} />
+      <ChartHeader Icon={PieChartIcon} color="text-blue-600" bg="bg-blue-50" title="Distribuição por Tipo" subtitle={`${total} compromissos no total`} />
 
-      <div className="h-72">
+      <div className="h-[350px] overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
               data={labeledData}
               cx="50%"
-              cy="50%"
-              innerRadius={55}
-              outerRadius={105}
+              cy="40%"
+              innerRadius={50}
+              outerRadius={95}
               paddingAngle={2}
               dataKey="value"
             >
@@ -154,7 +166,7 @@ export function DistributionByTypeChart({ data }: { data: ChartData[] }) {
 export function VolumeByMonthChart({ data }: { data: MonthlyData[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="📅" color="text-green-600" bg="bg-green-50" title="Volume por Mês" subtitle="Últimos 6 meses" />
+      <ChartHeader Icon={Calendar} color="text-green-600" bg="bg-green-50" title="Volume por Mês" subtitle="Últimos 6 meses" />
 
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -188,7 +200,7 @@ export function VolumeByMonthChart({ data }: { data: MonthlyData[] }) {
 export function CommitmentsByVehicleChart({ data }: { data: VehicleData[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="🚗" color="text-purple-600" bg="bg-purple-50" title="Compromissos por Veículo" subtitle="Distribuição de uso da frota" />
+      <ChartHeader Icon={Car} color="text-purple-600" bg="bg-purple-50" title="Compromissos por Veículo" subtitle="Distribuição de uso da frota" />
 
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -222,7 +234,7 @@ export function CommitmentsByVehicleChart({ data }: { data: VehicleData[] }) {
 export function TopEmployeesChart({ data }: { data: EmployeeData[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="👤" color="text-amber-600" bg="bg-amber-50" title="Funcionários Mais Acionados" subtitle="Top 10 por participação" />
+      <ChartHeader Icon={User} color="text-amber-600" bg="bg-amber-50" title="Funcionários Mais Acionados" subtitle="Top 10 por participação" />
 
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -265,7 +277,7 @@ export function PeakHoursChart({ data }: { data: PeakHourData[] }) {
   const max = Math.max(...data.map(d => d.compromissos), 1);
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="⏰" color="text-rose-600" bg="bg-rose-50" title="Horários de Pico" subtitle="Compromissos por faixa horária do dia" />
+      <ChartHeader Icon={Clock} color="text-rose-600" bg="bg-rose-50" title="Horários de Pico" subtitle="Compromissos por faixa horária do dia" />
 
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">
@@ -311,7 +323,7 @@ export function PeakHoursChart({ data }: { data: PeakHourData[] }) {
 export function ProfessionalWorkloadChart({ data, types }: { data: ProfessionalWorkloadEntry[]; types: string[] }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-      <ChartHeader icon="📋" color="text-indigo-600" bg="bg-indigo-50" title="Carga por Profissional" subtitle="Participações por tipo de compromisso" />
+      <ChartHeader Icon={ClipboardList} color="text-indigo-600" bg="bg-indigo-50" title="Carga por Profissional" subtitle="Participações por tipo de compromisso" />
 
       <div className="h-72">
         <ResponsiveContainer width="100%" height="100%">

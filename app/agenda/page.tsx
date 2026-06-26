@@ -716,7 +716,7 @@ export default function AgendaPage() {
 
         <Card className="shadow-sm">
           <CardBody className="p-0">
-            <div className="h-[700px] w-full p-4">
+            <div className="h-[850px] w-full p-4">
               <Calendar
                 localizer={localizer}
                 events={filteredEvents}
@@ -798,7 +798,7 @@ export default function AgendaPage() {
           </CardBody>
         </Card>
 
-        <div className="mb-6">
+        <div className="mt-6 mb-6">
           <MetricsDashboard events={events} vehicles={vehicles} />
         </div>
 

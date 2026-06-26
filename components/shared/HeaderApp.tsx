@@ -15,6 +15,10 @@ import {
   LogOut,
   Settings,
   CalendarDays,
+  Stethoscope,
+  Users,
+  ChartNoAxesCombined,
+  FileText,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -55,6 +59,17 @@ const getAvatarColor = (especialidade: string) => {
   };
 
   return colorMap[especialidade] || "bg-gray-500";
+};
+
+const getHoverColor = (especialidade: string) => {
+  const colorMap: Record<string, string> = {
+    MEDICO: "hover:bg-blue-50 hover:text-blue-700",
+    ENFERMAGEM: "hover:bg-green-50 hover:text-green-700",
+    FONOAUDIOLOGA: "hover:bg-purple-50 hover:text-purple-700",
+    RECEPCAO: "hover:bg-orange-50 hover:text-orange-700",
+  };
+
+  return colorMap[especialidade] || "hover:bg-gray-50 hover:text-gray-900";
 };
 
 const getInitials = (nome: string): string => {
@@ -412,8 +427,26 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                       <p className="text-xs text-gray-500">{user?.perfil}</p>
                     </div>
 
+                    <div className="grid grid-cols-4 gap-1 border-b border-gray-100 px-4 py-3">
+                      {[
+                        { icon: Stethoscope, label: "Atendimento", path: "/atendimento" },
+                        { icon: Users, label: "Recepção", path: "/recepcao" },
+                        { icon: ChartNoAxesCombined, label: "Relatórios", path: "/relatorio" },
+                        { icon: FileText, label: "Prontuários", path: "/prontuarios" },
+                      ].map((item) => (
+                        <button
+                          key={item.path}
+                          className={`flex flex-col items-center gap-1.5 rounded-lg p-2 text-gray-600 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
+                          onClick={() => handleNavigate(item.path)}
+                        >
+                          <item.icon className="h-5 w-5" />
+                          <span className="text-[10px] font-medium leading-tight text-center">{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+
                     <button
-                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      className={`flex w-full items-center px-4 py-2 text-sm text-gray-700 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
                       onClick={() => handleNavigate("/agenda")}
                     >
                       <CalendarDays className="mr-3 h-4 w-4" />
@@ -421,7 +454,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                     </button>
 
                     <button
-                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      className={`flex w-full items-center px-4 py-2 text-sm text-gray-700 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
                       onClick={() => handleNavigate("/configuracoes")}
                     >
                       <Settings className="mr-3 h-4 w-4" />
@@ -429,7 +462,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                     </button>
 
                     <button
-                      className="flex w-full items-center px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      className={`flex w-full items-center px-4 py-2 text-sm text-gray-700 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
                       onClick={() => handleNavigate("/servicos")}
                     >
                       <LayoutGrid className="mr-3 h-4 w-4" />
@@ -438,7 +471,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
 
                     <button
                       aria-expanded={view === "notifications"}
-                      className="flex w-full items-center justify-between px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                      className={`flex w-full items-center justify-between px-4 py-2 text-sm text-gray-700 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
                       onClick={() =>
                         setView((current) =>
                           current === "notifications" ? "menu" : "notifications",
@@ -495,7 +528,7 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                     <div className="border-t border-gray-100" />
 
                     <button
-                      className="flex w-full items-center px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50"
+                      className="flex w-full items-center px-4 py-2 text-sm text-red-600 cursor-pointer transition-colors hover:bg-red-50"
                       onClick={handleLogout}
                     >
                       <LogOut className="mr-3 h-4 w-4" />
