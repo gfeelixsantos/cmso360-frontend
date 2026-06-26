@@ -6,7 +6,7 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card, CardBody, Select, SelectItem, Button, useDisclosure, Tooltip } from "@heroui/react";
+import { Card, CardBody, Select, SelectItem, Button, useDisclosure } from "@heroui/react";
 import { Truck, Users } from "lucide-react";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CommitmentModal } from "@/components/shared/CommitmentModal";
@@ -18,13 +18,8 @@ const locales = {
 };
 
 const parseLocalISO = (iso: string): Date => {
-  const [datePart, timePart] = iso.split("T");
-  const [y, m, d] = datePart.split("-").map(Number);
-  if (timePart) {
-    const [h, min, s] = timePart.split(":").map(Number);
-    return new Date(y, m - 1, d, h || 0, min || 0, s || 0);
-  }
-  return new Date(y, m - 1, d);
+  // Usa o construtor nativo do Date que interpreta corretamente strings ISO com timezone
+  return new Date(iso);
 };
 
 const localizer = dateFnsLocalizer({
@@ -34,43 +29,6 @@ const localizer = dateFnsLocalizer({
   getDay,
   locales,
 });
-
-const renderCellTooltip = (dayEvents?: any[]) => {
-  if (!dayEvents || dayEvents.length === 0) return null;
-  
-  const typeLabelMap: Record<string, string> = {
-    ASSESSORIA: "Assessoria",
-    AVALIACAO_DE_CAMPO: "Avaliação de Campo",
-    IN_COMPANY: "In Company",
-    LEVA_E_TRAS: "Leva e Trás",
-    OUTRO: "Outro",
-    PERICIA: "Perícia",
-    TREINAMENTO: "Treinamento",
-    VISITA_TECNICA: "Visita Técnica",
-  };
-
-  return (
-    <div className="px-2 py-1.5 flex flex-col gap-2 max-w-[280px]">
-      <p className="font-bold text-xs border-b border-gray-150 pb-1 text-gray-800">Compromissos do Dia:</p>
-      {dayEvents.map((ev, idx) => {
-        const startStr = format(ev.start, "HH:mm");
-        const endStr = format(ev.end, "HH:mm");
-        const typeLabel = typeLabelMap[ev.type] || ev.type;
-        return (
-          <div key={ev.id || idx} className="text-[11px] leading-tight text-gray-700">
-            <div className="font-semibold text-gray-900 flex items-center gap-1.5">
-              <span className="text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded border border-emerald-100 font-mono text-[10px]">{startStr} – {endStr}</span>
-              <span className="truncate">{ev.title}</span>
-            </div>
-            <div className="text-[10px] text-gray-500 pl-1">
-              {typeLabel} {ev.company ? `· ${ev.company}` : ""}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-};
 
 export default function AgendaPage() {
   const router = useRouter();
@@ -142,38 +100,33 @@ export default function AgendaPage() {
     let borderLeft = "4px solid #4b5563";
 
     switch (event.type) {
-      case "ASSESSORIA":
-        backgroundColor = "#9333ea";
-        borderLeft = "4px solid #7e22ce";
-        break;
-      case "AVALIACAO_DE_CAMPO":
-        backgroundColor = "#0d9488";
-        borderLeft = "4px solid #0f766e";
-        break;
-      case "IN_COMPANY":
-        backgroundColor = "#16a34a";
+      case "EXAME":
+      case "Realização de Exames":
+        backgroundColor = "#16a34a"; // green-600
         borderLeft = "4px solid #15803d";
         break;
-      case "LEVA_E_TRAS":
-        backgroundColor = "#ea580c";
-        borderLeft = "4px solid #c2410c";
-        break;
-      case "OUTRO":
-        backgroundColor = "#6b7280";
-        borderLeft = "4px solid #4b5563";
-        break;
-      case "PERICIA":
-        backgroundColor = "#dc2626";
-        borderLeft = "4px solid #b91c1c";
-        break;
       case "TREINAMENTO":
-        backgroundColor = "#ca8a04";
+      case "Treinamento":
+        backgroundColor = "#ca8a04"; // yellow-600
         borderLeft = "4px solid #a16207";
         break;
       case "VISITA_TECNICA":
-        backgroundColor = "#2563eb";
+      case "Visita Técnica":
+        backgroundColor = "#2563eb"; // blue-600
         borderLeft = "4px solid #1d4ed8";
         break;
+      case "PERICIA":
+      case "Perícia":
+        backgroundColor = "#dc2626"; // red-600
+        borderLeft = "4px solid #b91c1c";
+        break;
+      case "ASSESSORIA":
+      case "Assessoria":
+        backgroundColor = "#9333ea"; // purple-600
+        borderLeft = "4px solid #7e22ce";
+        break;
+      case "OUTRO":
+      case "Outro":
       default:
         backgroundColor = "#6b7280";
         borderLeft = "4px solid #4b5563";
@@ -368,7 +321,7 @@ export default function AgendaPage() {
               <SelectItem key="VEICULO">Veículo</SelectItem>
             </Select>
             <Button 
-              className="bg-[#44735E] text-white font-semibold hover:bg-[#7FA830] hover:shadow-md transition-all duration-200"
+              className="bg-[#44735E] text-white font-semibold hover:bg-[#355a4a] hover:shadow-md transition-all duration-200 transform hover:scale-[1.02]"
               onPress={() => {
                 setSelectedEvent(null);
                 onOpen();
@@ -489,22 +442,13 @@ export default function AgendaPage() {
                                 <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{v.title}</td>
                                 {weekDays.map(day => {
                                   const info = getVehicleStatusForDay(v.id, day);
-                                  const badge = (
-                                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all ${info.badgeColor}`}>
-                                      {info.label}
-                                    </span>
-                                  );
                                   return (
                                     <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                       isSameDay(day, new Date()) ? "bg-emerald-50/40" : ""
                                     }`}>
-                                      {info.events && info.events.length > 0 ? (
-                                        <Tooltip content={renderCellTooltip(info.events)} placement="top" closeDelay={100}>
-                                          {badge}
-                                        </Tooltip>
-                                      ) : (
-                                        badge
-                                      )}
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
+                                        {info.label}
+                                      </span>
                                     </td>
                                   );
                                 })}
@@ -632,22 +576,13 @@ export default function AgendaPage() {
                                   <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{name}</td>
                                   {weekDays.map(day => {
                                     const info = getParticipantStatusForDay(name, day);
-                                    const badge = (
-                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-pointer hover:shadow-sm transition-all ${info.badgeColor}`}>
-                                        {info.label}
-                                      </span>
-                                    );
                                     return (
                                       <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                         isSameDay(day, new Date()) ? "bg-teal-50/40" : ""
                                       }`}>
-                                        {info.events && info.events.length > 0 ? (
-                                          <Tooltip content={renderCellTooltip(info.events)} placement="top" closeDelay={100}>
-                                            {badge}
-                                          </Tooltip>
-                                        ) : (
-                                          badge
-                                        )}
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
+                                          {info.label}
+                                        </span>
                                       </td>
                                     );
                                   })}
@@ -665,50 +600,34 @@ export default function AgendaPage() {
           )}
         </div>
 
-        {/* Legenda de Cores — ordem alfabética */}
+        {/* Legenda de Cores */}
         <div className="mb-4 bg-white rounded-xl border border-gray-200 shadow-sm">
           <div className="px-5 py-3.5 flex flex-wrap items-center gap-6">
             <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Legenda de Cores:</span>
             <div className="flex flex-wrap gap-5">
-              {/* Assessoria */}
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Assessoria</span>
-              </div>
-              {/* Avaliação de Campo */}
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#0d9488] shadow-sm border border-[#0f766e]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Avaliação de Campo</span>
-              </div>
-              {/* In Company */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#16a34a] shadow-sm border border-[#15803d]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">In Company</span>
+                <span className="text-sm font-semibold text-gray-700">Realização de Exames</span>
               </div>
-              {/* Leva e Trás */}
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#ea580c] shadow-sm border border-[#c2410c]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Leva e Trás</span>
-              </div>
-              {/* Outro */}
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Outro</span>
-              </div>
-              {/* Perícia */}
-              <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Perícia</span>
-              </div>
-              {/* Treinamento */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Treinamento</span>
               </div>
-              {/* Visita Técnica */}
               <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#2563eb] shadow-sm border border-[#1d4ed8]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Visita Técnica</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#dc2626] shadow-sm border border-[#b91c1c]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Perícia</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#9333ea] shadow-sm border border-[#7e22ce]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Assessoria</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Outro</span>
               </div>
             </div>
           </div>
@@ -716,7 +635,7 @@ export default function AgendaPage() {
 
         <Card className="shadow-sm">
           <CardBody className="p-0">
-            <div className="h-[850px] w-full p-4">
+            <div className="h-[700px] w-full p-4">
               <Calendar
                 localizer={localizer}
                 events={filteredEvents}
@@ -734,7 +653,6 @@ export default function AgendaPage() {
                 resourceIdAccessor="id"
                 resourceTitleAccessor="title"
                 eventPropGetter={eventPropGetter}
-                popup={true}
                 components={{
                   toolbar: (tp: any) => (
                     <CustomToolbar
@@ -746,14 +664,12 @@ export default function AgendaPage() {
                   ),
                   event: ({ event }: any) => {
                     const typeLabelMap: Record<string, string> = {
-                      ASSESSORIA: "Assessoria",
-                      AVALIACAO_DE_CAMPO: "Avaliação de Campo",
-                      IN_COMPANY: "In Company",
-                      LEVA_E_TRAS: "Leva e Trás",
-                      OUTRO: "Outro",
-                      PERICIA: "Perícia",
+                      EXAME: "Realização de Exames",
                       TREINAMENTO: "Treinamento",
                       VISITA_TECNICA: "Visita Técnica",
+                      PERICIA: "Perícia",
+                      ASSESSORIA: "Assessoria",
+                      OUTRO: "Outro"
                     };
                     const typeLabel = typeLabelMap[event.type] || event.type;
                     
@@ -798,7 +714,7 @@ export default function AgendaPage() {
           </CardBody>
         </Card>
 
-        <div className="mt-6 mb-6">
+        <div className="mb-6">
           <MetricsDashboard events={events} vehicles={vehicles} />
         </div>
 
@@ -806,7 +722,6 @@ export default function AgendaPage() {
           isOpen={isOpen} 
           onOpenChange={onOpenChange} 
           initialData={selectedEvent}
-          suggestedParticipants={allParticipants}
           onSubmit={async (data) => {
             try {
               if (selectedEvent?.id) {

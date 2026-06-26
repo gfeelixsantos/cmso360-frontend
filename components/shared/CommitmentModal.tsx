@@ -13,6 +13,8 @@ import {
   Chip,
   Checkbox
 } from "@heroui/react";
+import { fromZonedTime, toZonedTime } from "date-fns-tz";
+import { format } from "date-fns";
 
 import { getAvailableVehicles, VehicleType } from "@/lib/commitments/commitments-api";
 
@@ -36,6 +38,9 @@ export interface CommitmentModalProps {
 }
 
 export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, initialData, suggestedParticipants = [] }: CommitmentModalProps) {
+  // Calculate full ISO strings for the API
+  const timeZone = 'America/Sao_Paulo';
+  
   const [participants, setParticipants] = useState<string[]>([]);
   const [participantInput, setParticipantInput] = useState("");
   
@@ -48,10 +53,10 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
   const [emailsComunicado, setEmailsComunicado] = useState<string[]>(initialData?.emails_comunicado || []);
   const [emailInput, setEmailInput] = useState("");
   
-  const [startDate, setStartDate] = useState(initialData?.start_time ? initialData.start_time.split("T")[0] : "");
-  const [startTime, setStartTime] = useState(initialData?.start_time ? initialData.start_time.split("T")[1].substring(0, 5) : "08:00");
-  const [endDate, setEndDate] = useState(initialData?.end_time ? initialData.end_time.split("T")[0] : "");
-  const [endTime, setEndTime] = useState(initialData?.end_time ? initialData.end_time.split("T")[1].substring(0, 5) : "18:00");
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("08:00");
+  const [endDate, setEndDate] = useState("");
+  const [endTime, setEndTime] = useState("18:00");
   
   const [isAllDay, setIsAllDay] = useState(false);
   const [isNoReturn, setIsNoReturn] = useState(false);
@@ -69,30 +74,57 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
       setCompany(initialData?.company || "");
       setCompanyContact(initialData?.company_contact || "");
       setEmailsComunicado(initialData?.emails_comunicado || []);
-      setStartDate(initialData?.start_time ? initialData.start_time.split("T")[0] : "");
-      setStartTime(initialData?.start_time ? initialData.start_time.split("T")[1].substring(0, 5) : "08:00");
-      setEndDate(initialData?.end_time ? initialData.end_time.split("T")[0] : "");
-      setEndTime(initialData?.end_time ? initialData.end_time.split("T")[1].substring(0, 5) : "18:00");
+      
+      if (initialData?.start_time && initialData?.end_time) {
+        // Convert UTC from database to local America/Sao_Paulo time for the form
+        const startZoned = toZonedTime(new Date(initialData.start_time), timeZone);
+        const endZoned = toZonedTime(new Date(initialData.end_time), timeZone);
+        
+        setStartDate(format(startZoned, 'yyyy-MM-dd'));
+        setStartTime(format(startZoned, 'HH:mm'));
+        setEndDate(format(endZoned, 'yyyy-MM-dd'));
+        setEndTime(format(endZoned, 'HH:mm'));
+      } else {
+        setStartDate("");
+        setStartTime("08:00");
+        setEndDate("");
+        setEndTime("18:00");
+      }
+      
       setVehicle(initialData?.vehicle || "NENHUM");
       setDescription(initialData?.description || "");
       setIsAllDay(false);
       setIsNoReturn(false);
     }
   }, [isOpen, initialData]);
-
-  // Calculate full ISO strings for the API
-  const computedStart = startDate ? `${startDate}T${isAllDay ? "00:00" : startTime}:00` : "";
+  
+  const getLocalToUTC = (dateStr: string, timeStr: string) => {
+    if (!dateStr) return '';
+    const dateTimeStr = `${dateStr}T${timeStr || '00:00'}:00`;
+    const utcDate = fromZonedTime(dateTimeStr, timeZone);
+    return utcDate.toISOString();
+  };
+  
+  const computedStart = startDate ? getLocalToUTC(startDate, isAllDay ? "00:00" : startTime) : "";
   const computedEnd = endDate 
-    ? `${endDate}T${isAllDay || isNoReturn ? "23:59" : endTime}:00` 
-    : (isNoReturn && startDate ? `${startDate}T23:59:00` : "");
+    ? getLocalToUTC(endDate, isAllDay || isNoReturn ? "23:59" : endTime) 
+    : (isNoReturn && startDate ? getLocalToUTC(startDate, "23:59") : "");
 
   // Fetch available vehicles whenever time changes
   React.useEffect(() => {
+    console.log('Checking availability with:', { computedStart, computedEnd, initialDataId: initialData?.id });
     if (computedStart && computedEnd && new Date(computedStart) < new Date(computedEnd)) {
-      getAvailableVehicles(new Date(computedStart).toISOString(), new Date(computedEnd).toISOString(), initialData?.id)
-        .then(setAvailableVehicles)
+      const startIso = new Date(computedStart).toISOString();
+      const endIso = new Date(computedEnd).toISOString();
+      console.log('Calling getAvailableVehicles with:', { startIso, endIso });
+      getAvailableVehicles(startIso, endIso, initialData?.id)
+        .then((vehicles) => {
+          console.log('Available vehicles received:', vehicles);
+          setAvailableVehicles(vehicles);
+        })
         .catch(console.error);
     } else {
+      console.log('Not fetching available vehicles (invalid time range)');
       setAvailableVehicles([]);
     }
   }, [computedStart, computedEnd, initialData?.id]);
