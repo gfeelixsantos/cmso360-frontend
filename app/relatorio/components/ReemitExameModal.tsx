@@ -63,11 +63,8 @@ const ReemitExameModal: React.FC<ReemitExameModalProps> = ({
             </ModalHeader>
             <ModalBody className="py-5">
               <div className="mt-2 text-sm text-gray-700">
-                <p className="flex items-center gap-2">
-                  <Printer className="text-[#44735e]" size={18} />
-                  <span>
-                    Deseja reemitir o exame <strong>{exame?.nomeExame}</strong>?
-                  </span>
+                <p>
+                  Deseja reemitir o exame <strong>{exame?.nomeExame}</strong>?
                 </p>
               </div>
             </ModalBody>
