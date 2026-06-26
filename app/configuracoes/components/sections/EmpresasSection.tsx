@@ -72,37 +72,37 @@ interface Endereco {
 }
 
 interface AmbienteEdificacao {
-  AMBIENTE: string;
-  DESCRICAO: string;
+  ambiente: string;
+  descricao: string;
 }
 
 interface ResponsavelTecnico {
-  NOME: string;
-  DOCUMENTOS: ('PCMSO' | 'PGR' | 'LTCAT')[];
-  REGISTRO: string;
-  UF: string;
-  DATAINICIO?: string;
-  DATAFIM?: string;
+  nome: string;
+  documentos: ("PCMSO" | "PGR" | "LTCAT")[];
+  registro: string;
+  uf: string;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 interface ContratanteEmpresa {
-  CNPJ: string;
-  RAZAOSOCIAL: string;
-  CIDADE: string;
-  UF: string;
-  LOGRADOURO?: string;
-  NUMERO?: string;
-  BAIRRO?: string;
-  CEP?: string;
-  CNAE?: string;
-  GRAUDERISCO?: number;
+  cnpj: string;
+  razaoSocial: string;
+  cidade: string;
+  uf: string;
+  logradouro?: string;
+  numero?: string;
+  bairro?: string;
+  cep?: string;
+  cnae?: string;
+  grauDeRisco?: number;
 }
 
 interface ContatoEmpresa {
-  NOME: string;
-  EMAIL: string;
-  TELEFONE: string;
-  PERFIL: string;
+  nome: string;
+  email: string;
+  telefone: string;
+  perfil: string;
 }
 
 interface Company {
@@ -116,12 +116,13 @@ interface Company {
   GRAU_RISCO?: number;
   NUMERO_FUNCIONARIOS?: number;
   FONE_FAX?: string;
-  CNAESSECUNDARIOS?: string[];
-  REPRESENTANTELEGAL?: string;
-  CODIGOIBGEMUNICIPIO?: string;
-  SITUACAOCADASTRAL?: string;
-  EMAIL?: string;
-  TELEFONE?: string;
+  cnaesSecundarios?: string[];
+  representanteLegal?: string;
+  codigoIbgeMunicipio?: string;
+  situacaoCadastral?: string;
+  email?: string;
+  telefone?: string;
+  endereco?: Endereco;
   ENDERECO?: string;
   NUMEROENDERECO?: string;
   COMPLEMENTOENDERECO?: string;
@@ -129,23 +130,23 @@ interface Company {
   CIDADE?: string;
   CEP?: string;
   UF?: string;
-  AMBIENTESEDIFICACAO?: AmbienteEdificacao[];
-  RESPONSAVEISTECNICOS?: ResponsavelTecnico[];
-  CONTRATANTES?: ContratanteEmpresa[];
-  CONFIGURACOES?: {
-    REQUERPSICOLOGA: boolean;
-    CREDENCIADASOC: boolean;
-    SOMENTECOMPLEMENTARES?: boolean;
-    FATURAMENTO?: "CMSO" | "SEGTEC";
-    DEVEDOR?: boolean;
-    ASORAPIDOAUTOMATICO?: boolean;
-    ENTREGADEEPI?: boolean;
+  ambientesEdificacao?: AmbienteEdificacao[];
+  responsaveisTecnicos?: ResponsavelTecnico[];
+  contratantes?: ContratanteEmpresa[];
+  configuracoes?: {
+    requerPsicologa: boolean;
+    credenciadaSoc: boolean;
+    somenteComplementares?: boolean;
+    faturamento?: "CMSO" | "SEGTEC";
+    devedor?: boolean;
+    asoRapidoAutomatico?: boolean;
   };
-  CONTATOS?: ContatoEmpresa[];
-  CODIGOINTERNOCLEINTE?: string;
+  contatos?: ContatoEmpresa[];
+  documentosUrl?: string[];
+  codigoInternoCliente?: string;
   'CÓD. CLIENTE (INT.)'?: string;
-  AVISOS?: string;
-  OBSERVACOES?: string;
+  avisos?: string;
+  observacoes?: string;
 }
 
 interface EmpresasSectionProps {
@@ -199,18 +200,17 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     CIDADE: "",
     CEP: "",
     UF: "",
-    CONFIGURACOES: {
-      REQUERPSICOLOGA: false,
-      CREDENCIADASOC: false,
-      SOMENTECOMPLEMENTARES: false,
-      FATURAMENTO: "CMSO",
-      DEVEDOR: false,
-      ASORAPIDOAUTOMATICO: false,
-      ENTREGADEEPI: false,
+    configuracoes: {
+      requerPsicologa: false,
+      credenciadaSoc: false,
+      somenteComplementares: false,
+      faturamento: "CMSO",
+      devedor: false,
+      asoRapidoAutomatico: false,
     },
-    CODIGOINTERNOCLEINTE: "",
-    AVISOS: "",
-    OBSERVACOES: "",
+    codigoInternoCliente: "",
+    avisos: "",
+    observacoes: "",
   });
 
   const [ambientes, setAmbientes] = useState<AmbienteEdificacao[]>([]);
@@ -219,32 +219,32 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   const [contatos, setContatos] = useState<ContatoEmpresa[]>([]);
 
   // Temporary row states for adding
-  const [newAmbiente, setNewAmbiente] = useState<AmbienteEdificacao>({ AMBIENTE: "", DESCRICAO: "" });
+  const [newAmbiente, setNewAmbiente] = useState<AmbienteEdificacao>({ ambiente: "", descricao: "" });
   const [newResponsavel, setNewResponsavel] = useState<ResponsavelTecnico>({
-    NOME: "",
-    DOCUMENTOS: [],
-    REGISTRO: "",
-    UF: "",
-    DATAINICIO: "",
-    DATAFIM: "",
+    nome: "",
+    documentos: [],
+    registro: "",
+    uf: "",
+    dataInicio: "",
+    dataFim: "",
   });
   const [newContratante, setNewContratante] = useState<ContratanteEmpresa>({
-    CNPJ: "",
-    RAZAOSOCIAL: "",
-    CIDADE: "",
-    UF: "",
-    LOGRADOURO: "",
-    NUMERO: "",
-    BAIRRO: "",
-    CEP: "",
-    CNAE: "",
-    GRAUDERISCO: 1,
+    cnpj: "",
+    razaoSocial: "",
+    cidade: "",
+    uf: "",
+    logradouro: "",
+    numero: "",
+    bairro: "",
+    cep: "",
+    cnae: "",
+    grauDeRisco: 1,
   });
   const [newContato, setNewContato] = useState<ContatoEmpresa>({
-    NOME: "",
-    EMAIL: "",
-    TELEFONE: "",
-    PERFIL: "",
+    nome: "",
+    email: "",
+    telefone: "",
+    perfil: "",
   });
   const [editingContactIndex, setEditingContactIndex] = useState<number | null>(null);
   const [buscandoContratanteCnpj, setBuscandoContratanteCnpj] = useState(false);
@@ -373,11 +373,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map((c: any) => ({
-            NOME: c.nome || c.nomeContato || c.contato || "Contato SOC",
-            EMAIL: c.primeiroEmail || c.email || "",
-            TELEFONE: c.telefone || (c.dddTelefone && c.telefone ? `(${c.dddTelefone}) ${c.telefone}` : "") || "",
-            PERFIL: c.nomePerfil || c.codigoPerfil || "",
-          })).filter((c: any) => c.EMAIL);
+            nome: c.nome || c.nomeContato || c.contato || "Contato SOC",
+            email: c.primeiroEmail || c.email || "",
+            telefone: c.telefone || (c.dddTelefone && c.telefone ? `(${c.dddTelefone}) ${c.telefone}` : "") || "",
+            perfil: c.nomePerfil || c.codigoPerfil || "",
+          })).filter(c => c.email);
           
           if (mapped.length === 0) {
             alert("Nenhum contato com e-mail encontrado no SOC para esta empresa.");
@@ -386,8 +386,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
           
           const novosContatos = [...contatos];
           let adicionados = 0;
-          mapped.forEach((c: any) => {
-            if (!novosContatos.some((existing) => existing.EMAIL.toLowerCase() === c.EMAIL.toLowerCase())) {
+          mapped.forEach((c) => {
+            if (!novosContatos.some((existing) => existing.email.toLowerCase() === c.email.toLowerCase())) {
               novosContatos.push(c);
               adicionados++;
             }
@@ -463,11 +463,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         const data = await res.json();
         if (Array.isArray(data) && data.length > 0) {
           const mapped = data.map((c: any) => ({
-            NOME: c.nome || c.nomeContato || c.contato || "Contato SOC",
-            EMAIL: c.primeiroEmail || c.email || "",
-            TELEFONE: c.telefone || (c.dddTelefone && c.telefone ? `(${c.dddTelefone}) ${c.telefone}` : "") || "",
-            PERFIL: c.nomePerfil || c.codigoPerfil || "",
-          })).filter((c: any) => c.EMAIL);
+            nome: c.nome || c.nomeContato || c.contato || "Contato SOC",
+            email: c.primeiroEmail || c.email || "",
+            telefone: c.telefone || (c.dddTelefone && c.telefone ? `(${c.dddTelefone}) ${c.telefone}` : "") || "",
+            perfil: c.nomePerfil || c.codigoPerfil || "",
+          })).filter(c => c.email);
           setContatos(mapped);
         }
       }
@@ -519,12 +519,12 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         NOMEABREVIADO: data.nome_fantasia || data.razao_social || "",
         CNAE: data.cnae_fiscal ? String(data.cnae_fiscal) : "",
         RAMO_ATIVIDADE: data.cnae_fiscal_descricao || "",
-        CNAESSECUNDARIOS: Array.isArray(data.cnaes_secundarios) ? data.cnaes_secundarios.map((c: any) => String(c.codigo || "")) : [],
-        REPRESENTANTELEGAL: Array.isArray(data.qsa) && data.qsa[0] ? data.qsa[0].nome : "",
-        CODIGOIBGEMUNICIPIO: data.codigo_municipio_ibge ? String(data.codigo_municipio_ibge) : "",
-        SITUACAOCADASTRAL: data.descricao_situacao_cadastral || "",
-        EMAIL: data.email || "",
-        TELEFONE: data.ddd_telefone_1 || data.telefone || "",
+        cnaesSecundarios: Array.isArray(data.cnaes_secundarios) ? data.cnaes_secundarios.map((c: any) => String(c.codigo || "")) : [],
+        representanteLegal: Array.isArray(data.qsa) && data.qsa[0] ? data.qsa[0].nome : "",
+        codigoIbgeMunicipio: data.codigo_municipio_ibge ? String(data.codigo_municipio_ibge) : "",
+        situacaoCadastral: data.descricao_situacao_cadastral || "",
+        email: data.email || "",
+        telefone: data.ddd_telefone_1 || data.telefone || "",
         ENDERECO: data.logradouro || "",
         NUMEROENDERECO: data.numero || "",
         COMPLEMENTOENDERECO: data.complemento || "",
@@ -576,12 +576,12 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       GRAU_RISCO: company.GRAU_RISCO || 1,
       NUMERO_FUNCIONARIOS: company.NUMERO_FUNCIONARIOS || 0,
       FONE_FAX: company.FONE_FAX || "",
-      CNAESSECUNDARIOS: company.CNAESSECUNDARIOS || [],
-      REPRESENTANTELEGAL: company.REPRESENTANTELEGAL || "",
-      CODIGOIBGEMUNICIPIO: company.CODIGOIBGEMUNICIPIO || "",
-      SITUACAOCADASTRAL: company.SITUACAOCADASTRAL || "",
-      EMAIL: company.EMAIL || "",
-      TELEFONE: company.TELEFONE || "",
+      cnaesSecundarios: company.cnaesSecundarios || [],
+      representanteLegal: company.representanteLegal || "",
+      codigoIbgeMunicipio: company.codigoIbgeMunicipio || "",
+      situacaoCadastral: company.situacaoCadastral || "",
+      email: company.email || "",
+      telefone: company.telefone || "",
       ENDERECO: company.ENDERECO || "",
       NUMEROENDERECO: company.NUMEROENDERECO || "",
       COMPLEMENTOENDERECO: company.COMPLEMENTOENDERECO || "",
@@ -589,30 +589,29 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       CIDADE: company.CIDADE || "",
       CEP: company.CEP || "",
       UF: company.UF || "",
-      CONFIGURACOES: {
-        REQUERPSICOLOGA: company.CONFIGURACOES?.REQUERPSICOLOGA ?? false,
-        CREDENCIADASOC: company.CONFIGURACOES?.CREDENCIADASOC ?? false,
-        SOMENTECOMPLEMENTARES: company.CONFIGURACOES?.SOMENTECOMPLEMENTARES ?? false,
-        FATURAMENTO: company.CONFIGURACOES?.FATURAMENTO ?? "CMSO",
-        DEVEDOR: company.CONFIGURACOES?.DEVEDOR ?? false,
-        ASORAPIDOAUTOMATICO: company.CONFIGURACOES?.ASORAPIDOAUTOMATICO ?? false,
-        ENTREGADEEPI: company.CONFIGURACOES?.ENTREGADEEPI ?? false,
+      configuracoes: {
+        requerPsicologa: company.configuracoes?.requerPsicologa ?? false,
+        credenciadaSoc: company.configuracoes?.credenciadaSoc ?? false,
+        somenteComplementares: company.configuracoes?.somenteComplementares ?? false,
+        faturamento: company.configuracoes?.faturamento ?? "CMSO",
+        devedor: company.configuracoes?.devedor ?? false,
+        asoRapidoAutomatico: company.configuracoes?.asoRapidoAutomatico ?? false,
       },
-      CODIGOINTERNOCLEINTE: company.CODIGOINTERNOCLEINTE || company["CÓD. CLIENTE (INT.)"] || "",
-      AVISOS: company.AVISOS || "",
-      OBSERVACOES: company.OBSERVACOES || "",
+      codigoInternoCliente: company.codigoInternoCliente || company["CÓD. CLIENTE (INT.)"] || "",
+      avisos: company.avisos || "",
+      observacoes: company.observacoes || "",
     };
     setForm(formValues);
-    const amb = company.AMBIENTESEDIFICACAO || [];
-    const resp = company.RESPONSAVEISTECNICOS || [];
-    const contr = company.CONTRATANTES || [];
-    const conts = company.CONTATOS || [];
+    const amb = company.ambientesEdificacao || [];
+    const resp = company.responsaveisTecnicos || [];
+    const contr = company.contratantes || [];
+    const conts = company.contatos || [];
     setAmbientes(amb);
     setResponsaveis(resp);
     setContratantes(contr);
     setContatos(conts);
     setEditingContactIndex(null);
-    setNewContato({ NOME: "", EMAIL: "", TELEFONE: "", PERFIL: "" });
+    setNewContato({ nome: "", email: "", telefone: "", perfil: "" });
     setActiveTab("dados");
     setModalOpen(true);
     fetchDocumentos(company.CODIGO);
@@ -632,12 +631,12 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       GRAU_RISCO: 1,
       NUMERO_FUNCIONARIOS: 0,
       FONE_FAX: "",
-      CNAESSECUNDARIOS: [],
-      REPRESENTANTELEGAL: "",
-      CODIGOIBGEMUNICIPIO: "",
-      SITUACAOCADASTRAL: "",
-      EMAIL: "",
-      TELEFONE: "",
+      cnaesSecundarios: [],
+      representanteLegal: "",
+      codigoIbgeMunicipio: "",
+      situacaoCadastral: "",
+      email: "",
+      telefone: "",
       ENDERECO: "",
       NUMEROENDERECO: "",
       COMPLEMENTOENDERECO: "",
@@ -645,18 +644,17 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       CIDADE: "",
       CEP: "",
       UF: "",
-      CONFIGURACOES: {
-        REQUERPSICOLOGA: false,
-        CREDENCIADASOC: false,
-        SOMENTECOMPLEMENTARES: false,
-        FATURAMENTO: "CMSO" as const,
-        DEVEDOR: false,
-        ASORAPIDOAUTOMATICO: false,
-        ENTREGADEEPI: false,
+      configuracoes: {
+        requerPsicologa: false,
+        credenciadaSoc: false,
+        somenteComplementares: false,
+        faturamento: "CMSO" as const,
+        devedor: false,
+        asoRapidoAutomatico: false,
       },
-      CODIGOINTERNOCLEINTE: "",
-      AVISOS: "",
-      OBSERVACOES: "",
+      codigoInternoCliente: "",
+      avisos: "",
+      observacoes: "",
     };
     setForm(formValues);
     setAmbientes([]);
@@ -694,10 +692,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         },
         body: JSON.stringify({
           ...form,
-          AMBIENTESEDIFICACAO: ambientes,
-          RESPONSAVEISTECNICOS: responsaveis,
-          CONTRATANTES: contratantes,
-          CONTATOS: contatos,
+          ambientesEdificacao: ambientes,
+          responsaveisTecnicos: responsaveis,
+          contratantes: contratantes,
+          contatos: contatos,
         }),
       });
 
@@ -737,9 +735,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
   // List Management Helpers
   function addAmbiente() {
-    if (!newAmbiente.AMBIENTE.trim() || !newAmbiente.DESCRICAO.trim()) return;
+    if (!newAmbiente.ambiente.trim() || !newAmbiente.descricao.trim()) return;
     setAmbientes([...ambientes, newAmbiente]);
-    setNewAmbiente({ AMBIENTE: "", DESCRICAO: "" });
+    setNewAmbiente({ ambiente: "", descricao: "" });
   }
 
   function removeAmbiente(index: number) {
@@ -747,18 +745,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   }
 
   function addResponsavel() {
-    if (!newResponsavel.NOME.trim() || !newResponsavel.REGISTRO.trim() || newResponsavel.DOCUMENTOS.length === 0) {
+    if (!newResponsavel.nome.trim() || !newResponsavel.registro.trim() || newResponsavel.documentos.length === 0) {
       alert("Por favor, preencha nome, registro e selecione ao menos um documento.");
       return;
     }
     setResponsaveis([...responsaveis, newResponsavel]);
     setNewResponsavel({
-      NOME: "",
-      DOCUMENTOS: [],
-      REGISTRO: "",
-      UF: "",
-      DATAINICIO: "",
-      DATAFIM: "",
+      nome: "",
+      documentos: [],
+      registro: "",
+      uf: "",
+      dataInicio: "",
+      dataFim: "",
     });
   }
 
@@ -767,22 +765,22 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   }
 
   async function handleBuscarCnpjContratante() {
-    if (!newContratante.CNPJ.trim()) return;
+    if (!newContratante.cnpj.trim()) return;
     setBuscandoContratanteCnpj(true);
     try {
-      const result = await handleBuscarCnpj(true, newContratante.CNPJ);
+      const result = await handleBuscarCnpj(true, newContratante.cnpj);
       if (result) {
         setNewContratante({
-          CNPJ: result.cnpj,
-          RAZAOSOCIAL: result.razaoSocial,
-          CIDADE: result.cidade,
-          UF: result.uf,
-          LOGRADOURO: result.logradouro,
-          NUMERO: result.numero,
-          BAIRRO: result.bairro,
-          CEP: result.cep,
-          CNAE: result.cnae,
-          GRAUDERISCO: result.grauDeRisco || 1,
+          cnpj: result.cnpj,
+          razaoSocial: result.razaoSocial,
+          cidade: result.cidade,
+          uf: result.uf,
+          logradouro: result.logradouro,
+          numero: result.numero,
+          bairro: result.bairro,
+          cep: result.cep,
+          cnae: result.cnae,
+          grauDeRisco: result.grauDeRisco || 1,
         });
       }
     } catch (err) {
@@ -793,19 +791,19 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   }
 
   function addContratante() {
-    if (!newContratante.CNPJ.trim() || !newContratante.RAZAOSOCIAL.trim()) return;
+    if (!newContratante.cnpj.trim() || !newContratante.razaoSocial.trim()) return;
     setContratantes([...contratantes, newContratante]);
     setNewContratante({
-      CNPJ: "",
-      RAZAOSOCIAL: "",
-      CIDADE: "",
-      UF: "",
-      LOGRADOURO: "",
-      NUMERO: "",
-      BAIRRO: "",
-      CEP: "",
-      CNAE: "",
-      GRAUDERISCO: 1,
+      cnpj: "",
+      razaoSocial: "",
+      cidade: "",
+      uf: "",
+      logradouro: "",
+      numero: "",
+      bairro: "",
+      cep: "",
+      cnae: "",
+      grauDeRisco: 1,
     });
   }
 
@@ -822,11 +820,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
   function cancelEditContato() {
     setEditingContactIndex(null);
-    setNewContato({ NOME: "", EMAIL: "", TELEFONE: "", PERFIL: "" });
+    setNewContato({ nome: "", email: "", telefone: "", perfil: "" });
   }
 
   function handleSaveContato() {
-    if (!newContato.NOME.trim() || !newContato.EMAIL.trim()) {
+    if (!newContato.nome.trim() || !newContato.email.trim()) {
       alert("Por favor, preencha pelo menos Nome e E-mail.");
       return;
     }
@@ -893,18 +891,19 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 }}
               />
               <Button
+                color="primary"
                 startContent={<Plus size={18} />}
                 onPress={openCreate}
                 size="sm"
-                className="h-9 px-3 bg-[#44735e] text-white hover:bg-[#7FA830] transition-all duration-200 shrink-0"
+                className="h-9 px-3"
+                style={{ backgroundColor: "#44735e" }}
               >
                 Nova Empresa
               </Button>
             </div>
           </div>
 
-          <div className="overflow-x-auto w-full">
-            <Table aria-label="Empresas cadastradas">
+          <Table aria-label="Empresas cadastradas">
             <TableHeader>
               <TableColumn width={380}>RAZÃO SOCIAL / FANTASIA</TableColumn>
               <TableColumn width={160}>CNPJ</TableColumn>
@@ -917,7 +916,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 .slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
                 .map((company) => {
                   const uniqueDocs = Array.from(new Set(
-                    (company.RESPONSAVEISTECNICOS || []).flatMap(r => r.DOCUMENTOS || [])
+                    (company.responsaveisTecnicos || []).flatMap(r => r.documentos || [])
                   ));
                   return (
                     <TableRow key={company.CODIGO}>
@@ -934,7 +933,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       <TableCell className="font-mono text-xs whitespace-nowrap">{formatCNPJ(company.CNPJ)}</TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1">
-                          {company.CONFIGURACOES?.DEVEDOR ? (
+                          {company.configuracoes?.devedor ? (
                             <div className="mt-0.5">
                               <Chip size="sm" color="danger" variant="solid" className="h-5 text-[10px] font-bold animate-pulse">
                                 DEVEDOR
@@ -947,14 +946,14 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-1.5 text-xs">
-                          {company.RESPONSAVEISTECNICOS && company.RESPONSAVEISTECNICOS.length > 0 ? (
-                            company.RESPONSAVEISTECNICOS.map((r, idx) => (
+                          {company.responsaveisTecnicos && company.responsaveisTecnicos.length > 0 ? (
+                            company.responsaveisTecnicos.map((r, idx) => (
                               <div key={idx} className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-0.5">
-                                <span className="font-semibold text-gray-700 whitespace-normal line-clamp-1" title={r.NOME}>
-                                  {r.NOME}
+                                <span className="font-semibold text-gray-700 whitespace-normal line-clamp-1" title={r.nome}>
+                                  {r.nome}
                                 </span>
                                 <div className="flex gap-0.5">
-                                  {(r.DOCUMENTOS || []).map(doc => (
+                                  {(r.documentos || []).map(doc => (
                                     <span key={doc} className="inline-flex text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200/50 px-1 py-0.2 rounded">
                                       {doc}
                                     </span>
@@ -992,8 +991,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 );
               })}
             </TableBody>
-            </Table>
-          </div>
+          </Table>
 
           {filteredCompanies.length > itemsPerPage && (
             <div className="flex justify-center mt-6">
@@ -1018,22 +1016,22 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               </span>
               {!isCreate && (
                 <div className="flex flex-wrap gap-1">
-                  {form.CONFIGURACOES?.REQUERPSICOLOGA && (
+                  {form.configuracoes?.requerPsicologa && (
                     <Chip size="sm" color="secondary" variant="flat">Psicologia</Chip>
                   )}
-                  {form.CONFIGURACOES?.CREDENCIADASOC && (
+                  {form.configuracoes?.credenciadaSoc && (
                     <Chip size="sm" color="primary" variant="flat">SOC</Chip>
                   )}
-                  {form.CONFIGURACOES?.ASORAPIDOAUTOMATICO && (
+                  {form.configuracoes?.asoRapidoAutomatico && (
                     <Chip size="sm" color="warning" variant="flat">ASO Auto</Chip>
                   )}
-                  {form.CONFIGURACOES?.SOMENTECOMPLEMENTARES && (
+                  {form.configuracoes?.somenteComplementares && (
                     <Chip size="sm" color="success" variant="flat">Complementar</Chip>
                   )}
-                  {form.CONFIGURACOES?.FATURAMENTO && (
-                    <Chip size="sm" color="default" variant="flat">Fat: {form.CONFIGURACOES.FATURAMENTO}</Chip>
+                  {form.configuracoes?.faturamento && (
+                    <Chip size="sm" color="default" variant="flat">Fat: {form.configuracoes.faturamento}</Chip>
                   )}
-                  {form.CONFIGURACOES?.DEVEDOR && (
+                  {form.configuracoes?.devedor && (
                     <Chip size="sm" color="danger" variant="solid" className="font-bold animate-pulse">DEVEDOR</Chip>
                   )}
                 </div>
@@ -1050,7 +1048,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <span className="flex items-center gap-1">
                       <Users size={12} />
                       Docs Ativos: 
-                      {Array.from(new Set(responsaveis.flatMap(r => r.DOCUMENTOS || []))).map(doc => (
+                      {Array.from(new Set(responsaveis.flatMap(r => r.documentos || []))).map(doc => (
                         <Chip key={doc} size="sm" variant="bordered" color="warning" className="h-4 text-[9px] py-0 px-1 font-semibold leading-none border-warning-200">
                           {doc}
                         </Chip>
@@ -1186,34 +1184,34 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                   />
                   <Input
                     label="Código Interno Cliente"
-                    value={form.CODIGOINTERNOCLEINTE}
-                    onValueChange={(v) => setForm((f) => ({ ...f, CODIGOINTERNOCLEINTE: v }))}
+                    value={form.codigoInternoCliente}
+                    onValueChange={(v) => setForm((f) => ({ ...f, codigoInternoCliente: v }))}
                   />
                   <Input
                     label="E-mail de Contato"
-                    value={form.EMAIL}
-                    onValueChange={(v) => setForm((f) => ({ ...f, EMAIL: v }))}
+                    value={form.email}
+                    onValueChange={(v) => setForm((f) => ({ ...f, email: v }))}
                   />
                   <Input
                     label="Telefone Adicional"
-                    value={form.TELEFONE}
-                    onValueChange={(v) => setForm((f) => ({ ...f, TELEFONE: v }))}
+                    value={form.telefone}
+                    onValueChange={(v) => setForm((f) => ({ ...f, telefone: v }))}
                   />
                   <Input
                     label="Representante Legal"
-                    value={form.REPRESENTANTELEGAL}
-                    onValueChange={(v) => setForm((f) => ({ ...f, REPRESENTANTELEGAL: v }))}
+                    value={form.representanteLegal}
+                    onValueChange={(v) => setForm((f) => ({ ...f, representanteLegal: v }))}
                   />
                   <Input
                     label="Situação Cadastral"
-                    value={form.SITUACAOCADASTRAL}
-                    onValueChange={(v) => setForm((f) => ({ ...f, SITUACAOCADASTRAL: v }))}
+                    value={form.situacaoCadastral}
+                    onValueChange={(v) => setForm((f) => ({ ...f, situacaoCadastral: v }))}
                     placeholder="ATIVA, BAILADA, INAPTA"
                   />
                   <Input
                     label="Código IBGE Município"
-                    value={form.CODIGOIBGEMUNICIPIO}
-                    onValueChange={(v) => setForm((f) => ({ ...f, CODIGOIBGEMUNICIPIO: v }))}
+                    value={form.codigoIbgeMunicipio}
+                    onValueChange={(v) => setForm((f) => ({ ...f, codigoIbgeMunicipio: v }))}
                     placeholder="ex: 3550308"
                   />
                   {/* Seção de Endereço */}
@@ -1262,22 +1260,22 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                   <Textarea
                     label="Avisos"
                     placeholder="Digite avisos importantes sobre esta empresa..."
-                    value={form.AVISOS}
-                    onValueChange={(v) => setForm((f) => ({ ...f, AVISOS: v }))}
+                    value={form.avisos}
+                    onValueChange={(v) => setForm((f) => ({ ...f, avisos: v }))}
                     className="col-span-2"
                   />
                   <Textarea
                     label="Observações"
                     placeholder="Digite observações complementares..."
-                    value={form.OBSERVACOES}
-                    onValueChange={(v) => setForm((f) => ({ ...f, OBSERVACOES: v }))}
+                    value={form.observacoes}
+                    onValueChange={(v) => setForm((f) => ({ ...f, observacoes: v }))}
                     className="col-span-2"
                   />
-                  {form.CNAESSECUNDARIOS && form.CNAESSECUNDARIOS.length > 0 && (
+                  {form.cnaesSecundarios && form.cnaesSecundarios.length > 0 && (
                     <div className="col-span-2 p-3 bg-gray-50 rounded-lg border border-gray-100 mt-1">
                       <span className="text-xs font-semibold text-gray-500 block mb-1">CNAEs Secundários</span>
                       <div className="flex flex-wrap gap-1.5">
-                        {form.CNAESSECUNDARIOS.map((cnae) => (
+                        {form.cnaesSecundarios.map((cnae) => (
                           <Chip key={cnae} size="sm" variant="flat" color="secondary" className="font-mono text-xs">
                             {cnae}
                           </Chip>
@@ -1293,32 +1291,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 <div className="flex flex-col gap-6 pt-6 pl-2">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">ASO Rápido Automático</span>
-                      <span className="text-xs text-gray-400">Gera ASO no SOC automaticamente ao realizar agendamento</span>
+                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
+                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
                     </div>
                     <Switch
-                      isSelected={form.CONFIGURACOES?.ASORAPIDOAUTOMATICO || false}
+                      isSelected={form.configuracoes?.requerPsicologa}
                       onValueChange={(v) =>
                         setForm((f) => ({
                           ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, ASORAPIDOAUTOMATICO: v },
-                        }))
-                      }
-                      color="success"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Complementar</span>
-                      <span className="text-xs text-gray-400">Clientes que optam somente por exames complementares</span>
-                    </div>
-                    <Switch
-                      isSelected={form.CONFIGURACOES?.SOMENTECOMPLEMENTARES}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, SOMENTECOMPLEMENTARES: v },
+                          configuracoes: { ...f.configuracoes!, requerPsicologa: v },
                         }))
                       }
                       color="success"
@@ -1331,11 +1312,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       <span className="text-xs text-gray-400">Indica que a empresa opera via credenciamento direto SOC</span>
                     </div>
                     <Switch
-                      isSelected={form.CONFIGURACOES?.CREDENCIADASOC}
+                      isSelected={form.configuracoes?.credenciadaSoc}
                       onValueChange={(v) =>
                         setForm((f) => ({
                           ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, CREDENCIADASOC: v },
+                          configuracoes: { ...f.configuracoes!, credenciadaSoc: v },
                         }))
                       }
                       color="success"
@@ -1344,32 +1325,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
-                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
+                      <span className="text-sm font-semibold text-gray-700">ASO Rápido Automático</span>
+                      <span className="text-xs text-gray-400">Gera ASO no SOC automaticamente ao realizar agendamento</span>
                     </div>
                     <Switch
-                      isSelected={form.CONFIGURACOES?.DEVEDOR || false}
+                      isSelected={form.configuracoes?.asoRapidoAutomatico || false}
                       onValueChange={(v) =>
                         setForm((f) => ({
                           ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, DEVEDOR: v },
-                        }))
-                      }
-                      color="danger"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Entrega de EPI</span>
-                      <span className="text-xs text-gray-400">Habilita o uso da funcionalidade entrega de EPI</span>
-                    </div>
-                    <Switch
-                      isSelected={form.CONFIGURACOES?.ENTREGADEEPI || false}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, ENTREGADEEPI: v },
+                          configuracoes: { ...f.configuracoes!, asoRapidoAutomatico: v },
                         }))
                       }
                       color="success"
@@ -1378,15 +1342,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
-                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
+                      <span className="text-sm font-semibold text-gray-700">Complementar</span>
+                      <span className="text-xs text-gray-400">Clientes que optam somente por exames complementares</span>
                     </div>
                     <Switch
-                      isSelected={form.CONFIGURACOES?.REQUERPSICOLOGA}
+                      isSelected={form.configuracoes?.somenteComplementares}
                       onValueChange={(v) =>
                         setForm((f) => ({
                           ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, REQUERPSICOLOGA: v },
+                          configuracoes: { ...f.configuracoes!, somenteComplementares: v },
                         }))
                       }
                       color="success"
@@ -1400,20 +1364,37 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     </div>
                     <Select
                       placeholder="Selecione a integração..."
-                      selectedKeys={form.CONFIGURACOES?.FATURAMENTO ? [form.CONFIGURACOES.FATURAMENTO] : []}
+                      selectedKeys={form.configuracoes?.faturamento ? [form.configuracoes.faturamento] : []}
                       size="sm"
                       className="max-w-[200px]"
                       onSelectionChange={(keys) => {
                         const val = Array.from(keys)[0] as "CMSO" | "SEGTEC";
                         setForm((f) => ({
                           ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, FATURAMENTO: val },
+                          configuracoes: { ...f.configuracoes!, faturamento: val },
                         }));
                       }}
                     >
                       <SelectItem key="CMSO">CMSO</SelectItem>
                       <SelectItem key="SEGTEC">SEGTEC</SelectItem>
                     </Select>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
+                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
+                    </div>
+                    <Switch
+                      isSelected={form.configuracoes?.devedor || false}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          configuracoes: { ...f.configuracoes!, devedor: v },
+                        }))
+                      }
+                      color="danger"
+                    />
                   </div>
                 </div>
               )}
@@ -1424,15 +1405,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="Ambiente / Item"
                       placeholder="Ex: Piso, Parede, Teto"
-                      value={newAmbiente.AMBIENTE}
-                      onValueChange={(v) => setNewAmbiente((a) => ({ ...a, AMBIENTE: v }))}
+                      value={newAmbiente.ambiente}
+                      onValueChange={(v) => setNewAmbiente((a) => ({ ...a, ambiente: v }))}
                       size="sm"
                     />
                     <Input
                       label="Descrição Física"
                       placeholder="Ex: Piso cerâmico antiderrapante..."
-                      value={newAmbiente.DESCRICAO}
-                      onValueChange={(v) => setNewAmbiente((a) => ({ ...a, DESCRICAO: v }))}
+                      value={newAmbiente.descricao}
+                      onValueChange={(v) => setNewAmbiente((a) => ({ ...a, descricao: v }))}
                       size="sm"
                     />
                     <Button color="primary" onPress={addAmbiente} startContent={<Plus size={16} />} size="md" className="bg-[#44735e]">
@@ -1449,8 +1430,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <TableBody emptyContent="Nenhum ambiente ou descrição cadastrada">
                       {ambientes.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-semibold text-gray-700">{item.AMBIENTE}</TableCell>
-                          <TableCell className="text-gray-500">{item.DESCRICAO}</TableCell>
+                          <TableCell className="font-semibold text-gray-700">{item.ambiente}</TableCell>
+                          <TableCell className="text-gray-500">{item.descricao}</TableCell>
                           <TableCell>
                             <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeAmbiente(index)}>
                               <Trash2 size={16} />
@@ -1471,8 +1452,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                         <Input
                           label="Nome"
                           placeholder="Nome do profissional"
-                          value={newResponsavel.NOME}
-                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, NOME: v }))}
+                          value={newResponsavel.nome}
+                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, nome: v }))}
                         />
                       </div>
                       <div className="md:col-span-2">
@@ -1480,9 +1461,9 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                           label="Documentos"
                           placeholder="Selecione os documentos..."
                           selectionMode="multiple"
-                          selectedKeys={new Set(newResponsavel.DOCUMENTOS)}
+                          selectedKeys={new Set(newResponsavel.documentos)}
                           onSelectionChange={(keys) =>
-                            setNewResponsavel((r) => ({ ...r, DOCUMENTOS: Array.from(keys) as any[] }))
+                            setNewResponsavel((r) => ({ ...r, documentos: Array.from(keys) as any[] }))
                           }
                         >
                           <SelectItem key="PCMSO">PCMSO</SelectItem>
@@ -1497,16 +1478,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                         <Input
                           label="Registro"
                           placeholder="CREA/CRM/MTE"
-                          value={newResponsavel.REGISTRO}
-                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, REGISTRO: v }))}
+                          value={newResponsavel.registro}
+                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, registro: v }))}
                         />
                       </div>
                       <div className="col-span-1 md:col-span-1">
                         <Input
                           label="UF"
                           placeholder="SP"
-                          value={newResponsavel.UF}
-                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, UF: v }))}
+                          value={newResponsavel.uf}
+                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, uf: v }))}
                           maxLength={2}
                         />
                       </div>
@@ -1514,16 +1495,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                         <Input
                           label="Data Início"
                           type="date"
-                          value={newResponsavel.DATAINICIO || ""}
-                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, DATAINICIO: v }))}
+                          value={newResponsavel.dataInicio || ""}
+                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, dataInicio: v }))}
                         />
                       </div>
                       <div className="col-span-1">
                         <Input
                           label="Data Fim"
                           type="date"
-                          value={newResponsavel.DATAFIM || ""}
-                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, DATAFIM: v }))}
+                          value={newResponsavel.dataFim || ""}
+                          onValueChange={(v) => setNewResponsavel((r) => ({ ...r, dataFim: v }))}
                         />
                       </div>
                     </div>
@@ -1551,10 +1532,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <TableBody emptyContent="Nenhum responsável técnico cadastrado">
                       {responsaveis.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-semibold text-gray-700">{item.NOME}</TableCell>
+                          <TableCell className="font-semibold text-gray-700">{item.nome}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
-                              {(item.DOCUMENTOS || []).map((doc) => (
+                              {(item.documentos || []).map((doc) => (
                                 <Chip key={doc} size="sm" variant="flat" color="secondary">
                                   {doc}
                                 </Chip>
@@ -1562,10 +1543,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                             </div>
                           </TableCell>
                           <TableCell className="text-gray-500 font-mono text-xs">
-                            {item.REGISTRO} - {item.UF.toUpperCase()}
+                            {item.registro} - {item.uf.toUpperCase()}
                           </TableCell>
                           <TableCell className="text-gray-500 text-xs">
-                            {item.DATAINICIO ? new Date(item.DATAINICIO + "T00:00:00").toLocaleDateString("pt-BR") : "-"} até {item.DATAFIM ? new Date(item.DATAFIM + "T00:00:00").toLocaleDateString("pt-BR") : "-"}
+                            {item.dataInicio ? new Date(item.dataInicio + "T00:00:00").toLocaleDateString("pt-BR") : "-"} até {item.dataFim ? new Date(item.dataFim + "T00:00:00").toLocaleDateString("pt-BR") : "-"}
                           </TableCell>
                           <TableCell>
                             <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeResponsavel(index)}>
@@ -1586,8 +1567,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       <Input
                         label="CNPJ"
                         placeholder="CNPJ da contratante"
-                        value={newContratante.CNPJ}
-                        onValueChange={(v) => setNewContratante((c) => ({ ...c, CNPJ: v }))}
+                        value={newContratante.cnpj}
+                        onValueChange={(v) => setNewContratante((c) => ({ ...c, cnpj: v }))}
                         size="sm"
                       />
                       <Button
@@ -1604,8 +1585,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="Razão Social"
                       placeholder="Nome da empresa"
-                      value={newContratante.RAZAOSOCIAL}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, RAZAOSOCIAL: v }))}
+                      value={newContratante.razaoSocial}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, razaoSocial: v }))}
                       size="sm"
                       className="col-span-1 md:col-span-2"
                     />
@@ -1613,16 +1594,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="CEP"
                       placeholder="00000-000"
-                      value={newContratante.CEP}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, CEP: v }))}
+                      value={newContratante.cep}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, cep: v }))}
                       size="sm"
                     />
 
                     <Input
                       label="Logradouro"
                       placeholder="Rua / Av"
-                      value={newContratante.LOGRADOURO}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, LOGRADOURO: v }))}
+                      value={newContratante.logradouro}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, logradouro: v }))}
                       size="sm"
                       className="col-span-1 md:col-span-2"
                     />
@@ -1630,32 +1611,32 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="Número"
                       placeholder="123"
-                      value={newContratante.NUMERO}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, NUMERO: v }))}
+                      value={newContratante.numero}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, numero: v }))}
                       size="sm"
                     />
 
                     <Input
                       label="Bairro"
                       placeholder="Bairro"
-                      value={newContratante.BAIRRO}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, BAIRRO: v }))}
+                      value={newContratante.bairro}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, bairro: v }))}
                       size="sm"
                     />
 
                     <Input
                       label="Cidade"
                       placeholder="Cidade"
-                      value={newContratante.CIDADE}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, CIDADE: v }))}
+                      value={newContratante.cidade}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, cidade: v }))}
                       size="sm"
                     />
 
                     <Input
                       label="UF"
                       placeholder="SP"
-                      value={newContratante.UF}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, UF: v }))}
+                      value={newContratante.uf}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, uf: v }))}
                       size="sm"
                       maxLength={2}
                     />
@@ -1663,8 +1644,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="CNAE"
                       placeholder="CNAE"
-                      value={newContratante.CNAE}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, CNAE: v }))}
+                      value={newContratante.cnae}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, cnae: v }))}
                       size="sm"
                     />
 
@@ -1672,8 +1653,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       label="Grau de Risco"
                       placeholder="1 a 4"
                       type="number"
-                      value={String(newContratante.GRAUDERISCO || 1)}
-                      onValueChange={(v) => setNewContratante((c) => ({ ...c, GRAUDERISCO: Number(v) || 1 }))}
+                      value={String(newContratante.grauDeRisco || 1)}
+                      onValueChange={(v) => setNewContratante((c) => ({ ...c, grauDeRisco: Number(v) || 1 }))}
                       size="sm"
                     />
 
@@ -1695,13 +1676,13 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <TableBody emptyContent="Nenhuma empresa contratante vinculada">
                       {contratantes.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-semibold text-gray-700">{item.RAZAOSOCIAL}</TableCell>
-                          <TableCell className="font-mono text-xs">{item.CNPJ}</TableCell>
+                          <TableCell className="font-semibold text-gray-700">{item.razaoSocial}</TableCell>
+                          <TableCell className="font-mono text-xs">{item.cnpj}</TableCell>
                           <TableCell className="text-xs">
-                            CNAE: {item.CNAE || "-"} / Risco: {item.GRAUDERISCO || 1}
+                            CNAE: {item.cnae || "-"} / Risco: {item.grauDeRisco || 1}
                           </TableCell>
                           <TableCell className="text-gray-500 text-xs">
-                            {item.LOGRADOURO ? `${item.LOGRADOURO}, ${item.NUMERO || "S/N"} - ` : ""}{item.CIDADE} - {item.UF.toUpperCase()}
+                            {item.logradouro ? `${item.logradouro}, ${item.numero || "S/N"} - ` : ""}{item.cidade} - {item.uf.toUpperCase()}
                           </TableCell>
                           <TableCell>
                             <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => removeContratante(index)}>
@@ -1721,29 +1702,29 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <Input
                       label="Nome"
                       placeholder="Nome do contato"
-                      value={newContato.NOME}
-                      onValueChange={(v) => setNewContato((c) => ({ ...c, NOME: v }))}
+                      value={newContato.nome}
+                      onValueChange={(v) => setNewContato((c) => ({ ...c, nome: v }))}
                       size="sm"
                     />
                     <Input
                       label="E-mail"
                       placeholder="email@empresa.com"
-                      value={newContato.EMAIL}
-                      onValueChange={(v) => setNewContato((c) => ({ ...c, EMAIL: v }))}
+                      value={newContato.email}
+                      onValueChange={(v) => setNewContato((c) => ({ ...c, email: v }))}
                       size="sm"
                     />
                     <Input
                       label="Telefone"
                       placeholder="(00) 00000-0000"
-                      value={newContato.TELEFONE}
-                      onValueChange={(v) => setNewContato((c) => ({ ...c, TELEFONE: v }))}
+                      value={newContato.telefone}
+                      onValueChange={(v) => setNewContato((c) => ({ ...c, telefone: v }))}
                       size="sm"
                     />
                     <Input
                       label="Perfil (SOC)"
                       placeholder="Nome do perfil (ex: ASO)"
-                      value={newContato.PERFIL}
-                      onValueChange={(v) => setNewContato((c) => ({ ...c, PERFIL: v }))}
+                      value={newContato.perfil}
+                      onValueChange={(v) => setNewContato((c) => ({ ...c, perfil: v }))}
                       size="sm"
                     />
                     <div className="col-span-1 md:col-span-4 flex justify-between items-center gap-2">
@@ -1782,10 +1763,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <TableBody emptyContent="Nenhum contato vinculado">
                       {contatos.map((item, index) => (
                         <TableRow key={index}>
-                          <TableCell className="font-semibold text-gray-700">{item.NOME}</TableCell>
-                          <TableCell className="text-gray-500 font-mono text-xs">{item.EMAIL}</TableCell>
-                          <TableCell className="text-gray-500 text-xs">{item.TELEFONE || "-"}</TableCell>
-                          <TableCell className="text-gray-500 text-xs font-mono">{item.PERFIL || "-"}</TableCell>
+                          <TableCell className="font-semibold text-gray-700">{item.nome}</TableCell>
+                          <TableCell className="text-gray-500 font-mono text-xs">{item.email}</TableCell>
+                          <TableCell className="text-gray-500 text-xs">{item.telefone || "-"}</TableCell>
+                          <TableCell className="text-gray-500 text-xs font-mono">{item.perfil || "-"}</TableCell>
                           <TableCell>
                             <div className="flex gap-1">
                               <Button isIconOnly size="sm" variant="light" onPress={() => editContato(index)}>
@@ -1914,13 +1895,13 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                               ...contatos.map((c) => ({
                                 kind: "contact" as const,
                                 ...c,
-                                textValue: `${c.NOME} (${c.EMAIL})`,
+                                textValue: `${c.nome} (${c.email})`,
                               })),
                             ]}
                             selectedKeys={
                               contatos.length > 0 &&
                               newDocData.contatosNotificados.length === contatos.length &&
-                              contatos.every(c => newDocData.contatosNotificados.includes(c.EMAIL))
+                              contatos.every(c => newDocData.contatosNotificados.includes(c.email))
                                 ? new Set(['__all__'])
                                 : new Set(newDocData.contatosNotificados)
                             }
@@ -1929,10 +1910,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                               if (selected.includes('__all__')) {
                                 const allSelected = contatos.length > 0 &&
                                   newDocData.contatosNotificados.length === contatos.length &&
-                                  contatos.every(c => newDocData.contatosNotificados.includes(c.EMAIL));
+                                  contatos.every(c => newDocData.contatosNotificados.includes(c.email));
                                 setNewDocData({
                                   ...newDocData,
-                                  contatosNotificados: allSelected ? [] : contatos.map(c => c.EMAIL),
+                                  contatosNotificados: allSelected ? [] : contatos.map(c => c.email),
                                 });
                               } else {
                                   setNewDocData({ ...newDocData, contatosNotificados: selected });
@@ -1948,10 +1929,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                                     </div>
                                   </SelectItem>
                                 ) : (
-                                  <SelectItem key={c.EMAIL} textValue={c.textValue}>
+                                  <SelectItem key={c.email} textValue={c.textValue}>
                                     <div className="flex flex-col">
-                                      <span>{c.NOME}</span>
-                                      <span className="text-tiny text-default-400">{c.EMAIL}</span>
+                                      <span>{c.nome}</span>
+                                      <span className="text-tiny text-default-400">{c.email}</span>
                                     </div>
                                   </SelectItem>
                                 )
@@ -1995,21 +1976,21 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                             <TableRow key={doc._id || idx}>
                               <TableCell>
                                 <div className="flex flex-col">
-                                  <span className="font-semibold text-gray-700">{doc.TIPODOCUMENTO}</span>
-                                  <span className="text-xs text-gray-400 font-mono">{doc.NOMEARQUIVOORIGINAL}</span>
+                                  <span className="font-semibold text-gray-700">{doc.tipoDocumento}</span>
+                                  <span className="text-xs text-gray-400 font-mono">{doc.nomeArquivoOriginal}</span>
                                 </div>
                               </TableCell>
-                              <TableCell>{doc.DATAREFERENCIA || "-"}</TableCell>
-                              <TableCell>{doc.CRIADOEM ? new Date(doc.CRIADOEM).toLocaleDateString("pt-BR") : "-"}</TableCell>
+                              <TableCell>{doc.dataReferencia || "-"}</TableCell>
+                              <TableCell>{doc.criadoEm ? new Date(doc.criadoEm).toLocaleDateString("pt-BR") : "-"}</TableCell>
                               <TableCell>
                                 <div className="flex flex-col">
-                                  <span className="text-xs">{doc.CRIADOPOR}</span>
-                                  {doc.COMUNICAREMAIL && <Chip size="sm" color="success" variant="flat" className="text-[10px] h-4 mt-0.5">Notificado</Chip>}
+                                  <span className="text-xs">{doc.criadoPor}</span>
+                                  {doc.comunicarEmail && <Chip size="sm" color="success" variant="flat" className="text-[10px] h-4 mt-0.5">Notificado</Chip>}
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
-                                  <Button isIconOnly size="sm" variant="light" as="a" href={doc.BLOBURL} target="_blank" rel="noopener noreferrer">
+                                  <Button isIconOnly size="sm" variant="light" as="a" href={doc.blobUrl} target="_blank" rel="noopener noreferrer">
                                     <Search size={16} className="text-gray-500" />
                                   </Button>
                                   <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteDocumento(doc._id)}>
