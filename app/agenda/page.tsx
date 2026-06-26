@@ -728,6 +728,7 @@ export default function AgendaPage() {
                 resourceIdAccessor="id"
                 resourceTitleAccessor="title"
                 eventPropGetter={eventPropGetter}
+                popup={true}
                 components={{
                   toolbar: (tp: any) => (
                     <CustomToolbar
