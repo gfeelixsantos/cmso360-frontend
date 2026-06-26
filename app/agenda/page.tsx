@@ -100,11 +100,6 @@ export default function AgendaPage() {
     let borderLeft = "4px solid #4b5563";
 
     switch (event.type) {
-      case "EXAME":
-      case "Realização de Exames":
-        backgroundColor = "#16a34a"; // green-600
-        borderLeft = "4px solid #15803d";
-        break;
       case "TREINAMENTO":
       case "Treinamento":
         backgroundColor = "#ca8a04"; // yellow-600
@@ -626,10 +621,6 @@ export default function AgendaPage() {
             <span className="text-sm font-bold text-gray-700 uppercase tracking-wider">Legenda de Cores:</span>
             <div className="flex flex-wrap gap-5">
               <div className="flex items-center gap-2">
-                <span className="h-3.5 w-3.5 rounded-full bg-[#16a34a] shadow-sm border border-[#15803d]/30 flex-shrink-0" />
-                <span className="text-sm font-semibold text-gray-700">Realização de Exames</span>
-              </div>
-              <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#ca8a04] shadow-sm border border-[#a16207]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Treinamento</span>
               </div>
@@ -700,7 +691,6 @@ export default function AgendaPage() {
                   ),
                   event: ({ event }: any) => {
                     const typeLabelMap: Record<string, string> = {
-                      EXAME: "Realização de Exames",
                       TREINAMENTO: "Treinamento",
                       VISITA_TECNICA: "Visita Técnica",
                       PERICIA: "Perícia",
