@@ -2053,6 +2053,8 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
       }
     }
     const examesFiltrados = funcionarioSelecionado.EXAMES.filter((ex) => {
+      // Sempre mantém o exame de triagem
+      if (ex.codigoExame === 'triagem') return true;
       const grupo = codigoParaGrupo[ex.codigoExame];
       // Se o código não mapeia para nenhum grupo conhecido, mantém (não remove)
       if (!grupo) return true;
