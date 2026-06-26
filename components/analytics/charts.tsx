@@ -125,7 +125,7 @@ export function DistributionByTypeChart({ data }: { data: ChartData[] }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
       <ChartHeader Icon={PieChartIcon} color="text-blue-600" bg="bg-blue-50" title="Distribuição por Tipo" subtitle={`${total} compromissos no total`} />
 
-      <div className="h-[350px] overflow-hidden">
+      <div className="h-[450px] overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
