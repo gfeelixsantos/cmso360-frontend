@@ -147,6 +147,8 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
       exameClinico: FichaClinicaOcupacional,
       psicossocial: Psicossocial,
       fichaAssistencial: FichaAssistencial,
+      triagem: FichaClinicaOcupacional,
+      ultrassom: Ultrassom,
     }),
     [entrevistaPsico, psicossocial],
   );

@@ -21,6 +21,8 @@ const TEMPLATE_OPTIONS = [
   { value: "exameClinico", label: "Exame Clínico" },
   { value: "psicossocial", label: "Psicossocial" },
   { value: "fichaAssistencial", label: "Ficha Assistencial Especialista" },
+  { value: "triagem", label: "Triagem" },
+  { value: "ultrassom", label: "Ultrassom" },
 ];
 
 const STATUS_OPTIONS = [

@@ -167,6 +167,8 @@ const AtendimentoModalExames = ({
       exameClinico: FichaClinicaOcupacional,
       psicossocial: Psicossocial,
       fichaAssistencial: FichaAssistencial,
+      triagem: FichaClinicaOcupacional,
+      ultrassom: Ultrassom,
     }),
     [entrevistaPsico, psicossocial],
   );
