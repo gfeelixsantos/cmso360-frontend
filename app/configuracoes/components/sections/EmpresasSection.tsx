@@ -612,7 +612,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     setContratantes(contr);
     setContatos(conts);
     setEditingContactIndex(null);
-    setNewContato({ nome: "", email: "", telefone: "", perfil: "" });
+    setNewContato({ NOME: "", EMAIL: "", TELEFONE: "", PERFIL: "" });
     setActiveTab("dados");
     setModalOpen(true);
     fetchDocumentos(company.CODIGO);
