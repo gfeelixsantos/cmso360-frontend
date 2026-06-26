@@ -130,6 +130,21 @@ export default function AgendaPage() {
         backgroundColor = "#ea580c"; // orange-600
         borderLeft = "4px solid #c2410c";
         break;
+      case "AVALIACAO_DE_CAMPO":
+      case "Avaliação de Campo":
+        backgroundColor = "#0d9488"; // teal-600
+        borderLeft = "4px solid #0f766e";
+        break;
+      case "IN_COMPANY":
+      case "In Company":
+        backgroundColor = "#4f46e5"; // indigo-600
+        borderLeft = "4px solid #4338ca";
+        break;
+      case "LEVA_E_TRAS":
+      case "Leva e Trás":
+        backgroundColor = "#ec4899"; // pink-600
+        borderLeft = "4px solid #db2777";
+        break;
       case "OUTRO":
       case "Outro":
       default:
@@ -635,6 +650,18 @@ export default function AgendaPage() {
                 <span className="text-sm font-semibold text-gray-700">Comercial</span>
               </div>
               <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#0d9488] shadow-sm border border-[#0f766e]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Avaliação de Campo</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#4f46e5] shadow-sm border border-[#4338ca]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">In Company</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-3.5 w-3.5 rounded-full bg-[#ec4899] shadow-sm border border-[#db2777]/30 flex-shrink-0" />
+                <span className="text-sm font-semibold text-gray-700">Leva e Trás</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <span className="h-3.5 w-3.5 rounded-full bg-[#6b7280] shadow-sm border border-[#4b5563]/30 flex-shrink-0" />
                 <span className="text-sm font-semibold text-gray-700">Outro</span>
               </div>
@@ -679,6 +706,9 @@ export default function AgendaPage() {
                       PERICIA: "Perícia",
                       ASSESSORIA: "Assessoria",
                       COMERCIAL: "Comercial",
+                      AVALIACAO_DE_CAMPO: "Avaliação de Campo",
+                      IN_COMPANY: "In Company",
+                      LEVA_E_TRAS: "Leva e Trás",
                       OUTRO: "Outro"
                     };
                     const typeLabel = typeLabelMap[event.type] || event.type;
