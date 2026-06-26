@@ -139,6 +139,7 @@ interface Company {
     FATURAMENTO?: "CMSO" | "SEGTEC";
     DEVEDOR?: boolean;
     ASORAPIDOAUTOMATICO?: boolean;
+    ENTREGADEEPI?: boolean;
   };
   CONTATOS?: ContatoEmpresa[];
   CODIGOINTERNOCLEINTE?: string;
@@ -205,6 +206,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       FATURAMENTO: "CMSO",
       DEVEDOR: false,
       ASORAPIDOAUTOMATICO: false,
+      ENTREGADEEPI: false,
     },
     CODIGOINTERNOCLEINTE: "",
     AVISOS: "",
@@ -594,6 +596,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         FATURAMENTO: company.CONFIGURACOES?.FATURAMENTO ?? "CMSO",
         DEVEDOR: company.CONFIGURACOES?.DEVEDOR ?? false,
         ASORAPIDOAUTOMATICO: company.CONFIGURACOES?.ASORAPIDOAUTOMATICO ?? false,
+        ENTREGADEEPI: company.CONFIGURACOES?.ENTREGADEEPI ?? false,
       },
       CODIGOINTERNOCLEINTE: company.CODIGOINTERNOCLEINTE || company["CÓD. CLIENTE (INT.)"] || "",
       AVISOS: company.AVISOS || "",
@@ -649,6 +652,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         FATURAMENTO: "CMSO" as const,
         DEVEDOR: false,
         ASORAPIDOAUTOMATICO: false,
+        ENTREGADEEPI: false,
       },
       CODIGOINTERNOCLEINTE: "",
       AVISOS: "",
@@ -1289,40 +1293,6 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 <div className="flex flex-col gap-6 pt-6 pl-2">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
-                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
-                    </div>
-                    <Switch
-                      isSelected={form.CONFIGURACOES?.REQUERPSICOLOGA}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, REQUERPSICOLOGA: v },
-                        }))
-                      }
-                      color="success"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Credenciada SOC</span>
-                      <span className="text-xs text-gray-400">Indica que a empresa opera via credenciamento direto SOC</span>
-                    </div>
-                    <Switch
-                      isSelected={form.CONFIGURACOES?.CREDENCIADASOC}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, CREDENCIADASOC: v },
-                        }))
-                      }
-                      color="success"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-gray-700">ASO Rápido Automático</span>
                       <span className="text-xs text-gray-400">Gera ASO no SOC automaticamente ao realizar agendamento</span>
                     </div>
@@ -1357,6 +1327,74 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Credenciada SOC</span>
+                      <span className="text-xs text-gray-400">Indica que a empresa opera via credenciamento direto SOC</span>
+                    </div>
+                    <Switch
+                      isSelected={form.CONFIGURACOES?.CREDENCIADASOC}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          CONFIGURACOES: { ...f.CONFIGURACOES!, CREDENCIADASOC: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
+                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
+                    </div>
+                    <Switch
+                      isSelected={form.CONFIGURACOES?.DEVEDOR || false}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          CONFIGURACOES: { ...f.CONFIGURACOES!, DEVEDOR: v },
+                        }))
+                      }
+                      color="danger"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Entrega de EPI</span>
+                      <span className="text-xs text-gray-400">Habilita o uso da funcionalidade entrega de EPI</span>
+                    </div>
+                    <Switch
+                      isSelected={form.CONFIGURACOES?.ENTREGADEEPI || false}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          CONFIGURACOES: { ...f.CONFIGURACOES!, ENTREGADEEPI: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
+                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
+                    </div>
+                    <Switch
+                      isSelected={form.CONFIGURACOES?.REQUERPSICOLOGA}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          CONFIGURACOES: { ...f.CONFIGURACOES!, REQUERPSICOLOGA: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-gray-700">Faturamento</span>
                       <span className="text-xs text-gray-400 font-medium">Integração para cobranças</span>
                     </div>
@@ -1376,23 +1414,6 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       <SelectItem key="CMSO">CMSO</SelectItem>
                       <SelectItem key="SEGTEC">SEGTEC</SelectItem>
                     </Select>
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
-                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
-                    </div>
-                    <Switch
-                      isSelected={form.CONFIGURACOES?.DEVEDOR || false}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          CONFIGURACOES: { ...f.CONFIGURACOES!, DEVEDOR: v },
-                        }))
-                      }
-                      color="danger"
-                    />
                   </div>
                 </div>
               )}
