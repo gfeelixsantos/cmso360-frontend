@@ -6,7 +6,7 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card, CardBody, Select, SelectItem, Button, useDisclosure } from "@heroui/react";
+import { Card, CardBody, Select, SelectItem, Button, useDisclosure, Tooltip } from "@heroui/react";
 import { Truck, Users } from "lucide-react";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CommitmentModal } from "@/components/shared/CommitmentModal";
@@ -39,10 +39,10 @@ export default function AgendaPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedParticipant, setSelectedParticipant] = useState("TODOS");
-  const [showFleet, setShowFleet] = useState(false);
-  const [fleetPeriod, setFleetPeriod] = useState<"HOJE" | "SEMANAL">("HOJE");
-  const [showEmployees, setShowEmployees] = useState(false);
-  const [employeePeriod, setEmployeePeriod] = useState<"HOJE" | "SEMANAL">("HOJE");
+  const [showFleet, setShowFleet] = useState(true);
+  const [fleetPeriod, setFleetPeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
+  const [showEmployees, setShowEmployees] = useState(true);
+  const [employeePeriod, setEmployeePeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -77,11 +77,11 @@ export default function AgendaPage() {
   const vehicles = [
     { id: "DOBLO_I", title: "Doblô I" },
     { id: "DOBLO_II", title: "Doblô II" },
+    { id: "MOBI", title: "Mobi" },
     { id: "PICKUP", title: "Pickup" },
     { id: "UNIDADE_MOVEL", title: "Unidade Móvel" },
     { id: "UNIDADE_RAIO_X", title: "Unidade Raio-X" },
     { id: "UP", title: "Up" },
-    { id: "MOBI", title: "Mobi" },
   ];
 
   const resources = viewMode === "VEICULO" ? vehicles : undefined;
@@ -457,13 +457,37 @@ export default function AgendaPage() {
                                 <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{v.title}</td>
                                 {weekDays.map(day => {
                                   const info = getVehicleStatusForDay(v.id, day);
+                                  
                                   return (
                                     <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                       isSameDay(day, new Date()) ? "bg-emerald-50/40" : ""
                                     }`}>
-                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
-                                        {info.label}
-                                      </span>
+                                      {info.events && info.events.length > 0 ? (
+                                        <Tooltip
+                                          content={
+                                            <div className="flex flex-col gap-1">
+                                              {info.events.sort((a, b) => a.start.getTime() - b.start.getTime()).map((ev, idx) => (
+                                                <div key={idx} className="text-xs">
+                                                  <div className="font-semibold">{ev.title}</div>
+                                                  <div className="text-gray-400">{formatTime(ev.start)} – {formatTime(ev.end)}</div>
+                                                  {ev.participants?.length > 0 && (
+                                                    <div className="text-gray-500">{ev.participants.join(", ")}</div>
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          }
+                                          placement="top"
+                                        >
+                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-help ${info.badgeColor}`}>
+                                            {info.label}
+                                          </span>
+                                        </Tooltip>
+                                      ) : (
+                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
+                                          {info.label}
+                                        </span>
+                                      )}
                                     </td>
                                   );
                                 })}
@@ -591,13 +615,37 @@ export default function AgendaPage() {
                                   <td className="px-5 py-3 whitespace-nowrap text-sm font-semibold text-gray-900 sticky left-0 bg-white border-r border-gray-100">{name}</td>
                                   {weekDays.map(day => {
                                     const info = getParticipantStatusForDay(name, day);
+                                    
                                     return (
                                       <td key={day.toISOString()} className={`px-4 py-3 text-center ${
                                         isSameDay(day, new Date()) ? "bg-teal-50/40" : ""
                                       }`}>
-                                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
-                                          {info.label}
-                                        </span>
+                                        {info.events && info.events.length > 0 ? (
+                                          <Tooltip
+                                            content={
+                                              <div className="flex flex-col gap-1">
+                                                {info.events.sort((a, b) => a.start.getTime() - b.start.getTime()).map((ev, idx) => (
+                                                  <div key={idx} className="text-xs">
+                                                    <div className="font-semibold">{ev.title}</div>
+                                                    <div className="text-gray-400">{formatTime(ev.start)} – {formatTime(ev.end)}</div>
+                                                    {ev.company && (
+                                                      <div className="text-gray-500">{ev.company}</div>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            }
+                                            placement="top"
+                                          >
+                                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border cursor-help ${info.badgeColor}`}>
+                                              {info.label}
+                                            </span>
+                                          </Tooltip>
+                                        ) : (
+                                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border ${info.badgeColor}`}>
+                                            {info.label}
+                                          </span>
+                                        )}
                                       </td>
                                     );
                                   })}
