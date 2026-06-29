@@ -291,7 +291,19 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       const res = await fetch(`/api/empresas/${codigoEmpresa}/documentos`);
       if (res.ok) {
         const data = await res.json();
-        setDocumentos(data);
+        const normalized = Array.isArray(data) ? data.map((doc: any) => ({
+          _id: doc._id,
+          tipoDocumento: doc.TIPODOCUMENTO || doc.tipoDocumento || "",
+          nomeArquivoOriginal: doc.NOMEARQUIVOORIGINAL || doc.nomeArquivoOriginal || "",
+          blobUrl: doc.BLOBURL || doc.blobUrl || "",
+          dataReferencia: doc.DATAREFERENCIA || doc.dataReferencia || "",
+          criadoEm: doc.CRIADOEM || doc.criadoEm || null,
+          criadoPor: doc.CRIADOPOR || doc.criadoPor || "",
+          comunicarEmail: doc.COMUNICAREMAIL || doc.comunicarEmail || false,
+          categoria: doc.CATEGORIA || doc.categoria || "",
+          observacoes: doc.OBSERVACOES || doc.observacoes || "",
+        })) : [];
+        setDocumentos(normalized);
       }
     } catch (err) {
       console.error("Erro ao buscar documentos:", err);

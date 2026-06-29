@@ -19,9 +19,8 @@ const TEMPLATE_OPTIONS = [
   { value: "dinamometria", label: "Dinamometria" },
   { value: "espirometria", label: "Espirometria" },
   { value: "exameClinico", label: "Exame Clínico" },
-  { value: "psicossocial", label: "Psicossocial" },
   { value: "fichaAssistencial", label: "Ficha Assistencial Especialista" },
-  { value: "triagem", label: "Triagem" },
+  { value: "psicossocial", label: "Psicossocial" },
   { value: "ultrassom", label: "Ultrassom" },
 ];
 
