@@ -926,6 +926,12 @@ export default function PainelPage() {
 
       // Nova chamada - carrega áudio
       if (call.audio) {
+        if (audioCacheRef.current.size > 15) {
+          audioUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
+          audioUrlCacheRef.current.clear();
+          audioCacheRef.current.clear();
+        }
+
         const fullUrl = `${NEST_URL}${call.audio}`;
         const cacheKey = `${fullUrl}|${call.sala}|${call.exame}`;
 
@@ -1313,6 +1319,29 @@ export default function PainelPage() {
     socket.on("pagina fechada", (socketId: string) => {
       setAtivasSync((prev) => prev.filter((c) => c.socketId !== socketId));
       setEsperaSync((prev) => prev.filter((c) => c.socketId !== socketId));
+    });
+
+    socket.on("UPDATE_SCHEDULE", (data: any) => {
+      if (!data?.schedule) return;
+      const sch = data.schedule;
+      const ticketId = Number(sch?.TICKET?.id);
+      const status = sch?.ATENDIMENTOSTATUS;
+      const ticketStatus = sch?.TICKET?.status;
+
+      if (
+        status === "AGUARDANDO_RESULTADOS" ||
+        status === "AVALIACAO_MEDICA" ||
+        status === "FINALIZADO" ||
+        (ticketStatus && ticketStatus !== "EM CHAMADA" && ticketStatus !== "EM_CHAMADA")
+      ) {
+        if (Number.isFinite(ticketId)) {
+          setAtivasSync((prev) => prev.filter((c) => c.id !== ticketId));
+          setEsperaSync((prev) => prev.filter((c) => c.id !== ticketId));
+          if (chamadaAtualRef.current?.id === ticketId) {
+            setChamadaAtualSync(undefined);
+          }
+        }
+      }
     });
 
     const handleBeforeUnload = () => {
