@@ -272,7 +272,7 @@ const ExamCard = ({
   subtitle?: string | null;
 }) => {
   const pendentes =
-    exame.porStatus.PENDENTE || exame.porStatus.PENDENTE_LABORATORIO || 0;
+    (exame.porStatus.PENDENTE || 0) + (exame.porStatus.PENDENTE_LABORATORIO || 0);
   const finalizados =
     (exame.porStatus.FINALIZADO || 0) +
     (exame.porStatus.CONCLUIDO || 0) +
@@ -290,7 +290,7 @@ const ExamCard = ({
               <h4 className="font-semibold text-gray-900 truncate">
                 {exame.nomeExame}
               </h4>
-              {subtitle && (
+              {subtitle && subtitle !== exame.nomeExame && (
                 <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">
                   {subtitle}
                 </p>
