@@ -78,6 +78,7 @@ export default function AgendaPage() {
     { id: "DOBLO_I", title: "Doblô I" },
     { id: "DOBLO_II", title: "Doblô II" },
     { id: "MOBI", title: "Mobi" },
+    { id: "MOBI_COMERCIAL", title: "Mobi Comercial" },
     { id: "PICKUP", title: "Pickup" },
     { id: "UNIDADE_MOVEL", title: "Unidade Móvel" },
     { id: "UNIDADE_RAIO_X", title: "Unidade Raio-X" },

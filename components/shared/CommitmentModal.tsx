@@ -25,7 +25,8 @@ const VEHICLE_LABEL_MAP: Record<string, string> = {
   DOBLO_II: "Doblô II",
   UP: "Up",
   PICKUP: "Pickup",
-  MOBI: "Mobi"
+  MOBI: "Mobi",
+  MOBI_COMERCIAL: "Mobi Comercial"
 };
 
 export interface CommitmentModalProps {

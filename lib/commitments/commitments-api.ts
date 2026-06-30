@@ -7,7 +7,8 @@ export enum VehicleType {
   DOBLO_II = 'DOBLO_II',
   UP = 'UP',
   PICKUP = 'PICKUP',
-  MOBI = 'MOBI'
+  MOBI = 'MOBI',
+  MOBI_COMERCIAL = 'MOBI_COMERCIAL'
 }
 
 export interface IEmployeeCommitment {
