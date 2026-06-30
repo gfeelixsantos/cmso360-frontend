@@ -36,9 +36,10 @@ export interface CommitmentModalProps {
   onDelete?: () => void;
   initialData?: any;
   suggestedParticipants?: string[];
+  showAlert?: (type: "success" | "error" | "warning", message: string) => void;
 }
 
-export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, initialData, suggestedParticipants = [] }: CommitmentModalProps) {
+export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, initialData, suggestedParticipants = [], showAlert }: CommitmentModalProps) {
   // Calculate full ISO strings for the API
   const timeZone = 'America/Sao_Paulo';
   
@@ -396,7 +397,11 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                 </Button>
                 <Button className="bg-[#44735E] text-white font-semibold hover:bg-[#355a4a] transition-colors" onPress={() => { 
                   if (!computedStart || !computedEnd) {
-                    alert("Preencha as datas corretamente.");
+                    if (showAlert) {
+                      showAlert("warning", "Preencha as datas corretamente.");
+                    } else {
+                      alert("Preencha as datas corretamente.");
+                    }
                     return;
                   }
                   onSubmit({ 

@@ -6,7 +6,7 @@ import { Calendar, dateFnsLocalizer } from "react-big-calendar";
 import { format, parse, startOfWeek, getDay, addDays, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale/pt-BR";
 import "react-big-calendar/lib/css/react-big-calendar.css";
-import { Card, CardBody, Select, SelectItem, Button, useDisclosure, Tooltip } from "@heroui/react";
+import { Card, CardBody, Select, SelectItem, Button, useDisclosure, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter } from "@heroui/react";
 import { Truck, Users } from "lucide-react";
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { CommitmentModal } from "@/components/shared/CommitmentModal";
@@ -43,6 +43,16 @@ export default function AgendaPage() {
   const [fleetPeriod, setFleetPeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
   const [showEmployees, setShowEmployees] = useState(false);
   const [employeePeriod, setEmployeePeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
+
+  const [alertModal, setAlertModal] = useState<{
+    open: boolean;
+    type: "success" | "error" | "warning";
+    message: string;
+  }>({ open: false, type: "warning", message: "" });
+
+  const showAlert = useCallback((type: "success" | "error" | "warning", message: string) => {
+    setAlertModal({ open: true, type, message });
+  }, []);
 
   const fetchEvents = useCallback(async () => {
     try {
@@ -844,34 +854,77 @@ export default function AgendaPage() {
           isOpen={isOpen} 
           onOpenChange={onOpenChange} 
           initialData={selectedEvent}
+          showAlert={showAlert}
           onSubmit={async (data) => {
             try {
               if (selectedEvent?.id) {
                 await updateCommitment(selectedEvent.id, data);
-                alert("Compromisso atualizado com sucesso!");
+                showAlert("success", "Compromisso atualizado com sucesso!");
               } else {
                 await createCommitment(data);
-                alert("Compromisso salvo com sucesso!");
+                showAlert("success", "Compromisso salvo com sucesso!");
               }
               await fetchEvents();
             } catch (err) {
               console.error(err);
-              alert("Erro ao salvar compromisso.");
+              showAlert("error", "Erro ao salvar compromisso.");
             }
           }}
           onDelete={async () => {
             if (selectedEvent?.id && window.confirm("Deseja realmente excluir este compromisso?")) {
               try {
                 await deleteCommitment(selectedEvent.id);
-                alert("Compromisso excluído!");
+                showAlert("success", "Compromisso excluído!");
                 await fetchEvents();
               } catch (err) {
                 console.error(err);
-                alert("Erro ao excluir.");
+                showAlert("error", "Erro ao excluir.");
               }
             }
           }}
         />
+
+        {/* Modal de Alerta */}
+        <Modal
+          disableAnimation
+          classNames={{
+            base: "z-[1100]",
+            wrapper: "z-[1100]",
+            backdrop: "z-[1099]",
+          }}
+          isDismissable={false}
+          isOpen={alertModal.open}
+          onClose={() => setAlertModal({ ...alertModal, open: false })}
+        >
+          <ModalContent className="border border-[#104e35]/20">
+            <ModalHeader
+              className={
+                alertModal.type === "success"
+                  ? "text-green-600"
+                  : alertModal.type === "error"
+                    ? "text-red-600"
+                    : "text-yellow-600"
+              }
+            >
+              {alertModal.type === "success"
+                ? "Sucesso"
+                : alertModal.type === "error"
+                  ? "Erro"
+                  : "Atenção"}
+            </ModalHeader>
+            <ModalBody>
+              <p>{alertModal.message}</p>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                className="bg-gradient-to-r from-[#44735e] to-[#5a8c7a] text-white"
+                onPress={() => setAlertModal({ ...alertModal, open: false })}
+              >
+                OK
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
       </main>
     </div>
   );
