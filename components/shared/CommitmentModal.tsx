@@ -176,8 +176,8 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   onChange={(e) => setType(e.target.value)}
                 >
                   <SelectItem key="ASSESSORIA">Assessoria</SelectItem>
-                  <SelectItem key="COMERCIAL">Comercial</SelectItem>
                   <SelectItem key="AVALIACAO_DE_CAMPO">Avaliação de Campo</SelectItem>
+                  <SelectItem key="COMERCIAL">Comercial</SelectItem>
                   <SelectItem key="IN_COMPANY">In Company</SelectItem>
                   <SelectItem key="LEVA_E_TRAS">Leva e Trás</SelectItem>
                   <SelectItem key="OUTRO">Outro</SelectItem>
