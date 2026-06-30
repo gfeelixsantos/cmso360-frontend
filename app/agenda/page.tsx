@@ -39,9 +39,9 @@ export default function AgendaPage() {
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [selectedParticipant, setSelectedParticipant] = useState("TODOS");
-  const [showFleet, setShowFleet] = useState(true);
+  const [showFleet, setShowFleet] = useState(false);
   const [fleetPeriod, setFleetPeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
-  const [showEmployees, setShowEmployees] = useState(true);
+  const [showEmployees, setShowEmployees] = useState(false);
   const [employeePeriod, setEmployeePeriod] = useState<"HOJE" | "SEMANAL">("SEMANAL");
 
   const fetchEvents = useCallback(async () => {
