@@ -711,6 +711,15 @@ export default function AgendaPage() {
         <Card className="shadow-sm mb-8">
           <CardBody className="p-0">
             <div className="h-[850px] w-full p-4">
+              <style>{`
+                .rbc-day-bg {
+                  cursor: pointer;
+                  transition: background-color 0.15s ease-in-out;
+                }
+                .rbc-day-bg:hover {
+                  background-color: #f0fdf4 !important;
+                }
+              `}</style>
               <Calendar
                 localizer={localizer}
                 events={filteredEvents}
