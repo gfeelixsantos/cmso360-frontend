@@ -291,6 +291,17 @@ export default function AgendaPage() {
     return { status: "RESERVED", label: "Comprometido Hoje", badgeColor: "bg-amber-50 text-amber-700 border-amber-200", event: next };
   };
 
+  const dayPropGetter = (date: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (date < today) {
+      return {
+        className: "rbc-day-past",
+      };
+    }
+    return {};
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50">
       <HeaderApp onLogout={() => router.push("/")} />
@@ -719,6 +730,14 @@ export default function AgendaPage() {
                 .rbc-day-bg:hover {
                   background-color: #f0fdf4 !important;
                 }
+                .rbc-day-bg.rbc-day-past {
+                  cursor: not-allowed !important;
+                  background-color: #f3f4f6 !important;
+                  opacity: 0.6;
+                }
+                .rbc-day-bg.rbc-day-past:hover {
+                  background-color: #f3f4f6 !important;
+                }
               `}</style>
               <Calendar
                 localizer={localizer}
@@ -737,9 +756,14 @@ export default function AgendaPage() {
                 resourceIdAccessor="id"
                 resourceTitleAccessor="title"
                 eventPropGetter={eventPropGetter}
+                dayPropGetter={dayPropGetter}
                 popup={true}
                 selectable={true}
                 onSelectSlot={(slotInfo) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  if (slotInfo.start < today) return;
+
                   const formattedDate = format(slotInfo.start, "yyyy-MM-dd");
                   setSelectedEvent({
                     start_time: `${formattedDate}T08:00:00`,
