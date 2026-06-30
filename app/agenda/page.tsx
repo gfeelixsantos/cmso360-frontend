@@ -54,6 +54,13 @@ export default function AgendaPage() {
     setAlertModal({ open: true, type, message });
   }, []);
 
+  const [confirmModal, setConfirmModal] = useState<{
+    open: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void | Promise<void>;
+  }>({ open: false, title: "", message: "", onConfirm: () => {} });
+
   const fetchEvents = useCallback(async () => {
     try {
       const data = await getCommitments();
@@ -871,15 +878,22 @@ export default function AgendaPage() {
             }
           }}
           onDelete={async () => {
-            if (selectedEvent?.id && window.confirm("Deseja realmente excluir este compromisso?")) {
-              try {
-                await deleteCommitment(selectedEvent.id);
-                showAlert("success", "Compromisso excluído!");
-                await fetchEvents();
-              } catch (err) {
-                console.error(err);
-                showAlert("error", "Erro ao excluir.");
-              }
+            if (selectedEvent?.id) {
+              setConfirmModal({
+                open: true,
+                title: "Excluir Compromisso",
+                message: "Deseja realmente excluir este compromisso? Esta ação não pode ser desfeita.",
+                onConfirm: async () => {
+                  try {
+                    await deleteCommitment(selectedEvent.id);
+                    showAlert("success", "Compromisso excluído com sucesso!");
+                    await fetchEvents();
+                  } catch (err) {
+                    console.error(err);
+                    showAlert("error", "Erro ao excluir.");
+                  }
+                }
+              });
             }
           }}
         />
@@ -921,6 +935,46 @@ export default function AgendaPage() {
                 onPress={() => setAlertModal({ ...alertModal, open: false })}
               >
                 OK
+              </Button>
+            </ModalFooter>
+          </ModalContent>
+        </Modal>
+
+        {/* Modal de Confirmação */}
+        <Modal
+          disableAnimation
+          classNames={{
+            base: "z-[1100]",
+            wrapper: "z-[1100]",
+            backdrop: "z-[1099]",
+          }}
+          isDismissable={false}
+          isOpen={confirmModal.open}
+          onClose={() => setConfirmModal({ ...confirmModal, open: false })}
+        >
+          <ModalContent className="border border-red-600/20">
+            <ModalHeader className="text-red-600 font-semibold">
+              {confirmModal.title}
+            </ModalHeader>
+            <ModalBody>
+              <p>{confirmModal.message}</p>
+            </ModalBody>
+            <ModalFooter>
+              <Button
+                color="default"
+                variant="light"
+                onPress={() => setConfirmModal({ ...confirmModal, open: false })}
+              >
+                Cancelar
+              </Button>
+              <Button
+                className="bg-red-600 text-white font-semibold hover:bg-red-700 transition-colors"
+                onPress={async () => {
+                  setConfirmModal(prev => ({ ...prev, open: false }));
+                  await confirmModal.onConfirm();
+                }}
+              >
+                Excluir
               </Button>
             </ModalFooter>
           </ModalContent>
