@@ -154,7 +154,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
         {(onClose) => (
           <>
             <ModalHeader className="flex flex-col gap-1 text-xl font-bold">
-              {initialData ? "Editar Compromisso" : "Novo Compromisso"}
+              {initialData?.id ? "Editar Compromisso" : "Novo Compromisso"}
             </ModalHeader>
             <ModalBody>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -383,7 +383,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
             </ModalBody>
             <ModalFooter className="flex justify-between w-full">
               <div>
-                {initialData && onDelete && (
+                {initialData?.id && onDelete && (
                   <Button color="danger" variant="flat" onPress={() => { onDelete(); onClose(); }}>
                     Excluir
                   </Button>
@@ -412,7 +412,7 @@ export function CommitmentModal({ isOpen, onOpenChange, onSubmit, onDelete, init
                   }); 
                   onClose(); 
                 }}>
-                  {initialData ? "Salvar Alterações" : "Salvar Compromisso"}
+                  {initialData?.id ? "Salvar Alterações" : "Salvar Compromisso"}
                 </Button>
               </div>
             </ModalFooter>

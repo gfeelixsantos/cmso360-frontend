@@ -729,6 +729,15 @@ export default function AgendaPage() {
                 resourceTitleAccessor="title"
                 eventPropGetter={eventPropGetter}
                 popup={true}
+                selectable={true}
+                onSelectSlot={(slotInfo) => {
+                  const formattedDate = format(slotInfo.start, "yyyy-MM-dd");
+                  setSelectedEvent({
+                    start_time: `${formattedDate}T08:00:00`,
+                    end_time: `${formattedDate}T18:00:00`,
+                  });
+                  onOpen();
+                }}
                 components={{
                   toolbar: (tp: any) => (
                     <CustomToolbar
