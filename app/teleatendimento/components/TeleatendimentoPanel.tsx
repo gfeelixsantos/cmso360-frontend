@@ -284,7 +284,11 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
         const data = await response.json();
         if (!cancelled) {
           setSession(data);
-          setInviteUrl(role === "PROFESSIONAL" ? data?.inviteUrl || "" : window.location.href);
+          setInviteUrl(
+            normalizeShareableUrl(
+              role === "PROFESSIONAL" ? data?.inviteUrl || "" : window.location.href,
+            ),
+          );
         }
         if (!cancelled && data?.sessionId) {
           const stored = await listChatMessages(data.sessionId);
@@ -698,9 +702,23 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
     webRtcRef.current?.setVideoEnabled(next);
   };
 
+  const normalizeShareableUrl = (value: string) => {
+    if (!value) return value;
+
+    try {
+      return new URL(value, window.location.origin).toString();
+    } catch {
+      try {
+        return encodeURI(value);
+      } catch {
+        return value;
+      }
+    }
+  };
+
   const copyValue = async (value: string, label: string) => {
     if (!value) return;
-    await navigator.clipboard.writeText(value);
+    await navigator.clipboard.writeText(normalizeShareableUrl(value));
     addToast({ title: "Copiado", description: `${label} copiado para a área de transferência.`, severity: "success", color: "foreground", variant: "flat" });
   };
 
@@ -898,7 +916,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
                   if (sala) params.set("sala", sala);
                   if (exame) params.set("exame", exame);
                   const url = `${window.location.origin}/teleatendimento/totem${params.toString() ? `?${params.toString()}` : ""}`;
-                  copyValue(url, "Link da Sala de Espera");
+                  copyValue(normalizeShareableUrl(url), "Link da Sala de Espera");
                 }}
               >
                 Copiar Link
@@ -1078,7 +1096,7 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
                     if (sala) params.set("sala", sala);
                     if (exame) params.set("exame", exame);
                     const url = `${window.location.origin}/teleatendimento/totem${params.toString() ? `?${params.toString()}` : ""}`;
-                    copyValue(url, "Link da Sala de Espera");
+                    copyValue(normalizeShareableUrl(url), "Link da Sala de Espera");
                   }}
                 >
                   Copiar Link da Sala

@@ -14,6 +14,13 @@ import {
   Network,
   Database,
   Search,
+  Brain,
+  Link2,
+  Zap,
+  Stethoscope,
+  Receipt,
+  BadgeDollarSign,
+  PackageCheck,
 } from "lucide-react";
 import {
   Button,
@@ -140,6 +147,7 @@ interface Company {
     faturamento?: "CMSO" | "SEGTEC";
     devedor?: boolean;
     asoRapidoAutomatico?: boolean;
+    gestaoEpi?: boolean;
   };
   contatos?: ContatoEmpresa[];
   documentosUrl?: string[];
@@ -207,6 +215,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       faturamento: "CMSO",
       devedor: false,
       asoRapidoAutomatico: false,
+      gestaoEpi: false,
     },
     codigoInternoCliente: "",
     avisos: "",
@@ -608,6 +617,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         faturamento: company.configuracoes?.faturamento ?? "CMSO",
         devedor: company.configuracoes?.devedor ?? false,
         asoRapidoAutomatico: company.configuracoes?.asoRapidoAutomatico ?? false,
+        gestaoEpi: company.configuracoes?.gestaoEpi ?? false,
       },
       codigoInternoCliente: company.codigoInternoCliente || company["CÓD. CLIENTE (INT.)"] || "",
       avisos: company.avisos || "",
@@ -663,6 +673,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         faturamento: "CMSO" as const,
         devedor: false,
         asoRapidoAutomatico: false,
+        gestaoEpi: false,
       },
       codigoInternoCliente: "",
       avisos: "",
@@ -944,16 +955,50 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       </TableCell>
                       <TableCell className="font-mono text-xs whitespace-nowrap">{formatCNPJ(company.CNPJ)}</TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-1">
-                          {company.configuracoes?.devedor ? (
-                            <div className="mt-0.5">
-                              <Chip size="sm" color="danger" variant="solid" className="h-5 text-[10px] font-bold animate-pulse">
-                                DEVEDOR
-                              </Chip>
-                            </div>
-                          ) : (
-                            <span className="text-xs text-gray-400 font-medium">-</span>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {company.configuracoes?.devedor && (
+                            <span title="Devedor — atendimento e faturamento bloqueados" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-red-100 text-red-600 animate-pulse">
+                              <BadgeDollarSign size={13} />
+                            </span>
                           )}
+                          {company.configuracoes?.requerPsicologa && (
+                            <span title="Avaliação Psicossocial obrigatória" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-600">
+                              <Brain size={13} />
+                            </span>
+                          )}
+                          {company.configuracoes?.credenciadaSoc && (
+                            <span title="Credenciada SOC" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
+                              <Link2 size={13} />
+                            </span>
+                          )}
+                          {company.configuracoes?.asoRapidoAutomatico && (
+                            <span title="ASO Rápido Automático" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-600">
+                              <Zap size={13} />
+                            </span>
+                          )}
+                          {company.configuracoes?.somenteComplementares && (
+                            <span title="Somente Exames Complementares" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-teal-100 text-teal-600">
+                              <Stethoscope size={13} />
+                            </span>
+                          )}
+                          {company.configuracoes?.faturamento && (
+                            <span title={`Faturamento: ${company.configuracoes.faturamento}`} className="cursor-default inline-flex items-center justify-center h-5 px-1.5 rounded bg-gray-100 text-gray-500 text-[9px] font-bold font-mono">
+                              {company.configuracoes.faturamento}
+                            </span>
+                          )}
+                          {company.configuracoes?.gestaoEpi && (
+                            <span title="Gestão de EPI habilitada" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-green-100 text-green-600">
+                              <PackageCheck size={13} />
+                            </span>
+                          )}
+                          {!company.configuracoes?.devedor &&
+                            !company.configuracoes?.requerPsicologa &&
+                            !company.configuracoes?.credenciadaSoc &&
+                            !company.configuracoes?.asoRapidoAutomatico &&
+                            !company.configuracoes?.somenteComplementares &&
+                            !company.configuracoes?.gestaoEpi && (
+                              <span className="text-xs text-gray-400 font-medium">—</span>
+                            )}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -1303,40 +1348,6 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 <div className="flex flex-col gap-6 pt-6 pl-2">
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
-                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
-                    </div>
-                    <Switch
-                      isSelected={form.configuracoes?.requerPsicologa}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          configuracoes: { ...f.configuracoes!, requerPsicologa: v },
-                        }))
-                      }
-                      color="success"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Credenciada SOC</span>
-                      <span className="text-xs text-gray-400">Indica que a empresa opera via credenciamento direto SOC</span>
-                    </div>
-                    <Switch
-                      isSelected={form.configuracoes?.credenciadaSoc}
-                      onValueChange={(v) =>
-                        setForm((f) => ({
-                          ...f,
-                          configuracoes: { ...f.configuracoes!, credenciadaSoc: v },
-                        }))
-                      }
-                      color="success"
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                    <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-gray-700">ASO Rápido Automático</span>
                       <span className="text-xs text-gray-400">Gera ASO no SOC automaticamente ao realizar agendamento</span>
                     </div>
@@ -1371,6 +1382,57 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Credenciada SOC</span>
+                      <span className="text-xs text-gray-400">Indica que a empresa opera via credenciamento direto SOC</span>
+                    </div>
+                    <Switch
+                      isSelected={form.configuracoes?.credenciadaSoc}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          configuracoes: { ...f.configuracoes!, credenciadaSoc: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
+                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
+                    </div>
+                    <Switch
+                      isSelected={form.configuracoes?.devedor || false}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          configuracoes: { ...f.configuracoes!, devedor: v },
+                        }))
+                      }
+                      color="danger"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Entrevista para Avaliação Psicossocial</span>
+                      <span className="text-xs text-gray-400">Ativa o encaminhamento obrigatório para psicóloga</span>
+                    </div>
+                    <Switch
+                      isSelected={form.configuracoes?.requerPsicologa}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          configuracoes: { ...f.configuracoes!, requerPsicologa: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
                       <span className="text-sm font-semibold text-gray-700">Faturamento</span>
                       <span className="text-xs text-gray-400 font-medium">Integração para cobranças</span>
                     </div>
@@ -1394,18 +1456,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
 
                   <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-sm font-semibold text-gray-700">Devedor</span>
-                      <span className="text-xs text-gray-400">Bloqueia atendimento e faturamento por inadimplência</span>
+                      <span className="text-sm font-semibold text-gray-700">Gestão de EPI</span>
+                      <span className="text-xs text-gray-400">Habilita o módulo de gestão de Equipamentos de Proteção Individual</span>
                     </div>
                     <Switch
-                      isSelected={form.configuracoes?.devedor || false}
+                      isSelected={form.configuracoes?.gestaoEpi || false}
                       onValueChange={(v) =>
                         setForm((f) => ({
                           ...f,
-                          configuracoes: { ...f.configuracoes!, devedor: v },
+                          configuracoes: { ...f.configuracoes!, gestaoEpi: v },
                         }))
                       }
-                      color="danger"
+                      color="success"
                     />
                   </div>
                 </div>
@@ -1862,9 +1924,14 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                         <Select
                           label="Tipo de Documento"
                           selectedKeys={[newDocData.tipoDocumento]}
-                          onSelectionChange={(keys) => setNewDocData({ ...newDocData, tipoDocumento: Array.from(keys)[0] as string })}
+                          onSelectionChange={(keys) => {
+                            const val = Array.from(keys)[0] as string;
+                            const cat = val === "Logo" ? "LOGO" : "FATURAMENTO";
+                            setNewDocData({ ...newDocData, tipoDocumento: val, categoria: cat });
+                          }}
                         >
                           <SelectItem key="Relatório Faturamento">Relatório Faturamento</SelectItem>
+                          <SelectItem key="Logo">Logo</SelectItem>
                         </Select>
 
                         <Input
