@@ -130,6 +130,7 @@ export interface FichaClinicaData {
   restricoes?: RestricoesMedicas;
   duracaoRestricaoDias?: string;
   dataInicioRestricao?: string;
+  recomendacoesRestricao?: string;
   informacaoAguardarAvaliacao?: string;
 }
 
@@ -252,6 +253,7 @@ const VALOR_INICIAL: FichaClinicaData = {
   },
   duracaoRestricaoDias: "",
   dataInicioRestricao: "",
+  recomendacoesRestricao: "",
   informacaoAguardarAvaliacao: "",
 };
 
@@ -1568,6 +1570,22 @@ const FichaClinicaOcupacional: React.FC<FichaClinicaProps> = ({
                       </p>
                     )}
                   </div>
+                </div>
+
+                {/* Observações da Restrição */}
+                <div className="mt-4 pt-4 border-t border-amber-200">
+                  <label className="block text-sm font-medium text-amber-700 mb-2">
+                    Observações da Restrição:
+                  </label>
+                  <Textarea
+                    className="w-full bg-white border-amber-300 focus:border-amber-400"
+                    placeholder="Recomendações e orientações para o período de restrição..."
+                    rows={3}
+                    value={formData.recomendacoesRestricao || ""}
+                    onChange={(e) =>
+                      handleInputChange("recomendacoesRestricao", e.target.value)
+                    }
+                  />
                 </div>
               </div>
             )}
