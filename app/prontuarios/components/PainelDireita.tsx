@@ -1500,23 +1500,16 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   }, []);
 
   const riscoCor = useCallback((risco: any) => {
-    // risco.grupo pode ser string ou number — mantemos defensivo
+    // Aceita tanto formato textual (FISICOS) quanto numérico (1, 2, 3...)
     const grupo = String(risco);
 
-    switch (grupo) {
-      case "1": // Físico
-        return "text-green-500";
-      case "2": // Químico
-        return "text-red-500";
-      case "4": // Ergonômicos
-        return "text-amber-500";
-      case "5": // Acidentes
-        return "text-blue-700";
-      case "6": // Inespecífico
-        return "text-purple-700";
-      default:
-        return "";
-    }
+    if (grupo === "FISICOS" || grupo === "1") return "text-green-600";
+    if (grupo === "QUIMICOS" || grupo === "2") return "text-red-600";
+    if (grupo === "BIOLOGICOS" || grupo === "3") return "text-amber-800";
+    if (grupo === "ERGONOMICOS" || grupo === "4") return "text-amber-500";
+    if (grupo === "ACIDENTES" || grupo === "5") return "text-blue-700";
+    if (grupo === "INESPECIFICOS" || grupo === "6") return "text-purple-700";
+    return "";
   }, []);
 
   /* ---------------------- Render ---------------------- */

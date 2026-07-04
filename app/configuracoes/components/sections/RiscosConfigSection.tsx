@@ -144,7 +144,7 @@ export function RiscosConfigSection() {
           .filter(Boolean),
       ),
     );
-    if (!form.tipo.trim() || !form.descricao.trim() || codigosArray.length === 0 || !form.grupo) return;
+    if (!form.descricao.trim() || codigosArray.length === 0 || !form.grupo) return;
 
     setSaving(true);
     setError(null);
@@ -222,8 +222,7 @@ export function RiscosConfigSection() {
                   placeholder="ex: ALTURA"
                   value={form.tipo}
                   onValueChange={(v) => updateField("tipo", v)}
-                  isRequired
-                  description="Identificador único em maiúsculas"
+                  description="Identificador único em maiúsculas. Opcional — usado apenas para pareceres especiais (ALTURA, CONFINADO)."
                 />
                 <Select
                   label="Grupo"
@@ -394,7 +393,7 @@ export function RiscosConfigSection() {
             color="primary"
             onPress={handleSave}
             isLoading={saving}
-            isDisabled={!form.tipo.trim() || !form.descricao.trim() || !formCodigosStr.trim() || !form.grupo}
+            isDisabled={!form.descricao.trim() || !formCodigosStr.trim() || !form.grupo}
             size="sm"
             style={{ backgroundColor: "#44735e" }}
           >

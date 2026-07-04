@@ -56,6 +56,7 @@ export const GRUPOS_RISCOS = [
   { value: 'BIOLOGICOS', label: 'Biológicos' },
   { value: 'ACIDENTES', label: 'Acidentes' },
   { value: 'ERGONOMICOS', label: 'Ergonômicos' },
+  { value: 'INESPECIFICOS', label: 'Inespecíficos' },
 ] as const;
 
 export async function fetchRiscosConfig(): Promise<IRiscoConfig[]> {
