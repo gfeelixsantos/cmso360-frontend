@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { AlertTriangle, Plus, Pencil, Trash2, X } from "lucide-react";
+import { Radiation, Plus, Pencil, Trash2, X } from "lucide-react";
 import {
   Button, Input, Textarea, Select, SelectItem,
   Card, CardBody, Chip, Switch, Divider, Tabs, Tab,
@@ -42,11 +42,12 @@ const INITIAL_FORM: IRiscoConfigFormData = {
 
 function getGrupoColor(grupo: string) {
   const cores: Record<string, string> = {
-    FISICOS: "#6366f1",
-    QUIMICOS: "#f59e0b",
-    BIOLOGICOS: "#ef4444",
-    ACIDENTES: "#44735e",
-    ERGONOMICOS: "#8b5cf6",
+    FISICOS: "#22c55e",
+    QUIMICOS: "#ef4444",
+    BIOLOGICOS: "#d97706",
+    ERGONOMICOS: "#f59e0b",
+    ACIDENTES: "#3b82f6",
+    INESPECIFICOS: "#8b5cf6",
   };
   return cores[grupo] || "#6b7280";
 }
@@ -68,7 +69,10 @@ export function RiscosConfigSection() {
   const load = useCallback(async () => {
     try {
       const data = await fetchRiscosConfig();
-      setConfigs(data);
+      const sorted = [...data].sort((a, b) =>
+        a.descricao.localeCompare(b.descricao, "pt-BR"),
+      );
+      setConfigs(sorted);
     } catch (err) {
       console.error("Erro ao carregar configurações de risco:", err);
     } finally {
@@ -195,11 +199,12 @@ export function RiscosConfigSection() {
 
     const isEdit = expandedId !== null;
     const editingConfig = isEdit ? configs.find(c => c.id === expandedId) : null;
+    const grupoColor = editingConfig?.grupo ? getGrupoColor(editingConfig.grupo) : "#3b82f6";
 
     return (
-      <div className="rounded-lg border border-blue-200 bg-blue-50/30 overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-blue-50 border-b border-blue-200">
-          <span className="text-sm font-semibold text-blue-800">
+      <div className="rounded-lg border overflow-hidden" style={{ borderColor: `${grupoColor}80`, backgroundColor: `${grupoColor}10` }}>
+        <div className="flex items-center justify-between px-4 py-3 border-b" style={{ backgroundColor: `${grupoColor}15`, borderColor: `${grupoColor}30` }}>
+          <span className="text-base font-bold" style={{ color: grupoColor }}>
             {creatingNew ? "Nova Configuração" : `Editando: ${editingConfig?.descricao}`}
           </span>
           <Button isIconOnly size="sm" variant="light" onPress={handleClose}>
@@ -213,7 +218,7 @@ export function RiscosConfigSection() {
           </div>
         )}
 
-        <div className="p-4">
+        <div className="p-4" style={{ backgroundColor: "white" }}>
           <Tabs aria-label="Configuração do risco">
             <Tab key="config" title="Configuração">
               <div className="grid grid-cols-2 gap-4 pt-4">
@@ -300,12 +305,15 @@ export function RiscosConfigSection() {
                   value={form.perigo_trajetoria_acao || ""}
                   onValueChange={(v) => updateField("perigo_trajetoria_acao", v)}
                 />
-                <Input
+                <Select
                   label="Técnica Utilizada"
-                  placeholder="ex: Avaliação Qualitativa"
-                  value={form.perigo_tecnica_utilizada || ""}
-                  onValueChange={(v) => updateField("perigo_tecnica_utilizada", v)}
-                />
+                  placeholder="Selecione a técnica"
+                  selectedKeys={form.perigo_tecnica_utilizada ? [form.perigo_tecnica_utilizada] : []}
+                  onSelectionChange={(keys) => updateField("perigo_tecnica_utilizada", Array.from(keys)[0] as string || "")}
+                >
+                  <SelectItem key="QUALITATIVA">Qualitativa</SelectItem>
+                  <SelectItem key="QUANTITATIVA">Quantitativa</SelectItem>
+                </Select>
                 <div className="col-span-2">
                   <Textarea
                     label="Possíveis Danos à Saúde"
@@ -413,8 +421,8 @@ export function RiscosConfigSection() {
       <CardBody className="p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <AlertTriangle size={28} aria-hidden="true" style={{ color: "#44735e" }} />
-            <h2 className="text-xl font-semibold text-gray-800">Riscos / Pareceres</h2>
+            <Radiation size={28} aria-hidden="true" style={{ color: "#44735e" }} />
+            <h2 className="text-xl font-semibold text-gray-800">Riscos</h2>
             <Chip size="sm" variant="flat">{configs.length} configurações</Chip>
           </div>
           {isMaster && !creatingNew && expandedId === null && (
@@ -452,20 +460,29 @@ export function RiscosConfigSection() {
             return (
               <div
                 key={config.id}
-                className={`rounded-lg border transition-colors ${
-                  isEditing ? "border-blue-200 bg-blue-50/30" :
-                  !config.ativo ? "bg-gray-50 opacity-60" : "bg-white"
-                }`}
+                className="rounded-lg border transition-colors"
+                style={{
+                  borderColor: isEditing ? (config.grupo ? `${getGrupoColor(config.grupo)}80` : "#93c5fd") : config.grupo ? `${getGrupoColor(config.grupo)}40` : undefined,
+                  backgroundColor: isEditing ? `${getGrupoColor(config.grupo || "")}10` : !config.ativo ? "#f9fafb" : "white",
+                }}
               >
                 <div className="flex items-start justify-between gap-3 px-4 py-3">
-                  <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className={`text-sm font-semibold ${!config.ativo ? "line-through text-gray-400" : "text-gray-900"}`}>
+                      <span
+                        className="text-sm font-semibold"
+                        style={{
+                          color: !config.ativo ? "#9ca3af" : config.grupo ? getGrupoColor(config.grupo) : "#111827",
+                          textDecoration: !config.ativo ? "line-through" : undefined,
+                        }}
+                      >
                         {config.descricao}
                       </span>
-                      <Chip size="sm" variant="flat" className="font-mono text-[11px]">
-                        {config.tipo}
-                      </Chip>
+                      {config.tipo && (
+                        <Chip size="sm" variant="flat" className="font-mono text-[11px]">
+                          {config.tipo}
+                        </Chip>
+                      )}
                       {config.grupo && (
                         <Chip
                           size="sm"
@@ -482,42 +499,40 @@ export function RiscosConfigSection() {
                         </Chip>
                       )}
                     </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {config.codigos.map((cod) => (
-                        <Chip key={cod} size="sm" variant="flat" className="font-mono text-[11px]">
-                          {cod}
-                        </Chip>
-                      ))}
-                    </div>
                     {config.parecer_opcoes && config.parecer_opcoes.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5">
-                        {config.parecer_opcoes.map((op, i) => (
-                          <Chip key={i} size="sm" variant="flat" className="text-[11px]">
-                            {op}
-                          </Chip>
-                        ))}
+                      <div>
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Pareceres</span>
+                        <div className="flex flex-wrap gap-1.5 mt-0.5">
+                          {config.parecer_opcoes.map((op, i) => (
+                            <Chip key={i} size="sm" variant="flat" className="text-[11px]">
+                              {op}
+                            </Chip>
+                          ))}
+                        </div>
                       </div>
                     )}
                     {config.perigo_nome && (
-                      <p className="text-[11px] text-gray-500">
-                        <span className="font-medium">Perigo:</span> {config.perigo_nome}
-                        {config.perigo_possiveis_danos && (
-                          <span className="text-gray-400"> — {config.perigo_possiveis_danos}</span>
-                        )}
-                      </p>
+                      <div>
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Perigo</span>
+                        <p className="text-[11px] text-gray-500">
+                          {config.perigo_nome}
+                          {config.perigo_possiveis_danos && (
+                            <span className="text-gray-400"> — {config.perigo_possiveis_danos}</span>
+                          )}
+                        </p>
+                      </div>
                     )}
                     {config.observacao && (
-                      <p className="text-[11px] text-gray-400 italic">{config.observacao}</p>
+                      <div>
+                        <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wide">Observação</span>
+                        <p className="text-[11px] text-gray-500 italic">{config.observacao}</p>
+                      </div>
                     )}
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={config.ativo ? "success" : "danger"}
-                    >
+                    <span className={`text-xs font-medium ${config.ativo ? "text-green-600" : "text-red-500"}`}>
                       {config.ativo ? "Ativo" : "Inativo"}
-                    </Chip>
+                    </span>
                     {isMaster && (
                       <div className="flex gap-1">
                         <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenEdit(config)}>

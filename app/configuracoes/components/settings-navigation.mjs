@@ -1,10 +1,10 @@
 import {
-  AlertTriangle,
   Building,
   Building2,
-  Handshake,
   FileSignature,
   FlaskConical,
+  Handshake,
+  Radiation,
   ShieldCheck,
   User,
   Users,
@@ -17,7 +17,7 @@ export const NAV_ITEMS = [
   { id: "exames", label: "Exames", icon: FlaskConical },
   { id: "prestadores", label: "Prestadores", icon: Handshake, requiredPerfil: "MASTER" },
   { id: "usuarios", label: "Profissionais", icon: Users },
-  { id: "riscos", label: "Riscos", icon: AlertTriangle, requiredPerfil: "MASTER" },
+  { id: "riscos", label: "Riscos", icon: Radiation, requiredPerfil: "MASTER" },
   { id: "unidades", label: "Unidades", icon: Building2, requiredPerfil: "MASTER" },
   { id: "usuario", label: "Usuário", icon: User },
 ];

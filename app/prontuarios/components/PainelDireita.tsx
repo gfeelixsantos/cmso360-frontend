@@ -285,26 +285,28 @@ const AnexoCard = memo(
           isActive ? "bg-primary-50" : "hover:bg-default-50"
         }`}
       >
-        <td className="p-2 text-default-800">
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-[#44735E] shrink-0" />
-            <div className="flex flex-col min-w-0">
+        <td className="p-2 text-default-800 overflow-hidden">
+          <div className="flex items-start gap-2">
+            <FileText className="w-4 h-4 text-[#44735E] shrink-0 mt-0.5" />
+            <div className="flex flex-col min-w-0 overflow-hidden">
               <span className="font-medium truncate text-xs sm:text-sm">
                 {anexo.Name}
               </span>
-              {size && (
-                <span className="text-[0.6rem] text-default-400">{size}</span>
-              )}
+              <div className="flex items-center gap-1.5">
+                {size && (
+                  <span className="text-[0.6rem] text-default-400">{size}</span>
+                )}
+                {isActive && (
+                  <Chip
+                    className="w-fit bg-blue-600 text-white"
+                    size="sm"
+                    variant="flat"
+                  >
+                    Visualizando
+                  </Chip>
+                )}
+              </div>
             </div>
-            {isActive && (
-              <Chip
-                className="ml-auto w-fit bg-blue-600 text-white"
-                size="sm"
-                variant="flat"
-              >
-                Visualizando
-              </Chip>
-            )}
           </div>
         </td>
         <td className="p-2 text-center">
@@ -1216,21 +1218,33 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     [riscosConfigs],
   );
 
-  const agruparRiscos = (riscos: RiscosAso[]) => {
-    // ordenar alfabeticamente por risco
-    const riscosOrdenados = [...riscos].sort((a, b) =>
-      a.risco.localeCompare(b.risco),
-    );
+  const GRUPOS_ORDEM = [
+    "FISICOS",
+    "QUIMICOS",
+    "BIOLOGICOS",
+    "ERGONOMICOS",
+    "ACIDENTES",
+    "INESPECIFICOS",
+  ];
 
-    // agrupar por grupo
-    return riscosOrdenados.reduce(
+  const agruparRiscos = (riscos: RiscosAso[]) => {
+    const grupos = riscos.reduce(
       (acc, risco) => {
         if (!acc[risco.grupo]) acc[risco.grupo] = [];
         acc[risco.grupo].push(risco);
-
         return acc;
       },
       {} as Record<string, RiscosAso[]>,
+    );
+
+    // ordena os riscos dentro de cada grupo alfabeticamente
+    for (const grupo of Object.keys(grupos)) {
+      grupos[grupo].sort((a, b) => a.risco.localeCompare(b.risco));
+    }
+
+    // retorna na ordem definida
+    return GRUPOS_ORDEM.filter((g) => grupos[g]).map(
+      (g) => [g, grupos[g]] as [string, RiscosAso[]],
     );
   };
 
@@ -1595,7 +1609,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                         </h4>
                       </div>
 
-                      {Object.entries(agruparRiscos(riscos)).map(
+                      {agruparRiscos(riscos).map(
                         ([grupo, lista]) => (
                           <ul key={grupo} className="list-none pl-4 text-[0.65rem] sm:text-[0.7rem]">
                             {lista.map((risco, index) => (
