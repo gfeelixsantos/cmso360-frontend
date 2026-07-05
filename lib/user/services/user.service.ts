@@ -61,24 +61,44 @@ export class UserService {
       );
     }
 
-    // Busca informações complementares no SOC
-    const cadastroPessoas = await SOC.ExportaDadosCadastroPessoas();
-    const socUser = cadastroPessoas?.find(
-      (p) => p.CODIGO == userRegister.codigo,
-    );
+    // Busca informações complementares da nossa tabela local via backend
+    let userData: any = null;
+    try {
+      const response = await fetch(`${NEST_URL}users/${userRegister.codigo}`);
+      if (response.ok) {
+        userData = await response.json();
+      }
+    } catch (err) {
+      console.error("Erro ao buscar dados do usuário no banco local:", err);
+    }
 
-    if (!socUser) {
+    if (!userData) {
       return new ApiResponse(
         HttpCodes.UNPROCESSABLE_ENTITY,
-        ApiMessages.SOC_ED_CADASTRO_PESSOAS_NULL,
+        "Dados cadastrais do profissional não encontrados localmente.",
+      );
+    }
+
+    // Verifica se o usuário está ativo localmente
+    if (userData.ativo === false) {
+      return new ApiResponse(
+        HttpCodes.FORBIDDEN,
+        ApiMessages.USER_INACTIVE,
       );
     }
 
     // Gera token JWT e mapeia para o modelo de sucesso de login
-    const userInfo = mapCadastroPessoasToUserInfo(socUser);
+    const userInfo: IUserInfo = {
+      codigo: userData.codigo,
+      nome: userData.nome,
+      cpf: userData.cpf,
+      conselho: userData.conselho || "",
+      ufconselho: userData.uf_conselho || "",
+      perfil: userData.perfil || "CONVIDADO",
+    };
     const token = await JWT.generateJwt(userInfo);
 
-    // Sincroniza usuário com o backend (preserva consentimento)
+    // Atualiza o último login em background
     try {
       await fetch(`${NEST_URL}users/sync`, {
         method: 'POST',
@@ -94,7 +114,7 @@ export class UserService {
         }),
       });
     } catch (err) {
-      console.error('Erro ao sincronizar usuário (não crítico):', err);
+      console.error('Erro ao sincronizar último login (não crítico):', err);
     }
 
     return new ApiResponse(

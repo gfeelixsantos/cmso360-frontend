@@ -19,6 +19,9 @@ export enum ApiMessages {
   USER_INPUT_INVALID = "CPF ou senha inválidos",
   // → Erro de autenticação: CPF não cadastrado ou senha incorreta
 
+  USER_INACTIVE = "Acesso bloqueado. Entre em contato com o administrador.",
+  // → Retornado quando o usuário está inativo no sistema local
+
   // 🔑 Login de usuários
   USER_LOGGED_IN_SUCCESSFULLY = "Usuário logado com sucesso.",
   // → Login validado, token JWT gerado e retornado ao cliente
