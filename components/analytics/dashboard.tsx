@@ -47,7 +47,7 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
 
   const vehicleLabelMap: Record<string, string> = {
     UNIDADE_MOVEL: "Unidade Móvel", UNIDADE_RAIO_X: "Unidade Raio-X",
-    DOBLO_I: "Doblô I", DOBLO_II: "Doblô II", UP: "Up", PICKUP: "Pickup", MOBI: "Mobi"
+    DOBLO_I: "Doblô I", DOBLO_II: "Doblô II", UP: "Up", PICKUP: "Pickup", MOBI: "Mobi", MOBI_COMERCIAL: "Mobi Comercial"
   };
 
   const nextEvents = events
@@ -59,8 +59,9 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
     const map: Record<string, string> = {
       ASSESSORIA: "#9333ea",
       AVALIACAO_DE_CAMPO: "#0d9488",
-      IN_COMPANY: "#16a34a",
-      LEVA_E_TRAS: "#ea580c",
+      COMERCIAL: "#ea580c",
+      IN_COMPANY: "#4f46e5",
+      LEVA_E_TRAS: "#ec4899",
       TREINAMENTO: "#ca8a04",
       VISITA_TECNICA: "#2563eb",
       PERICIA: "#dc2626",
@@ -227,6 +228,7 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
                   const badgeMap: Record<string, string> = {
                     ASSESSORIA: "Assessoria",
                     AVALIACAO_DE_CAMPO: "Aval. Campo",
+                    COMERCIAL: "Comercial",
                     IN_COMPANY: "In Company",
                     LEVA_E_TRAS: "Leva/Trás",
                     TREINAMENTO: "Treinam.",
@@ -238,8 +240,9 @@ export function MetricsDashboard({ events, vehicles }: MetricsDashboardProps) {
                   const badgeColorMap: Record<string, string> = {
                     ASSESSORIA: "bg-purple-100 text-purple-700",
                     AVALIACAO_DE_CAMPO: "bg-teal-100 text-teal-700",
-                    IN_COMPANY: "bg-green-100 text-green-700",
-                    LEVA_E_TRAS: "bg-orange-100 text-orange-700",
+                    COMERCIAL: "bg-orange-100 text-orange-700",
+                    IN_COMPANY: "bg-indigo-100 text-indigo-700",
+                    LEVA_E_TRAS: "bg-pink-100 text-pink-700",
                     TREINAMENTO: "bg-amber-100 text-amber-700",
                     VISITA_TECNICA: "bg-blue-100 text-blue-700",
                     PERICIA: "bg-red-100 text-red-700",
