@@ -41,10 +41,16 @@ type MenuView = "menu" | "notifications";
 
 const getSpecialtyColor = (especialidade: string) => {
   const colorMap: Record<string, string> = {
-    MEDICO: "bg-blue-100 text-blue-700 border-blue-200",
-    ENFERMAGEM: "bg-green-100 text-green-700 border-green-200",
-    FONOAUDIOLOGA: "bg-purple-100 text-purple-700 border-purple-200",
-    RECEPCAO: "bg-orange-100 text-orange-700 border-orange-200",
+    MASTER: "bg-gray-100 text-gray-800 border-gray-300",
+    MÉDICO: "bg-blue-100 text-blue-700 border-blue-200",
+    ENFERMAGEM: "bg-emerald-100 text-emerald-700 border-emerald-200",
+    FONOAUDIOLOGA: "bg-violet-100 text-violet-700 border-violet-200",
+    ADMINISTRATIVO: "bg-slate-100 text-slate-700 border-slate-200",
+    COMERCIAL: "bg-orange-100 text-orange-700 border-orange-200",
+    ATENDIMENTO: "bg-cyan-100 text-cyan-700 border-cyan-200",
+    LABORATORIO: "bg-yellow-100 text-yellow-700 border-yellow-200",
+    CONVIDADO: "bg-stone-100 text-stone-600 border-stone-200",
+    ENGENHARIA: "bg-red-100 text-red-700 border-red-200",
   };
 
   return colorMap[especialidade] || "bg-gray-100 text-gray-700 border-gray-200";
@@ -52,10 +58,16 @@ const getSpecialtyColor = (especialidade: string) => {
 
 const getAvatarColor = (especialidade: string) => {
   const colorMap: Record<string, string> = {
-    MEDICO: "bg-blue-500",
-    ENFERMAGEM: "bg-green-500",
-    FONOAUDIOLOGA: "bg-purple-500",
-    RECEPCAO: "bg-orange-500",
+    MASTER: "bg-gray-800",
+    MÉDICO: "bg-blue-600",
+    ENFERMAGEM: "bg-emerald-500",
+    FONOAUDIOLOGA: "bg-violet-500",
+    ADMINISTRATIVO: "bg-slate-600",
+    COMERCIAL: "bg-orange-500",
+    ATENDIMENTO: "bg-cyan-500",
+    LABORATORIO: "bg-yellow-600",
+    CONVIDADO: "bg-stone-400",
+    ENGENHARIA: "bg-red-500",
   };
 
   return colorMap[especialidade] || "bg-gray-500";
@@ -63,10 +75,16 @@ const getAvatarColor = (especialidade: string) => {
 
 const getHoverColor = (especialidade: string) => {
   const colorMap: Record<string, string> = {
-    MEDICO: "hover:bg-blue-50 hover:text-blue-700",
-    ENFERMAGEM: "hover:bg-green-50 hover:text-green-700",
-    FONOAUDIOLOGA: "hover:bg-purple-50 hover:text-purple-700",
-    RECEPCAO: "hover:bg-orange-50 hover:text-orange-700",
+    MASTER: "hover:bg-gray-50 hover:text-gray-800",
+    MÉDICO: "hover:bg-blue-50 hover:text-blue-700",
+    ENFERMAGEM: "hover:bg-emerald-50 hover:text-emerald-700",
+    FONOAUDIOLOGA: "hover:bg-violet-50 hover:text-violet-700",
+    ADMINISTRATIVO: "hover:bg-slate-50 hover:text-slate-700",
+    COMERCIAL: "hover:bg-orange-50 hover:text-orange-700",
+    ATENDIMENTO: "hover:bg-cyan-50 hover:text-cyan-700",
+    LABORATORIO: "hover:bg-yellow-50 hover:text-yellow-700",
+    CONVIDADO: "hover:bg-stone-50 hover:text-stone-600",
+    ENGENHARIA: "hover:bg-red-50 hover:text-red-700",
   };
 
   return colorMap[especialidade] || "hover:bg-gray-50 hover:text-gray-900";
