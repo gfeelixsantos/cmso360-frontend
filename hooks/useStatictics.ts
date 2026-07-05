@@ -54,6 +54,7 @@ export type ExameStatisticsDto = {
   nomeExame: string;
   total: number;
   porStatus: Record<string, number>;
+  tempoMedioEspera?: number | null;
 };
 
 // ===============================

@@ -261,6 +261,7 @@ const ExamCard = ({
     (exame.porStatus.AGUARDANDO_RESULTADO || 0);
   const total = exame.total;
   const percentFinalizado = total > 0 ? (finalizados / total) * 100 : 0;
+  const tempoMedio = exame.tempoMedioEspera;
 
   return (
     <div className="bg-white rounded-lg p-4 hover:shadow-md transition-all border border-gray-200">
@@ -272,6 +273,11 @@ const ExamCard = ({
               <h4 className="font-semibold text-gray-900 truncate">
                 {exame.nomeExame}
               </h4>
+              {tempoMedio != null && tempoMedio > 0 && (
+                <p className="text-xs text-gray-400 truncate leading-tight mt-0.5">
+                  ~{tempoMedio.toFixed(0)} min de espera
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -976,6 +982,56 @@ export function StatisticsSection() {
                             <Eye className="h-4 w-4 mr-2" />
                             Ver mais {unidade.exames.length - 8} exames
                           </Button>
+                        </div>
+                      )}
+
+                      {/* Gráfico de Tempo Médio de Espera */}
+                      {unidade.exames.some((e) => e.tempoMedioEspera != null && e.tempoMedioEspera > 0) && (
+                        <div className="mt-6 p-3 bg-gray-50/50 rounded-lg border border-gray-100">
+                          <h5 className="text-xs font-medium text-gray-500 mb-3 flex items-center gap-1.5">
+                            <Clock className="h-3 w-3" />
+                            Tempo médio de espera por grupo
+                          </h5>
+                          <div className="space-y-2">
+                            {unidade.exames
+                              .filter((e) => e.tempoMedioEspera != null && e.tempoMedioEspera > 0)
+                              .sort((a, b) => (b.tempoMedioEspera || 0) - (a.tempoMedioEspera || 0))
+                              .slice(0, 6)
+                              .map((exame) => {
+                                const tempo = exame.tempoMedioEspera || 0;
+                                const maxTempo = Math.max(
+                                  ...unidade.exames
+                                    .filter((e) => e.tempoMedioEspera != null)
+                                    .map((e) => e.tempoMedioEspera || 0),
+                                  1
+                                );
+                                const percentual = (tempo / maxTempo) * 100;
+                                const barColor = tempo <= 10 ? COLORS.success : tempo <= 20 ? COLORS.warning : COLORS.danger;
+                                
+                                return (
+                                  <div key={exame.nomeExame} className="flex items-center gap-2">
+                                    <div className="w-28 text-[11px] text-gray-600 truncate" title={exame.nomeExame}>
+                                      {exame.nomeExame}
+                                    </div>
+                                    <div className="flex-1 h-2 bg-gray-200/60 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full rounded-full transition-all duration-500"
+                                        style={{
+                                          width: `${percentual}%`,
+                                          backgroundColor: barColor,
+                                        }}
+                                      />
+                                    </div>
+                                    <div className="w-10 text-[10px] font-medium text-right" style={{ color: barColor }}>
+                                      ~{tempo.toFixed(0)}min
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                          </div>
+                          <p className="text-[10px] text-gray-300 mt-2 italic">
+                            1º grupo: (data exame − retirada senha) · Demais: (data exame − último grupo concluído)
+                          </p>
                         </div>
                       )}
 
