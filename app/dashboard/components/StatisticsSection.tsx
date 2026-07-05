@@ -29,7 +29,7 @@ import {
   StatisticsResponseDto,
   useStatistics,
 } from "@/hooks/useStatictics";
-import { fetchExamesGrouped, type ExamToogle } from "@/lib/exames/utils/exames-helper";
+
 
 // 🎨 Constantes de design
 const COLORS = {
@@ -244,32 +244,14 @@ const TicketCard = ({ ticket }: { ticket: any }) => {
   );
 };
 
-// 🔍 Função para encontrar o nome individual do exame a partir do código
-const getExamNameByCode = (codigoExame: string, examesGrouped?: Record<string, ExamToogle[]>): string | null => {
-  if (!codigoExame || !examesGrouped) return null;
-
-  const normalizedCode = codigoExame.trim().toLowerCase();
-
-  for (const examItems of Object.values(examesGrouped)) {
-    for (const item of examItems) {
-      if (item.codigos.some((c) => c.trim().toLowerCase() === normalizedCode)) {
-        return item.nome;
-      }
-    }
-  }
-
-  return null;
-};
 
 // 📋 Card de exame
 const ExamCard = ({
   exame,
   expanded = false,
-  subtitle,
 }: {
   exame: ExameStatisticsDto;
   expanded?: boolean;
-  subtitle?: string | null;
 }) => {
   const pendentes =
     (exame.porStatus.PENDENTE || 0) + (exame.porStatus.PENDENTE_LABORATORIO || 0);
@@ -290,11 +272,6 @@ const ExamCard = ({
               <h4 className="font-semibold text-gray-900 truncate">
                 {exame.nomeExame}
               </h4>
-              {subtitle && subtitle !== exame.nomeExame && (
-                <p className="text-xs text-gray-500 truncate leading-tight mt-0.5">
-                  {subtitle}
-                </p>
-              )}
             </div>
           </div>
         </div>
@@ -375,8 +352,6 @@ export function StatisticsSection() {
   const [showAllExams, setShowAllExams] = useState<Record<string, boolean>>({});
   const [lastUpdate, setLastUpdate] = useState<string>("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [examesGrouped, setExamesGrouped] = useState<Record<string, ExamToogle[]>>({});
-  useEffect(() => { fetchExamesGrouped().then(setExamesGrouped); }, []);
 
   const statisticsData = data as unknown as StatisticsResponseDto;
 
@@ -982,10 +957,9 @@ export function StatisticsSection() {
                           .sort((a, b) => b.total - a.total)
                           .map((exame) => (
                             <ExamCard
-                              key={`${unidade.unidade}-${exame.codigoExame}`}
+                              key={`${unidade.unidade}-${exame.nomeExame}`}
                               exame={exame}
                               expanded={isExamExpanded}
-                              subtitle={getExamNameByCode(exame.codigoExame, examesGrouped)}
                             />
                           ))}
                       </div>

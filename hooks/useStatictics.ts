@@ -52,7 +52,6 @@ export type UnidadeStatisticsDto = {
 // ===============================
 export type ExameStatisticsDto = {
   nomeExame: string;
-  codigoExame: string;
   total: number;
   porStatus: Record<string, number>;
 };
