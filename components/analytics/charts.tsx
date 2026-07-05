@@ -48,6 +48,7 @@ export interface ProfessionalWorkloadEntry {
 const TYPE_LABEL_MAP: Record<string, string> = {
   ASSESSORIA: "Assessoria",
   AVALIACAO_DE_CAMPO: "Aval. de Campo",
+  COMERCIAL: "Comercial",
   IN_COMPANY: "In Company",
   LEVA_E_TRAS: "Leva e Trás",
   TREINAMENTO: "Treinamento",
@@ -59,8 +60,9 @@ const TYPE_LABEL_MAP: Record<string, string> = {
 const TYPE_COLORS: Record<string, string> = {
   ASSESSORIA: "#9333ea",
   AVALIACAO_DE_CAMPO: "#0d9488",
-  IN_COMPANY: "#16a34a",
-  LEVA_E_TRAS: "#ea580c",
+  COMERCIAL: "#ea580c",
+  IN_COMPANY: "#4f46e5",
+  LEVA_E_TRAS: "#ec4899",
   TREINAMENTO: "#ca8a04",
   VISITA_TECNICA: "#2563eb",
   PERICIA: "#dc2626",
