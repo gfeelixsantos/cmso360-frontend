@@ -333,35 +333,33 @@ export const ScraperMonitor: React.FC = () => {
             Aguardando dados...
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-1 gap-2 md:grid-cols-3 lg:grid-cols-5">
             {metrics.map((row) => {
               const config = getStatusConfig(row.status);
 
               return (
                 <article
                   key={row.provider}
-                  className="rounded-xl bg-white px-4 py-3 border border-gray-200"
+                  className="rounded-lg bg-white px-3 py-2 border border-gray-200"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Database className="h-4 w-4 shrink-0 text-gray-400" />
+                    <div className="flex items-center gap-2">
+                      <Database className="h-3.5 w-3.5 shrink-0 text-gray-400" />
                       <div>
-                        <h4 className="text-base font-semibold text-gray-800">
+                        <h4 className="text-sm font-semibold text-gray-800">
                           {row.provider}
                         </h4>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className={`text-xs ${row.status === "Processando" ? "text-blue-600" : "text-gray-600"}`}>
-                            {row.status}
-                          </span>
-                        </div>
+                        <span className={`text-[11px] ${row.status === "Processando" ? "text-blue-600" : "text-gray-500"}`}>
+                          {row.status}
+                        </span>
                       </div>
                     </div>
 
                     <div className="text-right">
-                      <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                      <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400">
                         Recebidos
                       </p>
-                      <p className="text-xl font-semibold text-[#44735E]">
+                      <p className="text-lg font-semibold text-[#44735E]">
                         {row.receivedToday || 0}
                       </p>
                     </div>
