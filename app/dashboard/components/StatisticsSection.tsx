@@ -22,12 +22,24 @@ import {
 import { useEffect, useState, useMemo } from "react";
 
 import { ScraperMonitor } from "./ScraperMonitor";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
 
 import { TicketStatus } from "@/lib/ticket/ticket";
 import {
   ExameStatisticsDto,
   StatisticsResponseDto,
   useStatistics,
+  TempoPrimeiroExameDto,
+  TempoPermanenciaDto,
 } from "@/hooks/useStatictics";
 
 
@@ -354,6 +366,147 @@ const ExamCard = ({
           </motion.div>
         )}
       </div>
+    </div>
+  );
+};
+
+// ⏱️ Gráfico: Tempo da Emissão ao Primeiro Exame
+const TempoPrimeiroExameChart = ({
+  data,
+}: {
+  data: TempoPrimeiroExameDto | null;
+}) => {
+  if (!data) return null;
+
+  const faixasOrdenadas = ["0-15min", "15-30min", "30-60min", "1-2h", "2h+"];
+  const chartData = faixasOrdenadas.map((faixa) => ({
+    name: faixa,
+    value: data.faixas[faixa] || 0,
+  }));
+
+  const faixaCor = (name: string) => {
+    if (name === "0-15min") return "#10b981";
+    if (name === "15-30min") return "#f59e0b";
+    if (name === "30-60min") return "#f97316";
+    if (name === "1-2h") return "#ef4444";
+    return "#991b1b";
+  };
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-sm font-semibold text-gray-900">
+          Emissão → Primeiro Exame
+        </h4>
+        {data.mediaMinutos != null && (
+          <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
+            <Clock className="h-3 w-3" />
+            Média: {Math.round(data.mediaMinutos)}min
+          </div>
+        )}
+      </div>
+      {chartData.some((d) => d.value > 0) ? (
+        <ResponsiveContainer width="100%" height={200}>
+          <BarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+            <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+            <Tooltip
+              contentStyle={{ fontSize: 12, borderRadius: 8 }}
+              formatter={(value: number) => [value, "Pessoas"]}
+            />
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+              {chartData.map((entry, idx) => (
+                <Cell key={idx} fill={faixaCor(entry.name)} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-8">
+          Nenhum dado disponível
+        </p>
+      )}
+    </div>
+  );
+};
+
+// 📈 Gráfico: Permanência por Quantidade de Exames
+const TempoPermanenciaChart = ({
+  data,
+}: {
+  data: TempoPermanenciaDto[];
+}) => {
+  if (!data || data.length === 0) return null;
+
+  const chartData = data.map((d) => ({
+    name: d.exames >= 5 ? "5+" : `${d.exames}`,
+    minutos: Math.round(d.tempoMedioMinutos || 0),
+    pessoas: d.quantidade,
+  }));
+
+  const cores = ["#44735E", "#5a8a74", "#70a18a", "#86b8a0", "#9ccfb6"];
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <h4 className="text-sm font-semibold text-gray-900 mb-4">
+        Permanência Total por Qtde de Exames
+      </h4>
+      {chartData.some((d) => d.minutos > 0) ? (
+        <>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <YAxis
+                tick={{ fontSize: 11 }}
+                label={{
+                  value: "min",
+                  angle: -90,
+                  position: "insideLeft",
+                  fontSize: 11,
+                  style: { fill: "#9ca3af" },
+                }}
+              />
+              <Tooltip
+                contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                formatter={(value: number, name: string) => {
+                  if (name === "minutos") return [`${value}min`, "Tempo médio"];
+                  return [value, name];
+                }}
+              />
+              <Bar dataKey="minutos" radius={[4, 4, 0, 0]}>
+                {chartData.map((entry, idx) => (
+                  <Cell
+                    key={idx}
+                    fill={cores[idx % cores.length]}
+                    opacity={0.85}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="mt-3 space-y-1.5">
+            {chartData.map((d) => (
+              <div
+                key={d.name}
+                className="flex justify-between text-xs text-gray-600"
+              >
+                <span>
+                  <span className="font-medium">{d.name}</span> exame
+                  {d.name !== "1" ? "s" : ""} — {d.pessoas}{" "}
+                  {d.pessoas === 1 ? "pessoa" : "pessoas"}
+                </span>
+                <span className="font-medium text-gray-800">{d.minutos}min</span>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="text-sm text-gray-400 text-center py-8">
+          Nenhum dado disponível
+        </p>
+      )}
     </div>
   );
 };
@@ -1046,6 +1199,21 @@ export function StatisticsSection() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* Gráficos de Tempo de Atendimento */}
+                    <div className="border-t border-gray-200 pt-6">
+                      <h3 className="text-base font-semibold text-gray-900 mb-4">
+                        Tempo de Atendimento
+                      </h3>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <TempoPrimeiroExameChart
+                          data={unidade.temposAtendimento?.primeiroExame ?? null}
+                        />
+                        <TempoPermanenciaChart
+                          data={unidade.temposAtendimento?.permanencia ?? []}
+                        />
+                      </div>
                     </div>
                   </motion.div>
                 )}

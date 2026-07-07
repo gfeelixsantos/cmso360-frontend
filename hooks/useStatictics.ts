@@ -38,13 +38,17 @@ export type StatisticsResponseDto = {
 export type UnidadeStatisticsDto = {
   unidade: string;
   totalAgendamentos: number;
-  atendimentosPrevistos: number; // ✨ Nova Propriedade
-  aguardandoResultados: number; // ✨ Nova Propriedade
-  aguardandoAvaliacaoMedica: number; // ✨ Nova Propriedade
+  atendimentosPrevistos: number;
+  aguardandoResultados: number;
+  aguardandoAvaliacaoMedica: number;
   atendimentosPorStatus: Record<string, number>;
   atendimentosPorTipoExame: Record<string, number>;
   exames: ExameStatisticsDto[];
   tickets: TicketStatisticsDto[];
+  temposAtendimento?: {
+    primeiroExame: TempoPrimeiroExameDto | null;
+    permanencia: TempoPermanenciaDto[];
+  };
 };
 
 // ===============================
@@ -64,6 +68,17 @@ export type TicketStatisticsDto = {
   status: string;
   total: number;
   preferencial: number;
+};
+
+export type TempoPrimeiroExameDto = {
+  mediaMinutos: number | null;
+  faixas: Record<string, number>;
+};
+
+export type TempoPermanenciaDto = {
+  exames: number;
+  quantidade: number;
+  tempoMedioMinutos: number | null;
 };
 
 // ===============================
