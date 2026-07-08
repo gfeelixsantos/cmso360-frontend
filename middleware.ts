@@ -7,6 +7,11 @@ import { JWT } from "@/lib/jwt/jwt";
 const RENEW_THRESHOLD = 10 * 60; // renovar faltando 10 min
 
 export async function middleware(request: NextRequest) {
+  // Página pública do totem — não requer autenticação
+  if (request.nextUrl.pathname.startsWith("/teleatendimento/totem")) {
+    return NextResponse.next();
+  }
+
   const token = request.cookies.get("auth_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
