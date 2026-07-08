@@ -718,6 +718,8 @@ export default function PainelPage() {
   const audioCacheRef = useRef<Map<string, Blob>>(new Map());
   const audioUrlCacheRef = useRef<Map<string, string>>(new Map());
   const mainAudioRef = useRef<HTMLAudioElement | null>(null);
+  const notificacaoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const welcomeAudioRef = useRef<HTMLAudioElement | null>(null);
   const nativeSpeechRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   const [isLiberado, setIsLiberado] = useState(false);
@@ -926,7 +928,7 @@ export default function PainelPage() {
 
       // Nova chamada - carrega áudio
       if (call.audio) {
-        if (audioCacheRef.current.size > 15) {
+        if (audioCacheRef.current.size > 8) {
           audioUrlCacheRef.current.forEach((url) => URL.revokeObjectURL(url));
           audioUrlCacheRef.current.clear();
           audioCacheRef.current.clear();
@@ -1004,8 +1006,13 @@ export default function PainelPage() {
   const tocarSomNotificacao = useCallback(() => {
     if (!audioHabilitado) return;
     try {
-      const audio = new Audio(PAINEL_CONFIG.audioUrls.notificacao);
-
+      if (!notificacaoAudioRef.current) {
+        notificacaoAudioRef.current = new Audio(
+          PAINEL_CONFIG.audioUrls.notificacao,
+        );
+      }
+      const audio = notificacaoAudioRef.current;
+      audio.currentTime = 0;
       audio.play().catch(() => undefined);
     } catch {}
   }, [audioHabilitado]);
@@ -1115,6 +1122,7 @@ export default function PainelPage() {
                 setTimeout(() => {
                   if (!carregado) {
                     audio.removeEventListener("canplaythrough", onCanPlay);
+                    audio.onerror = null;
                     rej(new Error("Timeout ao carregar áudio"));
                   }
                 }, 15000);
@@ -1365,7 +1373,22 @@ export default function PainelPage() {
       if (mainAudioRef.current) {
         mainAudioRef.current.pause();
         mainAudioRef.current.src = "";
+        mainAudioRef.current.load();
         mainAudioRef.current = null;
+      }
+
+      if (notificacaoAudioRef.current) {
+        notificacaoAudioRef.current.pause();
+        notificacaoAudioRef.current.src = "";
+        notificacaoAudioRef.current.load();
+        notificacaoAudioRef.current = null;
+      }
+
+      if (welcomeAudioRef.current) {
+        welcomeAudioRef.current.pause();
+        welcomeAudioRef.current.src = "";
+        welcomeAudioRef.current.load();
+        welcomeAudioRef.current = null;
       }
     };
   }, [
@@ -1385,8 +1408,13 @@ export default function PainelPage() {
     const inicializarPainel = async () => {
       try {
         if (audioHabilitado) {
-          const bemVindo = new Audio(PAINEL_CONFIG.audioUrls.bemvindo);
-
+          if (!welcomeAudioRef.current) {
+            welcomeAudioRef.current = new Audio(
+              PAINEL_CONFIG.audioUrls.bemvindo,
+            );
+          }
+          const bemVindo = welcomeAudioRef.current;
+          bemVindo.currentTime = 0;
           await bemVindo.play().catch(() => undefined);
         }
       } catch {}
