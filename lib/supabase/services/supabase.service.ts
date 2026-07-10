@@ -1,6 +1,7 @@
 import { supabase } from "../supabase";
 
 import { IUserRegister } from "@/lib/user/interfaces/IUser";
+import { formatCPF } from "@/lib/utils";
 
 const normalizeCpf = (value: string) => value.replace(/\D/g, "");
 
@@ -8,10 +9,12 @@ export class SupabaseService {
   static async getUserByCpf(cpf: string): Promise<IUserRegister> {
     const cpfNormalizado = normalizeCpf(cpf);
 
+    const cpfMascarado = formatCPF(cpfNormalizado);
+
     let { data, error } = await supabase
       .from("clients")
       .select("*")
-      .eq("cpf", cpfNormalizado)
+      .or(`cpf.eq.${cpfNormalizado},cpf.eq.${cpfMascarado}`)
       .maybeSingle();
 
     if (!data && !error) {
