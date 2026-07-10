@@ -379,22 +379,27 @@ const TempoPrimeiroExameChart = ({
   if (!data) return null;
 
   const faixasOrdenadas = ["0-15min", "15-30min", "30-60min", "1-2h", "2h+"];
+  const semDados = data.totalAgendamentos - data.totalComTempo;
   const chartData = faixasOrdenadas.map((faixa) => ({
     name: faixa,
     value: data.faixas[faixa] || 0,
   }));
+  if (semDados > 0) {
+    chartData.push({ name: "Sem dados", value: semDados });
+  }
 
   const faixaCor = (name: string) => {
     if (name === "0-15min") return "#10b981";
     if (name === "15-30min") return "#f59e0b";
     if (name === "30-60min") return "#f97316";
     if (name === "1-2h") return "#ef4444";
-    return "#991b1b";
+    if (name === "2h+") return "#991b1b";
+    return "#d1d5db";
   };
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-1">
         <h4 className="text-sm font-semibold text-gray-900">
           Emissão → Primeiro Exame
         </h4>
@@ -405,6 +410,9 @@ const TempoPrimeiroExameChart = ({
           </div>
         )}
       </div>
+      <p className="text-xs text-gray-500 mb-4">
+        {data.totalComTempo} de {data.totalAgendamentos} agendamentos
+      </p>
       {chartData.some((d) => d.value > 0) ? (
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData}>
@@ -434,25 +442,36 @@ const TempoPrimeiroExameChart = ({
 // 📈 Gráfico: Permanência por Quantidade de Exames
 const TempoPermanenciaChart = ({
   data,
+  totalAgendamentos,
 }: {
   data: TempoPermanenciaDto[];
+  totalAgendamentos: number;
 }) => {
   if (!data || data.length === 0) return null;
+
+  const totalComTempo = data.reduce((sum, d) => sum + d.quantidade, 0);
+  const semDados = totalAgendamentos - totalComTempo;
 
   const chartData = data.map((d) => ({
     name: d.exames >= 5 ? "5+" : `${d.exames}`,
     minutos: Math.round(d.tempoMedioMinutos || 0),
     pessoas: d.quantidade,
   }));
+  if (semDados > 0) {
+    chartData.push({ name: "Sem dados", minutos: 0, pessoas: semDados });
+  }
 
-  const cores = ["#44735E", "#5a8a74", "#70a18a", "#86b8a0", "#9ccfb6"];
+  const cores = ["#44735E", "#5a8a74", "#70a18a", "#86b8a0", "#9ccfb6", "#d1d5db"];
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h4 className="text-sm font-semibold text-gray-900 mb-4">
+      <h4 className="text-sm font-semibold text-gray-900 mb-1">
         Permanência Total por Qtde de Exames
       </h4>
-      {chartData.some((d) => d.minutos > 0) ? (
+      <p className="text-xs text-gray-500 mb-4">
+        {totalComTempo} de {totalAgendamentos} agendamentos
+      </p>
+      {chartData.some((d) => d.minutos > 0 || d.name === "Sem dados") ? (
         <>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
@@ -479,7 +498,7 @@ const TempoPermanenciaChart = ({
                 {chartData.map((entry, idx) => (
                   <Cell
                     key={idx}
-                    fill={cores[idx % cores.length]}
+                    fill={entry.name === "Sem dados" ? "#d1d5db" : cores[idx % (cores.length - 1)]}
                     opacity={0.85}
                   />
                 ))}
@@ -493,11 +512,16 @@ const TempoPermanenciaChart = ({
                 className="flex justify-between text-xs text-gray-600"
               >
                 <span>
-                  <span className="font-medium">{d.name}</span> exame
-                  {d.name !== "1" ? "s" : ""} — {d.pessoas}{" "}
-                  {d.pessoas === 1 ? "pessoa" : "pessoas"}
+                  <span className="font-medium">{d.name}</span>
+                  {d.name !== "Sem dados" && (
+                    <> exame{d.name !== "1" ? "s" : ""} — {d.pessoas}{" "}
+                    {d.pessoas === 1 ? "pessoa" : "pessoas"}</>
+                  )}
+                  {d.name === "Sem dados" && <> — {d.pessoas} sem tempo</>}
                 </span>
-                <span className="font-medium text-gray-800">{d.minutos}min</span>
+                {d.name !== "Sem dados" && (
+                  <span className="font-medium text-gray-800">{d.minutos}min</span>
+                )}
               </div>
             ))}
           </div>
@@ -1212,6 +1236,7 @@ export function StatisticsSection() {
                         />
                         <TempoPermanenciaChart
                           data={unidade.temposAtendimento?.permanencia ?? []}
+                          totalAgendamentos={unidade.temposAtendimento?.totalAgendamentos ?? 0}
                         />
                       </div>
                     </div>

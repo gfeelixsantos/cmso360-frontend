@@ -48,6 +48,7 @@ export type UnidadeStatisticsDto = {
   temposAtendimento?: {
     primeiroExame: TempoPrimeiroExameDto | null;
     permanencia: TempoPermanenciaDto[];
+    totalAgendamentos: number;
   };
 };
 
@@ -73,6 +74,8 @@ export type TicketStatisticsDto = {
 export type TempoPrimeiroExameDto = {
   mediaMinutos: number | null;
   faixas: Record<string, number>;
+  totalAgendamentos: number;
+  totalComTempo: number;
 };
 
 export type TempoPermanenciaDto = {
