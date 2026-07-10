@@ -72,10 +72,51 @@ export class UserService {
       console.error("Erro ao buscar dados do usuário no banco local:", err);
     }
 
+    // Fallback: usuário existe em clients mas ainda não foi sincronizado com users
+    // (órfão legado). Sincroniza agora via SOC para criar o registro.
+    if (!userData) {
+      try {
+        const cadastroPessoas = await SOC.ExportaDadosCadastroPessoas();
+        const socUser = cadastroPessoas?.find(
+          (p) => p.CODIGO == userRegister.codigo,
+        );
+
+        if (socUser) {
+          const syncRes = await fetch(`${NEST_URL}users/sync`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              codigo: String(socUser.CODIGO),
+              cpf: String(socUser.CPF || '').replace(/\D/g, ''),
+              nome: socUser.NOME || '',
+              perfil: socUser.REGISTRO_FUNCIONAL || 'CONVIDADO',
+              conselho: socUser.CONSELHO_CLASSE || null,
+              uf_conselho: socUser.UF_CONSELHO || null,
+              ultimo_login: new Date().toISOString(),
+            }),
+          });
+          if (syncRes.ok) {
+            userData = await syncRes.json();
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao sincronizar órfão com users (fallback):', err);
+      }
+    }
+
+    // Se ainda não encontrou, usa os dados mínimos do próprio registro em users
+    // que criamos via migração (nome = 'Profissional X')
+    if (!userData) {
+      try {
+        const response = await fetch(`${NEST_URL}users/${userRegister.codigo}`);
+        if (response.ok) userData = await response.json();
+      } catch {}
+    }
+
     if (!userData) {
       return new ApiResponse(
         HttpCodes.UNPROCESSABLE_ENTITY,
-        "Dados cadastrais do profissional não encontrados localmente.",
+        "Dados cadastrais do profissional não encontrados. Entre em contato com o administrador.",
       );
     }
 
@@ -322,7 +363,10 @@ export class UserService {
     }
 
     const hashedPassword = await Bcrypt.createHash(novaSenha);
-    const updated = await SupabaseService.updatePassword(cpf, hashedPassword);
+    // Usa o CPF já normalizado (sem máscara) para garantir que o UPDATE
+    // funcione mesmo que clients.cpf esteja armazenado com pontuação
+    const cpfNormalizado = cpf.replace(/\D/g, '');
+    const updated = await SupabaseService.updatePassword(cpfNormalizado, hashedPassword);
 
     if (!updated) {
       return new ApiResponse(
