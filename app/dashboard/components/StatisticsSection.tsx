@@ -413,7 +413,7 @@ const TempoPrimeiroExameChart = ({
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
             <Tooltip
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
-              formatter={(value: number) => [value, "Pessoas"]}
+              formatter={(value: number) => [value, "Agendamentos"]}
             />
             <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {chartData.map((entry, idx) => (
