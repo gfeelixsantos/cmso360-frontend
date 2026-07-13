@@ -144,7 +144,7 @@ export function SidebarRecepcao({
 }: SidebarRecepcaoProps) {
   const pathname = usePathname();
   const isAtendimento = pathname?.includes("atendimento") ?? false;
-  const { units } = useUnits(undefined, !isAtendimento);
+  const { units } = useUnits(undefined, true);
   const [salaOpcoes, setSalaOpcoes] = useState<string[]>(SALAS_RECEPCAO);
   const unidadeOptions = useMemo(
     () =>
