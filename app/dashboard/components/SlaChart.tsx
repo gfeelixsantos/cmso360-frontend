@@ -68,7 +68,7 @@ const SlaChart = ({ data, totalAgendamentos }: Props) => {
       {totalComTempo > 0 ? (
         <>
           {/* SLA Score + Grade */}
-          <div className="flex items-center gap-5 mb-6 p-4 rounded-xl border bg-gray-50/80">
+          <div className="flex items-center gap-5 mb-6 p-4 rounded-xl bg-gray-50/80">
             <div className="flex flex-col items-center">
               <span
                 className="text-4xl font-bold leading-none"

@@ -828,70 +828,6 @@ export function StatisticsSection() {
                     />
                   </div>
 
-                  {Object.entries(totais.atendimentosPorStatus)
-                    .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
-                    .map(([status, count]) => {
-                      const percentage =
-                        ((count as number) / totais.totalAgendamentos) * 100;
-
-                      return (
-                        <div key={status}>
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="flex items-center gap-2">
-                              <span
-                                className="w-2.5 h-2.5 rounded-full inline-flex"
-                                style={{
-                                  backgroundColor:
-                                    status.includes("FINALIZADO") ||
-                                    status.includes("CONCLUIDO")
-                                      ? COLORS.success
-                                      : status.includes("AVALIACAO_MEDICA")
-                                        ? COLORS.warning
-                                        : status.includes("AGUARDANDO_RESULTADOS")
-                                          ? COLORS.purple
-                                          : status.includes("EM_ATENDIMENTO") ||
-                                              status.includes("ATENDIMENTO")
-                                            ? COLORS.danger
-                                            : COLORS.primary,
-                                }}
-                              />
-                              <span className="text-sm font-medium text-gray-900">
-                                {(STATUS_LABELS[status] || status)
-                                  .toUpperCase()
-                                  .replace(/_/g, " ")}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm text-gray-900 font-bold">
-                                {count as number}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                ({percentage.toFixed(1)}%)
-                              </span>
-                            </div>
-                          </div>
-                          <ProgressBar
-                            color={
-                              status.includes("FINALIZADO") ||
-                              status.includes("CONCLUIDO")
-                                ? COLORS.success
-                                : status.includes("AVALIACAO_MEDICA")
-                                  ? COLORS.warning
-                                  : status.includes("AGUARDANDO_RESULTADOS")
-                                    ? COLORS.purple
-                                    : status.includes("EM_ATENDIMENTO") ||
-                                        status.includes("ATENDIMENTO")
-                                      ? COLORS.danger
-                                      : COLORS.primary
-                            }
-                            max={totais.totalAgendamentos}
-                            size="sm"
-                            value={count as number}
-                          />
-                        </div>
-                      );
-                    })}
-
                   {/* Não Compareceram */}
                   {(() => {
                     const faltantes = Math.max(
@@ -926,6 +862,80 @@ export function StatisticsSection() {
                       </div>
                     );
                   })()}
+
+                  {(() => {
+                      const enriched = { ...(totais.atendimentosPorStatus || {}) };
+                      if (
+                        totais.aguardandoAvaliacaoMedica > 0 &&
+                        !('AVALIACAO_MEDICA' in enriched)
+                      ) {
+                        enriched['AVALIACAO_MEDICA'] = totais.aguardandoAvaliacaoMedica;
+                      }
+                      return Object.entries(enriched)
+                        .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+                        .map(([status, count]) => {
+                          const maxVal = Math.max(totais.totalAgendamentos, count as number);
+                          const percentage =
+                            ((count as number) / maxVal) * 100;
+
+                          return (
+                            <div key={status}>
+                              <div className="flex items-center justify-between mb-1">
+                                <div className="flex items-center gap-2">
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full inline-flex"
+                                    style={{
+                                      backgroundColor:
+                                        status.includes("FINALIZADO") ||
+                                        status.includes("CONCLUIDO")
+                                          ? COLORS.success
+                                          : status.includes("AVALIACAO_MEDICA")
+                                            ? COLORS.warning
+                                            : status.includes("AGUARDANDO_RESULTADOS")
+                                              ? COLORS.purple
+                                              : status.includes("EM_ATENDIMENTO") ||
+                                                  status.includes("ATENDIMENTO")
+                                                ? COLORS.danger
+                                                : COLORS.primary,
+                                    }}
+                                  />
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {(STATUS_LABELS[status] || status)
+                                      .toUpperCase()
+                                      .replace(/_/g, " ")}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="text-sm text-gray-900 font-bold">
+                                    {count as number}
+                                  </span>
+                                  <span className="text-xs text-gray-500">
+                                    ({percentage.toFixed(1)}%)
+                                  </span>
+                                </div>
+                              </div>
+                              <ProgressBar
+                                color={
+                                  status.includes("FINALIZADO") ||
+                                  status.includes("CONCLUIDO")
+                                    ? COLORS.success
+                                    : status.includes("AVALIACAO_MEDICA")
+                                      ? COLORS.warning
+                                      : status.includes("AGUARDANDO_RESULTADOS")
+                                        ? COLORS.purple
+                                        : status.includes("EM_ATENDIMENTO") ||
+                                            status.includes("ATENDIMENTO")
+                                          ? COLORS.danger
+                                          : COLORS.primary
+                                }
+                                max={maxVal}
+                                size="sm"
+                                value={count as number}
+                              />
+                            </div>
+                          );
+                        });
+                    })()}
                 </div>
               </div>
             </motion.div>
@@ -1160,56 +1170,64 @@ export function StatisticsSection() {
                             );
                           })()}
 
-                          {Object.entries(unidade.atendimentosPorStatus)
-                            .sort(
-                              ([, a], [, b]) => (b as number) - (a as number),
-                            )
-                            .map(([status, count]) => {
-                              const statusColor =
-                                status.includes("FINALIZADO") ||
-                                status.includes("CONCLUIDO")
-                                  ? COLORS.success
-                                  : status.includes("AVALIACAO_MEDICA")
-                                    ? COLORS.warning
-                                    : status.includes("AGUARDANDO_RESULTADOS")
-                                      ? COLORS.purple
-                                      : status.includes("EM_ATENDIMENTO") ||
-                                          status.includes("ATENDIMENTO")
-                                        ? COLORS.danger
-                                        : COLORS.primary;
-                              return (
-                                <div
-                                  key={status}
-                                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span
-                                      className="w-2.5 h-2.5 rounded-full inline-flex"
-                                      style={{ backgroundColor: statusColor }}
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                      {(STATUS_LABELS[status] || status)
-                                        .toUpperCase()
-                                        .replace(/_/g, " ")}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <span className="font-bold text-gray-900">
-                                      {count as number}
-                                    </span>
-                                    <span className="text-xs text-gray-500">
-                                      (
-                                      {(
-                                        ((count as number) /
-                                          unidade.totalAgendamentos) *
-                                        100
-                                      ).toFixed(1)}
-                                      %)
-                                    </span>
-                                  </div>
-                                </div>
-                              );
-                            })}
+                          {(() => {
+                              const enriched = { ...(unidade.atendimentosPorStatus || {}) };
+                              if (
+                                unidade.aguardandoAvaliacaoMedica > 0 &&
+                                !('AVALIACAO_MEDICA' in enriched)
+                              ) {
+                                enriched['AVALIACAO_MEDICA'] = unidade.aguardandoAvaliacaoMedica;
+                              }
+                              return Object.entries(enriched)
+                                .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
+                                .map(([status, count]) => {
+                                  const statusColor =
+                                    status.includes("FINALIZADO") ||
+                                    status.includes("CONCLUIDO")
+                                      ? COLORS.success
+                                      : status.includes("AVALIACAO_MEDICA")
+                                        ? COLORS.warning
+                                        : status.includes("AGUARDANDO_RESULTADOS")
+                                          ? COLORS.purple
+                                          : status.includes("EM_ATENDIMENTO") ||
+                                              status.includes("ATENDIMENTO")
+                                            ? COLORS.danger
+                                            : COLORS.primary;
+                                  const maxVal = Math.max(unidade.totalAgendamentos, count as number);
+                                  return (
+                                    <div
+                                      key={status}
+                                      className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+                                    >
+                                      <div className="flex items-center gap-2">
+                                        <span
+                                          className="w-2.5 h-2.5 rounded-full inline-flex"
+                                          style={{ backgroundColor: statusColor }}
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                          {(STATUS_LABELS[status] || status)
+                                            .toUpperCase()
+                                            .replace(/_/g, " ")}
+                                        </span>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className="font-bold text-gray-900">
+                                          {count as number}
+                                        </span>
+                                        <span className="text-xs text-gray-500">
+                                          (
+                                          {(
+                                            ((count as number) /
+                                              maxVal) *
+                                            100
+                                          ).toFixed(1)}
+                                          %)
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                            })()}
                         </div>
                       </div>
 
