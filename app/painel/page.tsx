@@ -492,6 +492,7 @@ const ConfigModal = ({
   isOpen,
   onClose,
   audioHabilitado,
+  identificacaoAtiva,
   unidadeSelecionada,
   filtroChamada,
   onSave,
@@ -500,12 +501,14 @@ const ConfigModal = ({
   isOpen: boolean;
   onClose: () => void;
   audioHabilitado: boolean;
+  identificacaoAtiva: boolean;
   unidadeSelecionada: string;
   filtroChamada: string;
   onSave: (payload: {
     unidade: string;
     filtro: "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO";
     audioHabilitado: boolean;
+    identificacaoAtiva: boolean;
   }) => void;
   unidades: string[];
 }) => {
@@ -513,13 +516,16 @@ const ConfigModal = ({
   const [draftFiltroChamada, setDraftFiltroChamada] = useState(filtroChamada);
   const [draftAudioHabilitado, setDraftAudioHabilitado] =
     useState(audioHabilitado);
+  const [draftIdentificacaoAtiva, setDraftIdentificacaoAtiva] =
+    useState(identificacaoAtiva);
 
   useEffect(() => {
     if (!isOpen) return;
     setDraftUnidade(unidadeSelecionada);
     setDraftFiltroChamada(filtroChamada);
     setDraftAudioHabilitado(audioHabilitado);
-  }, [isOpen, unidadeSelecionada, filtroChamada, audioHabilitado]);
+    setDraftIdentificacaoAtiva(identificacaoAtiva);
+  }, [isOpen, unidadeSelecionada, filtroChamada, audioHabilitado, identificacaoAtiva]);
 
   if (!isOpen) return null;
 
@@ -635,6 +641,43 @@ const ConfigModal = ({
             {draftAudioHabilitado ? <Volume2 size={14} /> : <VolumeX size={14} />}
             {draftAudioHabilitado ? "Audio ativado" : "Audio desativado"}
           </div>
+
+          {/* Toggle: Identificação no Atendimento Geral */}
+          <div
+            className="border-t pt-3 sm:pt-4"
+            style={{ borderColor: COLOR_PALETTE.border }}
+          >
+            <div className="flex items-center justify-between">
+              <div>
+                <span
+                  className="block text-xs sm:text-sm md:text-base font-medium"
+                  style={{ color: COLOR_PALETTE.text }}
+                >
+                  Identificação no Atendimento Geral
+                </span>
+                <span
+                  className="block text-xs mt-0.5"
+                  style={{ color: COLOR_PALETTE.textLight }}
+                >
+                  Solicitar mês e ano de nascimento ao funcionário
+                </span>
+              </div>
+              <button
+                className={`relative inline-flex h-5 sm:h-6 w-10 sm:w-11 items-center rounded-full transition-colors ${
+                  draftIdentificacaoAtiva ? "bg-green-500" : "bg-gray-300"
+                }`}
+                onClick={() => setDraftIdentificacaoAtiva(!draftIdentificacaoAtiva)}
+              >
+                <span
+                  className={`inline-block h-3.5 sm:h-4 w-3.5 sm:w-4 transform rounded-full bg-white transition-transform ${
+                    draftIdentificacaoAtiva
+                      ? "translate-x-5 sm:translate-x-6"
+                      : "translate-x-0.5 sm:translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6">
@@ -662,6 +705,7 @@ const ConfigModal = ({
                   | "RECEPÇÃO"
                   | "ATENDIMENTO",
                 audioHabilitado: draftAudioHabilitado,
+                identificacaoAtiva: draftIdentificacaoAtiva,
               });
             }}
           >
@@ -731,6 +775,7 @@ export default function PainelPage() {
   const [filtroChamada, setFiltroChamada] = useState<
     "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO"
   >("CONJUNTO");
+  const [identificacaoAtiva, setIdentificacaoAtiva] = useState(true);
 
   // Estados para controle do idle
   const [isIdle, setIsIdle] = useState(false);
@@ -1438,6 +1483,7 @@ export default function PainelPage() {
   useEffect(() => {
     const unidadeSalva = localStorage.getItem("painel_validate");
     const filtroSalvo = localStorage.getItem("painel_filtro") as any;
+    const identSalva = localStorage.getItem("totem_identificacao_ativa");
 
     if (unidadeSalva) {
       setUnidadeSelecionada(unidadeSalva);
@@ -1446,6 +1492,10 @@ export default function PainelPage() {
 
     if (filtroSalvo) {
       setFiltroChamada(filtroSalvo === "TODOS" ? "CONJUNTO" : filtroSalvo);
+    }
+
+    if (identSalva !== null) {
+      setIdentificacaoAtiva(identSalva === "true");
     }
   }, []);
 
@@ -1459,19 +1509,23 @@ export default function PainelPage() {
       unidade,
       filtro,
       audioHabilitado: novoAudioHabilitado,
+      identificacaoAtiva: novaIdentificacaoAtiva,
     }: {
       unidade: string;
       filtro: "CONJUNTO" | "RECEPÇÃO" | "ATENDIMENTO";
       audioHabilitado: boolean;
+      identificacaoAtiva: boolean;
     }) => {
       const unidadeAnterior = unidadeSelecionada;
 
       setAudioHabilitado(novoAudioHabilitado);
       setFiltroChamada(filtro);
       setUnidadeSelecionada(unidade);
+      setIdentificacaoAtiva(novaIdentificacaoAtiva);
 
       localStorage.setItem("painel_validate", unidade);
       localStorage.setItem("painel_filtro", filtro);
+      localStorage.setItem("totem_identificacao_ativa", String(novaIdentificacaoAtiva));
 
       setShowConfig(false);
 
@@ -1706,6 +1760,7 @@ export default function PainelPage() {
       {/* Modal de Configurações */}
       <ConfigModal
         audioHabilitado={audioHabilitado}
+        identificacaoAtiva={identificacaoAtiva}
         filtroChamada={filtroChamada}
         isOpen={showConfig}
         onSave={handleSaveConfig}

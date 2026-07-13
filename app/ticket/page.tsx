@@ -20,6 +20,8 @@ import {
 } from "@heroicons/react/24/outline";
 
 import PreferencialTipo from "./components/PreferencialTipo";
+import BirthYearModal from "./components/BirthYearModal";
+import SelectNameModal, { SchedulingEntry } from "./components/SelectNameModal";
 
 import { useUnits } from "@/lib/config/useUnits";
 import {
@@ -38,6 +40,7 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import {
   COLOR_PALETTE,
   NEST_TICKETS_URL,
+  NEST_TICKET_CHECK_SCHEDULING,
   SERVICES_KEY,
 } from "@/config/constants";
 
@@ -192,7 +195,13 @@ const useBrazilTime = () => {
 };
 
 // Componente Header com informações institucionais
-const Header = ({ unidade }: { unidade?: string }) => {
+const Header = ({
+  unidade,
+  onSettingsClick,
+}: {
+  unidade?: string;
+  onSettingsClick?: () => void;
+}) => {
   const { currentTime, formatTime, formatDate } = useBrazilTime();
 
   return (
@@ -219,12 +228,26 @@ const Header = ({ unidade }: { unidade?: string }) => {
                 </span>
               </div>
             )}
-            <p
-              className="text-sm md:text-base"
-              style={{ color: COLOR_PALETTE.secondary }}
-            >
-              Sistema de Atendimento
-            </p>
+            <div className="flex items-center justify-center md:justify-start gap-2">
+              <p
+                className="text-sm md:text-base"
+                style={{ color: COLOR_PALETTE.secondary }}
+              >
+                Sistema de Atendimento
+              </p>
+              {onSettingsClick && (
+                <button
+                  onClick={onSettingsClick}
+                  className="p-1 rounded-lg hover:bg-white/10 transition-colors flex items-center justify-center focus:outline-none"
+                  title="Configurações do Totem"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-white/70 hover:text-white transition-colors">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.43l-1.003.828c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827a1.125 1.125 0 0 1 .26 1.43l-1.297 2.247a1.125 1.125 0 0 1-1.37.491l-1.216-.456c-.356-.133-.751-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.43l1.004-.827c.292-.24.437-.613.43-.991a6.936 6.936 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -544,6 +567,132 @@ const FullScreenFeedback = ({
   );
 };
 
+// Componente de Configurações do Totem
+const TotemConfigModal = ({
+  isOpen,
+  onClose,
+  unidadeSelecionada,
+  onSave,
+  unidades,
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  unidadeSelecionada: string;
+  onSave: (unidade: string, identificacaoAtiva: boolean) => void;
+  unidades: string[];
+}) => {
+  const [chave, setChave] = useState("");
+  const [draftUnidade, setDraftUnidade] = useState(unidadeSelecionada);
+  const [draftIdentificacaoAtiva, setDraftIdentificacaoAtiva] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setDraftUnidade(unidadeSelecionada);
+    const identAtiva = localStorage.getItem("totem_identificacao_ativa") !== "false";
+    setDraftIdentificacaoAtiva(identAtiva);
+    setChave("");
+    setError("");
+  }, [isOpen, unidadeSelecionada]);
+
+  if (!isOpen) return null;
+
+  const handleSave = () => {
+    if (chave !== SERVICES_KEY) {
+      setError("Chave de acesso incorreta.");
+      return;
+    }
+    onSave(draftUnidade, draftIdentificacaoAtiva);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+      <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-auto shadow-2xl border border-gray-100 space-y-4">
+        <h2 className="text-xl font-bold text-gray-800">
+          Configurações do Totem
+        </h2>
+
+        {error && (
+          <p className="text-sm font-semibold text-red-500 bg-red-50 p-2 rounded-lg text-center">
+            {error}
+          </p>
+        )}
+
+        <div className="space-y-3">
+          <div>
+            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+              Chave de Acesso
+            </label>
+            <input
+              type="password"
+              placeholder="Digite a senha do totem"
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              value={chave}
+              onChange={(e) => setChave(e.target.value)}
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1">
+              Unidade do Totem
+            </label>
+            <select
+              className="w-full rounded-xl border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm bg-gray-50"
+              value={draftUnidade}
+              onChange={(e) => setDraftUnidade(e.target.value)}
+            >
+              {unidades.map((u) => (
+                <option key={u} value={u}>
+                  {u}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <span className="block text-sm font-semibold text-gray-700">
+                Identificação por Mês/Ano
+              </span>
+              <span className="block text-xs text-gray-500">
+                Solicitar mês e ano de nascimento
+              </span>
+            </div>
+            <button
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                draftIdentificacaoAtiva ? "bg-green-500" : "bg-gray-300"
+              }`}
+              onClick={() => setDraftIdentificacaoAtiva(!draftIdentificacaoAtiva)}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                  draftIdentificacaoAtiva ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+        </div>
+
+        <div className="flex gap-3 pt-3">
+          <Button
+            className="flex-1 py-3 rounded-xl border border-gray-300 text-gray-600 bg-white"
+            onClick={onClose}
+          >
+            Fechar
+          </Button>
+          <Button
+            className="flex-1 py-3 rounded-xl text-white font-semibold"
+            style={{ backgroundColor: COLOR_PALETTE.primary }}
+            onClick={handleSave}
+          >
+            Salvar
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // Botão para ativar/desativar fullscreen
 const FullscreenToggle = ({
   isFullscreen: _isFullscreen,
@@ -561,14 +710,61 @@ const FullscreenToggle = ({
   </Button>
 );
 
+// Helper de mascaramento LGPD — oculta apenas os nomes do meio
+// Primeiro e último nomes ficam visíveis; nomes do meio são mascarados
+// Preposições curtas (de, da, do) são mantidas intactas
+const maskName = (fullName: string): string => {
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length <= 2) return fullName; // Nome simples ou duplo: sem máscara
+
+  return parts
+    .map((part, index) => {
+      const isFirst = index === 0;
+      const isLast = index === parts.length - 1;
+      const isPreposition = part.length <= 2;
+      if (isFirst || isLast || isPreposition) return part;
+      return part[0] + "*".repeat(Math.min(part.length - 1, 6));
+    })
+    .join(" ");
+};
+
 // Componente para a tela principal de opções de ticket - OTIMIZADO PARA PREENCHER TELA
 const TicketOptionsScreen = ({
   unidadeSelecionada,
+  onUpdateUnidade,
+  unidades,
 }: {
   unidadeSelecionada: string;
+  onUpdateUnidade: (unidade: string) => void;
+  unidades: string[];
 }) => {
   const [subOptions, setSubOptions] = useState<TicketTypes[] | null>(null);
   const [showPreferencialTypes, setShowPreferencialTypes] = useState(false);
+  const [showBirthYearModal, setShowBirthYearModal] = useState(false);
+  const [collisionNames, setCollisionNames] = useState<SchedulingEntry[] | null>(null);
+  const [showConfigModal, setShowConfigModal] = useState(false);
+
+  const handleSaveConfig = (novaUnidade: string, novaIdentAtiva: boolean) => {
+    localStorage.setItem("totem_identificacao_ativa", String(novaIdentAtiva));
+    const savedAuth = localStorage.getItem("ticket_auth_data");
+    if (savedAuth) {
+      try {
+        const parsed = JSON.parse(savedAuth);
+        parsed.unidade = novaUnidade;
+        parsed.timestamp = Date.now();
+        localStorage.setItem("ticket_auth_data", JSON.stringify(parsed));
+      } catch {
+        localStorage.setItem("ticket_auth_data", JSON.stringify({
+          serial: SERVICES_KEY,
+          unidade: novaUnidade,
+          timestamp: Date.now()
+        }));
+      }
+    }
+    onUpdateUnidade(novaUnidade);
+    setShowConfigModal(false);
+  };
+  const [checkingScheduling, setCheckingScheduling] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{
     type: "success" | "error";
@@ -594,11 +790,14 @@ const TicketOptionsScreen = ({
   };
 
   // Memoização da função de emissão de ticket para performance
-  const emitirTicket = async (tipo: TicketTypes, tipoPreferencial?: string) => {
+  // prefixoOverride permite forçar um prefixo diferente do padrão (ex: "C" para agendados)
+  const emitirTicket = async (tipo: TicketTypes, tipoPreferencial?: string, prefixoOverride?: string) => {
     if (isLoading) return;
 
     setIsLoading(true);
-    const ticketPrefix = tipo === "NORMAL" ? "" : tipo[0];
+    const ticketPrefix = prefixoOverride !== undefined
+      ? prefixoOverride
+      : tipo === "NORMAL" ? "" : tipo[0];
 
     const ticket: TicketEmitedDto = {
       emissao: new Date(),
@@ -635,9 +834,15 @@ const TicketOptionsScreen = ({
       const ticketResponse: Ticket = await response.json();
       const formattedTicket = `${ticketPrefix}${ticketResponse.numero}`;
 
+      // Opções padrão de prioridade física não devem ser mascaradas (ex: "Idoso")
+      const OPCOES_PREFERENCIAIS = ["Gestante", "Criança de colo", "Idoso", "PCD", "Outros"];
+      const displayPreferencial = tipoPreferencial
+        ? (OPCOES_PREFERENCIAIS.includes(tipoPreferencial) ? tipoPreferencial : maskName(tipoPreferencial))
+        : "";
+
       setFeedback({
         type: "success",
-        message: `Aguarde ser chamado.${tipoPreferencial ? ` (${tipoPreferencial})` : ""}`,
+        message: `Aguarde ser chamado.${displayPreferencial ? ` (${displayPreferencial})` : ""}`,
         ticketNumber: formattedTicket,
         ticketTheme: tipo,
       });
@@ -661,6 +866,81 @@ const TicketOptionsScreen = ({
       setShowPreferencialTypes(true);
     } else {
       emitirTicket(tipo);
+    }
+  };
+
+  /**
+   * Chamado quando o usuário clica em "ATENDIMENTO GERAL" (TicketTypes.NORMAL).
+   * Abre o modal de identificação por ano de nascimento.
+   */
+  const handleAtendimentoGeral = () => {
+    const identAtiva = localStorage.getItem("totem_identificacao_ativa") !== "false";
+    if (identAtiva) {
+      setSubOptions(null);
+      setShowBirthYearModal(true);
+    } else {
+      emitirTicket(TicketTypes.NORMAL, undefined, undefined);
+    }
+  };
+
+  /**
+   * Chamado após o usuário confirmar o ano de nascimento no teclado.
+   * Consulta o backend e emite o ticket com ou sem prefixo "C".
+   */
+  const handleBirthYearConfirm = async (mesAnoNascimento: string) => {
+    setCheckingScheduling(true);
+    try {
+      // Adicionamos timestamp (&t=...) para evitar cacheamento agressivo pelo navegador/totem
+      const url = `${NEST_TICKET_CHECK_SCHEDULING}?unidade=${encodeURIComponent(unidadeSelecionada)}&mesAnoNascimento=${encodeURIComponent(mesAnoNascimento)}&t=${Date.now()}`;
+      console.log("[totem] Consultando agendamento:", url);
+      const res = await fetch(url, { method: "GET" });
+      console.log("[totem] Status HTTP:", res.status, res.ok);
+      const data: {
+        found: boolean;
+        multiple: boolean;
+        results?: SchedulingEntry[];
+        nome?: string;
+        cpf?: string;
+        dataNascimento?: string;
+      } = res.ok ? await res.json() : { found: false, multiple: false };
+      console.log("[totem] Resposta do backend:", JSON.stringify(data));
+
+      if (data.found) {
+        if (data.multiple && data.results && data.results.length > 0) {
+          // Colisão: exibe modal de seleção de nome
+          setCollisionNames(data.results);
+          setShowBirthYearModal(false);
+        } else if (data.nome) {
+          // Único resultado: emite com prefixo "C" e o nome do funcionário
+          await emitirTicket(TicketTypes.NORMAL, data.nome, "C");
+          setShowBirthYearModal(false);
+        } else {
+          await emitirTicket(TicketTypes.NORMAL, undefined, undefined);
+          setShowBirthYearModal(false);
+        }
+      } else {
+        // Não agendado: sem prefixo → fila "Atendimento"
+        await emitirTicket(TicketTypes.NORMAL, undefined, undefined);
+        setShowBirthYearModal(false);
+      }
+    } catch (err) {
+      console.error("[totem] Erro ao verificar agendamento:", err);
+      await emitirTicket(TicketTypes.NORMAL, undefined, undefined);
+      setShowBirthYearModal(false);
+    } finally {
+      setCheckingScheduling(false);
+    }
+  };
+
+  /**
+   * Chamado após o usuário selecionar o nome no modal de colisões.
+   */
+  const handleCollisionNameSelect = async (entry: SchedulingEntry | null) => {
+    setCollisionNames(null);
+    if (entry) {
+      await emitirTicket(TicketTypes.NORMAL, entry.nome, "C");
+    } else {
+      await emitirTicket(TicketTypes.NORMAL, undefined, undefined);
     }
   };
 
@@ -705,17 +985,6 @@ const TicketOptionsScreen = ({
 
   const buttonsToRender = subOptions ? subButtons : mainButtons;
 
-  if (showPreferencialTypes) {
-    return (
-      <div className="w-full flex justify-center">
-        <PreferencialTipo
-          onBack={handleBackFromPreferencial}
-          onSelect={handlePreferencialTypeSelect}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="w-full max-w-4xl md:max-w-5xl lg:max-w-6xl xl:max-w-7xl mx-auto px-2 sm:px-4 relative">
       {/* Botão de toggle para fullscreen */}
@@ -724,7 +993,18 @@ const TicketOptionsScreen = ({
         onToggle={handleFullscreenToggle}
       />
 
-      <Header unidade={unidadeSelecionada} />
+      <Header
+        unidade={unidadeSelecionada}
+        onSettingsClick={() => setShowConfigModal(true)}
+      />
+
+      <TotemConfigModal
+        isOpen={showConfigModal}
+        onClose={() => setShowConfigModal(false)}
+        unidadeSelecionada={unidadeSelecionada}
+        onSave={handleSaveConfig}
+        unidades={unidades}
+      />
 
       <div
         className="p-4 md:p-6 lg:p-8 rounded-b-2xl shadow-lg border"
@@ -733,90 +1013,127 @@ const TicketOptionsScreen = ({
           borderColor: COLOR_PALETTE.primary,
         }}
       >
-        <motion.div
-          animate={{ opacity: 1 }}
-          className="text-center mb-5 md:mb-7 lg:mb-8"
-          initial={{ opacity: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2
-            className="text-2xl md:text-3xl lg:text-4xl font-bold"
-            style={{ color: COLOR_PALETTE.primary }}
-          >
-            Selecione o tipo de atendimento
-          </h2>
-          <p className="hidden" style={{ color: COLOR_PALETTE.gray }}>
-            Escolha abaixo uma opção de atendimento
-          </p>
-        </motion.div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mb-6 md:mb-8 lg:mb-10">
-          <AnimatePresence mode="wait">
-            {buttonsToRender?.map(({ type, label }) => {
-              const cardSurface = getTicketCardSurface(type as TicketTypes);
-
-              return (
-                <motion.div
-                  key={type}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="flex"
-                  exit={{ opacity: 0, scale: 0.96 }}
-                  initial={{ opacity: 0, scale: 0.96 }}
-                  transition={{ duration: 0.24, ease: "easeOut" }}
-                  whileHover={{ scale: 1.02, y: -4 }}
-                  whileTap={{ scale: 0.985 }}
-                >
-                  <Button
-                    className="flex flex-col items-center justify-center p-4 md:p-5 lg:p-6 h-40 md:h-44 lg:h-52 w-full text-lg md:text-xl lg:text-2xl font-bold rounded-2xl border transition-all duration-200 relative overflow-hidden"
-                    disabled={isLoading}
-                    style={{
-                      background: getTicketButtonGradient(type as TicketTypes),
-                      borderColor: cardSurface.borderColor,
-                      color: cardSurface.textColor,
-                      boxShadow: cardSurface.boxShadow,
-                    }}
-                    onClick={() => handleTicketOption(type as TicketTypes)}
-                  >
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_58%)]" />
-                    <div className="absolute inset-[1px] rounded-[calc(1rem-1px)] border border-white/10" />
-
-                    <motion.div
-                      animate={{ scale: 1 }}
-                      className="mb-3 md:mb-4 relative z-10"
-                      initial={{ scale: 0.92 }}
-                      transition={{ duration: 0.22, ease: "easeOut" }}
-                    >
-                      {getIcon(type as TicketTypes)}
-                    </motion.div>
-                    <span className="text-center leading-tight px-2 relative z-10">
-                      {label}
-                    </span>
-                  </Button>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-
-        {subOptions && (
-          <motion.div
-            animate={{ opacity: 1 }}
-            className="flex justify-center"
-            initial={{ opacity: 0 }}
-          >
-            <Button
-              className="px-6 py-3 md:px-8 md:py-4 rounded-xl border text-lg md:text-xl"
-              style={{
-                backgroundColor: COLOR_PALETTE.primary,
-                color: "white",
-                borderColor: COLOR_PALETTE.accent,
-              }}
-              onClick={() => setSubOptions(null)}
+        <AnimatePresence mode="wait">
+          {showBirthYearModal ? (
+            <div key="birth-year-modal" className="w-full flex justify-center py-1">
+              <BirthYearModal
+                isLoading={checkingScheduling}
+                onBack={() => {
+                  setShowBirthYearModal(false);
+                  setSubOptions([TicketTypes.NORMAL, TicketTypes.WHIRLPOOL]);
+                }}
+                onConfirm={handleBirthYearConfirm}
+                onOptOut={async () => {
+                  setShowBirthYearModal(false);
+                  await emitirTicket(TicketTypes.NORMAL, undefined, undefined);
+                }}
+              />
+            </div>
+          ) : collisionNames ? (
+            <div key="select-name-modal" className="w-full flex justify-center py-1">
+              <SelectNameModal
+                entries={collisionNames}
+                onBack={() => {
+                  setCollisionNames(null);
+                  setShowBirthYearModal(true);
+                }}
+                onSelect={handleCollisionNameSelect}
+              />
+            </div>
+          ) : showPreferencialTypes ? (
+            <div key="preferencial-types" className="w-full flex justify-center py-4">
+              <PreferencialTipo
+                onBack={handleBackFromPreferencial}
+                onSelect={handlePreferencialTypeSelect}
+              />
+            </div>
+          ) : (
+            <motion.div
+              key="main-options"
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
             >
-              Voltar
-            </Button>
-          </motion.div>
-        )}
+              {/* Título */}
+              <div className="text-center mb-5 md:mb-7 lg:mb-8">
+                <h2
+                  className="text-2xl md:text-3xl lg:text-4xl font-bold"
+                  style={{ color: COLOR_PALETTE.primary }}
+                >
+                  {subOptions ? "Selecione o tipo de atendimento" : "Selecione o atendimento"}
+                </h2>
+              </div>
+
+              {/* Grid de botões */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8 mb-6 md:mb-8 lg:mb-10">
+                {buttonsToRender?.map(({ type, label }) => {
+                  const cardSurface = getTicketCardSurface(type as TicketTypes);
+                  const handleClick = type === TicketTypes.NORMAL
+                    ? handleAtendimentoGeral
+                    : () => handleTicketOption(type as TicketTypes);
+
+                  return (
+                    <motion.div
+                      key={type}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="flex"
+                      exit={{ opacity: 0, scale: 0.96 }}
+                      initial={{ opacity: 0, scale: 0.96 }}
+                      transition={{ duration: 0.24, ease: "easeOut" }}
+                      whileHover={{ scale: 1.02, y: -4 }}
+                      whileTap={{ scale: 0.985 }}
+                    >
+                      <Button
+                        className="flex flex-col items-center justify-center p-4 md:p-5 lg:p-6 h-40 md:h-44 lg:h-52 w-full text-lg md:text-xl lg:text-2xl font-bold rounded-2xl border transition-all duration-200 relative overflow-hidden"
+                        disabled={isLoading}
+                        style={{
+                          background: getTicketButtonGradient(type as TicketTypes),
+                          borderColor: cardSurface.borderColor,
+                          color: cardSurface.textColor,
+                          boxShadow: cardSurface.boxShadow,
+                        }}
+                        onClick={handleClick}
+                      >
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.18),transparent_58%)]" />
+                        <div className="absolute inset-[1px] rounded-[calc(1rem-1px)] border border-white/10" />
+
+                        <motion.div
+                          animate={{ scale: 1 }}
+                          className="mb-3 md:mb-4 relative z-10"
+                          initial={{ scale: 0.92 }}
+                          transition={{ duration: 0.22, ease: "easeOut" }}
+                        >
+                          {getIcon(type as TicketTypes)}
+                        </motion.div>
+                        <span className="text-center leading-tight px-2 relative z-10">
+                          {label}
+                        </span>
+                      </Button>
+                    </motion.div>
+                  );
+                })}
+              </div>
+
+              {/* Botão de Voltar (se houver subOptions) */}
+              {subOptions && (
+                <div className="flex justify-center">
+                  <Button
+                    className="px-8 py-4 rounded-xl border text-lg md:text-xl"
+                    style={{
+                      backgroundColor: COLOR_PALETTE.primary,
+                      color: "white",
+                      borderColor: COLOR_PALETTE.accent,
+                    }}
+                    onClick={() => setSubOptions(null)}
+                  >
+                    Voltar
+                  </Button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {feedback && (
@@ -871,7 +1188,11 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.3 }}
           >
-            <TicketOptionsScreen unidadeSelecionada={unidadeSelecionada} />
+            <TicketOptionsScreen
+              unidadeSelecionada={unidadeSelecionada}
+              onUpdateUnidade={(u) => setUnidadeSelecionada(u)}
+              unidades={unidades}
+            />
           </motion.div>
         ) : (
           <motion.div
