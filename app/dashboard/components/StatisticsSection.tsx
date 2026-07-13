@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   RefreshCw,
@@ -22,13 +22,14 @@ import {
 import { useEffect, useState, useMemo } from "react";
 
 import { ScraperMonitor } from "./ScraperMonitor";
+import SlaChart from "./SlaChart";
 import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   Cell,
 } from "recharts";
@@ -57,6 +58,8 @@ const COLORS = {
 
 // 🏷️ Mapeamento de status para exibição amigável
 const STATUS_LABELS: Record<string, string> = {
+  ATENDIMENTO: "Em Atendimento",
+  EM_CHAMADA: "Em Chamada",
   AGUARDANDO_RESULTADOS: "Aguardando Resultados",
   AVALIACAO_MEDICA: "Avaliação Médica",
   AGUARDANDO_RESULTADO: "Aguardando Resultado",
@@ -379,22 +382,17 @@ const TempoPrimeiroExameChart = ({
   if (!data) return null;
 
   const faixasOrdenadas = ["0-15min", "15-30min", "30-60min", "1-2h", "2h+"];
-  const semDados = data.totalAgendamentos - data.totalComTempo;
   const chartData = faixasOrdenadas.map((faixa) => ({
     name: faixa,
     value: data.faixas[faixa] || 0,
   }));
-  if (semDados > 0) {
-    chartData.push({ name: "Sem dados", value: semDados });
-  }
 
   const faixaCor = (name: string) => {
     if (name === "0-15min") return "#10b981";
     if (name === "15-30min") return "#f59e0b";
     if (name === "30-60min") return "#f97316";
     if (name === "1-2h") return "#ef4444";
-    if (name === "2h+") return "#991b1b";
-    return "#d1d5db";
+    return "#991b1b";
   };
 
   return (
@@ -403,12 +401,33 @@ const TempoPrimeiroExameChart = ({
         <h4 className="text-sm font-semibold text-gray-900">
           Emissão → Primeiro Exame
         </h4>
-        {data.mediaMinutos != null && (
-          <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700">
-            <Clock className="h-3 w-3" />
-            Média: {Math.round(data.mediaMinutos)}min
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {data.mediaMinutos != null && (
+            <Tooltip
+              content="Tempo médio entre a chegada e o primeiro exame"
+              placement="bottom"
+              showArrow
+              offset={8}
+            >
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 cursor-help">
+                <Clock className="h-3 w-3" />
+                Média: {Math.round(data.mediaMinutos)}min
+              </div>
+            </Tooltip>
+          )}
+          {data.medianaMinutos != null && (
+            <Tooltip
+              content="Metade dos funcionários esperou menos que isso, metade esperou mais"
+              placement="bottom"
+              showArrow
+              offset={8}
+            >
+              <div className="flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 cursor-help">
+                Mediana: {Math.round(data.medianaMinutos)}min
+              </div>
+            </Tooltip>
+          )}
+        </div>
       </div>
       <p className="text-xs text-gray-500 mb-4">
         {data.totalComTempo} de {data.totalAgendamentos} agendamentos
@@ -419,7 +438,7 @@ const TempoPrimeiroExameChart = ({
             <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
             <XAxis dataKey="name" tick={{ fontSize: 11 }} />
             <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-            <Tooltip
+            <RechartsTooltip
               contentStyle={{ fontSize: 12, borderRadius: 8 }}
               formatter={(value: number) => [value, "Agendamentos"]}
             />
@@ -450,18 +469,14 @@ const TempoPermanenciaChart = ({
   if (!data || data.length === 0) return null;
 
   const totalComTempo = data.reduce((sum, d) => sum + d.quantidade, 0);
-  const semDados = totalAgendamentos - totalComTempo;
 
   const chartData = data.map((d) => ({
     name: d.exames >= 5 ? "5+" : `${d.exames}`,
     minutos: Math.round(d.tempoMedioMinutos || 0),
     pessoas: d.quantidade,
   }));
-  if (semDados > 0) {
-    chartData.push({ name: "Sem dados", minutos: 0, pessoas: semDados });
-  }
 
-  const cores = ["#44735E", "#5a8a74", "#70a18a", "#86b8a0", "#9ccfb6", "#d1d5db"];
+  const cores = ["#44735E", "#5a8a74", "#70a18a", "#86b8a0", "#9ccfb6"];
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -471,7 +486,7 @@ const TempoPermanenciaChart = ({
       <p className="text-xs text-gray-500 mb-4">
         {totalComTempo} de {totalAgendamentos} agendamentos
       </p>
-      {chartData.some((d) => d.minutos > 0 || d.name === "Sem dados") ? (
+      {chartData.some((d) => d.minutos > 0) ? (
         <>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={chartData}>
@@ -487,7 +502,7 @@ const TempoPermanenciaChart = ({
                   style: { fill: "#9ca3af" },
                 }}
               />
-              <Tooltip
+              <RechartsTooltip
                 contentStyle={{ fontSize: 12, borderRadius: 8 }}
                 formatter={(value: number, name: string) => {
                   if (name === "minutos") return [`${value}min`, "Tempo médio"];
@@ -498,7 +513,7 @@ const TempoPermanenciaChart = ({
                 {chartData.map((entry, idx) => (
                   <Cell
                     key={idx}
-                    fill={entry.name === "Sem dados" ? "#d1d5db" : cores[idx % (cores.length - 1)]}
+                    fill={cores[idx % cores.length]}
                     opacity={0.85}
                   />
                 ))}
@@ -512,16 +527,11 @@ const TempoPermanenciaChart = ({
                 className="flex justify-between text-xs text-gray-600"
               >
                 <span>
-                  <span className="font-medium">{d.name}</span>
-                  {d.name !== "Sem dados" && (
-                    <> exame{d.name !== "1" ? "s" : ""} — {d.pessoas}{" "}
-                    {d.pessoas === 1 ? "pessoa" : "pessoas"}</>
-                  )}
-                  {d.name === "Sem dados" && <> — {d.pessoas} sem tempo</>}
+                  <span className="font-medium">{d.name}</span> exame
+                  {d.name !== "1" ? "s" : ""} — {d.pessoas}{" "}
+                  {d.pessoas === 1 ? "pessoa" : "pessoas"}
                 </span>
-                {d.name !== "Sem dados" && (
-                  <span className="font-medium text-gray-800">{d.minutos}min</span>
-                )}
+                <span className="font-medium text-gray-800">{d.minutos}min</span>
               </div>
             ))}
           </div>
@@ -782,19 +792,42 @@ export function StatisticsSection() {
               <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                 <div className="flex items-center gap-3">
                   <Activity className="h-5 w-5 text-[#44735E]" />
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Status dos Atendimentos
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {totais.totalAgendamentos} atendimentos hoje
-                    </p>
-                  </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Status dos Atendimentos
+                      </h3>
+                      <p className="text-sm text-gray-600">
+                        Todas as unidades
+                      </p>
+                    </div>
                 </div>
               </div>
 
               <div className="p-5">
                 <div className="space-y-4">
+                  {/* Total Previstos */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full inline-flex" style={{ backgroundColor: COLORS.info }} />
+                        <span className="text-sm font-semibold" style={{ color: COLORS.info }}>
+                          PREVISTOS
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold" style={{ color: COLORS.info }}>
+                          {totais.atendimentosPrevistos}
+                        </span>
+                      </div>
+                    </div>
+                    <ProgressBar
+                      color={COLORS.info}
+                      max={totais.atendimentosPrevistos}
+                      size="sm"
+                      value={totais.atendimentosPrevistos}
+                    />
+                  </div>
+
                   {Object.entries(totais.atendimentosPorStatus)
                     .sort(([a], [b]) => a.localeCompare(b, "pt-BR"))
                     .map(([status, count]) => {
@@ -804,11 +837,30 @@ export function StatisticsSection() {
                       return (
                         <div key={status}>
                           <div className="flex items-center justify-between mb-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              {(STATUS_LABELS[status] || status)
-                                .toUpperCase()
-                                .replace(/_/g, " ")}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full inline-flex"
+                                style={{
+                                  backgroundColor:
+                                    status.includes("FINALIZADO") ||
+                                    status.includes("CONCLUIDO")
+                                      ? COLORS.success
+                                      : status.includes("AVALIACAO_MEDICA")
+                                        ? COLORS.warning
+                                        : status.includes("AGUARDANDO_RESULTADOS")
+                                          ? COLORS.purple
+                                          : status.includes("EM_ATENDIMENTO") ||
+                                              status.includes("ATENDIMENTO")
+                                            ? COLORS.danger
+                                            : COLORS.primary,
+                                }}
+                              />
+                              <span className="text-sm font-medium text-gray-900">
+                                {(STATUS_LABELS[status] || status)
+                                  .toUpperCase()
+                                  .replace(/_/g, " ")}
+                              </span>
+                            </div>
                             <div className="flex items-center gap-3">
                               <span className="text-sm text-gray-900 font-bold">
                                 {count as number}
@@ -839,6 +891,41 @@ export function StatisticsSection() {
                         </div>
                       );
                     })}
+
+                  {/* Não Compareceram */}
+                  {(() => {
+                    const faltantes = Math.max(
+                      0,
+                      totais.atendimentosPrevistos - totais.totalAgendamentos,
+                    );
+                    if (faltantes <= 0) return null;
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full inline-flex bg-gray-400" />
+                            <span className="text-sm font-medium text-gray-500">
+                              NÃO COMPARECERAM
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-gray-500">
+                              {faltantes}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              ({((faltantes / totais.atendimentosPrevistos) * 100).toFixed(1)}%)
+                            </span>
+                          </div>
+                        </div>
+                        <ProgressBar
+                          color="#9ca3af"
+                          max={totais.atendimentosPrevistos}
+                          size="sm"
+                          value={faltantes}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </motion.div>
@@ -1016,36 +1103,113 @@ export function StatisticsSection() {
                           Status do Dia
                         </h4>
                         <div className="space-y-3">
-                          {Object.entries(unidade.atendimentosPorStatus)
-                            .sort(
-                              ([, a], [, b]) => (b as number) - (a as number),
-                            )
-                            .map(([status, count]) => (
-                              <div
-                                key={status}
-                                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+                          {/* Total Previstos */}
+                          <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50/50">
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="w-2.5 h-2.5 rounded-full inline-flex"
+                                style={{ backgroundColor: COLORS.info }}
+                              />
+                              <span
+                                className="text-sm font-medium"
+                                style={{ color: COLORS.info }}
                               >
-                                <span className="text-sm text-gray-700">
-                                  {(STATUS_LABELS[status] || status)
-                                    .toUpperCase()
-                                    .replace(/_/g, " ")}
-                                </span>
-                                <div className="flex items-center gap-3">
-                                  <span className="font-bold text-gray-900">
-                                    {count as number}
+                                PREVISTOS
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="font-bold"
+                                style={{ color: COLORS.info }}
+                              >
+                                {unidade.atendimentosPrevistos}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Não Compareceram */}
+                          {(() => {
+                            const faltantes = Math.max(
+                              0,
+                              unidade.atendimentosPrevistos -
+                                unidade.totalAgendamentos,
+                            );
+                            if (faltantes <= 0) return null;
+                            return (
+                              <div className="flex items-center justify-between p-2 rounded-lg bg-gray-100/80">
+                                <div className="flex items-center gap-2">
+                                  <span className="w-2.5 h-2.5 rounded-full inline-flex bg-gray-400" />
+                                  <span className="text-sm text-gray-500 font-medium">
+                                    NÃO COMPARECERAM
                                   </span>
-                                  <span className="text-xs text-gray-500">
-                                    (
-                                    {(
-                                      ((count as number) /
-                                        unidade.totalAgendamentos) *
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <span className="font-bold text-gray-500">
+                                    {faltantes}
+                                  </span>
+                                  <span className="text-xs text-gray-400">
+                                    ({(
+                                      (faltantes /
+                                        unidade.atendimentosPrevistos) *
                                       100
                                     ).toFixed(1)}
                                     %)
                                   </span>
                                 </div>
                               </div>
-                            ))}
+                            );
+                          })()}
+
+                          {Object.entries(unidade.atendimentosPorStatus)
+                            .sort(
+                              ([, a], [, b]) => (b as number) - (a as number),
+                            )
+                            .map(([status, count]) => {
+                              const statusColor =
+                                status.includes("FINALIZADO") ||
+                                status.includes("CONCLUIDO")
+                                  ? COLORS.success
+                                  : status.includes("AVALIACAO_MEDICA")
+                                    ? COLORS.warning
+                                    : status.includes("AGUARDANDO_RESULTADOS")
+                                      ? COLORS.purple
+                                      : status.includes("EM_ATENDIMENTO") ||
+                                          status.includes("ATENDIMENTO")
+                                        ? COLORS.danger
+                                        : COLORS.primary;
+                              return (
+                                <div
+                                  key={status}
+                                  className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span
+                                      className="w-2.5 h-2.5 rounded-full inline-flex"
+                                      style={{ backgroundColor: statusColor }}
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                      {(STATUS_LABELS[status] || status)
+                                        .toUpperCase()
+                                        .replace(/_/g, " ")}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-bold text-gray-900">
+                                      {count as number}
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                      (
+                                      {(
+                                        ((count as number) /
+                                          unidade.totalAgendamentos) *
+                                        100
+                                      ).toFixed(1)}
+                                      %)
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
                         </div>
                       </div>
 
@@ -1238,6 +1402,55 @@ export function StatisticsSection() {
                           data={unidade.temposAtendimento?.permanencia ?? []}
                           totalAgendamentos={unidade.temposAtendimento?.totalAgendamentos ?? 0}
                         />
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                        <SlaChart
+                          data={unidade.temposAtendimento?.primeiroExame ?? null}
+                          totalAgendamentos={unidade.temposAtendimento?.totalAgendamentos ?? 0}
+                        />
+
+                        {/* Guia explicativo do SLA */}
+                        <div className="bg-gradient-to-br from-[#f8faf8] to-white rounded-xl border border-gray-200 p-5 flex flex-col justify-center">
+                          <h4 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                            <span className="w-5 h-5 rounded-full bg-[#44735E]/10 flex items-center justify-center text-[11px] font-bold text-[#44735E]">?</span>
+                            Como funciona este SLA?
+                          </h4>
+                          <div className="space-y-3 text-xs text-gray-600 leading-relaxed">
+                            <p>
+                              <strong className="text-gray-900">SLA</strong> é uma sigla que usamos para medir a qualidade do atendimento. Ele mostra <strong className="text-gray-900">quanto tempo as pessoas esperaram até fazer o primeiro exame</strong> depois de chegar na unidade.
+                            </p>
+                            <div>
+                              <p className="font-medium text-gray-900 mb-1">Nota (A a F):</p>
+                              <ul className="space-y-1">
+                                <li className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                                  <span><strong>A / B</strong> — Ótimo, a maioria esperou menos de 30min</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-[#f59e0b]" />
+                                  <span><strong>C</strong> — Regular, metade esperou mais de 30min</span>
+                                </li>
+                                <li className="flex items-center gap-2">
+                                  <span className="w-2 h-2 rounded-full bg-[#ef4444]" />
+                                  <span><strong>D / F</strong> — Ruim, a maioria esperou mais de 30min</span>
+                                </li>
+                              </ul>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 mb-1">Curva Acumulada:</p>
+                              <p>
+                                Mostra de forma progressiva quantas pessoas foram atendidas dentro de cada limite de tempo. Ex: se "≤30min" mostra <strong className="text-gray-900">68%</strong>, significa que <strong className="text-gray-900">68 em cada 100</strong> pessoas começaram o exame em até meia hora.
+                              </p>
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 mb-1">Média vs Mediana:</p>
+                              <p>
+                                <strong className="text-gray-900">Média</strong> é a soma de todos os tempos dividida pelo número de pessoas. <strong className="text-gray-900">Mediana</strong> é o valor do meio: metade esperou menos que isso, metade esperou mais. A mediana é mais justa quando alguns casos fogem muito do normal.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
