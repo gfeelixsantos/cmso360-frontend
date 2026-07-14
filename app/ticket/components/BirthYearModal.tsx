@@ -207,23 +207,8 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
           )}
         </AnimatePresence>
 
-        {/* Botão Não Informar */}
-        <div className="pt-1">
-          <Button
-            className="w-full h-12 rounded-xl text-base font-bold shadow-sm hover:shadow transition-all duration-150"
-            disabled={isLoading}
-            style={{
-              backgroundColor: COLOR_PALETTE.light,
-              color: COLOR_PALETTE.primary,
-            }}
-            onClick={onOptOut}
-          >
-            Não informar
-          </Button>
-        </div>
-
         {/* Botão Voltar */}
-        <div>
+        <div className="pt-2">
           <Button
             className="w-full h-11 rounded-xl border text-sm font-semibold flex items-center justify-center gap-1.5"
             disabled={isLoading}
@@ -236,6 +221,22 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
           >
             <ArrowLeftIcon className="h-4 w-4" />
             Voltar
+          </Button>
+        </div>
+
+        {/* Botão Não sei (Despriorizado Visualmente) */}
+        <div>
+          <Button
+            className="w-full h-9 rounded-xl text-xs font-semibold hover:underline"
+            disabled={isLoading}
+            style={{
+              backgroundColor: "transparent",
+              color: COLOR_PALETTE.gray,
+              boxShadow: "none",
+            }}
+            onClick={onOptOut}
+          >
+            Não sei
           </Button>
         </div>
       </div>
