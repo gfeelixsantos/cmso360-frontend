@@ -5,7 +5,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Image } from "@heroui/react";
 import { Monitor } from "lucide-react";
 import { MuralItem } from "@/lib/mural/types";
-import { SERVICES_KEY } from "@/config/constants";
+import { SERVICES_KEY, NEXT_WS_URL } from "@/config/constants";
+import { io } from "socket.io-client";
 
 export default function MuralPage() {
   const [murais, setMurais] = useState<MuralItem[]>([]);
@@ -44,6 +45,30 @@ export default function MuralPage() {
   useEffect(() => {
     if (!isLiberado) return;
     fetchMurais();
+
+    // Conexão WebSocket para atualização em tempo real
+    const socket = io(NEXT_WS_URL, {
+      auth: {
+        type: "MURAL",
+      },
+      transports: ["websocket"],
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+    });
+
+    socket.on("connect", () => {
+      console.log("Mural conectado ao WebSocket");
+    });
+
+    socket.on("mural_alterado", () => {
+      console.log("Mural alterado detectado via WS, atualizando lista...");
+      fetchMurais();
+    });
+
+    return () => {
+      socket.disconnect();
+    };
   }, [isLiberado, fetchMurais]);
 
   const validarAcesso = () => {
@@ -70,7 +95,7 @@ export default function MuralPage() {
   useEffect(() => {
     if (murais.length === 0) return;
 
-    const duration = 8000;
+    const duration = 12000;
 
     timerRef.current = setTimeout(() => {
       setIndex((prev) => (prev + 1) % murais.length);
@@ -184,49 +209,6 @@ export default function MuralPage() {
   const textColor = styles.TEXTCOLOR || "#ffffff";
   const bodyTextColor = styles.BODYTEXTCOLOR || textColor;
 
-  if (current.LAYOUTTYPE === 'FULL_IMAGE') {
-    return (
-      <div className="fixed inset-0 overflow-hidden">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={current.id}
-            animate={{ opacity: 1, scale: 1 }}
-            className="absolute inset-0"
-            exit={{ opacity: 0, scale: 1.05 }}
-            initial={{ opacity: 0, scale: 1.05 }}
-            transition={{ duration: 0.8, ease: "easeInOut" }}
-          >
-            <Image
-              removeWrapper
-              alt={current.TITLE || "Mural"}
-              className="w-full h-full object-cover"
-              src={current.IMAGEURL || ""}
-              style={{ backgroundColor: bgColor }}
-            />
-            {current.TITLE && (
-              <div
-                className="absolute inset-x-0 bottom-0 p-8 pb-12"
-                style={{
-                  background: `linear-gradient(transparent, ${bgColor}cc)`,
-                }}
-              >
-                <h1
-                  className="text-5xl md:text-6xl font-bold text-center"
-                  style={{
-                    color: textColor,
-                    fontFamily,
-                  }}
-                >
-                  {current.TITLE}
-                </h1>
-              </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
-    );
-  }
-
   return (
     <div
       className="fixed inset-0 overflow-hidden"
@@ -235,41 +217,55 @@ export default function MuralPage() {
       <AnimatePresence mode="wait">
         <motion.div
           key={current.id}
-          animate={{ opacity: 1, x: 0 }}
-          className="absolute inset-0 flex flex-col lg:flex-row"
-          exit={{ opacity: 0, x: -80 }}
-          initial={{ opacity: 0, x: 80 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          className="absolute inset-0"
+          exit={{ opacity: 0, x: -40, scale: 0.98 }}
+          initial={{ opacity: 0, x: 40, scale: 0.98 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
         >
-          <div className="flex-1 flex flex-col justify-center p-8 md:p-12 lg:p-16 xl:p-24">
-            {current.TITLE && (
-              <h1
-                className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight"
-                style={{ color: textColor, fontFamily }}
-              >
-                {current.TITLE}
-              </h1>
-            )}
-            {current.BODYTEXT && (
-              <p
-                className="text-lg md:text-xl lg:text-2xl xl:text-3xl leading-relaxed max-w-3xl"
-                style={{ color: bodyTextColor, fontFamily }}
-              >
-                {current.BODYTEXT}
-              </p>
-            )}
-          </div>
-
-          {current.IMAGEURL && (
-            <div className="flex-1 flex items-center justify-center">
-              <div className="w-full h-full">
-                <Image
-                  removeWrapper
+          {current.LAYOUTTYPE === "FULL_IMAGE" ? (
+            <div className="w-full h-full relative">
+              {current.IMAGEURL && (
+                <img
                   alt={current.TITLE || "Mural"}
                   className="w-full h-full object-cover"
                   src={current.IMAGEURL}
+                  style={{ backgroundColor: bgColor }}
                 />
+              )}
+            </div>
+          ) : (
+            <div className="w-full h-full flex flex-col lg:flex-row">
+              <div className="flex-1 flex flex-col justify-center p-8 md:p-12 lg:p-16 xl:p-24">
+                {current.TITLE && (
+                  <h1
+                    className="text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 leading-tight"
+                    style={{ color: textColor, fontFamily }}
+                  >
+                    {current.TITLE}
+                  </h1>
+                )}
+                {current.BODYTEXT && (
+                  <p
+                    className="text-lg md:text-xl lg:text-2xl xl:text-3xl leading-relaxed max-w-3xl whitespace-pre-line"
+                    style={{ color: bodyTextColor, fontFamily }}
+                  >
+                    {current.BODYTEXT}
+                  </p>
+                )}
               </div>
+
+              {current.IMAGEURL && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="w-full h-full">
+                    <img
+                      alt={current.TITLE || "Mural"}
+                      className="w-full h-full object-cover"
+                      src={current.IMAGEURL}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </motion.div>
