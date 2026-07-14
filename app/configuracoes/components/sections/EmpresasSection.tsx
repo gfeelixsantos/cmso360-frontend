@@ -21,6 +21,7 @@ import {
   Receipt,
   BadgeDollarSign,
   PackageCheck,
+  Monitor,
 } from "lucide-react";
 import {
   Button,
@@ -148,6 +149,7 @@ interface Company {
     devedor?: boolean;
     asoRapidoAutomatico?: boolean;
     gestaoEpi?: boolean;
+    painel?: boolean;
   };
   contatos?: ContatoEmpresa[];
   documentosUrl?: string[];
@@ -216,6 +218,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       devedor: false,
       asoRapidoAutomatico: false,
       gestaoEpi: false,
+      painel: false,
     },
     codigoInternoCliente: "",
     avisos: "",
@@ -281,6 +284,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   const [loadingDocumentos, setLoadingDocumentos] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<any | null>(null);
+  const [showReplaceFile, setShowReplaceFile] = useState(false);
   const [newDocFile, setNewDocFile] = useState<File | null>(null);
   const currentMonthYear = new Date().toLocaleDateString("pt-BR", { month: "2-digit", year: "numeric" });
 
@@ -309,6 +314,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
           criadoEm: doc.CRIADOEM || doc.criadoEm || null,
           criadoPor: doc.CRIADOPOR || doc.criadoPor || "",
           comunicarEmail: doc.COMUNICAREMAIL || doc.comunicarEmail || false,
+          contatosNotificados: doc.CONTATOSNOTIFICADOS || doc.contatosNotificados || [],
           categoria: doc.CATEGORIA || doc.categoria || "",
           observacoes: doc.OBSERVACOES || doc.observacoes || "",
         })) : [];
@@ -342,6 +348,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       if (res.ok) {
         alert("Upload concluído com sucesso!");
         setShowUploadForm(false);
+        setEditingDoc(null);
         setNewDocFile(null);
         setNewDocData({
           categoria: "FATURAMENTO",
@@ -358,6 +365,47 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
       }
     } catch (err) {
       console.error("Erro no upload:", err);
+    } finally {
+      setUploadingDoc(false);
+    }
+  }
+
+  async function handleUpdateDocumento() {
+    if (!editingDoc || !form.CODIGO) return;
+    setUploadingDoc(true);
+    try {
+      const formData = new FormData();
+      if (newDocFile) {
+        formData.append("file", newDocFile);
+      }
+      formData.append("comunicarEmail", String(newDocData.comunicarEmail));
+      formData.append("contatosNotificados", JSON.stringify(newDocData.contatosNotificados));
+
+      const res = await fetch(`/api/empresas/${form.CODIGO}/documentos/${editingDoc._id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      if (res.ok) {
+        alert("Documento atualizado com sucesso!");
+        setEditingDoc(null);
+        setShowUploadForm(false);
+        setNewDocFile(null);
+        setNewDocData({
+          categoria: "FATURAMENTO",
+          tipoDocumento: "Relatório Faturamento",
+          dataReferencia: currentMonthYear,
+          observacoes: "",
+          comunicarEmail: false,
+          contatosNotificados: [],
+        });
+        fetchDocumentos(form.CODIGO);
+      } else {
+        const errData = await res.json();
+        alert(errData.message || "Erro ao atualizar documento.");
+      }
+    } catch (err) {
+      console.error("Erro ao atualizar documento:", err);
     } finally {
       setUploadingDoc(false);
     }
@@ -618,6 +666,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         devedor: company.configuracoes?.devedor ?? false,
         asoRapidoAutomatico: company.configuracoes?.asoRapidoAutomatico ?? false,
         gestaoEpi: company.configuracoes?.gestaoEpi ?? false,
+        painel: company.configuracoes?.painel ?? false,
       },
       codigoInternoCliente: company.codigoInternoCliente || company["CÓD. CLIENTE (INT.)"] || "",
       avisos: company.avisos || "",
@@ -674,6 +723,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
         devedor: false,
         asoRapidoAutomatico: false,
         gestaoEpi: false,
+        painel: false,
       },
       codigoInternoCliente: "",
       avisos: "",
@@ -991,12 +1041,18 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                               <PackageCheck size={13} />
                             </span>
                           )}
+                          {company.configuracoes?.painel && (
+                            <span title="Mural Digital habilitado" className="cursor-default inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-600">
+                              <Monitor size={13} />
+                            </span>
+                          )}
                           {!company.configuracoes?.devedor &&
                             !company.configuracoes?.requerPsicologa &&
                             !company.configuracoes?.credenciadaSoc &&
                             !company.configuracoes?.asoRapidoAutomatico &&
                             !company.configuracoes?.somenteComplementares &&
-                            !company.configuracoes?.gestaoEpi && (
+                            !company.configuracoes?.gestaoEpi &&
+                            !company.configuracoes?.painel && (
                               <span className="text-xs text-gray-400 font-medium">—</span>
                             )}
                         </div>
@@ -1470,6 +1526,23 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       color="success"
                     />
                   </div>
+
+                  <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-sm font-semibold text-gray-700">Mural Digital</span>
+                      <span className="text-xs text-gray-400">Habilita o módulo Mural Digital para esta empresa</span>
+                    </div>
+                    <Switch
+                      isSelected={form.configuracoes?.painel || false}
+                      onValueChange={(v) =>
+                        setForm((f) => ({
+                          ...f,
+                          configuracoes: { ...f.configuracoes!, painel: v },
+                        }))
+                      }
+                      color="success"
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1862,34 +1935,11 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 <div className="pt-6 space-y-4">
                   {showUploadForm ? (
                     <div className="bg-gray-50/70 p-4 rounded-xl border border-gray-200/80 space-y-4">
-                      <h3 className="text-sm font-semibold text-gray-700">Novo Documento</h3>
+                      <h3 className="text-sm font-semibold text-gray-700">{editingDoc ? "Editar Documento" : "Novo Documento"}</h3>
                       
-                      <div
-                        className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#44735e] hover:bg-[#44735e]/5 transition-colors"
-                        onClick={() => document.getElementById("doc-file-input")?.click()}
-                        onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#44735e]", "bg-[#44735e]/5"); }}
-                        onDragLeave={(e) => { e.currentTarget.classList.remove("border-[#44735e]", "bg-[#44735e]/5"); }}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          e.currentTarget.classList.remove("border-[#44735e]", "bg-[#44735e]/5");
-                          if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                            setNewDocFile(e.dataTransfer.files[0]);
-                          }
-                        }}
-                      >
-                        <input
-                          id="doc-file-input"
-                          type="file"
-                          accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls"
-                          className="hidden"
-                          onChange={(e) => {
-                            if (e.target.files && e.target.files.length > 0) {
-                              setNewDocFile(e.target.files[0]);
-                            }
-                          }}
-                        />
-                        {newDocFile ? (
-                          <div className="flex flex-col items-center gap-2">
+                      {editingDoc && !showReplaceFile && !newDocFile ? (
+                        <div className="flex items-center justify-between border border-gray-200 rounded-xl p-4 bg-white">
+                          <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-[#44735e]/10 flex items-center justify-center">
                               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#44735e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -1899,26 +1949,72 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                                 <polyline points="10 9 9 9 8 9" />
                               </svg>
                             </div>
-                            <span className="text-sm font-medium text-gray-700">{newDocFile.name}</span>
-                            <span className="text-xs text-gray-400">{(newDocFile.size / 1024 / 1024).toFixed(2)} MB</span>
-                            <Button size="sm" variant="flat" color="danger" onPress={() => setNewDocFile(null)}>
-                              Remover arquivo
-                            </Button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                                <polyline points="17 8 12 3 7 8" />
-                                <line x1="12" y1="3" x2="12" y2="15" />
-                              </svg>
+                            <div className="flex flex-col">
+                              <span className="text-sm font-medium text-gray-700">{editingDoc.nomeArquivoOriginal}</span>
+                              <Chip size="sm" color="success" variant="flat" className="text-[10px] h-4 max-w-fit">Arquivo consolidado</Chip>
                             </div>
-                            <span className="text-sm text-gray-500 font-medium">Clique ou arraste o arquivo aqui</span>
-                            <span className="text-xs text-gray-400">PDF, PNG, JPG, XLSX (máx. 10 MB)</span>
-                          </>
-                        )}
-                      </div>
+                          </div>
+                          <Button size="sm" variant="flat" onPress={() => setShowReplaceFile(true)}>
+                            Substituir Arquivo
+                          </Button>
+                        </div>
+                      ) : (
+                        <div
+                          className="border-2 border-dashed border-gray-300 rounded-xl p-6 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#44735e] hover:bg-[#44735e]/5 transition-colors"
+                          onClick={() => document.getElementById("doc-file-input")?.click()}
+                          onDragOver={(e) => { e.preventDefault(); e.currentTarget.classList.add("border-[#44735e]", "bg-[#44735e]/5"); }}
+                          onDragLeave={(e) => { e.currentTarget.classList.remove("border-[#44735e]", "bg-[#44735e]/5"); }}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            e.currentTarget.classList.remove("border-[#44735e]", "bg-[#44735e]/5");
+                            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                              setNewDocFile(e.dataTransfer.files[0]);
+                            }
+                          }}
+                        >
+                          <input
+                            id="doc-file-input"
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg,.xlsx,.xls"
+                            className="hidden"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files.length > 0) {
+                                setNewDocFile(e.target.files[0]);
+                              }
+                            }}
+                          />
+                          {newDocFile ? (
+                            <div className="flex flex-col items-center gap-2">
+                              <div className="w-10 h-10 rounded-full bg-[#44735e]/10 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#44735e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                  <polyline points="14 2 14 8 20 8" />
+                                  <line x1="16" y1="13" x2="8" y2="13" />
+                                  <line x1="16" y1="17" x2="8" y2="17" />
+                                  <polyline points="10 9 9 9 8 9" />
+                                </svg>
+                              </div>
+                              <span className="text-sm font-medium text-gray-700">{newDocFile.name}</span>
+                              <span className="text-xs text-gray-400">{(newDocFile.size / 1024 / 1024).toFixed(2)} MB</span>
+                              <Button size="sm" variant="flat" color="danger" onPress={() => { setNewDocFile(null); setShowReplaceFile(false); }}>
+                                Remover arquivo
+                              </Button>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6b7280" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                                  <polyline points="17 8 12 3 7 8" />
+                                  <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                              </div>
+                              <span className="text-sm text-gray-500 font-medium">Clique ou arraste o arquivo aqui</span>
+                              <span className="text-xs text-gray-400">PDF, PNG, JPG, XLSX (máx. 10 MB)</span>
+                            </>
+                          )}
+                        </div>
+                      )}
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <Select
@@ -2021,16 +2117,16 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                       </div>
 
                       <div className="flex justify-end gap-2 pt-2">
-                        <Button variant="flat" onPress={() => setShowUploadForm(false)}>
+                        <Button variant="flat" onPress={() => { setShowUploadForm(false); setEditingDoc(null); setShowReplaceFile(false); }}>
                           Cancelar
                         </Button>
                         <Button
                           color="primary"
                           className="bg-[#44735e]"
                           isLoading={uploadingDoc}
-                          onPress={handleUploadDocumento}
+                          onPress={editingDoc ? handleUpdateDocumento : handleUploadDocumento}
                         >
-                          Salvar Documento
+                          {editingDoc ? "Salvar Alterações" : "Salvar Documento"}
                         </Button>
                       </div>
                     </div>
@@ -2038,7 +2134,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                     <>
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-500">Gerencie os documentos da empresa.</span>
-                        <Button color="primary" className="bg-[#44735e]" startContent={<Plus size={16} />} onPress={() => setShowUploadForm(true)}>
+                        <Button color="primary" className="bg-[#44735e]" startContent={<Plus size={16} />} onPress={() => { setEditingDoc(null); setShowReplaceFile(false); setShowUploadForm(true); }}>
                           Novo Upload
                         </Button>
                       </div>
@@ -2046,7 +2142,6 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                         <TableHeader>
                           <TableColumn>DOCUMENTO</TableColumn>
                           <TableColumn>REFERÊNCIA</TableColumn>
-                          <TableColumn>DATA UPLOAD</TableColumn>
                           <TableColumn>CRIADO POR</TableColumn>
                           <TableColumn width={100}>AÇÕES</TableColumn>
                         </TableHeader>
@@ -2060,17 +2155,33 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                                 </div>
                               </TableCell>
                               <TableCell>{doc.dataReferencia || "-"}</TableCell>
-                              <TableCell>{doc.criadoEm ? new Date(doc.criadoEm).toLocaleDateString("pt-BR") : "-"}</TableCell>
                               <TableCell>
-                                <div className="flex flex-col">
-                                  <span className="text-xs">{doc.criadoPor}</span>
-                                  {doc.comunicarEmail && <Chip size="sm" color="success" variant="flat" className="text-[10px] h-4 mt-0.5">Notificado</Chip>}
+                                <div className="flex flex-col gap-0.5">
+                                  <span className="text-xs font-medium">{doc.criadoPor}</span>
+                                  <span className="text-[10px] text-gray-400">{doc.criadoEm ? new Date(doc.criadoEm).toLocaleString("pt-BR") : "-"}</span>
+                                  {doc.comunicarEmail && <Chip size="sm" color="success" variant="flat" className="text-[10px] h-4 mt-0.5 max-w-fit">Notificado</Chip>}
                                 </div>
                               </TableCell>
                               <TableCell>
                                 <div className="flex gap-1">
                                   <Button isIconOnly size="sm" variant="light" as="a" href={doc.blobUrl} target="_blank" rel="noopener noreferrer">
                                     <Search size={16} className="text-gray-500" />
+                                  </Button>
+                                  <Button isIconOnly size="sm" variant="light" onPress={() => {
+                                    setEditingDoc(doc);
+                                    setShowReplaceFile(false);
+                                    setNewDocData({
+                                      categoria: doc.categoria || "FATURAMENTO",
+                                      tipoDocumento: doc.tipoDocumento || "Relatório Faturamento",
+                                      dataReferencia: doc.dataReferencia || currentMonthYear,
+                                      observacoes: doc.observacoes || "",
+                                      comunicarEmail: doc.comunicarEmail || false,
+                                      contatosNotificados: doc.contatosNotificados || [],
+                                    });
+                                    setNewDocFile(null);
+                                    setShowUploadForm(true);
+                                  }}>
+                                    <Pencil size={16} className="text-gray-500" />
                                   </Button>
                                   <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleDeleteDocumento(doc._id)}>
                                     <Trash2 size={16} />
