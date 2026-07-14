@@ -18,6 +18,9 @@ import {
   Clock,
   Stethoscope,
   FlaskConical,
+  Target,
+  Gauge,
+  Info,
 } from "lucide-react";
 import { useEffect, useState, useMemo } from "react";
 
@@ -299,12 +302,25 @@ const ExamCard = ({
               {exame.nomeExame}
             </h4>
             {tempoMedio != null && tempoMedio > 0 && (
-              <p 
-                className="text-xs truncate leading-tight mt-0.5"
-                style={{ color: tempoColor ?? '#9ca3af' }}
+              <Tooltip
+                content={
+                  exame.tempoContexto === 'primeiro'
+                    ? "Tempo médio desde a emissão do ticket até este exame"
+                    : exame.tempoContexto === 'subsequente'
+                      ? "Tempo médio desde o exame anterior"
+                      : "Dados insuficientes para calcular o intervalo"
+                }
+                placement="top"
+                showArrow
+                offset={8}
               >
-                ~{Math.round(tempoMedio)} min de espera
-              </p>
+                <p
+                  className="text-xs truncate leading-tight mt-0.5 cursor-help"
+                  style={{ color: tempoColor ?? '#9ca3af' }}
+                >
+                  ~{Math.round(tempoMedio)} min de espera
+                </p>
+              </Tooltip>
             )}
           </div>
         </div>
@@ -430,7 +446,7 @@ const TempoPrimeiroExameChart = ({
         </div>
       </div>
       <p className="text-xs text-gray-500 mb-4">
-        {data.totalComTempo} de {data.totalAgendamentos} agendamentos
+        {data.totalComTempo} de {data.totalAgendamentos} agendamentos com horário registrado
       </p>
       {chartData.some((d) => d.value > 0) ? (
         <ResponsiveContainer width="100%" height={200}>
@@ -481,10 +497,10 @@ const TempoPermanenciaChart = ({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h4 className="text-sm font-semibold text-gray-900 mb-1">
-        Permanência Total por Qtde de Exames
+        Tempo até o Último Exame por Qtde de Exames
       </h4>
       <p className="text-xs text-gray-500 mb-4">
-        {totalComTempo} de {totalAgendamentos} agendamentos
+        {totalComTempo} de {totalAgendamentos} atendimentos — apenas fase de exames
       </p>
       {chartData.some((d) => d.minutos > 0) ? (
         <>
@@ -545,6 +561,144 @@ const TempoPermanenciaChart = ({
   );
 };
 
+interface GlobalSlaData {
+  faixas: Record<string, number>;
+  totalComTempo: number;
+  totalAgendamentos: number;
+  slaPercent: number;
+  stretchPercent: number;
+  mediaMinutos: number | null;
+}
+
+// 🌍 Card de SLA Global (consolidado)
+const GlobalSlaCard = ({
+  sla,
+  totalGeral,
+}: {
+  sla: GlobalSlaData;
+  totalGeral: number;
+}) => {
+  const getGrade = (pct: number) => {
+    if (pct >= 90) return { label: "A — Excelente", color: "#10b981", bg: "bg-green-50 border-green-200" };
+    if (pct >= 75) return { label: "B — Bom", color: "#22c55e", bg: "bg-green-50 border-green-200" };
+    if (pct >= 60) return { label: "C — Regular", color: "#f59e0b", bg: "bg-amber-50 border-amber-200" };
+    if (pct >= 40) return { label: "D — Ruim", color: "#f97316", bg: "bg-orange-50 border-orange-200" };
+    return { label: "F — Crítico", color: "#ef4444", bg: "bg-red-50 border-red-200" };
+  };
+
+  if (sla.totalComTempo === 0) return null;
+
+  const grade = getGrade(sla.slaPercent);
+
+  return (
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="p-5 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+        <div className="flex items-center gap-3">
+          <Target className="h-5 w-5 text-[#44735E]" />
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">
+              SLA Global de Atendimento
+            </h3>
+            <p className="text-sm text-gray-600">Todas as unidades consolidadas</p>
+          </div>
+        </div>
+      </div>
+      <div className="p-5">
+        <div className="flex items-center gap-6 mb-5 p-4 rounded-xl bg-gray-50/80">
+          {/* Nota Principal ≤30min */}
+          <div className="flex flex-col items-center">
+            <span className="text-4xl font-bold leading-none" style={{ color: grade.color }}>
+              {sla.slaPercent.toFixed(0)}%
+            </span>
+            <span className="text-[10px] text-gray-500 mt-1">em ≤30min</span>
+          </div>
+
+          {/* Stretch Goal ≤15min */}
+          <div className="flex flex-col items-center">
+            <span className="text-3xl font-bold leading-none text-emerald-500">
+              {sla.stretchPercent.toFixed(0)}%
+            </span>
+            <span className="text-[10px] text-gray-500 mt-1">em ≤15min</span>
+          </div>
+
+          <div className="flex-1">
+            <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${grade.bg}`} style={{ color: grade.color }}>
+              <Gauge className="h-3.5 w-3.5" />
+              {grade.label}
+            </div>
+            <div className="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(sla.slaPercent, 100)}%`, backgroundColor: grade.color }} />
+            </div>
+          </div>
+
+          <div className="flex flex-col items-end text-xs text-gray-500">
+            <span>Média: <strong>{Math.round(sla.mediaMinutos || 0)}min</strong></span>
+            <span className="mt-0.5">
+              <strong>{sla.totalComTempo}</strong> de {totalGeral} atendimentos
+            </span>
+            <span className="text-[10px] text-gray-400">
+              ({sla.totalComTempo > 0 ? ((sla.totalComTempo / totalGeral) * 100).toFixed(0) : 0}% com registro)
+            </span>
+          </div>
+        </div>
+
+        {/* Barra de distribuição global */}
+        <div className="flex h-3 rounded-full overflow-hidden">
+          {['0-15min', '15-30min', '30-60min', '1-2h', '2h+'].map((key, i) => {
+            const value = sla.faixas[key] || 0;
+            const colors = ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'];
+            const display = ['≤15min', '≤30min', '≤60min', '≤2h', '>2h'];
+            return (
+              <div
+                key={key}
+                className="h-full flex items-center justify-center text-[9px] font-bold text-white transition-all"
+                style={{
+                  width: `${(value / sla.totalComTempo) * 100}%`,
+                  backgroundColor: colors[i],
+                  opacity: 0.85,
+                  minWidth: value > 0 ? '16px' : '0',
+                }}
+                title={`${display[i]}: ${value} (${((value / sla.totalComTempo) * 100).toFixed(1)}%)`}
+              >
+                {value > 0 && ((value / sla.totalComTempo) * 100 > 12) && `${((value / sla.totalComTempo) * 100).toFixed(0)}%`}
+              </div>
+            );
+          })}
+        </div>
+        {/* Legenda */}
+        <div className="mt-5 pt-4 border-t border-gray-100">
+          <details className="group">
+            <summary className="flex items-center gap-2 text-xs text-gray-500 cursor-pointer hover:text-gray-700 select-none">
+              <Info className="h-3.5 w-3.5 text-[#44735E]" />
+              <span className="font-medium">O que é este gráfico?</span>
+              <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-3 text-xs text-gray-500 space-y-2 leading-relaxed">
+              <p>
+                <strong>SLA (Service Level Agreement)</strong> mede o percentual de pacientes que começaram o
+                atendimento clínico dentro do prazo estipulado de <strong>30 minutos</strong> após a emissão da
+                senha. O cálculo considera apenas os atendimentos que possuem horário de início do exame registrado
+                no sistema — ou seja, pacientes sem esse registro não entram na base do cálculo.
+              </p>
+              <div className="grid grid-cols-5 gap-2 pt-1">
+                {['≤15min', '≤30min', '≤60min', '≤2h', '>2h'].map((label, i) => (
+                  <div key={label} className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full inline-flex" style={{ backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'][i] }} />
+                    <span>{label}</span>
+                  </div>
+                ))}
+              </div>
+              <p className="text-gray-400">
+                Fonte: Sistema de Senhas (data/hora de emissão + data/hora do primeiro exame).
+              </p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // 🚀 Componente principal
 export function StatisticsSection() {
   const { data, loading, error, refetch } = useStatistics({
@@ -598,6 +752,46 @@ export function StatisticsSection() {
       },
       {} as Record<string, any>,
     );
+  }, [statisticsData]);
+
+  // 🏆 SLA Global (consolidado de todas as unidades)
+  const globalSla = useMemo(() => {
+    if (!statisticsData?.porUnidade) return null;
+
+    const todosPrimeiroExame = statisticsData.porUnidade
+      .map((u) => u.temposAtendimento?.primeiroExame)
+      .filter((pe): pe is NonNullable<typeof pe> => pe != null);
+
+    if (todosPrimeiroExame.length === 0) return null;
+
+    const faixasConsolidadas: Record<string, number> = {};
+    let totalComTempo = 0;
+    let totalAgendamentosFiltrados = 0;
+    let somaMediaPonderada = 0;
+
+    for (const pe of todosPrimeiroExame) {
+      for (const [key, value] of Object.entries(pe.faixas)) {
+        faixasConsolidadas[key] = (faixasConsolidadas[key] || 0) + (value as number);
+      }
+      totalComTempo += pe.totalComTempo;
+      totalAgendamentosFiltrados += pe.totalAgendamentos;
+      somaMediaPonderada += (pe.mediaMinutos || 0) * pe.totalComTempo;
+    }
+
+    const dentro30 = (faixasConsolidadas['0-15min'] || 0) + (faixasConsolidadas['15-30min'] || 0);
+    const dentro15 = faixasConsolidadas['0-15min'] || 0;
+    const slaPct = totalComTempo > 0 ? (dentro30 / totalComTempo) * 100 : 0;
+    const stretchPct = totalComTempo > 0 ? (dentro15 / totalComTempo) * 100 : 0;
+    const mediaGlobal = totalComTempo > 0 ? somaMediaPonderada / totalComTempo : null;
+
+    return {
+      faixas: faixasConsolidadas as Record<string, number>,
+      totalComTempo,
+      totalAgendamentos: totalAgendamentosFiltrados,
+      slaPercent: slaPct,
+      stretchPercent: stretchPct,
+      mediaMinutos: mediaGlobal,
+    };
   }, [statisticsData]);
 
   // 🎯 Atualizar timestamp
@@ -990,6 +1184,14 @@ export function StatisticsSection() {
               </div>
             </motion.div>
           </div>
+        )}
+
+        {/* 🌍 SLA GLOBAL */}
+        {globalSla && totais && (
+          <GlobalSlaCard
+            sla={globalSla}
+            totalGeral={totais.totalAgendamentos}
+          />
         )}
 
         {/* 🏥 UNIDADES - Detalhamento por gestor */}

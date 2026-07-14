@@ -60,6 +60,7 @@ export type ExameStatisticsDto = {
   total: number;
   porStatus: Record<string, number>;
   tempoMedioEspera?: number | null;
+  tempoContexto?: 'primeiro' | 'subsequente' | null;
 };
 
 // ===============================
