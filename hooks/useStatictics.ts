@@ -70,6 +70,7 @@ export type TicketStatisticsDto = {
   status: string;
   total: number;
   preferencial: number;
+  comPrefixo: number;
 };
 
 export type TempoPrimeiroExameDto = {

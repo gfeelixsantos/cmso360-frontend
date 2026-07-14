@@ -568,6 +568,7 @@ interface GlobalSlaData {
   slaPercent: number;
   stretchPercent: number;
   mediaMinutos: number | null;
+  medianaMinutos: number | null;
 }
 
 // 🌍 Card de SLA Global (consolidado)
@@ -632,7 +633,12 @@ const GlobalSlaCard = ({
           </div>
 
           <div className="flex flex-col items-end text-xs text-gray-500">
-            <span>Média: <strong>{Math.round(sla.mediaMinutos || 0)}min</strong></span>
+            <span>
+              Média: <strong>{Math.round(sla.mediaMinutos || 0)}min</strong>
+              {sla.medianaMinutos != null && (
+                <span className="ml-2">· Mediana: <strong>{sla.medianaMinutos}min</strong></span>
+              )}
+            </span>
             <span className="mt-0.5">
               <strong>{sla.totalComTempo}</strong> de {totalGeral} atendimentos
             </span>
@@ -690,23 +696,52 @@ const GlobalSlaCard = ({
               <span className="font-medium">O que é este gráfico?</span>
               <ChevronDown className="h-3 w-3 ml-auto transition-transform group-open:rotate-180" />
             </summary>
-            <div className="mt-3 text-xs text-gray-500 space-y-2 leading-relaxed">
+            <div className="mt-3 text-xs text-gray-500 space-y-3 leading-relaxed">
               <p>
                 <strong>SLA (Service Level Agreement)</strong> mede o percentual de pacientes que começaram o
                 atendimento clínico dentro do prazo estipulado de <strong>30 minutos</strong> após a emissão da
-                senha. O cálculo considera apenas os atendimentos que possuem horário de início do exame registrado
-                no sistema — ou seja, pacientes sem esse registro não entram na base do cálculo.
+                senha.
               </p>
-              <div className="grid grid-cols-5 gap-2 pt-1">
-                {['≤15min', '≤30min', '≤60min', '≤2h', '>2h'].map((label, i) => (
-                  <div key={label} className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full inline-flex" style={{ backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'][i] }} />
-                    <span>{label}</span>
-                  </div>
-                ))}
+
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="font-medium text-gray-700">Como é calculado</p>
+                <ol className="list-decimal list-inside space-y-1 text-gray-500">
+                  <li>Para cada atendimento, calcula-se o tempo entre a <strong>emissão da senha</strong> e o <strong>primeiro exame</strong> do paciente.</li>
+                  <li>Esse tempo é classificado em faixas: ≤15min, ≤30min, ≤60min, ≤2h ou &gt;2h.</li>
+                  <li>A nota SLA = (atendimentos dentro de 30min) ÷ (total com horário registrado) × 100.</li>
+                  <li>Só entram no cálculo os atendimentos que possuem <strong>data/hora do exame</strong> registrada — pacientes sem esse registro são excluídos da base.</li>
+                </ol>
               </div>
-              <p className="text-gray-400">
-                Fonte: Sistema de Senhas (data/hora de emissão + data/hora do primeiro exame).
+
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="font-medium text-gray-700">Classificação (Nota A–F)</p>
+                <div className="grid grid-cols-5 gap-2 pt-1">
+                  {[
+                    { label: 'A — Excelente', min: 90, color: '#10b981' },
+                    { label: 'B — Bom', min: 75, color: '#22c55e' },
+                    { label: 'C — Regular', min: 60, color: '#f59e0b' },
+                    { label: 'D — Ruim', min: 40, color: '#f97316' },
+                    { label: 'F — Crítico', min: 0, color: '#ef4444' },
+                  ].map((g) => (
+                    <div key={g.label} className="text-center">
+                      <span className="text-lg font-bold" style={{ color: g.color }}>≥{g.min}%</span>
+                      <p className="text-[10px] text-gray-500 mt-0.5">{g.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-gray-50 rounded-lg p-3 space-y-1">
+                <p className="font-medium text-gray-700">Média vs Mediana</p>
+                <p className="text-gray-500">
+                  A <strong>média</strong> é sensível a valores extremos (atendimentos muito demorados "puxam" o valor para cima).
+                  A <strong>mediana</strong> representa o tempo em que metade dos pacientes foi atendida — menos influenciada por poucos casos muito lentos.
+                  Valores próximos indicam distribuição equilibrada; média muito acima da mediana sugere poucos atendimentos muito longos.
+                </p>
+              </div>
+
+              <p className="text-gray-400 text-[10px]">
+                Fonte: Sistema de Senhas (data/hora de emissão + data/hora do primeiro exame). A mediana é estimada a partir da distribuição por faixas.
               </p>
             </div>
           </details>
@@ -801,6 +836,31 @@ export function StatisticsSection() {
     const stretchPct = totalComTempo > 0 ? (dentro15 / totalComTempo) * 100 : 0;
     const mediaGlobal = totalComTempo > 0 ? somaMediaPonderada / totalComTempo : null;
 
+    // Estimar mediana a partir do histograma
+    const estimarMediana = (): number | null => {
+      if (totalComTempo === 0) return null;
+      const bins = [
+        { min: 0, max: 15, key: '0-15min' as const },
+        { min: 15, max: 30, key: '15-30min' as const },
+        { min: 30, max: 60, key: '30-60min' as const },
+        { min: 60, max: 120, key: '1-2h' as const },
+        { min: 120, max: 240, key: '2h+' as const },
+      ];
+      const target = totalComTempo / 2;
+      let cumulative = 0;
+      for (const bin of bins) {
+        const count = faixasConsolidadas[bin.key] || 0;
+        if (count === 0) continue;
+        cumulative += count;
+        if (cumulative >= target) {
+          const binStart = cumulative - count;
+          const positionInBin = count > 0 ? (target - binStart) / count : 0;
+          return Math.round(bin.min + positionInBin * (bin.max - bin.min));
+        }
+      }
+      return null;
+    };
+
     return {
       faixas: faixasConsolidadas as Record<string, number>,
       totalComTempo,
@@ -808,6 +868,7 @@ export function StatisticsSection() {
       slaPercent: slaPct,
       stretchPercent: stretchPct,
       mediaMinutos: mediaGlobal,
+      medianaMinutos: estimarMediana(),
     };
   }, [statisticsData]);
 
@@ -1317,7 +1378,7 @@ export function StatisticsSection() {
                     initial={{ opacity: 0, height: 0 }}
                   >
                     {/* Status do Dia */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           Status do Dia
@@ -1460,6 +1521,73 @@ export function StatisticsSection() {
                                 </div>
                               </div>
                             ))}
+                        </div>
+                      </div>
+
+                      {/* Tickets do Dia (Pref/Prio/Geral) */}
+                      <div>
+                        <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                          Senhas do Dia
+                        </h4>
+                        <div className="space-y-3">
+                          {(() => {
+                            const tickets = unidade.tickets || [];
+                            if (tickets.length === 0) return (
+                              <div className="text-xs text-gray-400 text-center py-4 bg-gray-50 rounded-lg">
+                                Nenhuma senha emitida
+                              </div>
+                            );
+                            const total = tickets.reduce((s, t) => s + t.total, 0);
+                            const preferencial = tickets.reduce((s, t) => s + t.preferencial, 0);
+                            const comPrefixo = tickets.reduce((s, t) => s + t.comPrefixo, 0);
+                            const geral = total - preferencial - comPrefixo;
+                            return (
+                              <>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-red-50/50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full inline-flex bg-red-500" />
+                                    <span className="text-sm font-medium text-red-700">Preferencial</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-red-700">{preferencial}</span>
+                                    <span className="text-xs text-red-500">
+                                      ({((preferencial / total) * 100).toFixed(0)}%)
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50/50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full inline-flex bg-blue-500" />
+                                    <span className="text-sm font-medium text-blue-700">Prioridade</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-blue-700">{comPrefixo}</span>
+                                    <span className="text-xs text-blue-500">
+                                      ({((comPrefixo / total) * 100).toFixed(0)}%)
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-gray-100/80">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full inline-flex bg-gray-500" />
+                                    <span className="text-sm font-medium text-gray-600">Atendimento Geral</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-gray-700">{geral}</span>
+                                    <span className="text-xs text-gray-500">
+                                      ({((geral / total) * 100).toFixed(0)}%)
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-200">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-sm font-medium text-gray-800">Total Senhas</span>
+                                  </div>
+                                  <span className="font-bold text-gray-900">{total}</span>
+                                </div>
+                              </>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
