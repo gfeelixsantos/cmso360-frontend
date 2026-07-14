@@ -50,6 +50,7 @@ import { PreparationGrid } from "@/app/recepcao/components/PreparationGrid";
 import SenhasEstatisticas, {
   StatsModal,
 } from "@/app/recepcao/components/SenhasEstatisticas";
+import TicketGroupFloatingBar from "@/app/recepcao/components/TicketGroupFloatingBar";
 import { useStatistics } from "@/hooks/useStatictics";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
@@ -560,6 +561,12 @@ const RecepcaoPage: React.FC = () => {
             />
           )}
         </main>
+
+        {conectado && socket && !salaSelecionada.includes("PREPARO") && (
+          <TicketGroupFloatingBar
+            tickets={tickets.filter((t) => t.grupo === TicketGroups.RECEPCAO)}
+          />
+        )}
       </div>
 
       <AtendimentoModal

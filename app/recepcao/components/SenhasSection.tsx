@@ -79,6 +79,8 @@ const EmptySection: React.FC<{ title: string; emptyMessage: string; count: numbe
   return (
     <section
       aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+      className="scroll-mt-6"
+      id={`ticket-group-${title.toLowerCase().replace(/\s/g, "-")}`}
     >
       <div className="flex items-center gap-3 mb-3">
         <h3
@@ -134,7 +136,8 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
   return (
       <section
         aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
-        className="space-y-3"
+        className="space-y-3 scroll-mt-6"
+        id={`ticket-group-${title.toLowerCase().replace(/\s/g, "-")}`}
       >
       <div className="flex items-center gap-3">
         <h3
