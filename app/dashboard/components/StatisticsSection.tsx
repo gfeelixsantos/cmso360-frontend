@@ -649,22 +649,39 @@ const GlobalSlaCard = ({
             const colors = ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'];
             const display = ['≤15min', '≤30min', '≤60min', '≤2h', '>2h'];
             return (
-              <div
+              <Tooltip
                 key={key}
-                className="h-full flex items-center justify-center text-[9px] font-bold text-white transition-all"
-                style={{
-                  width: `${(value / sla.totalComTempo) * 100}%`,
-                  backgroundColor: colors[i],
-                  opacity: 0.85,
-                  minWidth: value > 0 ? '16px' : '0',
-                }}
-                title={`${display[i]}: ${value} (${((value / sla.totalComTempo) * 100).toFixed(1)}%)`}
+                content={`${display[i]}: ${value}${value > 0 ? ` (${((value / sla.totalComTempo) * 100).toFixed(1)}%)` : ''}`}
+                placement="top"
+                showArrow
+                offset={4}
               >
-                {value > 0 && ((value / sla.totalComTempo) * 100 > 12) && `${((value / sla.totalComTempo) * 100).toFixed(0)}%`}
-              </div>
+                <div
+                  className="h-full flex items-center justify-center text-[9px] font-bold text-white transition-all"
+                  style={{
+                    width: `${(value / sla.totalComTempo) * 100}%`,
+                    backgroundColor: colors[i],
+                    opacity: 0.85,
+                    minWidth: value > 0 ? '16px' : '0',
+                  }}
+                >
+                  {value > 0 && `${((value / sla.totalComTempo) * 100).toFixed(0)}%`}
+                </div>
+              </Tooltip>
             );
           })}
         </div>
+
+        {/* Legenda de cores */}
+        <div className="flex items-center gap-4 mt-3 px-1">
+          {['≤15min', '≤30min', '≤60min', '≤2h', '>2h'].map((label, i) => (
+            <div key={label} className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full inline-flex" style={{ backgroundColor: ['#10b981', '#f59e0b', '#f97316', '#ef4444', '#991b1b'][i] }} />
+              <span className="text-[11px] text-gray-500">{label}</span>
+            </div>
+          ))}
+        </div>
+
         {/* Legenda */}
         <div className="mt-5 pt-4 border-t border-gray-100">
           <details className="group">
