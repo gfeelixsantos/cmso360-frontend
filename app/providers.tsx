@@ -9,6 +9,7 @@ import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ToastProvider } from "@heroui/react";
 
 import { AppDataProvider } from "./context/AppDataContext";
+import { GedBatchSocketProvider } from "./context/GedBatchSocketProvider";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -30,7 +31,9 @@ export function Providers({ children, themeProps }: ProvidersProps) {
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
-        <AppDataProvider initialData={null}>{children}</AppDataProvider>
+        <AppDataProvider initialData={null}>
+          <GedBatchSocketProvider>{children}</GedBatchSocketProvider>
+        </AppDataProvider>
       </NextThemesProvider>
     </HeroUIProvider>
   );

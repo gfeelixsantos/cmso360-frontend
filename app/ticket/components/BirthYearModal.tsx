@@ -60,19 +60,19 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
     }
 
     if (key === "✓") {
-      if (value.length === 6) {
+      if (value.length === 8) {
         onConfirm(value);
       }
       return;
     }
 
-    // Máximo 6 dígitos (MM/AAAA)
-    if (value.length < 6) {
+    // Máximo 8 dígitos (DD/MM/AAAA)
+    if (value.length < 8) {
       setValue((prev) => prev + key);
     }
   };
 
-  const isComplete = value.length === 6;
+  const isComplete = value.length === 8;
 
   return (
     <motion.div
@@ -86,14 +86,14 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
         {/* Título de Instrução */}
         <div className="text-center">
           <h2 className="text-lg md:text-xl font-bold whitespace-nowrap" style={{ color: COLOR_PALETTE.primary }}>
-            Digite seu mês e ano de nascimento
+            Digite sua data de nascimento
           </h2>
           <p className="text-xs mt-0.5" style={{ color: COLOR_PALETTE.gray }}>
-            Exemplo: 00/0000
+            Exemplo: 00/00/0000
           </p>
         </div>
 
-        {/* Display do ano (MM / AAAA) */}
+        {/* Display da data de nascimento (DD / MM / AAAA) */}
         <div
           className="flex items-center justify-center gap-1.5 py-2.5 px-4 rounded-xl border-2 transition-colors"
           style={{
@@ -101,7 +101,7 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
             backgroundColor: "white",
           }}
         >
-          {/* Mês (2 slots) */}
+          {/* Dia (2 slots) */}
           <div className="flex gap-1">
             {[0, 1].map((i) => (
               <motion.span
@@ -119,9 +119,27 @@ const BirthYearModal: React.FC<BirthYearModalProps> = ({
           {/* Divisor */}
           <span className="text-2xl font-bold text-gray-400 mx-0.5">/</span>
 
+          {/* Mês (2 slots) */}
+          <div className="flex gap-1">
+            {[2, 3].map((i) => (
+              <motion.span
+                key={i}
+                animate={{ scale: value[i] ? 1 : 0.85, opacity: value[i] ? 1 : 0.3 }}
+                className="text-3xl font-bold font-mono w-6 text-center"
+                style={{ color: COLOR_PALETTE.primary }}
+                transition={{ duration: 0.12 }}
+              >
+                {value[i] ?? "·"}
+              </motion.span>
+            ))}
+          </div>
+
+          {/* Divisor */}
+          <span className="text-2xl font-bold text-gray-400 mx-0.5">/</span>
+
           {/* Ano (4 slots) */}
           <div className="flex gap-1">
-            {[2, 3, 4, 5].map((i) => (
+            {[4, 5, 6, 7].map((i) => (
               <motion.span
                 key={i}
                 animate={{ scale: value[i] ? 1 : 0.85, opacity: value[i] ? 1 : 0.3 }}

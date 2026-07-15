@@ -120,7 +120,11 @@ const PeriodoList: React.FC<PeriodoListProps> = ({
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-default-200 pt-3">
+                <div
+                  className="flex items-center justify-between border-t border-default-200 pt-3"
+                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => e.stopPropagation()}
+                >
                   <span className="text-xs text-default-500">Arquivos</span>
                   <div className="flex items-center gap-2">
                     {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (

@@ -1,3 +1,5 @@
+"use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
@@ -7,6 +9,28 @@ import {
   getBatchJobStatus,
   isJobTerminal,
 } from "@/lib/ged-batch-client";
+
+const ACTIVE_JOB_KEY = "ged-batch:active-job";
+
+function getActiveJobId(): string | null {
+  try {
+    return localStorage.getItem(ACTIVE_JOB_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setActiveJobId(jobId: string) {
+  try {
+    localStorage.setItem(ACTIVE_JOB_KEY, jobId);
+  } catch {}
+}
+
+function clearActiveJobId() {
+  try {
+    localStorage.removeItem(ACTIVE_JOB_KEY);
+  } catch {}
+}
 
 interface UseGedBatchJobOptions {
   onCompleted?: (job: GedBatchJob) => void;
@@ -36,6 +60,7 @@ export function useGedBatchJob({
   const [error, setError] = useState<string | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jobIdRef = useRef<string | null>(null);
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -47,6 +72,7 @@ export function useGedBatchJob({
 
   const handleTerminalJob = useCallback(
     (job: GedBatchJob) => {
+      clearActiveJobId();
       if (job.status === "completed" || job.status === "partial") {
         onCompleted?.(job);
       } else {
@@ -74,6 +100,7 @@ export function useGedBatchJob({
         } catch {
           stopPolling();
           setError("Erro ao consultar status do job.");
+          clearActiveJobId();
         }
       };
 
@@ -83,9 +110,14 @@ export function useGedBatchJob({
     [handleTerminalJob, pollInterval, stopPolling],
   );
 
+  // Restaura job ativo do localStorage ao montar
   useEffect(() => {
+    const activeJobId = getActiveJobId();
+    if (activeJobId) {
+      startPolling(activeJobId);
+    }
     return () => stopPolling();
-  }, [stopPolling]);
+  }, [startPolling, stopPolling]);
 
   const startBatch = useCallback(
     async (payload: CreateBatchRequest) => {
@@ -100,6 +132,8 @@ export function useGedBatchJob({
         if (isJobTerminal(job.status)) {
           handleTerminalJob(job);
         } else {
+          setActiveJobId(job.id);
+          jobIdRef.current = job.id;
           startPolling(job.id);
         }
 
@@ -117,6 +151,7 @@ export function useGedBatchJob({
 
   const clearJob = useCallback(() => {
     stopPolling();
+    clearActiveJobId();
     setCurrentJob(null);
     setError(null);
   }, [stopPolling]);

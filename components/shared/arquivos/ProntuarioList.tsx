@@ -145,7 +145,11 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-default-200 pt-3">
+                  <div
+                    className="flex items-center justify-between border-t border-default-200 pt-3"
+                    onClick={(e) => e.stopPropagation()}
+                    onKeyDown={(e) => e.stopPropagation()}
+                  >
                     <div
                       role="button"
                       tabIndex={0}
@@ -171,11 +175,7 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
                     </div>
                     <div className="flex items-center gap-2">
                       {onDownload && (
-                        <div
-                          onClick={(e) => e.stopPropagation()}
-                          onKeyDown={(e) => e.stopPropagation()}
-                          role="none"
-                        >
+                        <div>
                           {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
                             <Button
                               className={
