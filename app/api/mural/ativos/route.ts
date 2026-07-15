@@ -4,7 +4,7 @@ import { NEST_URL } from "@/config/constants";
 export async function GET() {
   try {
     const response = await fetch(`${NEST_URL}mural/ativos`, {
-      next: { revalidate: 10 },
+      cache: "no-store",
     });
 
     if (!response.ok) {

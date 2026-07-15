@@ -82,7 +82,6 @@ import FacialModal, {
   FacialContext,
 } from "@/app/atendimento/components/FacialModal";
 import LazyModalContent from "@/app/relatorio/LazyModalContent";
-import { usePushNotification } from "@/hooks/usePushNotification";
 import TeleatendimentoPanel from "@/app/teleatendimento/components/TeleatendimentoPanel";
 
 const SenhasEstatisticas = dynamic<import("@/app/recepcao/components/SenhasEstatisticas").SenhasEstatisticasProps>(
@@ -211,12 +210,6 @@ const AtendimentoPage: React.FC = () => {
   );
   const [teleatendimentoSessionId, setTeleatendimentoSessionId] = useState<string | null>(null);
   const [isTelemedicinaModo, setIsTelemedicinaModo] = useState<boolean>(false);
-
-  usePushNotification({
-    enabled: conectado,
-    unidade: unidadeSelecionada,
-    contexto: { sala: salaSelecionada, exame: exameSelecionado, tipo: "atendimento" },
-  });
 
   useEffect(() => {
     getExamsCatalog().then(setExamesData);

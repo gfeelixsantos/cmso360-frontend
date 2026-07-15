@@ -54,7 +54,6 @@ import TicketGroupFloatingBar from "@/app/recepcao/components/TicketGroupFloatin
 import { useStatistics } from "@/hooks/useStatictics";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
-import { usePushNotification } from "@/hooks/usePushNotification";
 
 // Componente principal
 const RecepcaoPage: React.FC = () => {
@@ -208,15 +207,6 @@ const RecepcaoPage: React.FC = () => {
       return await IndexDb.getCompanies();
     }
   }, []);
-
-  // ---------------------------------------------------------
-  // Push Notifications
-  // ---------------------------------------------------------
-  usePushNotification({
-    enabled: conectado && salaSelecionada.includes("PREPARO"),
-    unidade: unidadeSelecionada,
-    contexto: { sala: salaSelecionada, tipo: "recepcao" },
-  });
 
   // ---------------------------------------------------------
   // Reconexão automática ao mudar contexto (unidade/sala)

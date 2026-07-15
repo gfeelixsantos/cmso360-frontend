@@ -5,19 +5,13 @@ import {
   type GedBatchJob,
   createBatchJob,
   getBatchJobStatus,
-  isJobActive,
   isJobTerminal,
 } from "@/lib/ged-batch-client";
-import { useGedBatchSocket } from "./useGedBatchSocket";
-import type { GedBatchProgressPayload } from "@/lib/websocket/events/events";
-
-const GED_BATCH_STORAGE_KEY = "cmso360.ged-batch.active-job-id";
 
 interface UseGedBatchJobOptions {
   onCompleted?: (job: GedBatchJob) => void;
   onFailed?: (job: GedBatchJob) => void;
   onFinished?: (job: GedBatchJob) => void;
-  onProgress?: (payload: GedBatchProgressPayload) => void;
   pollInterval?: number;
 }
 
@@ -25,7 +19,6 @@ interface UseGedBatchJobReturn {
   currentJob: GedBatchJob | null;
   isCreating: boolean;
   isPolling: boolean;
-  isSocketConnected: boolean;
   error: string | null;
   startBatch: (payload: CreateBatchRequest) => Promise<GedBatchJob | null>;
   clearJob: () => void;
@@ -35,8 +28,7 @@ export function useGedBatchJob({
   onCompleted,
   onFailed,
   onFinished,
-  onProgress,
-  pollInterval = 5000,
+  pollInterval = 3000,
 }: UseGedBatchJobOptions = {}): UseGedBatchJobReturn {
   const [currentJob, setCurrentJob] = useState<GedBatchJob | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -44,16 +36,6 @@ export function useGedBatchJob({
   const [error, setError] = useState<string | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const onCompletedRef = useRef(onCompleted);
-  const onFailedRef = useRef(onFailed);
-  const onFinishedRef = useRef(onFinished);
-  const onProgressRef = useRef(onProgress);
-  const handledTerminalJobsRef = useRef(new Set<string>());
-
-  onCompletedRef.current = onCompleted;
-  onFailedRef.current = onFailed;
-  onFinishedRef.current = onFinished;
-  onProgressRef.current = onProgress;
 
   const stopPolling = useCallback(() => {
     if (pollingRef.current) {
@@ -65,36 +47,15 @@ export function useGedBatchJob({
 
   const handleTerminalJob = useCallback(
     (job: GedBatchJob) => {
-      const terminalKey = `${job.id}:${job.status}`;
-
-      if (handledTerminalJobsRef.current.has(terminalKey)) {
-        return false;
-      }
-
-      handledTerminalJobsRef.current.add(terminalKey);
-
       if (job.status === "completed" || job.status === "partial") {
-        onCompletedRef.current?.(job);
+        onCompleted?.(job);
       } else {
-        onFailedRef.current?.(job);
+        onFailed?.(job);
       }
-
-      onFinishedRef.current?.(job);
-
-      return true;
+      onFinished?.(job);
     },
-    [],
+    [onCompleted, onFailed, onFinished],
   );
-
-  const persistJobId = useCallback((jobId: string | null) => {
-    if (typeof window === "undefined") return;
-
-    if (jobId) {
-      window.localStorage.setItem(GED_BATCH_STORAGE_KEY, jobId);
-    } else {
-      window.localStorage.removeItem(GED_BATCH_STORAGE_KEY);
-    }
-  }, []);
 
   const startPolling = useCallback(
     (jobId: string) => {
@@ -104,7 +65,6 @@ export function useGedBatchJob({
       const poll = async () => {
         try {
           const job = await getBatchJobStatus(jobId);
-
           setCurrentJob(job);
 
           if (isJobTerminal(job.status)) {
@@ -127,73 +87,6 @@ export function useGedBatchJob({
     return () => stopPolling();
   }, [stopPolling]);
 
-  // Restore job from localStorage on mount
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const jobId = window.localStorage.getItem(GED_BATCH_STORAGE_KEY);
-    if (!jobId) return;
-
-    let cancelled = false;
-
-    const restoreJob = async () => {
-      try {
-        const job = await getBatchJobStatus(jobId);
-        if (cancelled) return;
-
-        setCurrentJob(job);
-
-        if (isJobActive(job.status)) {
-          startPolling(job.id);
-        } else if (isJobTerminal(job.status)) {
-          handleTerminalJob(job);
-        }
-      } catch {
-        if (!cancelled) {
-          persistJobId(null);
-        }
-      }
-    };
-
-    void restoreJob();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [handleTerminalJob, persistJobId, startPolling]);
-
-  // Socket.IO hook — listens for real-time updates when a job is active
-  const activeJobId = currentJob && isJobActive(currentJob.status) ? currentJob.id : null;
-
-  const { job: socketJob, isConnected: isSocketConnected, setJob: setSocketJob } = useGedBatchSocket({
-    jobId: activeJobId,
-    enabled: true,
-    onStatusChange: (updatedJob) => {
-      setCurrentJob(updatedJob);
-
-      if (isJobTerminal(updatedJob.status)) {
-        stopPolling();
-        handleTerminalJob(updatedJob);
-      }
-    },
-    onProgress: (payload) => {
-      onProgressRef.current?.(payload);
-    },
-    onCompleted: (job) => {
-      handleTerminalJob(job);
-    },
-    onFailed: (job) => {
-      handleTerminalJob(job);
-    },
-  });
-
-  // Sync socket job state with main state
-  useEffect(() => {
-    if (socketJob) {
-      setCurrentJob(socketJob);
-    }
-  }, [socketJob]);
-
   const startBatch = useCallback(
     async (payload: CreateBatchRequest) => {
       setIsCreating(true);
@@ -201,15 +94,13 @@ export function useGedBatchJob({
 
       try {
         const job = await createBatchJob(payload);
-
         setCurrentJob(job);
-        persistJobId(job.id);
         setIsCreating(false);
 
-        if (isJobActive(job.status)) {
-          startPolling(job.id);
-        } else if (isJobTerminal(job.status)) {
+        if (isJobTerminal(job.status)) {
           handleTerminalJob(job);
+        } else {
+          startPolling(job.id);
         }
 
         return job;
@@ -221,23 +112,19 @@ export function useGedBatchJob({
         return null;
       }
     },
-    [handleTerminalJob, persistJobId, startPolling],
+    [handleTerminalJob, startPolling],
   );
 
   const clearJob = useCallback(() => {
     stopPolling();
     setCurrentJob(null);
-    setSocketJob(null);
     setError(null);
-    persistJobId(null);
-    handledTerminalJobsRef.current.clear();
-  }, [persistJobId, stopPolling, setSocketJob]);
+  }, [stopPolling]);
 
   return {
     currentJob,
     isCreating,
-    isPolling: isPolling && !isSocketConnected,
-    isSocketConnected,
+    isPolling,
     error,
     startBatch,
     clearJob,

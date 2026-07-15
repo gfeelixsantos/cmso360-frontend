@@ -294,26 +294,6 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
     return unsubscribe;
   }, []);
 
-  useEffect(() => {
-    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
-      return;
-    }
-
-    const handler = (event: MessageEvent) => {
-      const data = event.data;
-
-      if (!data || data.type !== "app-notification" || !data.notification) {
-        return;
-      }
-
-      addNotification(data.notification);
-    };
-
-    navigator.serviceWorker.addEventListener("message", handler);
-
-    return () => navigator.serviceWorker.removeEventListener("message", handler);
-  }, []);
-
   const unreadNotificationsCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
     [notifications],

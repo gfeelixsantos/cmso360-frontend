@@ -4,7 +4,6 @@ import { Metadata, Viewport } from "next";
 import clsx from "clsx";
 
 import { Providers } from "./providers";
-import { PwaRegister } from "@/components/pwa/PwaRegister";
 
 import { siteConfig } from "@/config/site";
 import { fontSans } from "@/config/fonts";
@@ -19,14 +18,6 @@ export const metadata: Metadata = {
     icon: [{ url: "/images/favicon.ico", sizes: "any" }],
     shortcut: "/images/favicon-16x16.png",
     apple: "/images/apple-touch-icon.png",
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: siteConfig.name,
-  },
-  formatDetection: {
-    telephone: false,
   },
 };
 
@@ -48,9 +39,6 @@ export default function RootLayout({
 }) {
   return (
     <html suppressHydrationWarning lang="pt-br">
-      <head>
-        <link rel="manifest" href="/manifest.webmanifest" />
-      </head>
       <body
         className={clsx(
           "min-h-screen text-foreground font-sans antialiased",
@@ -58,7 +46,6 @@ export default function RootLayout({
         )}
       >
         <Providers themeProps={{ attribute: "class", defaultTheme: "light" }}>
-          <PwaRegister />
           {children}
         </Providers>
       </body>

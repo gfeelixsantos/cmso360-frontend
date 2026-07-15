@@ -1,11 +1,13 @@
 "use client";
 
-import React from "react";
-import { Building2, Download, ExternalLink, FileText, Loader2, Search } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Building2, ChevronDown, Download, ExternalLink, FileText, Loader2, Search } from "lucide-react";
 import { Button, Card, CardBody, Input, Spinner } from "@heroui/react";
 
 import type { EmpresaNode } from "@/hooks/useBlobExplorer";
 import type { GedBatchJob } from "@/lib/ged-batch-client";
+
+const ITEMS_PER_PAGE = 20;
 
 interface EmpresaListProps {
   empresas: EmpresaNode[];
@@ -38,6 +40,15 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
   currentJob,
   isCreatingJob = false,
 }) => {
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [searchQuery]);
+
+  const displayedEmpresas = empresas.slice(0, visibleCount);
+  const remaining = empresas.length - visibleCount;
+
   return (
     <div className="flex h-full flex-col gap-4">
       <Input
@@ -65,8 +76,9 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
           </p>
         </div>
       ) : (
-        <div className="grid flex-1 auto-rows-fr gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-          {empresas.map((empresa, index) => {
+        <>
+          <div className="grid flex-1 auto-rows-fr gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
+            {displayedEmpresas.map((empresa, index) => {
             const isJobForThisEmpresa =
               currentJob?.scope === "empresa" &&
               currentJob.empresa.codigoEmpresa === empresa.codigoEmpresa;
@@ -203,7 +215,22 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
               </div>
             );
           })}
-        </div>
+          </div>
+
+          {remaining > 0 && (
+            <div className="flex justify-center pt-2 pb-1">
+              <Button
+                size="sm"
+                variant="flat"
+                color="primary"
+                startContent={<ChevronDown className="h-4 w-4" />}
+                onPress={() => setVisibleCount((prev) => prev + ITEMS_PER_PAGE)}
+              >
+                Carregar mais {Math.min(remaining, ITEMS_PER_PAGE)} de {remaining} empresas
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

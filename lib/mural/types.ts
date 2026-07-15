@@ -3,11 +3,12 @@ export interface MuralStyles {
   TEXTCOLOR?: string;
   BODYTEXTCOLOR?: string;
   FONTFAMILY?: string;
+  VIDEOMUTED?: boolean;
 }
 
 export interface MuralItem {
   id: string;
-  LAYOUTTYPE: 'TEXT_WITH_IMAGE' | 'FULL_IMAGE';
+  LAYOUTTYPE: 'TEXT_WITH_IMAGE' | 'FULL_IMAGE' | 'VIDEO' | 'WEATHER';
   TITLE?: string;
   BODYTEXT?: string;
   IMAGEURL?: string;
