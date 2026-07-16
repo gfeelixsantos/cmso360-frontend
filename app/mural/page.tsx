@@ -316,7 +316,7 @@ function MuralContent() {
 
   return (
     <div
-      className={isPreview ? "w-full h-full overflow-hidden" : "fixed inset-0 overflow-hidden"}
+      className={isPreview ? "w-full h-full overflow-hidden" : "fixed inset-0 h-screen w-screen overflow-hidden"}
       style={{ backgroundColor: bgColor }}
     >
       <AnimatePresence mode="wait">
@@ -470,7 +470,7 @@ function MuralContent() {
                 )}
                 {current.BODYTEXT && (
                   <p
-                    className="text-lg md:text-xl lg:text-2xl xl:text-3xl leading-relaxed max-w-3xl whitespace-pre-line"
+                    className="text-lg md:text-xl lg:text-2xl xl:text-3xl leading-relaxed max-w-[80%] whitespace-pre-line"
                     style={{ color: bodyTextColor, fontFamily }}
                   >
                     {current.BODYTEXT}
@@ -479,14 +479,12 @@ function MuralContent() {
               </div>
 
               {current.IMAGEURL && (
-                <div className="flex-1 flex items-center justify-center">
-                  <div className="w-full h-full">
-                    <img
-                      alt={current.TITLE || "Mural"}
-                      className="w-full h-full object-cover"
-                      src={current.IMAGEURL}
-                    />
-                  </div>
+                <div className="flex-1 overflow-hidden">
+                  <img
+                    alt={current.TITLE || "Mural"}
+                    className="w-full h-full object-cover"
+                    src={current.IMAGEURL}
+                  />
                 </div>
               )}
             </div>
