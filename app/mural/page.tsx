@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { Image } from "@heroui/react";
-import { Monitor, Sun, CloudRain, Cloud, CloudLightning, Wind, Thermometer, Droplets, Calendar } from "lucide-react";
+import { Monitor, Sun, CloudRain, Cloud, CloudLightning, CloudSnow, CloudFog, Wind, Thermometer, Droplets, Calendar, Clock, MapPin } from "lucide-react";
 import { MuralItem } from "@/lib/mural/types";
 import { SERVICES_KEY, NEXT_WS_URL } from "@/config/constants";
 import { io } from "socket.io-client";
@@ -15,6 +15,153 @@ export default function MuralPage() {
       <MuralContent />
     </Suspense>
   );
+}
+
+function getWeatherIcon(condition: string) {
+  const c = (condition || "").toLowerCase();
+  if (c.includes("rain") || c.includes("shower") || c.includes("drizzle")) return "rain";
+  if (c.includes("storm") || c.includes("thunder")) return "storm";
+  if (c.includes("snow") || c.includes("sleet") || c.includes("ice")) return "snow";
+  if (c.includes("fog") || c.includes("mist") || c.includes("haze")) return "fog";
+  if (c.includes("cloud") || c.includes("overcast") || c.includes("nublado")) return "cloud";
+  if (c.includes("clear") || c.includes("sun") || c.includes("limpo") || c.includes("sol")) return "sun";
+  if (c.includes("night") || c.includes("noite")) return "night";
+  return "cloud";
+}
+
+function WeatherMainIcon({ condition, size = 64 }: { condition: string; size?: number }) {
+  const type = getWeatherIcon(condition);
+  switch (type) {
+    case "sun":
+      return (
+        <motion.div animate={{ rotate: 360 }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }}>
+          <Sun size={size} className="text-yellow-400 drop-shadow-[0_0_20px_rgba(250,204,21,0.5)]" />
+        </motion.div>
+      );
+    case "rain":
+      return (
+        <motion.div animate={{ y: [0, 4, 0] }} transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}>
+          <CloudRain size={size} className="text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.5)]" />
+        </motion.div>
+      );
+    case "storm":
+      return (
+        <motion.div animate={{ y: [0, -3, 0], opacity: [1, 0.7, 1] }} transition={{ duration: 0.8, repeat: Infinity }}>
+          <CloudLightning size={size} className="text-purple-400 drop-shadow-[0_0_20px_rgba(192,132,252,0.5)]" />
+        </motion.div>
+      );
+    case "snow":
+      return (
+        <motion.div animate={{ y: [0, 3, 0], rotate: [0, 5, -5, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+          <CloudSnow size={size} className="text-cyan-200 drop-shadow-[0_0_20px rgba(186,230,253,0.5)]" />
+        </motion.div>
+      );
+    case "fog":
+      return (
+        <motion.div animate={{ opacity: [0.6, 1, 0.6] }} transition={{ duration: 3, repeat: Infinity }}>
+          <CloudFog size={size} className="text-gray-300 drop-shadow-[0_0_15px rgba(209,213,219,0.3)]" />
+        </motion.div>
+      );
+    case "night":
+      return (
+        <motion.div animate={{ scale: [1, 1.05, 1] }} transition={{ duration: 4, repeat: Infinity }}>
+          <Cloud size={size} className="text-indigo-300 drop-shadow-[0_0_15px rgba(165,180,252,0.4)]" />
+        </motion.div>
+      );
+    default:
+      return (
+        <motion.div animate={{ y: [0, -5, 0] }} transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}>
+          <Cloud size={size} className="text-gray-200 drop-shadow-[0_0_15px rgba(229,231,235,0.3)]" />
+        </motion.div>
+      );
+  }
+}
+
+function ForecastIcon({ condition, size = 24 }: { condition: string; size?: number }) {
+  const type = getWeatherIcon(condition);
+  switch (type) {
+    case "sun": return <Sun size={size} className="text-yellow-400" />;
+    case "rain": return <CloudRain size={size} className="text-blue-400" />;
+    case "storm": return <CloudLightning size={size} className="text-purple-400" />;
+    case "snow": return <CloudSnow size={size} className="text-cyan-200" />;
+    case "fog": return <CloudFog size={size} className="text-gray-400" />;
+    case "night": return <Cloud size={size} className="text-indigo-300" />;
+    default: return <Cloud size={size} className="text-gray-300" />;
+  }
+}
+
+function getForecastColors(description: string, max: number) {
+  const c = (description || "").toLowerCase();
+  const isRain = c.includes("rain") || c.includes("chuva") || c.includes("shower") || c.includes("drizzle");
+  const isStorm = c.includes("storm") || c.includes("thunder") || c.includes("tempestade");
+  const isSnow = c.includes("snow") || c.includes("neve") || c.includes("sleet") || c.includes("ice");
+  const isFog = c.includes("fog") || c.includes("mist") || c.includes("haze") || c.includes("nevoa") || c.includes("névoa");
+  const isClear = c.includes("clear") || c.includes("sun") || c.includes("limpo") || c.includes("sol") || c.includes("ensolarado");
+
+  if (isStorm) return {
+    bg: "from-purple-500/[0.12] to-slate-500/[0.06]",
+    border: "border-purple-400/[0.18]",
+    iconBg: "bg-purple-500/[0.15]",
+    minColor: "text-blue-300/80",
+    maxColor: "text-purple-300/80",
+    barGradient: "linear-gradient(to right, #a78bfa, #94a3b8, #c084fc)",
+  };
+  if (isSnow) return {
+    bg: "from-cyan-400/[0.12] to-blue-300/[0.06]",
+    border: "border-cyan-300/[0.18]",
+    iconBg: "bg-cyan-300/[0.15]",
+    minColor: "text-cyan-200/80",
+    maxColor: "text-blue-200/80",
+    barGradient: "linear-gradient(to right, #67e8f9, #93c5fd, #bae6fd)",
+  };
+  if (isRain) return {
+    bg: "from-slate-400/[0.12] to-gray-500/[0.06]",
+    border: "border-slate-400/[0.18]",
+    iconBg: "bg-slate-400/[0.15]",
+    minColor: "text-slate-300/80",
+    maxColor: "text-slate-200/80",
+    barGradient: "linear-gradient(to right, #94a3b8, #cbd5e1, #64748b)",
+  };
+  if (isFog) return {
+    bg: "from-gray-400/[0.10] to-slate-400/[0.05]",
+    border: "border-gray-400/[0.15]",
+    iconBg: "bg-gray-400/[0.12]",
+    minColor: "text-gray-300/80",
+    maxColor: "text-gray-200/80",
+    barGradient: "linear-gradient(to right, #9ca3af, #d1d5db, #6b7280)",
+  };
+  if (isClear || max >= 30) return {
+    bg: "from-amber-400/[0.10] to-yellow-300/[0.05]",
+    border: "border-amber-300/[0.15]",
+    iconBg: "bg-amber-400/[0.12]",
+    minColor: "text-amber-200/80",
+    maxColor: "text-amber-300/80",
+    barGradient: "linear-gradient(to right, #fbbf24, #fde68a, #f59e0b)",
+  };
+  if (max <= 15) return {
+    bg: "from-blue-400/[0.12] to-cyan-300/[0.06]",
+    border: "border-blue-300/[0.18]",
+    iconBg: "bg-blue-400/[0.15]",
+    minColor: "text-blue-200/80",
+    maxColor: "text-blue-300/80",
+    barGradient: "linear-gradient(to right, #60a5fa, #93c5fd, #3b82f6)",
+  };
+  if (max <= 22) return {
+    bg: "from-teal-400/[0.10] to-emerald-300/[0.05]",
+    border: "border-teal-300/[0.15]",
+    iconBg: "bg-teal-400/[0.12]",
+    minColor: "text-teal-200/80",
+    maxColor: "text-teal-300/80",
+    barGradient: "linear-gradient(to right, #2dd4bf, #6ee7b7, #14b8a6)",
+  };
+  return {
+    bg: "from-slate-300/[0.08] to-white/[0.04]",
+    border: "border-white/[0.10]",
+    iconBg: "bg-white/[0.08]",
+    minColor: "text-slate-300/80",
+    maxColor: "text-slate-200/80",
+    barGradient: "linear-gradient(to right, #94a3b8, #e2e8f0, #64748b)",
+  };
 }
 
 function MuralContent() {
@@ -48,7 +195,7 @@ function MuralContent() {
 
   const fetchMurais = useCallback(async () => {
     try {
-      const res = await fetch(`/api/mural/ativos?t=${Date.now()}`);
+      const res = await fetch(`/api/mural/ativos`);
       if (!res.ok) throw new Error("Erro ao buscar murais");
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -95,7 +242,6 @@ function MuralContent() {
 
   useEffect(() => {
     if (!isLiberado) return;
-    fetchMurais();
 
     // Conexão WebSocket para atualização em tempo real
     const socket = io(NEXT_WS_URL, {
@@ -173,7 +319,7 @@ function MuralContent() {
       };
     }
 
-    const duration = 12000;
+    const duration = 18000;
 
     timerRef.current = setTimeout(() => {
       setIndex((prev) => (prev + 1) % murais.length);
@@ -358,103 +504,181 @@ function MuralContent() {
               )}
             </div>
           ) : current.LAYOUTTYPE === "WEATHER" ? (
-            <div className="w-full h-full flex flex-col justify-between p-12 bg-gradient-to-br from-[#0c3e25] via-[#135133] to-[#0a2918] text-white">
-              {/* Header */}
-              <div className="flex justify-between items-center border-b border-white/10 pb-6">
-                <div>
-                  <h1 className="text-4xl font-extrabold tracking-wider text-white/95">PREVISÃO DO TEMPO</h1>
-                  <p className="text-xl text-[#a2d43e] font-semibold">CMSO — Unidade {unidade}</p>
+            <div className="w-full h-full flex flex-col justify-between p-[3vw] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white">
+              {/* Header compacto */}
+              <div className="flex justify-between items-center pb-[1.5vw] border-b border-white/10">
+                <div className="flex items-center gap-[1vw]">
+                  <Clock size={28} className="text-white/40" />
+                  <div>
+                    <div className="text-[2.2vw] font-bold tracking-tight">
+                      {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                    </div>
+                    <div className="text-[1vw] text-white/35">
+                      {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-3xl font-bold tracking-tight">
-                    {new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-                  </div>
-                  <div className="text-base text-white/60">
-                    {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
-                  </div>
+                <div className="text-center">
+                  <h1 className="text-[2.5vw] font-extrabold tracking-wider text-white/95">PREVISÃO DO TEMPO</h1>
+                </div>
+                <div className="flex items-center gap-[0.5vw]">
+                  <MapPin size={20} className="text-white/40" />
+                  <span className="text-[1.1vw] text-white/50 font-medium">Unidade {unidade}</span>
                 </div>
               </div>
 
               {/* Main Content */}
               {weatherData ? (
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-12 items-center py-8">
+                <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-[4vw] items-center py-[2vw]">
                   {/* Left: Temp atual & Info */}
-                  <div className="lg:col-span-3 flex flex-col justify-center space-y-8">
-                    <div className="flex items-center gap-10">
-                      {/* Icon switcher */}
-                      <div className="w-28 h-28 rounded-3xl bg-white/5 flex items-center justify-center text-yellow-400">
-                        {weatherData.condition_slug === "rain" || weatherData.condition_slug === "storm" ? (
-                          <CloudRain size={72} className="text-blue-300 animate-pulse" />
-                        ) : weatherData.condition_slug === "cloud" || weatherData.condition_slug === "cloudly" ? (
-                          <Cloud size={72} className="text-gray-200 animate-pulse" />
-                        ) : (
-                          <Sun size={72} className="text-[#a2d43e] animate-pulse" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="text-9xl font-black tracking-tighter flex items-start">
-                          {weatherData.temp}
-                          <span className="text-5xl font-normal text-white/70">°C</span>
+                  <div className="lg:col-span-3 flex flex-col justify-center space-y-[2vw]">
+                    {/* Temperatura principal */}
+                    <motion.div
+                      className="backdrop-blur-xl bg-white/[0.07] rounded-[2vw] border border-white/[0.12] p-[3vw] shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
+                      initial={{ scale: 0.9, opacity: 0 }}
+                      animate={{ scale: 1, opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <div className="flex items-center gap-[3vw]">
+                        <div className="w-[8vw] h-[8vw] rounded-[1.5vw] bg-white/[0.08] flex items-center justify-center shadow-inner">
+                          <WeatherMainIcon condition={weatherData.description} size={56} />
                         </div>
-                        <div className="text-3xl font-bold capitalize text-white/90">
-                          {weatherData.description}
+                        <div>
+                          <div className="text-[8vw] font-black leading-none tracking-tighter">
+                            {weatherData.temp}
+                            <span className="text-[3vw] font-normal text-white/40 align-top ml-1">°C</span>
+                          </div>
+                          <div className="text-[1.8vw] font-bold capitalize text-white/80 mt-[0.5vw]">
+                            {weatherData.description}
+                          </div>
                         </div>
                       </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Extra specs (Aumentado para melhor leitura) */}
-                    <div className="grid grid-cols-2 gap-6 w-full max-w-lg bg-white/5 p-6 rounded-3xl border border-white/10">
-                      <div className="flex items-center gap-4">
-                        <Droplets className="text-[#a2d43e]" size={32} />
-                        <div>
-                          <div className="text-sm text-white/60">Umidade</div>
-                          <div className="text-2xl font-black">{weatherData.humidity}%</div>
+                    {/* Cards de info */}
+                    <div className="grid grid-cols-2 gap-[1.5vw]">
+                      {/* Umidade */}
+                      <motion.div
+                        className="backdrop-blur-xl bg-white/[0.06] rounded-[1.5vw] border border-white/[0.1] p-[1.8vw] shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+                        initial={{ x: -30, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                      >
+                        <div className="flex items-center gap-[1.2vw]">
+                          <div className="w-[3vw] h-[3vw] rounded-[0.8vw] bg-white/[0.08] flex items-center justify-center">
+                            <Droplets className="text-blue-400/80" size={24} />
+                          </div>
+                          <div>
+                            <div className="text-[0.85vw] text-white/40 uppercase tracking-wider font-medium">Umidade</div>
+                            <div className="text-[2.2vw] font-black text-white">{weatherData.humidity}%</div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Wind className="text-[#a2d43e]" size={32} />
-                        <div>
-                          <div className="text-sm text-white/60">Vento</div>
-                          <div className="text-2xl font-black">{weatherData.wind_speedy}</div>
+                        <div className="mt-[1vw] h-[0.6vw] bg-white/[0.08] rounded-full overflow-hidden">
+                          <motion.div
+                            className="h-full bg-gradient-to-r from-blue-500/80 to-blue-400/60 rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${weatherData.humidity}%` }}
+                            transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
+                          />
                         </div>
-                      </div>
+                      </motion.div>
+
+                      {/* Vento */}
+                      <motion.div
+                        className="backdrop-blur-xl bg-white/[0.06] rounded-[1.5vw] border border-white/[0.1] p-[1.8vw] shadow-[0_4px_16px_rgba(0,0,0,0.25)]"
+                        initial={{ x: 30, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <div className="flex items-center gap-[1.2vw]">
+                          <div className="w-[3vw] h-[3vw] rounded-[0.8vw] bg-white/[0.08] flex items-center justify-center">
+                            <Wind className="text-white/60" size={24} />
+                          </div>
+                          <div>
+                            <div className="text-[0.85vw] text-white/40 uppercase tracking-wider font-medium">Vento</div>
+                            <div className="text-[2.2vw] font-black text-white">{weatherData.wind_speedy}</div>
+                          </div>
+                        </div>
+                        <div className="mt-[1vw] text-[0.8vw] text-white/35">
+                          {Number(weatherData.wind_speedy) <= 5 ? "Brisa leve" : Number(weatherData.wind_speedy) <= 20 ? "Vento moderado" : "Vento forte"}
+                        </div>
+                      </motion.div>
                     </div>
                   </div>
 
-                  {/* Right: Próximos 3 dias (Aumentado para melhor leitura) */}
-                  <div className="lg:col-span-2 flex flex-col justify-center space-y-6">
-                    <h2 className="text-2xl font-black tracking-wider text-[#a2d43e] flex items-center gap-3">
-                      <Calendar size={24} />
-                      PREVISÃO
-                    </h2>
-                    <div className="space-y-4">
-                      {weatherData.forecast && weatherData.forecast.slice(1, 4).map((day: any, i: number) => (
-                        <div key={i} className="flex justify-between items-center bg-white/5 hover:bg-white/10 transition-colors p-6 rounded-2xl border border-white/5">
-                          <div>
-                            <div className="font-extrabold text-lg capitalize">{day.weekday} ({day.date})</div>
-                            <div className="text-base text-white/60">{day.description}</div>
-                          </div>
-                          <div className="text-right flex flex-col items-end">
-                            <div className="text-xl font-black text-red-300">{day.max}° <span className="text-xs text-white/50 font-normal">MÁX</span></div>
-                            <div className="text-base font-bold text-blue-300">{day.min}° <span className="text-xs text-white/50 font-normal">MÍN</span></div>
-                          </div>
-                        </div>
-                      ))}
+                  {/* Right: Próximos 3 dias */}
+                  <div className="lg:col-span-2 flex flex-col justify-center space-y-[1.5vw]">
+                    <motion.h2
+                      className="text-[1.3vw] font-bold tracking-wider text-white/60 flex items-center gap-[0.6vw] uppercase"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      <Calendar size={22} />
+                      Previsão 3 Dias
+                    </motion.h2>
+                    <div className="space-y-[1vw]">
+                      {weatherData.forecast && weatherData.forecast.slice(1, 4).map((day: any, i: number) => {
+                        const colors = getForecastColors(day.description, day.max);
+                        return (
+                          <motion.div
+                            key={i}
+                            className={`backdrop-blur-xl bg-gradient-to-br ${colors.bg} rounded-[1.5vw] border ${colors.border} p-[1.5vw] shadow-[0_4px_16px_rgba(0,0,0,0.2)] hover:brightness-110 transition-all duration-300`}
+                            initial={{ x: 50, opacity: 0 }}
+                            animate={{ x: 0, opacity: 1 }}
+                            transition={{ delay: 0.3 + i * 0.12 }}
+                          >
+                            <div className="flex items-center gap-[1.2vw]">
+                              <div className={`w-[2.5vw] h-[2.5vw] rounded-[0.6vw] ${colors.iconBg} flex items-center justify-center flex-shrink-0`}>
+                                <ForecastIcon condition={day.description} size={18} />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-baseline gap-[0.6vw]">
+                                  <span className="text-[1.3vw] font-bold text-white">{day.weekday?.substring(0, 3).toUpperCase()}</span>
+                                  <span className="text-[0.75vw] text-white/35">{day.date}</span>
+                                </div>
+                                <div className="text-[0.8vw] text-white/40 capitalize truncate">{day.description}</div>
+                              </div>
+                            </div>
+                            {/* Barra visual de temperatura */}
+                            <div className="mt-[0.8vw] flex items-center gap-[0.8vw]">
+                              <span className={`text-[1vw] font-bold ${colors.minColor} w-[2.5vw] text-right`}>{day.min}°</span>
+                              <div className="flex-1 h-[0.6vw] bg-white/[0.08] rounded-full overflow-hidden relative">
+                                <motion.div
+                                  className="absolute h-full rounded-full"
+                                  style={{
+                                    background: colors.barGradient,
+                                    left: `${Math.max(0, ((day.min - 5) / 40) * 100)}%`,
+                                    width: `${Math.min(100, ((day.max - day.min) / 40) * 100)}%`,
+                                  }}
+                                  initial={{ scaleX: 0, transformOrigin: "left" }}
+                                  animate={{ scaleX: 1 }}
+                                  transition={{ duration: 0.8, delay: 0.5 + i * 0.15 }}
+                                />
+                              </div>
+                              <span className={`text-[1vw] font-bold ${colors.maxColor} w-[2.5vw]`}>{day.max}°</span>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
               ) : (
                 <div className="flex-1 flex items-center justify-center">
-                  <div className="flex flex-col items-center gap-3 text-white/60">
-                    <Thermometer className="animate-bounce text-[#a2d43e]" size={56} />
-                    <span className="text-lg">Carregando previsão do tempo...</span>
+                  <div className="flex flex-col items-center gap-[1.5vw] text-white/50">
+                    <motion.div animate={{ rotate: [0, 10, -10, 0] }} transition={{ duration: 2, repeat: Infinity }}>
+                      <Thermometer className="text-white/30" size={56} />
+                    </motion.div>
+                    <span className="text-[1.3vw]">Carregando previsão do tempo...</span>
                   </div>
                 </div>
               )}
 
               {/* Footer */}
-              <div className="text-center border-t border-white/10 pt-4 text-xs text-white/30 font-medium">
-                CMSO Ocupacional · Todos os direitos reservados
+              <div className="text-center pt-[1vw]">
+                <div className="h-px bg-gradient-to-r from-transparent via-white/10 to-transparent mb-[0.8vw]" />
+                <span className="text-[0.7vw] text-white/20 font-medium">CMSO Ocupacional · Todos os direitos reservados</span>
               </div>
             </div>
           ) : (
