@@ -418,11 +418,11 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                     role="menu"
                     transition={{ duration: 0.2 }}
                   >
-                    <div className="border-b border-gray-100 px-4 py-3">
-                      <p className="text-sm font-semibold text-gray-900">
+                    <div className={`px-4 py-3 ${getAvatarColor(user?.perfil ?? "")} rounded-t-xl`}>
+                      <p className="text-sm font-semibold text-white">
                         {user?.nome}
                       </p>
-                      <p className="text-xs text-gray-500">{user?.perfil}</p>
+                      <p className="text-xs text-white/80">{user?.perfil}</p>
                     </div>
 
                     <div className="grid grid-cols-4 gap-1 border-b border-gray-100 px-4 py-3">
