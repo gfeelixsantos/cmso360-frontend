@@ -1,3 +1,5 @@
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+
 import React from "react";
 import { Card, Badge } from "@heroui/react";
 import { Socket } from "socket.io-client";
@@ -7,8 +9,6 @@ import AtendimentoCard from "./AtendimentoCard";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
 
-import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
-
 interface SenhasSectionProps {
   title: string;
   senhas: Scheduling[];
@@ -17,7 +17,10 @@ interface SenhasSectionProps {
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
+  onHandleModal: (
+    atendimento: Scheduling,
+    modalType: "exams" | "ticket",
+  ) => void;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
   exameSelecionado: string;
   pendingActions: Record<
@@ -49,6 +52,13 @@ const getSectionStyle = (
       icon: <Users className="w-4 h-4" />,
       color: "text-warning",
       bgColor: "bg-warning-100",
+    };
+  }
+  if (lowerTitle.includes("agendados")) {
+    return {
+      icon: <ClipboardList className="w-4 h-4" />,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
     };
   }
   if (lowerTitle.includes("prioridade") || lowerTitle.includes("prefixo")) {
@@ -174,15 +184,15 @@ const AtendimentoSection: React.FC<SenhasSectionProps> = ({
                 key={key}
                 atendimento={atendimento}
                 exameSelecionado={exameSelecionado}
+                examesGrouped={examesGrouped}
                 salaSelecionada={salaSelecionada}
                 socket={socket}
+                startPendingAction={startPendingAction}
                 unidadeSelecionada={unidadeSelecionada}
                 onHandleModal={onHandleModal}
-                startPendingAction={startPendingAction}
                 onIniciarAutenticacao={onIniciarAutenticacao}
                 onIniciarTeleatendimento={onIniciarTeleatendimento}
                 onViewRelatorio={onViewRelatorio}
-                examesGrouped={examesGrouped}
               />
             </div>
           );

@@ -1,4 +1,6 @@
-import React, { useState, useMemo, useEffect } from "react";
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+
+import React, { useState, useMemo } from "react";
 import {
   Card,
   Button,
@@ -13,10 +15,6 @@ import {
   TableRow,
   TableCell,
   Chip,
-  Dropdown,
-  DropdownItem,
-  DropdownMenu,
-  DropdownTrigger,
 } from "@heroui/react";
 import {
   Clock,
@@ -35,10 +33,7 @@ import {
   Paperclip,
   Fingerprint,
   Camera,
-  Monitor,
   Globe,
-  ShieldCheck,
-  Wrench,
 } from "lucide-react";
 import { Socket } from "socket.io-client";
 
@@ -50,7 +45,6 @@ import {
   Scheduling,
   ExamRegister,
 } from "@/lib/scheduling/interface/scheduling";
-import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-context";
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import { useSchedulingEntityManager } from "@/hooks/SchedulingEntityManager";
@@ -61,7 +55,10 @@ interface AtendimentoCardProps {
   salaSelecionada: string;
   unidadeSelecionada: string;
   socket: Socket;
-  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
+  onHandleModal: (
+    atendimento: Scheduling,
+    modalType: "exams" | "ticket",
+  ) => void;
   startPendingAction: (ticketId: number, action: string) => void;
   onIniciarTeleatendimento?: (atendimento: Scheduling) => void;
   onIniciarAutenticacao?: (
@@ -135,8 +132,10 @@ const calcularIdade = (dataNascimento: string | null): string => {
 const getAvatarColor = (ticket: Ticket): string => {
   if (ticket.preferencial) {
     return "bg-gradient-to-br from-red-500 to-red-600"; // Vermelho para preferencial
+  } else if (ticket.prefixo?.trim().toUpperCase() === "C") {
+    return "bg-gradient-to-br from-orange-500 to-orange-600"; // Laranja para prefixo C (Agendados)
   } else if (ticket.prefixo && ticket.prefixo.trim() !== "") {
-    return "bg-gradient-to-br from-blue-500 to-blue-600"; // Azul para prefixo
+    return "bg-gradient-to-br from-blue-500 to-blue-600"; // Azul para outros prefixos (Prioridade)
   } else {
     return "bg-gradient-to-br from-green-500 to-green-600"; // Verde para normal
   }
@@ -176,7 +175,7 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
         <span className="text-lg">{ticketNumber}</span>
       </div>
       <div>
-        {atendimento.TICKET.preferencialTipo && (
+        {atendimento.TICKET.preferencial && atendimento.TICKET.preferencialTipo && (
           <div className={`text-xs text-red-600 font-bold`}>
             {atendimento.TICKET.preferencialTipo}
           </div>
@@ -186,7 +185,9 @@ const EmployeeAvatar: React.FC<{ atendimento: Scheduling }> = ({
   );
 };
 
-type BiometriaStatusType = NonNullable<NonNullable<Scheduling["ASOINFO"]>["BIOMETRIA"]>["status"];
+type BiometriaStatusType = NonNullable<
+  NonNullable<Scheduling["ASOINFO"]>["BIOMETRIA"]
+>["status"];
 
 const BiometriaIndicator = ({ status }: { status: BiometriaStatusType }) => {
   const configs = {
@@ -220,9 +221,13 @@ const BiometriaIndicator = ({ status }: { status: BiometriaStatusType }) => {
 
   return (
     <Tooltip color="foreground" content={config.label} placement="top">
-      <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bg} ${config.color} border border-current/20`}>
+      <div
+        className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${config.bg} ${config.color} border border-current/20`}
+      >
         {config.icon}
-        <span className="text-[10px] font-bold uppercase tracking-wider">{status === 'nao_cadastrado' ? 'NÃO CAD' : status.replace('_', ' ')}</span>
+        <span className="text-[10px] font-bold uppercase tracking-wider">
+          {status === "nao_cadastrado" ? "NÃO CAD" : status.replace("_", " ")}
+        </span>
       </div>
     </Tooltip>
   );
@@ -254,7 +259,9 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
           )}
 
           <div className="flex items-center gap-1">
-            <span className="truncate" title={atendimento.NOMECARGO}>{atendimento.NOMECARGO}</span>
+            <span className="truncate" title={atendimento.NOMECARGO}>
+              {atendimento.NOMECARGO}
+            </span>
           </div>
 
           {idade && (
@@ -268,7 +275,10 @@ const EmployeeInfo: React.FC<{ atendimento: Scheduling }> = ({
         </div>
 
         <div className="flex items-center gap-1 text-xs text-gray-600 overflow-hidden mt-1">
-          <span className="truncate block max-w-full" title={atendimento.NOMEEMPRESA}>
+          <span
+            className="truncate block max-w-full"
+            title={atendimento.NOMEEMPRESA}
+          >
             {atendimento.NOMEEMPRESA}
           </span>
         </div>
@@ -330,13 +340,16 @@ const getExamNameByCode = (
     }
   }
 
-  for (const [categoriaName, exames] of Object.entries(FALLBACK_EXAMES_GROUPED)) {
+  for (const [categoriaName, exames] of Object.entries(
+    FALLBACK_EXAMES_GROUPED,
+  )) {
     for (const exame of exames) {
       if (exame.codigos.includes(codigoExame)) {
         return exame.nome || categoriaName;
       }
     }
   }
+
   return codigoExame;
 };
 
@@ -370,19 +383,47 @@ const shouldShowCompletedTime = (exame: ExamRegister): boolean => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case "AGENDADO":
-      return { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" };
+      return {
+        bg: "bg-blue-50",
+        text: "text-blue-700",
+        border: "border-blue-200",
+      };
     case "REALIZADO":
-      return { bg: "bg-green-50", text: "text-green-700", border: "border-green-200" };
+      return {
+        bg: "bg-green-50",
+        text: "text-green-700",
+        border: "border-green-200",
+      };
     case "EM ANDAMENTO":
-      return { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" };
+      return {
+        bg: "bg-amber-50",
+        text: "text-amber-700",
+        border: "border-amber-200",
+      };
     case "CANCELADO":
-      return { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" };
+      return {
+        bg: "bg-red-50",
+        text: "text-red-700",
+        border: "border-red-200",
+      };
     case "FINALIZADO":
-      return { bg: "bg-purple-50", text: "text-purple-700", border: "border-purple-200" };
+      return {
+        bg: "bg-purple-50",
+        text: "text-purple-700",
+        border: "border-purple-200",
+      };
     case "PENDENTE":
-      return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200" };
+      return {
+        bg: "bg-gray-50",
+        text: "text-gray-700",
+        border: "border-gray-200",
+      };
     default:
-      return { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200" };
+      return {
+        bg: "bg-gray-50",
+        text: "text-gray-700",
+        border: "border-gray-200",
+      };
   }
 };
 
@@ -421,7 +462,11 @@ const ExamDetails: React.FC<{
 
   const formatDateCompact = (d?: string) => {
     if (!d) return "";
-    try { return new Date(d).toLocaleDateString("pt-BR"); } catch { return ""; }
+    try {
+      return new Date(d).toLocaleDateString("pt-BR");
+    } catch {
+      return "";
+    }
   };
 
   const handleViewResult = (url: string | undefined, exame?: ExamRegister) => {
@@ -429,13 +474,14 @@ const ExamDetails: React.FC<{
     const displayName =
       exame && employeeNome
         ? buildDocFilename([
-            'CMSO_RESULTADO',
-            exame.nomeExame || exame.codigoExame || 'EXAME',
+            "CMSO_RESULTADO",
+            exame.nomeExame || exame.codigoExame || "EXAME",
             employeeNome,
             formatDateCompact(exame.dataExame),
           ])
         : undefined;
     const viewerUrl = buildViewerUrl(url, displayName);
+
     if (viewerUrl) {
       window.open(viewerUrl, "_blank", "noopener,noreferrer");
     }
@@ -475,10 +521,15 @@ const ExamDetails: React.FC<{
                 : "";
 
               return (
-                <TableRow key={exame.codigoExame || index.toString()} className="hover:bg-gray-50 transition-colors">
+                <TableRow
+                  key={exame.codigoExame || index.toString()}
+                  className="hover:bg-gray-50 transition-colors"
+                >
                   <TableCell>
                     <div className="flex flex-col">
-                      <span className="font-medium text-xs text-gray-900">{examName}</span>
+                      <span className="font-medium text-xs text-gray-900">
+                        {examName}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -497,7 +548,9 @@ const ExamDetails: React.FC<{
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1 justify-left whitespace-nowrap">
-                      <span className="text-xs text-gray-700">{exame.sala || "-"}</span>
+                      <span className="text-xs text-gray-700">
+                        {exame.sala || "-"}
+                      </span>
                     </div>
                   </TableCell>
                   <TableCell>
@@ -514,7 +567,11 @@ const ExamDetails: React.FC<{
                   <TableCell>
                     <div className="flex justify-center">
                       {exame.url ? (
-                        <Tooltip color="foreground" content="Visualizar resultado" placement="top">
+                        <Tooltip
+                          color="foreground"
+                          content="Visualizar resultado"
+                          placement="top"
+                        >
                           <Button
                             className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 min-w-20"
                             size="sm"
@@ -551,28 +608,43 @@ const ExamDetails: React.FC<{
             : "";
 
           return (
-            <div key={exame.codigoExame || index.toString()} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div
+              key={exame.codigoExame || index.toString()}
+              className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+            >
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <div className="col-span-2">
-                  <span className="font-semibold text-gray-900">{examName}</span>
+                  <span className="font-semibold text-gray-900">
+                    {examName}
+                  </span>
                 </div>
                 <div className="col-span-2">
-                  <Badge className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`} size="sm" variant="flat">
+                  <Badge
+                    className={`${statusColors.bg} ${statusColors.text} border-0 text-xs font-medium`}
+                    size="sm"
+                    variant="flat"
+                  >
                     {exame.status ?? "-"}
                   </Badge>
                 </div>
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs">{exame.profissional || "Não atribuído"}</span>
+                  <span className="text-xs">
+                    {exame.profissional || "Não atribuído"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-1">
                   <MapPin className="h-3 w-3 text-gray-400" />
-                  <span className="text-xs">{exame.sala || "Não definida"}</span>
+                  <span className="text-xs">
+                    {exame.sala || "Não definida"}
+                  </span>
                 </div>
                 {formattedTime && (
                   <div className="col-span-2 flex items-center gap-1 pt-1 border-t border-gray-200 mt-1">
                     <Calendar className="h-3 w-3 text-gray-400" />
-                    <span className="text-xs text-gray-600">{formattedTime}</span>
+                    <span className="text-xs text-gray-600">
+                      {formattedTime}
+                    </span>
                   </div>
                 )}
                 <div className="col-span-2 flex justify-center pt-2">
@@ -603,16 +675,20 @@ const ExamDetails: React.FC<{
 };
 
 // Componente para anexos do atendimento
-const Anexos: React.FC<{ anexos: any[]; employeeNome?: string }> = ({ anexos, employeeNome }) => {
+const Anexos: React.FC<{ anexos: any[]; employeeNome?: string }> = ({
+  anexos,
+  employeeNome,
+}) => {
   if (!anexos || anexos.length === 0) return null;
 
   const handleOpenAnexo = (url: string, nome: string) => {
-    const ext = nome.match(/\.[^.]+$/)?.[0] || '.pdf';
-    const base = nome.replace(/\.[^.]+$/, '');
+    const ext = nome.match(/\.[^.]+$/)?.[0] || ".pdf";
+    const base = nome.replace(/\.[^.]+$/, "");
     const displayName = employeeNome
-      ? buildDocFilename(['CMSO_ANEXO', employeeNome, base], ext)
-      : buildDocFilename(['CMSO_ANEXO', base], ext);
+      ? buildDocFilename(["CMSO_ANEXO", employeeNome, base], ext)
+      : buildDocFilename(["CMSO_ANEXO", base], ext);
     const viewerUrl = buildViewerUrl(url, displayName);
+
     if (viewerUrl) {
       window.open(viewerUrl, "_blank", "noopener,noreferrer");
     }
@@ -637,7 +713,9 @@ const Anexos: React.FC<{ anexos: any[]; employeeNome?: string }> = ({ anexos, em
 };
 
 // Componente para observações e anotações (sempre visível)
-const Observations: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) => {
+const Observations: React.FC<{ atendimento: Scheduling }> = ({
+  atendimento,
+}) => {
   const hasObservations = atendimento.ANOTACOES || atendimento.OBSERVACOES;
 
   if (!hasObservations) return null;
@@ -648,14 +726,22 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) =>
         <div className="space-y-2 text-xs text-gray-700">
           {atendimento.ANOTACOES && (
             <div>
-              <span className="font-medium block text-xs text-yellow-800 mb-1">Anotações internas:</span>
-              <p className="text-xs whitespace-pre-line">{atendimento.ANOTACOES}</p>
+              <span className="font-medium block text-xs text-yellow-800 mb-1">
+                Anotações internas:
+              </span>
+              <p className="text-xs whitespace-pre-line">
+                {atendimento.ANOTACOES}
+              </p>
             </div>
           )}
           {atendimento.OBSERVACOES && (
             <div>
-              <span className="font-medium block text-xs text-yellow-800 mb-1">Observações cliente:</span>
-              <p className="text-xs whitespace-pre-line">{atendimento.OBSERVACOES}</p>
+              <span className="font-medium block text-xs text-yellow-800 mb-1">
+                Observações cliente:
+              </span>
+              <p className="text-xs whitespace-pre-line">
+                {atendimento.OBSERVACOES}
+              </p>
             </div>
           )}
         </div>
@@ -668,25 +754,66 @@ const Observations: React.FC<{ atendimento: Scheduling }> = ({ atendimento }) =>
 const getStatusVisual = (status: string) => {
   switch (status) {
     case TicketStatus.AGUARDANDO:
-      return { cardBg: "bg-white", border: "border-2 border-green-500", hoverBg: "hover:bg-green-50", textColor: "text-gray-900", pillBg: "bg-green-500 text-white" };
+      return {
+        cardBg: "bg-white",
+        border: "border-2 border-green-500",
+        hoverBg: "hover:bg-green-50",
+        textColor: "text-gray-900",
+        pillBg: "bg-green-500 text-white",
+      };
     case TicketStatus.EM_CHAMADA:
-      return { cardBg: "bg-amber-50", border: "border-2 border-amber-500", hoverBg: "hover:bg-amber-100", textColor: "text-gray-900", pillBg: "bg-amber-500 text-white" };
+      return {
+        cardBg: "bg-amber-50",
+        border: "border-2 border-amber-500",
+        hoverBg: "hover:bg-amber-100",
+        textColor: "text-gray-900",
+        pillBg: "bg-amber-500 text-white",
+      };
     case TicketStatus.EM_ATENDIMENTO:
-      return { cardBg: "bg-red-50", border: "border-2 border-red-500", hoverBg: "hover:bg-red-100", textColor: "text-gray-900", pillBg: "bg-red-500 text-white" };
+      return {
+        cardBg: "bg-red-50",
+        border: "border-2 border-red-500",
+        hoverBg: "hover:bg-red-100",
+        textColor: "text-gray-900",
+        pillBg: "bg-red-500 text-white",
+      };
     case TicketStatus.EM_PREPARACAO:
     case TicketStatus.ENCAMINHADO_RX:
-      return { cardBg: "bg-blue-100", border: "border-2 border-blue-400", hoverBg: "hover:bg-blue-200", textColor: "text-blue-500", pillBg: "bg-blue-400 text-white" };
+      return {
+        cardBg: "bg-blue-100",
+        border: "border-2 border-blue-400",
+        hoverBg: "hover:bg-blue-200",
+        textColor: "text-blue-500",
+        pillBg: "bg-blue-400 text-white",
+      };
     case TicketStatus.FINALIZADO:
-      return { cardBg: "bg-gray-100", border: "border-2 border-gray-400", hoverBg: "hover:bg-gray-200", textColor: "text-gray-500", pillBg: "bg-gray-400 text-white" };
+      return {
+        cardBg: "bg-gray-100",
+        border: "border-2 border-gray-400",
+        hoverBg: "hover:bg-gray-200",
+        textColor: "text-gray-500",
+        pillBg: "bg-gray-400 text-white",
+      };
     default:
-      return { cardBg: "bg-white", border: "border-2 border-gray-200", hoverBg: "hover:bg-gray-100", textColor: "text-gray-900", pillBg: "bg-gray-300 text-gray-700" };
+      return {
+        cardBg: "bg-white",
+        border: "border-2 border-gray-200",
+        hoverBg: "hover:bg-gray-100",
+        textColor: "text-gray-900",
+        pillBg: "bg-gray-300 text-gray-700",
+      };
   }
 };
 
 // Badge de status com spinner para estados ativos
-const StatusBadge: React.FC<{ status: string; pillBg: string }> = ({ status, pillBg }) => {
+const StatusBadge: React.FC<{ status: string; pillBg: string }> = ({
+  status,
+  pillBg,
+}) => {
   return (
-    <div className={`flex items-center gap-1 px-3 py-1 rounded-full ${pillBg} shadow-sm`}>
+    <div
+      className={`flex items-center gap-1 px-3 py-1 rounded-full ${pillBg} shadow-sm`}
+    >
       {(status === TicketStatus.EM_PREPARACAO ||
         status === TicketStatus.ENCAMINHADO_RX ||
         status === TicketStatus.EM_CHAMADA ||
@@ -705,7 +832,10 @@ const TicketActions: React.FC<{
   unidadeSelecionada: string;
   socket: Socket;
   atendimento: Scheduling;
-  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
+  onHandleModal: (
+    atendimento: Scheduling,
+    modalType: "exams" | "ticket",
+  ) => void;
   exameSelecionado: string;
   startPendingAction: (ticketId: number, action: string) => void;
   onIniciarAutenticacao?: (
@@ -726,10 +856,16 @@ const TicketActions: React.FC<{
   onViewRelatorio,
 }) => {
   const { executarAtendimentoAcao } = useSchedulingEntityManager([]);
-  const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>({});
+  const [firstClickMap, setFirstClickMap] = useState<Record<number, boolean>>(
+    {},
+  );
 
-  const handleExecutarAcao = (atendimento: Scheduling, action: TicketActionType) => {
+  const handleExecutarAcao = (
+    atendimento: Scheduling,
+    action: TicketActionType,
+  ) => {
     const currentUser = getCurrentUser();
+
     startPendingAction(ticket.id, action);
     executarAtendimentoAcao(
       atendimento._id,
@@ -744,20 +880,34 @@ const TicketActions: React.FC<{
     );
   };
 
-  const handleAtender = (ticket: Ticket, action: TicketActionType, funcionario: Scheduling) => {
+  const handleAtender = (
+    ticket: Ticket,
+    action: TicketActionType,
+    funcionario: Scheduling,
+  ) => {
     const currentUser = getCurrentUser();
-    if (ticket.status === TicketStatus.EM_ATENDIMENTO && firstClickMap[ticket.id]) {
+
+    if (
+      ticket.status === TicketStatus.EM_ATENDIMENTO &&
+      firstClickMap[ticket.id]
+    ) {
       onHandleModal(funcionario, "exams");
       setFirstClickMap((prev) => {
         const updated = { ...prev };
+
         delete updated[ticket.id];
+
         return updated;
       });
+
       return;
     }
 
     startPendingAction(ticket.id, action);
-    if (!firstClickMap[ticket.id] || ticket.status !== TicketStatus.EM_ATENDIMENTO) {
+    if (
+      !firstClickMap[ticket.id] ||
+      ticket.status !== TicketStatus.EM_ATENDIMENTO
+    ) {
       executarAtendimentoAcao(
         atendimento._id,
         ticket.id,
@@ -772,19 +922,33 @@ const TicketActions: React.FC<{
     }
   };
 
-  const handleRetornar = (atendimento: Scheduling, action: TicketActionType) => {
+  const handleRetornar = (
+    atendimento: Scheduling,
+    action: TicketActionType,
+  ) => {
     setFirstClickMap((prev) => {
       const updated = { ...prev };
+
       delete updated[ticket.id];
+
       return updated;
     });
     startPendingAction(ticket.id, action);
-    return executarAtendimentoAcao(atendimento._id, ticket.id, action, unidadeSelecionada, socket);
+
+    return executarAtendimentoAcao(
+      atendimento._id,
+      ticket.id,
+      action,
+      unidadeSelecionada,
+      socket,
+    );
   };
 
   const handleDisabledStatus = (ticket: Ticket) => {
     const currentUser = getCurrentUser();
+
     if (ticket.status === TicketStatus.FINALIZADO) return true;
+
     return belongsToOtherOperationalContext(ticket, {
       sala: salaSelecionada,
       profissional: currentUser?.nome,
@@ -796,7 +960,11 @@ const TicketActions: React.FC<{
   const isAuthenticated = authInfo?.status === "VALIDADO";
 
   return (
-    <div aria-label="Ações do ticket" className="flex items-center gap-2" role="group">
+    <div
+      aria-label="Ações do ticket"
+      className="flex items-center gap-2"
+      role="group"
+    >
       <Tooltip color="foreground" content="Chamar" placement="bottom">
         <Button
           isIconOnly
@@ -804,7 +972,9 @@ const TicketActions: React.FC<{
           className="min-w-8 h-8 bg-amber-500 hover:bg-amber-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isDisabled}
           size="md"
-          onPress={() => handleExecutarAcao(atendimento, TicketActionType.CHAMAR)}
+          onPress={() =>
+            handleExecutarAcao(atendimento, TicketActionType.CHAMAR)
+          }
         >
           <Phone className="h-4 w-4" />
         </Button>
@@ -817,7 +987,9 @@ const TicketActions: React.FC<{
           className="min-w-8 h-8 bg-red-500 hover:bg-red-600 text-white shadow-lg transition-all disabled:bg-gray-300 disabled:opacity-50"
           disabled={isDisabled}
           size="md"
-          onPress={() => handleAtender(ticket, TicketActionType.ATENDER, atendimento)}
+          onPress={() =>
+            handleAtender(ticket, TicketActionType.ATENDER, atendimento)
+          }
         >
           <FilePlus className="h-4 w-4" />
         </Button>
@@ -912,18 +1084,36 @@ const AtendimentoCard = ({
   examesGrouped,
 }: AtendimentoCardProps) => {
   const [showExamDetails, setShowExamDetails] = useState(false);
-  const { cardBg, border, hoverBg, textColor, pillBg } = getStatusVisual(atendimento.TICKET?.status);
+  const { cardBg, border, hoverBg, textColor, pillBg } = getStatusVisual(
+    atendimento.TICKET?.status,
+  );
   const authInfo = atendimento.AUTENTICACAOATENDIMENTO;
   const isAuthenticated =
     authInfo?.status === "VALIDADO" || authInfo?.metodo === "SOC";
   const authDescriptor = !authInfo?.metodo
     ? null
     : authInfo.metodo === "SOC"
-      ? { label: "SOC", icon: <Globe aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
+      ? {
+          label: "SOC",
+          icon: <Globe aria-hidden="true" className="h-4 w-4 text-gray-400" />,
+        }
       : authInfo.metodo === "BIOMETRIA" && authInfo.status === "VALIDADO"
-        ? { label: "Biometria", icon: <Fingerprint aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
+        ? {
+            label: "Biometria",
+            icon: (
+              <Fingerprint
+                aria-hidden="true"
+                className="h-4 w-4 text-gray-400"
+              />
+            ),
+          }
         : authInfo.metodo === "FACIAL" && authInfo.status === "VALIDADO"
-          ? { label: "Facial", icon: <Camera aria-hidden="true" className="h-4 w-4 text-gray-400" /> }
+          ? {
+              label: "Facial",
+              icon: (
+                <Camera aria-hidden="true" className="h-4 w-4 text-gray-400" />
+              ),
+            }
           : null;
 
   const formatarTempoEspera = (emissao: string | Date) => {
@@ -933,6 +1123,7 @@ const AtendimentoCard = ({
     const minutos = Math.floor(diferencaMs / 1000 / 60);
     const horas = Math.floor(minutos / 60);
     const minutosRestantes = minutos % 60;
+
     return horas > 0 ? `${horas}h ${minutosRestantes}m` : `${minutos}m`;
   };
 
@@ -971,7 +1162,13 @@ const AtendimentoCard = ({
             aria-label={`${showExamDetails ? "Ocultar" : "Mostrar"} detalhes dos exames`}
             className="w-full text-xs"
             color="success"
-            endContent={showExamDetails ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            endContent={
+              showExamDetails ? (
+                <ChevronUp className="h-3 w-3" />
+              ) : (
+                <ChevronDown className="h-3 w-3" />
+              )
+            }
             size="lg"
             variant="light"
             onPress={() => setShowExamDetails(!showExamDetails)}
@@ -980,21 +1177,37 @@ const AtendimentoCard = ({
           </Button>
         )}
 
-        {showExamDetails && <ExamDetails employeeNome={atendimento.NOME} exames={atendimento.EXAMES} examesGrouped={examesGrouped} />}
+        {showExamDetails && (
+          <ExamDetails
+            employeeNome={atendimento.NOME}
+            exames={atendimento.EXAMES}
+            examesGrouped={examesGrouped}
+          />
+        )}
 
-        <div aria-label="Informações adicionais do atendimento" className="space-y-3 pt-4 border-t border-gray-200" role="contentinfo">
+        <div
+          aria-label="Informações adicionais do atendimento"
+          className="space-y-3 pt-4 border-t border-gray-200"
+          role="contentinfo"
+        >
           {atendimento.ANEXOS && atendimento.ANEXOS.length > 0 && (
             <div className="flex gap-2">
               <div className="flex items-center gap-1 text-xs text-gray-500">
                 <Paperclip className="h-3 w-3" />
                 <span className="font-medium">Anexos:</span>
               </div>
-              <Anexos anexos={atendimento.ANEXOS} employeeNome={atendimento.NOME} />
+              <Anexos
+                anexos={atendimento.ANEXOS}
+                employeeNome={atendimento.NOME}
+              />
             </div>
           )}
 
           <div className="flex items-center justify-between">
-            <div aria-label="Detalhes do ticket" className="flex items-center gap-2 text-xs text-gray-500">
+            <div
+              aria-label="Detalhes do ticket"
+              className="flex items-center gap-2 text-xs text-gray-500"
+            >
               <Clock aria-hidden="true" className="h-4 w-4" />
               <span>{formatarTempoEspera(atendimento.TICKET.emissao)}</span>
               <User aria-hidden="true" className="h-4 w-4 text-gray-400" />
@@ -1004,7 +1217,8 @@ const AtendimentoCard = ({
               <Senha aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {Number(atendimento.TICKET.numero) < 0
                 ? "N/A"
-                : (atendimento.TICKET.prefixo || "") + atendimento.TICKET.numero}
+                : (atendimento.TICKET.prefixo || "") +
+                  atendimento.TICKET.numero}
               <Pin aria-hidden="true" className="h-4 w-4 text-gray-400" />
               {atendimento.TICKET.unidade}
               {authDescriptor && (

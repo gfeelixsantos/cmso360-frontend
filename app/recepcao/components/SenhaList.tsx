@@ -14,6 +14,8 @@ interface SenhasListProps {
   senhasOrdenadas: Ticket[];
   /** Lista de senhas preferenciais */
   senhasPreferenciais: Ticket[];
+  /** Lista de senhas agendadas (prefixo "C") */
+  senhasAgendados: Ticket[];
   /** Lista de senhas com prefixo */
   senhasComPrefixo: Ticket[];
   /** Lista de senhas normais */
@@ -67,6 +69,7 @@ const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
 const SenhasList: React.FC<SenhasListProps> = ({
   senhasOrdenadas,
   senhasPreferenciais,
+  senhasAgendados,
   senhasComPrefixo,
   senhasNormais,
   senhasPrepracao,
@@ -86,7 +89,7 @@ const SenhasList: React.FC<SenhasListProps> = ({
   return (
     <section
       aria-label="Lista de senhas organizadas por categoria"
-      className="space-y-6 p-4 bg-gray-50 rounded-lg grid grid-cols-4 gap-4"
+      className="space-y-6 p-4 bg-gray-50 rounded-lg grid grid-cols-5 gap-4"
     >
       <SenhasSection
         agendamentos={agendamentos}
@@ -110,6 +113,19 @@ const SenhasList: React.FC<SenhasListProps> = ({
         setTicketSelecionado={setTicketSelecionado}
         socket={socket}
         title="Prioridade"
+        unidadeSelecionada={unidadeSelecionada}
+        onHandleModal={onHandleModal}
+        onPreparationRequests={onPreparationRequests}
+      />
+      <SenhasSection
+        agendamentos={agendamentos}
+        emptyMessage="Nenhuma"
+        preparacoesFinalizadas={preparacoesFinalizadas}
+        salaSelecionada={salaSelecionada}
+        senhas={senhasAgendados}
+        setTicketSelecionado={setTicketSelecionado}
+        socket={socket}
+        title="Agendados"
         unidadeSelecionada={unidadeSelecionada}
         onHandleModal={onHandleModal}
         onPreparationRequests={onPreparationRequests}

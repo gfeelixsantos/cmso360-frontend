@@ -1,3 +1,5 @@
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+
 import React, { useMemo } from "react";
 import { Socket } from "socket.io-client";
 
@@ -5,7 +7,7 @@ import DisconnectedState from "../../recepcao/components/DisconnectedState";
 
 import AtendimentoList from "./AtendimentoList";
 
-import { TicketGroups, TicketStatus } from "@/lib/ticket/ticket";
+import { TicketGroups } from "@/lib/ticket/ticket";
 import {
   ExamRegister,
   Scheduling,
@@ -14,7 +16,6 @@ import { belongsToOtherOperationalContext } from "@/lib/atendimento/operational-
 import { ExamStatus } from "@/lib/scheduling/enum/scheduling.enum";
 import ContentLoading from "@/app/atendimento/components/ContentLoading";
 import { ESTIMATIVA_EXAMES } from "@/config/constants";
-import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 
 interface MainContentProps {
   conectado: boolean;
@@ -26,7 +27,10 @@ interface MainContentProps {
   unidadeSelecionada: string;
   operationalUserName?: string;
   setFuncionarioSelecionado: (funcionario: Scheduling | null) => void;
-  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
+  onHandleModal: (
+    atendimento: Scheduling,
+    modalType: "exams" | "ticket",
+  ) => void;
   exameSelecionado: string;
   pendingActions: Record<
     number,
@@ -67,7 +71,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     return exames
       .filter((ex) => ex.status !== ExamStatus.FINALIZADO)
       .reduce((total, ex) => {
-        return total + (ESTIMATIVA_EXAMES[ex.grupo ?? ''] ?? 20);
+        return total + (ESTIMATIVA_EXAMES[ex.grupo ?? ""] ?? 20);
       }, 0);
   };
 
@@ -163,18 +167,23 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
     [prontuariosEmAtendimento],
   );
 
-  const [senhasPreferenciais, senhasComPrefixo, senhasNormais] = useMemo(() => {
+  const [senhasPreferenciais, senhasAgendados, senhasComPrefixo, senhasNormais] = useMemo(() => {
     if (!AtendimentosOrdenados || AtendimentosOrdenados.length === 0) {
-      return [[], [], []];
+      return [[], [], [], []];
     }
 
     const preferenciais = AtendimentosOrdenados.filter(
       (s) => s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
     );
 
+    const agendados = AtendimentosOrdenados.filter(
+      (s) =>
+        s.TICKET?.prefixo?.trim().toUpperCase() === "C" && !s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
+    );
+
     const comPrefixo = AtendimentosOrdenados.filter(
       (s) =>
-        s.TICKET?.prefixo && !s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
+        s.TICKET?.prefixo && s.TICKET?.prefixo.trim().toUpperCase() !== "C" && !s.TICKET?.preferencial && naoEstaEmOutrasSalas(s),
     );
 
     const normais = AtendimentosOrdenados.filter(
@@ -184,7 +193,7 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         naoEstaEmOutrasSalas(s),
     );
 
-    return [preferenciais, comPrefixo, normais];
+    return [preferenciais, agendados, comPrefixo, normais];
   }, [AtendimentosOrdenados, naoEstaEmOutrasSalas]);
 
   if (!conectado) {
@@ -225,8 +234,10 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
       <AtendimentoList
         codigosDeAtendimento={codigosDeAtendimento}
         exameSelecionado={exameSelecionado}
+        examesGrouped={examesGrouped}
         pendingActions={pendingActions}
         salaSelecionada={salaSelecionada}
+        senhasAgendados={senhasAgendados}
         senhasComPrefixo={senhasComPrefixo}
         senhasEmAtendimento={atendimentoOutrasSalas}
         senhasNormais={senhasNormais}
@@ -239,7 +250,6 @@ const AtendimentoContent: React.FC<MainContentProps> = ({
         onHandleModal={onHandleModal}
         onIniciarAutenticacao={onIniciarAutenticacao}
         onViewRelatorio={onViewRelatorio}
-        examesGrouped={examesGrouped}
       />
     </main>
   );

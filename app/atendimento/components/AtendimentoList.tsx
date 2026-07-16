@@ -1,3 +1,5 @@
+import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
+
 import React from "react";
 import { Card } from "@heroui/react";
 import { Clock } from "lucide-react";
@@ -7,11 +9,11 @@ import AtendimentoSection from "./AtendimentoSection";
 import AtendimentoCardCompacto from "./AtendimentoCardCompacto";
 
 import { Scheduling } from "@/lib/scheduling/interface/scheduling";
-import type { ExamToogle } from "@/lib/exames/utils/exames-helper";
 
 interface SenhasListProps {
   senhasOrdenadas: Scheduling[];
   senhasPreferenciais: Scheduling[];
+  senhasAgendados: Scheduling[];
   senhasComPrefixo: Scheduling[];
   senhasNormais: Scheduling[];
   senhasEmAtendimento: Scheduling[];
@@ -20,7 +22,10 @@ interface SenhasListProps {
   salaSelecionada: string;
   codigosDeAtendimento: Set<string>;
   unidadeSelecionada: string;
-  onHandleModal: (atendimento: Scheduling, modalType: "exams" | "ticket") => void;
+  onHandleModal: (
+    atendimento: Scheduling,
+    modalType: "exams" | "ticket",
+  ) => void;
   exameSelecionado: string;
   pendingActions: Record<
     number,
@@ -71,6 +76,7 @@ const EmptyState: React.FC<{ buscaSenha?: string }> = ({ buscaSenha }) => (
 const AtendimentoList: React.FC<SenhasListProps> = ({
   senhasOrdenadas,
   senhasPreferenciais,
+  senhasAgendados,
   senhasComPrefixo,
   senhasNormais,
   senhasEmAtendimento,
@@ -92,6 +98,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
   const todasSenhasVazias =
     senhasOrdenadas.length === 0 &&
     senhasPreferenciais.length === 0 &&
+    senhasAgendados.length === 0 &&
     senhasComPrefixo.length === 0 &&
     senhasNormais.length === 0 &&
     senhasEmAtendimento.length === 0;
@@ -121,6 +128,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha preferencial"
               exameSelecionado={exameSelecionado}
+              examesGrouped={examesGrouped}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasPreferenciais}
@@ -133,7 +141,6 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
               onViewRelatorio={onViewRelatorio}
-              examesGrouped={examesGrouped}
             />
           )}
 
@@ -143,6 +150,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha com prioridade"
               exameSelecionado={exameSelecionado}
+              examesGrouped={examesGrouped}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasComPrefixo}
@@ -155,7 +163,28 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
               onViewRelatorio={onViewRelatorio}
+            />
+          )}
+
+          {senhasAgendados.length > 0 && (
+            <AtendimentoSection
+              key="senhas-agendados"
+              codigosDeAtendimento={codigosDeAtendimento}
+              emptyMessage="Nenhuma senha agendada"
+              exameSelecionado={exameSelecionado}
               examesGrouped={examesGrouped}
+              pendingActions={pendingActions}
+              salaSelecionada={salaSelecionada}
+              senhas={senhasAgendados}
+              setFuncionarioSelecionado={setFuncionarioSelecionado}
+              socket={socket}
+              startPendingAction={startPendingAction}
+              title={`Agendados (${senhasAgendados.length})`}
+              unidadeSelecionada={unidadeSelecionada}
+              onHandleModal={onHandleModal}
+              onIniciarAutenticacao={onIniciarAutenticacao}
+              onIniciarTeleatendimento={onIniciarTeleatendimento}
+              onViewRelatorio={onViewRelatorio}
             />
           )}
 
@@ -165,6 +194,7 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               codigosDeAtendimento={codigosDeAtendimento}
               emptyMessage="Nenhuma senha normal"
               exameSelecionado={exameSelecionado}
+              examesGrouped={examesGrouped}
               pendingActions={pendingActions}
               salaSelecionada={salaSelecionada}
               senhas={senhasNormais}
@@ -177,7 +207,6 @@ const AtendimentoList: React.FC<SenhasListProps> = ({
               onIniciarAutenticacao={onIniciarAutenticacao}
               onIniciarTeleatendimento={onIniciarTeleatendimento}
               onViewRelatorio={onViewRelatorio}
-              examesGrouped={examesGrouped}
             />
           )}
         </div>

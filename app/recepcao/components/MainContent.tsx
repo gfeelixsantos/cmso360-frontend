@@ -58,9 +58,16 @@ const MainContent: React.FC<MainContentProps> = ({
   const senhasPreferenciais = senhasOrdenadas.filter(
     (s) => s.preferencial && senhasPrepracao.every((p) => p.id != s.id),
   );
+  const senhasAgendados = senhasOrdenadas.filter(
+    (s) =>
+      s.prefixo === "C" &&
+      !s.preferencial &&
+      senhasPrepracao.every((p) => p.id != s.id),
+  );
   const senhasComPrefixo = senhasOrdenadas.filter(
     (s) =>
       s.prefixo &&
+      s.prefixo !== "C" &&
       !s.preferencial &&
       senhasPrepracao.every((p) => p.id != s.id),
   );
@@ -85,6 +92,7 @@ const MainContent: React.FC<MainContentProps> = ({
         agendamentos={agendamentos}
         preparacoesFinalizadas={preparacoesFinalizadas}
         salaSelecionada={salaSelecionada}
+        senhasAgendados={senhasAgendados}
         senhasComPrefixo={senhasComPrefixo}
         senhasNormais={senhasNormais}
         senhasOrdenadas={senhasOrdenadas}

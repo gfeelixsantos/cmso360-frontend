@@ -11,34 +11,57 @@ import { EventType } from "@/lib/websocket/events/events";
 
 // Mapeamento de ícones por título
 const getSectionConfig = (title: string) => {
-  const configs: Record<string, { icon: React.ReactNode; color: string; bgColor: string }> = {
-    "Preferencial": {
+  const configs: Record<
+    string,
+    { icon: React.ReactNode; color: string; bgColor: string }
+  > = {
+    Preferencial: {
       icon: <AlertCircle className="w-5 h-5" />,
       color: "text-red-600",
-      bgColor: "bg-red-100"
+      bgColor: "bg-red-100",
     },
-    "Prioridade": {
+    Agendados: {
+      icon: <Clock className="w-5 h-5" />,
+      color: "text-orange-600",
+      bgColor: "bg-orange-100",
+    },
+    Prioridade: {
       icon: <Zap className="w-5 h-5" />,
       color: "text-blue-600",
-      bgColor: "bg-blue-100"
+      bgColor: "bg-blue-100",
     },
-    "Atendimento": {
+    Atendimento: {
       icon: <Users className="w-5 h-5" />,
       color: "text-gray-700",
-      bgColor: "bg-gray-100"
+      bgColor: "bg-gray-100",
     },
     "Em preparação": {
       icon: <Clock className="w-5 h-5" />,
       color: "text-gray-500",
-      bgColor: "bg-gray-100"
+      bgColor: "bg-gray-100",
     },
   };
-  return configs[title] || { icon: null, color: "text-gray-700", bgColor: "bg-gray-100" };
+
+  return (
+    configs[title] || {
+      icon: null,
+      color: "text-gray-700",
+      bgColor: "bg-gray-100",
+    }
+  );
 };
 
 // Componente de badge de contador
-const CountBadge = ({ count, textColor }: { count: number; textColor: string }) => (
-  <span className={`inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full ${textColor} text-sm font-bold`}>
+const CountBadge = ({
+  count,
+  textColor,
+}: {
+  count: number;
+  textColor: string;
+}) => (
+  <span
+    className={`inline-flex items-center justify-center min-w-[1.75rem] h-7 px-2 rounded-full ${textColor} text-sm font-bold`}
+  >
     {count}
   </span>
 );
@@ -70,12 +93,13 @@ interface SenhasSectionProps {
 }
 
 // Componente para o estado vazio
-const EmptySection: React.FC<{ title: string; emptyMessage: string; count: number }> = ({
-  title,
-  emptyMessage,
-  count,
-}) => {
+const EmptySection: React.FC<{
+  title: string;
+  emptyMessage: string;
+  count: number;
+}> = ({ title, emptyMessage, count }) => {
   const config = getSectionConfig(title);
+
   return (
     <section
       aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
@@ -128,17 +152,17 @@ const SenhasSection: React.FC<SenhasSectionProps> = ({
   };
 
   if (senhas.length === 0) {
-    return <EmptySection emptyMessage={emptyMessage} title={title} count={0} />;
+    return <EmptySection count={0} emptyMessage={emptyMessage} title={title} />;
   }
 
   const config = getSectionConfig(title);
 
   return (
-      <section
-        aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
-        className="space-y-3 scroll-mt-6"
-        id={`ticket-group-${title.toLowerCase().replace(/\s/g, "-")}`}
-      >
+    <section
+      aria-labelledby={`section-${title.toLowerCase().replace(/\s/g, "-")}`}
+      className="space-y-3 scroll-mt-6"
+      id={`ticket-group-${title.toLowerCase().replace(/\s/g, "-")}`}
+    >
       <div className="flex items-center gap-3">
         <h3
           className={`text-base font-semibold ${config.color}`}

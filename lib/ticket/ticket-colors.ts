@@ -27,6 +27,15 @@ const PRIORITY_TONE: ToneScale = {
   shadow: "rgba(198, 40, 40, 0.28)",
 };
 
+const AGENDADOS_TONE: ToneScale = {
+  primary: "#EA580C",
+  secondary: "#F97316",
+  soft: "#FFEDD5",
+  border: "#FDBA74",
+  text: "#FFFFFF",
+  shadow: "rgba(249, 115, 22, 0.28)",
+};
+
 const PREFIXED_TONE: ToneScale = {
   primary: "#0F766E",
   secondary: "#0D9488",
@@ -49,6 +58,7 @@ export const getReceptionToneByPrefix = (prefix?: string): ToneScale => {
 
   if (!normalizedPrefix) return COMMON_TONE;
   if (normalizedPrefix === "P") return PRIORITY_TONE;
+  if (normalizedPrefix === "C") return AGENDADOS_TONE;
 
   return PREFIXED_TONE;
 };

@@ -41,11 +41,14 @@ interface SenhaCardProps {
 
 // Componente para o número do ticket
 const TicketNumber: React.FC<{ ticket: Ticket }> = ({ ticket }) => {
+  const isAgendado = ticket.prefixo === "C";
   const numberClass = ticket.preferencial
     ? "text-red-600"
-    : ticket.prefixo
-      ? "text-blue-600"
-      : "text-gray-900";
+    : isAgendado
+      ? "text-orange-600"
+      : ticket.prefixo
+        ? "text-blue-600"
+        : "text-gray-900";
 
   return (
     <div className="flex flex-col items-center justify-center">
@@ -59,7 +62,9 @@ const TicketNumber: React.FC<{ ticket: Ticket }> = ({ ticket }) => {
         </span>
       </div>
       {ticket.preferencialTipo && (
-        <span className={`text-sm font-medium ${ticket.preferencial ? "text-red-600" : "text-blue-600"}`}>
+        <span
+          className={`text-sm font-medium ${ticket.preferencial ? "text-red-600" : isAgendado ? "text-orange-600" : "text-blue-600"}`}
+        >
           {ticket.preferencialTipo}
         </span>
       )}
