@@ -1524,7 +1524,7 @@ export function StatisticsSection() {
                         </div>
                       </div>
 
-                      {/* Tickets do Dia (Pref/Prio/Geral) */}
+                      {/* Tickets do Dia (Pref/Prio/Agendados/Geral) */}
                       <div>
                         <h4 className="text-sm font-semibold text-gray-900 mb-4 flex items-center gap-2">
                           Senhas do Dia
@@ -1540,7 +1540,8 @@ export function StatisticsSection() {
                             const total = tickets.reduce((s, t) => s + t.total, 0);
                             const preferencial = tickets.reduce((s, t) => s + t.preferencial, 0);
                             const comPrefixo = tickets.reduce((s, t) => s + t.comPrefixo, 0);
-                            const geral = total - preferencial - comPrefixo;
+                            const comPrefixoC = tickets.reduce((s, t) => s + (t.comPrefixoC || 0), 0);
+                            const geral = total - preferencial - comPrefixo - comPrefixoC;
                             return (
                               <>
                                 <div className="flex items-center justify-between p-2 rounded-lg bg-red-50/50">
@@ -1564,6 +1565,18 @@ export function StatisticsSection() {
                                     <span className="font-bold text-blue-700">{comPrefixo}</span>
                                     <span className="text-xs text-blue-500">
                                       ({((comPrefixo / total) * 100).toFixed(0)}%)
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between p-2 rounded-lg bg-orange-50/50">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-2.5 h-2.5 rounded-full inline-flex bg-orange-500" />
+                                    <span className="text-sm font-medium text-orange-700">Agendados</span>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-orange-700">{comPrefixoC}</span>
+                                    <span className="text-xs text-orange-500">
+                                      ({((comPrefixoC / total) * 100).toFixed(0)}%)
                                     </span>
                                   </div>
                                 </div>

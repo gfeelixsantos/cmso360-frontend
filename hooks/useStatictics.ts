@@ -71,6 +71,7 @@ export type TicketStatisticsDto = {
   total: number;
   preferencial: number;
   comPrefixo: number;
+  comPrefixoC: number;
 };
 
 export type TempoPrimeiroExameDto = {
