@@ -420,7 +420,9 @@ const RecepcaoPage: React.FC = () => {
   }, []);
 
   const calcularEstatisticas = useCallback(() => {
-    const senhasFiltradas = getAll();
+    const senhasFiltradas = getAll().filter(
+      (s) => (s as any).ativo !== false,
+    );
 
     const recepcao = senhasFiltradas.filter(
       (s) => s.grupo === TicketGroups.RECEPCAO,
@@ -536,7 +538,7 @@ const RecepcaoPage: React.FC = () => {
                 setTicketSelecionado={setTicketSelecionado}
                 socket={socket}
                 tickets={tickets.filter(
-                  (t) => t.grupo === TicketGroups.RECEPCAO,
+                  (t) => t.grupo === TicketGroups.RECEPCAO && (t as any).ativo !== false,
                 )}
                 unidadeSelecionada={unidadeSelecionada}
                 onHandleModal={handleModal}
@@ -553,7 +555,7 @@ const RecepcaoPage: React.FC = () => {
 
         {conectado && socket && !salaSelecionada.includes("PREPARO") && (
           <TicketGroupFloatingBar
-            tickets={tickets.filter((t) => t.grupo === TicketGroups.RECEPCAO)}
+            tickets={tickets.filter((t) => t.grupo === TicketGroups.RECEPCAO && (t as any).ativo !== false)}
           />
         )}
       </div>
