@@ -51,7 +51,7 @@ import SenhasEstatisticas, {
   StatsModal,
 } from "@/app/recepcao/components/SenhasEstatisticas";
 import TicketGroupFloatingBar from "@/app/recepcao/components/TicketGroupFloatingBar";
-import { useStatistics } from "@/hooks/useStatictics";
+import { useStatistics, StatisticsResponseDto } from "@/hooks/useStatictics";
 import CmsoLoading from "@/components/shared/CmsoLoading";
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
 
@@ -124,8 +124,6 @@ const RecepcaoPage: React.FC = () => {
     emAtendimento: 0,
   });
 
-  const [totalTicketsEmitidos, setTotalTicketsEmitidos] = useState(0);
-
   // ---------------------------------------------------------
   // Verifica usuário logado
   // ---------------------------------------------------------
@@ -147,7 +145,6 @@ const RecepcaoPage: React.FC = () => {
   interface initialTicketsRequest {
     tickets: Ticket[];
     preparationRequests: PreparationRequest[];
-    totalTickets: number;
   }
 
   const loadInitialTickets = useCallback(
@@ -167,8 +164,6 @@ const RecepcaoPage: React.FC = () => {
         if (Array.isArray(data.tickets)) setAll(data.tickets);
         if (Array.isArray(data.preparationRequests))
           setEmPreparacao(data.preparationRequests);
-        if (typeof data.totalTickets === 'number')
-          setTotalTicketsEmitidos(data.totalTickets);
       } catch (error) {
         console.error("Erro ao carregar tickets:", error);
       }
@@ -425,7 +420,6 @@ const RecepcaoPage: React.FC = () => {
   }, []);
 
   const calcularEstatisticas = useCallback(() => {
-    // Sempre usa os tickets locais (do Supabase) para as estatísticas da recepção
     const senhasFiltradas = getAll();
 
     const recepcao = senhasFiltradas.filter(
@@ -452,7 +446,12 @@ const RecepcaoPage: React.FC = () => {
       (s) => s.grupo === TicketGroups.EXAME && s.atendente === user?.nome,
     ).length;
 
-    const total = totalTicketsEmitidos;
+    const apiData = statisticsData as unknown as StatisticsResponseDto | null;
+    const unidadeData = apiData?.porUnidade?.find(
+      (u) => u.unidade === unidadeSelecionada,
+    );
+    const total =
+      unidadeData?.totalAgendamentos ?? senhasFiltradas.length;
 
     setEstatisticas({
       aguardando,
@@ -466,7 +465,7 @@ const RecepcaoPage: React.FC = () => {
       examesAguardando: 0,
       emAtendimento: 0,
     });
-  }, [getAll, user, totalTicketsEmitidos]);
+  }, [getAll, user, statisticsData, unidadeSelecionada]);
 
   useEffect(() => {
     calcularEstatisticas();
