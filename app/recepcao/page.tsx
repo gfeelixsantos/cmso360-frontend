@@ -60,6 +60,7 @@ const RecepcaoPage: React.FC = () => {
   const [user, setUser] = useState<IUserInfo | null>(null);
   const [conectado, setConectado] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const deactivatedTicketsRef = useRef<Set<number>>(new Set());
   const {
     socket,
     connected,
@@ -309,14 +310,12 @@ const RecepcaoPage: React.FC = () => {
     };
 
     const handleTicketEmitedOrUpdated = (ticket: Ticket) => {
-      console.info("[RECEPCAO][TICKET_SYNC]", {
-        id: ticket.id,
-        status: ticket.status,
-        grupo: ticket.grupo,
-        ativo: (ticket as any).ativo,
-        unidade: ticket.unidade,
-        sala: ticket.sala,
-      });
+      if ((ticket as any).ativo === false) {
+        deactivatedTicketsRef.current.add(ticket.id!);
+      }
+      if ((ticket as any).ativo === true && deactivatedTicketsRef.current.has(ticket.id!)) {
+        return;
+      }
       addOrUpdate(ticket);
     };
 

@@ -1405,7 +1405,6 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         };
 
         // Update the local state
-        addOrUpdate(updatedTicket);
         setTicketSelecionado(updatedTicket);
         // Update the scheduling object
         funcionarioSelecionado.TICKET = updatedTicket;

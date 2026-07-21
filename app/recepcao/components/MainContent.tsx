@@ -46,15 +46,14 @@ const MainContent: React.FC<MainContentProps> = ({
 }) => {
   // Filtragem/organização tickets
   const senhasOrdenadas = useMemo(() => {
-    return [...tickets]
-      .filter((t) => (t as any).ativo !== false)
-      .sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
+    return [...tickets].sort((a, b) => (a.id ?? 0) - (b.id ?? 0));
   }, [tickets]);
 
   const senhasPrepracao = tickets.filter(
     (t) =>
-      t.status === TicketStatus.EM_PREPARACAO ||
-      t.status === TicketStatus.ENCAMINHADO_RX,
+      (t as any).ativo !== false &&
+      (t.status === TicketStatus.EM_PREPARACAO ||
+        t.status === TicketStatus.ENCAMINHADO_RX),
   );
 
   const senhasPreferenciais = senhasOrdenadas.filter(

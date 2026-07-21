@@ -92,15 +92,29 @@ export function useEntityManager<T extends BaseEntity>(
       return;
     }
 
-    socket.emit("ticket_action", {
-      ticketId,
-      action,
-      unidade,
-      sala,
-      user,
-      funcionario,
-      exame,
-    });
+    socket.emit(
+      "ticket_action",
+      {
+        ticketId,
+        action,
+        unidade,
+        sala,
+        user,
+        funcionario,
+        exame,
+      },
+      (ack: { ok: boolean; error?: string } | undefined) => {
+        if (!ack?.ok) {
+          console.error(
+            `[EXECUTAR_ACAO] ACK não confirmado pelo servidor. action=${action} ticketId=${ticketId}`,
+            ack?.error ?? "sem resposta",
+          );
+          alert(
+            "A ação não foi confirmada pelo servidor. Verifique sua conexão e tente novamente.",
+          );
+        }
+      },
+    );
   };
 
   return {
