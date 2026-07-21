@@ -17,9 +17,8 @@ export class AtendimentoRules {
   // -------------------------
   static isEmpresaKit(func: Scheduling): boolean {
     const cod = func?.CODIGOINTERNOEMPRESA?.toUpperCase() || "";
-    const cargo = func?.NOMECARGO?.toUpperCase() || "";
 
-    return cod.includes("KIT") || cargo.includes("KIT");
+    return cod.includes("KIT");
   }
 
   // -------------------------
