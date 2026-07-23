@@ -17,6 +17,7 @@ import {
   BadgeDollarSign,
   PackageCheck,
   Monitor,
+  Receipt,
 } from "lucide-react";
 import {
   Button,
@@ -186,6 +187,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("dados");
   const [searchString, setSearchString] = useState("");
+  const [configFilters, setConfigFilters] = useState<Set<string>>(new Set());
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -1036,12 +1038,23 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     setContatos(contatos.filter((_, i) => i !== index));
   }
 
-  const filteredCompanies = companies.filter(
-    (c) =>
+  const filteredCompanies = companies.filter((c) => {
+    const matchText =
       c.RAZAOSOCIAL.toLowerCase().includes(searchString.toLowerCase()) ||
       c.NOMEABREVIADO.toLowerCase().includes(searchString.toLowerCase()) ||
-      c.CNPJ.includes(searchString),
-  );
+      c.CNPJ.includes(searchString);
+
+    if (!matchText) return false;
+    if (configFilters.size === 0) return true;
+
+    for (const filter of configFilters) {
+      if (filter === "faturamentoCMSO" && c.configuracoes?.faturamento !== "CMSO") return false;
+      if (filter === "faturamentoSEGTEC" && c.configuracoes?.faturamento !== "SEGTEC") return false;
+      if (!(c.configuracoes as any)?.[filter]) return false;
+    }
+
+    return true;
+  });
 
   const filteredSocCompanies = (searchValue: string) => {
     if (!searchValue) return socCompanies;
@@ -1090,6 +1103,97 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                   setCurrentPage(1);
                 }}
               />
+              <Select
+                aria-label="Filtrar por configuração"
+                className="max-w-[220px]"
+                classNames={{
+                  base: "h-9",
+                  mainWrapper: "h-9",
+                  trigger: "h-9 min-h-9",
+                }}
+                placeholder="Filtros"
+                selectionMode="multiple"
+                size="sm"
+                selectedKeys={configFilters}
+                onSelectionChange={(keys) => {
+                  const selected = new Set(Array.from(keys).map(String));
+                  setConfigFilters(selected);
+                  setCurrentPage(1);
+                }}
+              >
+                <SelectItem key="devedor" textValue="Devedor">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-red-100 text-red-600">
+                      <BadgeDollarSign size={12} />
+                    </span>
+                    <span>Devedor</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="requerPsicologa" textValue="Psicologia">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-purple-100 text-purple-600">
+                      <Brain size={12} />
+                    </span>
+                    <span>Psicologia</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="credenciadaSoc" textValue="Credenciada SOC">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+                      <Link2 size={12} />
+                    </span>
+                    <span>Credenciada SOC</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="asoRapidoAutomatico" textValue="ASO Rápido">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-amber-100 text-amber-600">
+                      <Zap size={12} />
+                    </span>
+                    <span>ASO Rápido</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="somenteComplementares" textValue="Somente Complementares">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-teal-100 text-teal-600">
+                      <Stethoscope size={12} />
+                    </span>
+                    <span>Somente Complementares</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="gestaoEpi" textValue="Gestão EPI">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-green-100 text-green-600">
+                      <PackageCheck size={12} />
+                    </span>
+                    <span>Gestão EPI</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="painel" textValue="Mural Digital">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-blue-100 text-blue-600">
+                      <Monitor size={12} />
+                    </span>
+                    <span>Mural Digital</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="faturamentoCMSO" textValue="Faturamento: CMSO">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
+                      <Receipt size={12} />
+                    </span>
+                    <span>Faturamento: CMSO</span>
+                  </div>
+                </SelectItem>
+                <SelectItem key="faturamentoSEGTEC" textValue="Faturamento: SEGTEC">
+                  <div className="flex items-center gap-2">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center bg-gray-100 text-gray-600">
+                      <Receipt size={12} />
+                    </span>
+                    <span>Faturamento: SEGTEC</span>
+                  </div>
+                </SelectItem>
+              </Select>
               <Button
                 className="h-9 px-3"
                 color="primary"
