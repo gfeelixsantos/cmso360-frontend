@@ -43,6 +43,7 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
   const [activeFilters, setActiveFilters] = useState<
     Partial<AuditFilterParams>
   >({});
+  const [hasSearched, setHasSearched] = useState(false);
 
   // Redirect non-MASTER users
   useEffect(() => {
@@ -50,14 +51,6 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
       router.replace("/configuracoes");
     }
   }, [user.perfil, router]);
-
-  // Initial load with default 7-day period (no filters = backend applies default)
-  useEffect(() => {
-    if (user.perfil === "MASTER") {
-      loadLogs({}, 1);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   async function loadLogs(
     filters: Partial<AuditFilterParams>,
@@ -98,7 +91,16 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
 
   function handleFilter(filters: Partial<AuditFilterParams>) {
     setActiveFilters(filters);
+    setHasSearched(true);
     loadLogs(filters, 1);
+  }
+
+  function handleClearFilters() {
+    setActiveFilters({});
+    setHasSearched(false);
+    setRecords([]);
+    setPagination(DEFAULT_PAGINATION);
+    setError(null);
   }
 
   function handlePageChange(page: number) {
@@ -136,7 +138,7 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
         <div className="space-y-4">
           <div className="rounded-lg border border-gray-200 bg-gray-50/60 p-4">
             <h3 className="text-sm font-medium text-gray-700 mb-3">Filtros</h3>
-            <AuditFilterForm onFilter={handleFilter} isLoading={isLoading} />
+            <AuditFilterForm onFilter={handleFilter} onClear={handleClearFilters} isLoading={isLoading} />
           </div>
 
           {/* Error state */}
@@ -149,13 +151,23 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
             </div>
           )}
 
+          {/* Empty state - before first search */}
+          {!hasSearched && !error && (
+            <div className="text-center py-12 text-gray-400">
+              <ShieldCheck size={40} className="mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Utilize os filtros acima para buscar registros de auditoria.</p>
+            </div>
+          )}
+
           {/* Table */}
-          <div className="rounded-lg border border-gray-200 overflow-hidden">
-            <AuditLogsTable records={records} isLoading={isLoading} />
-          </div>
+          {hasSearched && (
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <AuditLogsTable records={records} isLoading={isLoading} />
+            </div>
+          )}
 
           {/* Pagination */}
-          {!isLoading && records.length > 0 && (
+          {hasSearched && !isLoading && records.length > 0 && (
             <PaginationControls
               pagination={pagination}
               onPageChange={handlePageChange}

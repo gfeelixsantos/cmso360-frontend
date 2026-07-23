@@ -1089,14 +1089,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
             </div>
             <div className="flex gap-3 items-center">
               <Input
-                className="max-w-xs"
+                className="max-w-[240px] flex-shrink-0"
                 classNames={{
                   base: "h-9",
                   mainWrapper: "h-9",
                   inputWrapper: "h-9",
                 }}
-                placeholder="Pesquisar por CNPJ ou nome..."
+                placeholder="Pesquisar..."
                 size="sm"
+                startContent={<Search size={14} className="text-gray-400" />}
                 value={searchString}
                 onValueChange={(val) => {
                   setSearchString(val);
@@ -1105,7 +1106,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               />
               <Select
                 aria-label="Filtrar por configuração"
-                className="max-w-[220px]"
+                className="max-w-[180px] flex-shrink-0"
                 classNames={{
                   base: "h-9",
                   mainWrapper: "h-9",
@@ -1195,10 +1196,10 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                 </SelectItem>
               </Select>
               <Button
-                className="h-9 px-3"
+                className="h-9 px-4 whitespace-nowrap flex-shrink-0"
                 color="primary"
                 size="sm"
-                startContent={<Plus size={18} />}
+                startContent={<Plus size={16} />}
                 style={{ backgroundColor: "#44735e" }}
                 onPress={openCreate}
               >

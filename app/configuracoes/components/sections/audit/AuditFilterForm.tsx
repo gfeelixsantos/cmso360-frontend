@@ -10,10 +10,11 @@ import { buildAuditFilterParams } from "./filter-params.mjs";
 
 interface AuditFilterFormProps {
   onFilter: (params: Partial<AuditFilterParams>) => void;
+  onClear: () => void;
   isLoading: boolean;
 }
 
-export function AuditFilterForm({ onFilter, isLoading }: AuditFilterFormProps) {
+export function AuditFilterForm({ onFilter, onClear, isLoading }: AuditFilterFormProps) {
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
   const [userCodigo, setUserCodigo] = useState("");
@@ -44,7 +45,7 @@ export function AuditFilterForm({ onFilter, isLoading }: AuditFilterFormProps) {
     setUnidade("");
     setPacienteCodigo("");
     setRequestId("");
-    onFilter({});
+    onClear();
   }
 
   return (

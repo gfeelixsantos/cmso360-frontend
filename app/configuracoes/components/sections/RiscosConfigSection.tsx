@@ -428,13 +428,13 @@ export function RiscosConfigSection() {
           {isMaster && !creatingNew && expandedId === null && (
             <Button
               color="primary"
-              startContent={<Plus size={18} />}
+              startContent={<Plus size={16} />}
               onPress={handleOpenCreate}
               size="sm"
-              className="h-9 px-3"
+              className="h-9 px-4 whitespace-nowrap flex-shrink-0"
               style={{ backgroundColor: "#44735e" }}
             >
-              Novo
+              Novo Risco
             </Button>
           )}
         </div>
