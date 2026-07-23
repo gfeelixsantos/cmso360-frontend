@@ -1076,20 +1076,22 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
     <>
       <Card className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <CardBody className="p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3 min-w-0">
               <Building
                 aria-hidden="true"
                 size={28}
                 style={{ color: "#44735e" }}
+                className="flex-shrink-0"
               />
-              <h2 className="text-xl font-semibold text-gray-800">
+              <h2 className="text-xl font-semibold text-gray-800 whitespace-nowrap">
                 Cadastro de Empresas
               </h2>
             </div>
-            <div className="flex gap-3 items-center">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <Input
-                className="max-w-[240px] flex-shrink-0"
+                isClearable
+                className="w-48"
                 classNames={{
                   base: "h-9",
                   mainWrapper: "h-9",
@@ -1106,7 +1108,7 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
               />
               <Select
                 aria-label="Filtrar por configuração"
-                className="max-w-[180px] flex-shrink-0"
+                className="w-40"
                 classNames={{
                   base: "h-9",
                   mainWrapper: "h-9",
@@ -1208,14 +1210,15 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
             </div>
           </div>
 
-          <Table aria-label="Empresas cadastradas">
-            <TableHeader>
-              <TableColumn width={380}>RAZÃO SOCIAL / FANTASIA</TableColumn>
-              <TableColumn width={160}>CNPJ</TableColumn>
-              <TableColumn width={180}>CONFIGURAÇÕES</TableColumn>
-              <TableColumn width={220}>RESPONSÁVEIS & DOCS</TableColumn>
-              <TableColumn width={100}>AÇÕES</TableColumn>
-            </TableHeader>
+          <div className="overflow-x-auto">
+            <Table aria-label="Empresas cadastradas" className="min-w-[720px]">
+              <TableHeader>
+                <TableColumn>RAZÃO SOCIAL / FANTASIA</TableColumn>
+                <TableColumn>CNPJ</TableColumn>
+                <TableColumn>CONFIGURAÇÕES</TableColumn>
+                <TableColumn>RESPONSÁVEIS & DOCS</TableColumn>
+                <TableColumn width={80}>AÇÕES</TableColumn>
+              </TableHeader>
             <TableBody emptyContent="Nenhuma empresa encontrada">
               {filteredCompanies
                 .slice(
@@ -1396,7 +1399,8 @@ export function EmpresasSection({ user }: EmpresasSectionProps) {
                   );
                 })}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
 
           {filteredCompanies.length > itemsPerPage && (
             <div className="flex justify-center mt-6">
