@@ -610,7 +610,7 @@ const SectionTitle: React.FC<{
 // - Configuração da curva refinada: compara médias de baixas vs altas frequências.
 export class AudiometriaCalculator {
   static getFrequenciasMediaTonal(): number[] {
-    return [500, 1000, 2000, 3000];
+    return [500, 1000, 2000, 4000];
   }
 
   static parseValor(v: string | null | undefined): number | null {
@@ -630,7 +630,7 @@ export class AudiometriaCalculator {
     return isNaN(n) ? null : n;
   }
 
-  // === MÉDIA TONAL (500, 1000, 2000, 3000 Hz) ===
+  // === MÉDIA TONAL (500, 1000, 2000, 4000 Hz para clínica) ===
   static calcularMediaTonal(freqs: string[]): number | null {
     const valores = freqs
       .map((v) => this.parseValor(v))
@@ -734,9 +734,12 @@ export class AudiometriaCalculator {
       [key: number]: string;
     },
   ): string {
+    // Decreto 5.296/2004 exige explicitamente a média de 500, 1000, 2000 e 3000 Hz para enquadramento PCD
+    const pcdMediaOD = this.calcularMediaTonal([vaLimiaresOD[500], vaLimiaresOD[1000], vaLimiaresOD[2000], vaLimiaresOD[3000]]);
+    const pcdMediaOE = this.calcularMediaTonal([vaLimiaresOE[500], vaLimiaresOE[1000], vaLimiaresOE[2000], vaLimiaresOE[3000]]);
     return avaliarCriterioPcdAuditivo({
-      mediaOD,
-      mediaOE,
+      mediaOD: pcdMediaOD,
+      mediaOE: pcdMediaOE,
       od: vaLimiaresOD,
       oe: vaLimiaresOE,
     });
@@ -759,8 +762,6 @@ export class AudiometriaCalculator {
     mediaOD: number | null,
     mediaOE: number | null,
   ): string {
-    // Se não houver média tonal completa nas frequências obrigatórias,
-    // o critério legal não pode ser determinado.
     if (mediaOD === null || mediaOE === null) {
       return `Critério legal de deficiência auditiva não pôde ser determinado devido à ausência de resposta nas frequências obrigatórias (500, 1000, 2000 e 3000 Hz). Recomenda-se reavaliação audiológica para fins legais.`;
     }
@@ -946,18 +947,18 @@ export class AudiometriaCalculator {
       ),
     );
 
-    // Calcular Médias de Via Óssea (Geralmente 500, 1k, 2k, 3k ou 4k)
+    // Calcular Médias de Via Óssea (Geralmente 500, 1k, 2k, 4k)
     const mediaOsseaOD = this.calcularMediaOssea([
       formData.viaOsseaOD500,
       formData.viaOsseaOD1000,
       formData.viaOsseaOD2000,
-      formData.viaOsseaOD3000,
+      formData.viaOsseaOD4000,
     ]);
     const mediaOsseaOE = this.calcularMediaOssea([
       formData.viaOsseaOE500,
       formData.viaOsseaOE1000,
       formData.viaOsseaOE2000,
-      formData.viaOsseaOE3000,
+      formData.viaOsseaOE4000,
     ]);
 
     const voLimiaresOD = {
@@ -1014,8 +1015,10 @@ export class AudiometriaCalculator {
       classificacaoOD === "Normal" ? "Perda auditiva" : classificacaoOD;
     const grauPerdaOE =
       classificacaoOE === "Normal" ? "Perda auditiva" : classificacaoOE;
-    const classificacaoExibicaoOD = isNormalOD ? "Normal" : "Alterado";
-    const classificacaoExibicaoOE = isNormalOE ? "Normal" : "Alterado";
+    
+    // Mantém a consistência clínica: a classificação exibida deve refletir o Grau de Perda (Lloyd & Kaplan / OMS)
+    const classificacaoExibicaoOD = classificacaoOD;
+    const classificacaoExibicaoOE = classificacaoOE;
 
     // Resultados textuais:
     const resultadoOD = isNormalOD
