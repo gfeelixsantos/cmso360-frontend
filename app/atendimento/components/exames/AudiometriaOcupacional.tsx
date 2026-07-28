@@ -669,6 +669,18 @@ export class AudiometriaCalculator {
     if (media >= 41) return "Perda Auditiva Moderada";
     if (media >= 26) return "Perda Auditiva Leve";
 
+    // Se a média for normal (<= 25), mas houver qualquer frequência > 25 dB
+    const temAlteracao = Object.keys(limiares)
+      .map(Number)
+      .some((freq) => {
+        const valor = this.parseValor(limiares[freq]);
+        return valor !== null && valor > 25;
+      });
+
+    if (temAlteracao) {
+      return "Perda em Altas Frequências";
+    }
+
     return "Normal";
   }
 
