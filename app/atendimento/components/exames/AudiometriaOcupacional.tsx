@@ -2153,7 +2153,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-semibold text-red-700 mb-1">
-                      Classificação Clínica (Lloyd & Kaplan)
+                      Grau da Perda (Lloyd & Kaplan)
                     </label>
                     <div
                       className={`text-center font-bold text-sm p-2 rounded ${
@@ -2221,7 +2221,7 @@ const AudiometriaOcupacional: React.FC<AudiometriaProps> = ({
                 <div className="space-y-3">
                   <div>
                     <label className="block text-sm font-semibold text-blue-700 mb-1">
-                      Classificação Clínica (Lloyd & Kaplan)
+                      Grau da Perda (Lloyd & Kaplan)
                     </label>
                     <div
                       className={`text-center font-bold text-sm p-2 rounded ${
