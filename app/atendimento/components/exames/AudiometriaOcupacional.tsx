@@ -805,6 +805,14 @@ export class AudiometriaCalculator {
   static calcularConfiguracao(vaLimiares: { [key: number]: string }): string {
     const get = (f: number): number | null => this.parseValor(vaLimiares[f]);
 
+    const v500 = get(500);
+    const v1000 = get(1000);
+    const v2000 = get(2000);
+    const v3000 = get(3000);
+    const v4000 = get(4000);
+    const v6000 = get(6000);
+    const v8000 = get(8000);
+
     const baixas = [500, 1000].map(get).filter((v): v is number => v !== null);
     const altas = [3000, 4000, 6000]
       .map(get)
@@ -812,13 +820,28 @@ export class AudiometriaCalculator {
 
     if (baixas.length === 0 && altas.length === 0) return "Sem resposta";
 
-    if (baixas.length === 0 || altas.length === 0) {
-      const v500 = get(500) ?? 0;
-      const v4000 = get(4000) ?? 0;
+    // Detecção de Entalhe (Notch)
+    const baixasPreservadas = [v500, v1000, v2000].filter((v): v is number => v !== null);
+    const agudasQueda = [v3000, v4000, v6000].filter((v): v is number => v !== null);
 
-      if (Math.abs(v500 - v4000) <= 10) return "Plana";
-      if (v4000 > v500 + 15) return "Descendente";
-      if (v500 > v4000 + 15) return "Ascendente";
+    if (baixasPreservadas.length > 0 && agudasQueda.length > 0 && v8000 !== null) {
+      const minBaixas = Math.min(...baixasPreservadas); // melhor limiar nas frequências graves
+      const maxAgudas = Math.max(...agudasQueda); // pior limiar em 3k, 4k ou 6k
+      
+      // Se o pior ponto em agudas for pelo menos 10 dB pior que a melhor frequência grave
+      // E houver uma recuperação (melhora) de pelo menos 5 dB em 8000 Hz em relação ao pior ponto
+      if (maxAgudas >= minBaixas + 10 && maxAgudas >= v8000 + 5) {
+        return "em Entalhe";
+      }
+    }
+
+    if (baixas.length === 0 || altas.length === 0) {
+      const v500Val = get(500) ?? 0;
+      const v4000Val = get(4000) ?? 0;
+
+      if (Math.abs(v500Val - v4000Val) <= 10) return "Plana";
+      if (v4000Val > v500Val + 15) return "Descendente";
+      if (v500Val > v4000Val + 15) return "Ascendente";
 
       return "Irregular";
     }
