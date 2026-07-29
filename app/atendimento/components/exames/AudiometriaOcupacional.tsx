@@ -835,27 +835,34 @@ export class AudiometriaCalculator {
       }
     }
 
-    if (baixas.length === 0 || altas.length === 0) {
-      const v500Val = get(500) ?? 0;
-      const v4000Val = get(4000) ?? 0;
+    // Cálculo das médias para configuração (Grave [250, 500, 1k] vs Agudo [4k, 6k, 8k])
+    const gravesList = [250, 500, 1000].map(get).filter((v): v is number => v !== null);
+    const agudasList = [4000, 6000, 8000].map(get).filter((v): v is number => v !== null);
 
-      if (Math.abs(v500Val - v4000Val) <= 10) return "Plana";
-      if (v4000Val > v500Val + 15) return "Descendente";
-      if (v500Val > v4000Val + 15) return "Ascendente";
-
+    if (gravesList.length === 0 || agudasList.length === 0) {
       return "Irregular";
     }
 
-    const mediaBaixas = Math.round(
-      baixas.reduce((a, b) => a + b, 0) / baixas.length,
-    );
-    const mediaAltas = Math.round(
-      altas.reduce((a, b) => a + b, 0) / altas.length,
-    );
+    const mediaGraves = gravesList.reduce((a, b) => a + b, 0) / gravesList.length;
+    const mediaAgudas = agudasList.reduce((a, b) => a + b, 0) / agudasList.length;
 
-    if (Math.abs(mediaBaixas - mediaAltas) <= 10) return "Plana";
-    if (mediaAltas > mediaBaixas + 15) return "Descendente";
-    if (mediaBaixas > mediaAltas + 15) return "Ascendente";
+    // Diferença entre o melhor e pior limiar geral do exame
+    const todosValores = [v500, v1000, v2000, v3000, v4000, v6000, v8000].filter((v): v is number => v !== null);
+    const maxVal = Math.max(...todosValores);
+    const minVal = Math.min(...todosValores);
+
+    // Curva plana possui limiares estáveis em todas as frequências (variação máxima de 10 dB)
+    if (maxVal - minVal <= 10) {
+      return "Plana";
+    }
+
+    if (mediaAgudas >= mediaGraves + 15) {
+      return "Descendente";
+    }
+
+    if (mediaGraves >= mediaAgudas + 15) {
+      return "Ascendente";
+    }
 
     return "Irregular";
   }
