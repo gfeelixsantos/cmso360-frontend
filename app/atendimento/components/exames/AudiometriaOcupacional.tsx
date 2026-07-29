@@ -827,10 +827,10 @@ export class AudiometriaCalculator {
     if (baixasPreservadas.length > 0 && agudasQueda.length > 0 && v8000 !== null) {
       const minBaixas = Math.min(...baixasPreservadas); // melhor limiar nas frequências graves
       const maxAgudas = Math.max(...agudasQueda); // pior limiar em 3k, 4k ou 6k
-      
-      // Se o pior ponto em agudas for pelo menos 10 dB pior que a melhor frequência grave
-      // E houver uma recuperação (melhora) de pelo menos 10 dB em 8000 Hz em relação ao pior ponto
-      if (maxAgudas >= minBaixas + 10 && maxAgudas >= v8000 + 10) {
+
+      // Entalhe só é clinicamente válido quando há perda fora da zona de normalidade (> 25 dB)
+      // Variações dentro da normalidade são fisiológicas e não constituem entalhe patológico
+      if (maxAgudas > 25 && maxAgudas >= minBaixas + 10 && maxAgudas >= v8000 + 10) {
         return "em Entalhe";
       }
     }
