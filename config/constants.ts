@@ -133,7 +133,8 @@ export const NEST_SOC_CADASTROPESSOAS = `${NEST_URL}soc/cadastropessoas`;
 export const NEST_SOC_PEDIDOEXAME = `${NEST_URL}soc/pedidoexame?`;
 export const NEST_SOC_PEDIDOEXAME_OPTIONS = `${NEST_URL}soc/pedidoexame/options?`;
 export const NEST_SOC_PEDIDOEXAME_VALIDADE = `${NEST_URL}soc/pedidoexame/validate?`;
-export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = `${NEST_URL}soc/pedidoexame/credenciadas?`;
+export const NEST_SOC_PEDIDOEXAME_CREDENCIADAS = 
+`${NEST_URL}soc/pedidoexame/credenciadas`;
 export const NEST_SOC_RECORDS = `${NEST_URL}soc/asos?`;
 export const NEST_SOC_SINCRONIZAR_PRONTUARIO = `${NEST_URL}soc/sincronizar-prontuario`;
 

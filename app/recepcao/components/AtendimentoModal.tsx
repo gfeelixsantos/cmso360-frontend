@@ -859,9 +859,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
         setIsLoading(true);
 
         try {
-          const response = await fetch(
-            `${NEST_SOC_PEDIDOEXAME_CREDENCIADAS}cpf=${paciente.CPFFUNCIONARIO}`,
-          );
+          const response = await fetch(NEST_SOC_PEDIDOEXAME_CREDENCIADAS, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cpf: paciente.CPFFUNCIONARIO }),
+          });
 
           if (response.ok) {
             const examesJson = await response.json();
