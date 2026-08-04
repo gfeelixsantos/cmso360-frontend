@@ -16,6 +16,7 @@ import { useBlobExplorer } from "@/hooks/useBlobExplorer";
 import { useGedBatchJob } from "@/hooks/useGedBatchJob";
 import { addNotification } from "@/lib/notification-store";
 import BreadcrumbNav from "@/components/shared/arquivos/BreadcrumbNav";
+import DiaList from "@/components/shared/arquivos/DiaList";
 import DownloadZipButton from "@/components/shared/arquivos/DownloadZipButton";
 import EmpresaList from "@/components/shared/arquivos/EmpresaList";
 import FileList from "@/components/shared/arquivos/FileList";
@@ -33,14 +34,17 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     level,
     filteredCompanies,
     periods,
+    dias,
     prontuarios,
     files,
     searchQuery,
     selectedEmpresa,
     selectedPeriodo,
+    selectedDia,
     selectedProntuario,
     isLoadingCompanies,
     isLoadingPeriods,
+    isLoadingDias,
     isLoadingProntuarios,
     isLoadingFiles,
     error,
@@ -48,10 +52,12 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     setSearchQuery,
     selectEmpresa,
     selectPeriodo,
+    selectDia,
     selectProntuario,
     navigateToRoot,
     navigateToEmpresa,
     navigateToPeriodo,
+    navigateToDia,
     toggleFileSelection,
     selectAllFiles,
     clearSelection,
@@ -142,6 +148,14 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
     },
     [],
   );
+
+  const handleSelectAllProntuarios = useCallback(() => {
+    setSelectedProntuarios(new Set(prontuarios.map((p) => p.codigoProntuario)));
+  }, [prontuarios]);
+
+  const handleClearSelectionProntuarios = useCallback(() => {
+    setSelectedProntuarios(new Set());
+  }, []);
 
   const handleBatchProntuarios = useCallback(
     (tipo: "prontuario" | "aso") => {
@@ -344,9 +358,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               selectedAno={selectedPeriodo?.ano || null}
               selectedEmpresa={selectedEmpresa?.codigoEmpresa || null}
               selectedMes={selectedPeriodo?.mes || null}
+              selectedDia={selectedDia?.dia || null}
               selectedProntuario={selectedProntuario?.codigoProntuario || null}
               onNavigateToEmpresa={navigateToEmpresa}
               onNavigateToPeriodo={navigateToPeriodo}
+              onNavigateToDia={navigateToDia}
               onNavigateToRoot={navigateToRoot}
             />
           </CardHeader>
@@ -482,6 +498,16 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           </>
         )}
 
+        {level === "dias" && (
+          <>
+            <DiaList
+              dias={dias}
+              isLoading={isLoadingDias}
+              onSelect={(dia) => void selectDia(dia)}
+            />
+          </>
+        )}
+
         {level === "prontuarios" && (
           <>
             <ProntuarioList
@@ -493,6 +519,8 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
               isCreatingJob={isCreatingBatch}
               selectedSet={selectedProntuarios}
               onToggleSelect={handleToggleSelectProntuario}
+              onSelectAll={handleSelectAllProntuarios}
+              onClearSelection={handleClearSelectionProntuarios}
               onBatchDownload={handleBatchProntuarios}
             />
           </>
@@ -519,9 +547,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
                     selectedAno={selectedPeriodo?.ano || null}
                     selectedEmpresa={selectedEmpresa?.codigoEmpresa || null}
                     selectedMes={selectedPeriodo?.mes || null}
+                    selectedDia={selectedDia?.dia || null}
                     selectedProntuario={selectedProntuario?.codigoProntuario || null}
                     onNavigateToEmpresa={navigateToEmpresa}
                     onNavigateToPeriodo={navigateToPeriodo}
+                    onNavigateToDia={navigateToDia}
                     onNavigateToRoot={navigateToRoot}
                   />
                 </div>

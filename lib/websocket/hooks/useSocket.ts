@@ -9,7 +9,12 @@ import { getDynamicNestUrl } from "@/config/constants";
 
 type SocketState = "disconnected" | "connecting" | "connected" | "reconnecting";
 
-export function useSocket() {
+interface UseSocketOptions {
+  showLifecycleToasts?: boolean;
+}
+
+export function useSocket(options?: UseSocketOptions) {
+  const showToasts = options?.showLifecycleToasts ?? true;
   const socketRef = useRef<Socket | null>(null);
   const [state, setState] = useState<SocketState>("disconnected");
   const stateRef = useRef<SocketState>("disconnected");
@@ -36,14 +41,17 @@ export function useSocket() {
         updateState("connected");
       } else {
         updateState("connected");
-        wasEverConnectedRef.current = true;
-        addToast({
-          title: "Conectado",
-          description: "Conexão estabelecida com o servidor.",
-          severity: "success",
-          color: "foreground",
-          variant: "flat",
-        });
+
+        if (showToasts && !wasEverConnectedRef.current) {
+          wasEverConnectedRef.current = true;
+          addToast({
+            title: "Conectado",
+            description: "Conexão estabelecida com o servidor.",
+            severity: "success",
+            color: "foreground",
+            variant: "flat",
+          });
+        }
       }
 
       if (reconnectToastTimerRef.current) {
@@ -62,30 +70,35 @@ export function useSocket() {
       if (stateRef.current === "connected") {
         updateState("reconnecting");
 
-        reconnectToastTimerRef.current = setTimeout(() => {
-          if (stateRef.current === "reconnecting") {
-            addToast({
-              title: "Reconectando...",
-              description: "Tentando restabelecer conexão",
-              severity: "warning",
-              color: "foreground",
-              variant: "flat",
-            });
-          }
-        }, 2000);
+        if (showToasts) {
+          reconnectToastTimerRef.current = setTimeout(() => {
+            if (stateRef.current === "reconnecting") {
+              addToast({
+                title: "Reconectando...",
+                description: "Tentando restabelecer conexão",
+                severity: "warning",
+                color: "foreground",
+                variant: "flat",
+              });
+            }
+          }, 2000);
+        }
       }
     });
 
     s.on("connect_error", () => {
       if (stateRef.current === "connecting") {
         updateState("disconnected");
-        addToast({
-          title: "Erro de conexão",
-          description: "Não foi possível conectar ao servidor",
-          severity: "danger",
-          color: "foreground",
-          variant: "flat",
-        });
+
+        if (showToasts) {
+          addToast({
+            title: "Erro de conexão",
+            description: "Não foi possível conectar ao servidor",
+            severity: "danger",
+            color: "foreground",
+            variant: "flat",
+          });
+        }
       }
     });
 
@@ -98,14 +111,16 @@ export function useSocket() {
         reconnectToastTimerRef.current = null;
       }
 
-      addToast({
-        title: "Falha na reconexão",
-        description:
-          "Não foi possível restabelecer a conexão após múltiplas tentativas.",
-        severity: "danger",
-        color: "foreground",
-        variant: "flat",
-      });
+      if (showToasts) {
+        addToast({
+          title: "Falha na reconexão",
+          description:
+            "Não foi possível restabelecer a conexão após múltiplas tentativas.",
+          severity: "danger",
+          color: "foreground",
+          variant: "flat",
+        });
+      }
     });
 
     hasRegisteredSocketHandlersRef.current = true;

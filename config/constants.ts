@@ -117,6 +117,7 @@ export const NEST_PRONTUARIO_PARAMETROS =
 export const NEST_PRONTUARIO_REGISTROS = NEST_URL + "schedulings/records";
 export const NEST_GED_EMPRESAS = NEST_URL + "schedulings/ged/empresas";
 export const NEST_GED_PERIODOS = NEST_URL + "schedulings/ged/periodos";
+export const NEST_GED_DIAS = NEST_URL + "schedulings/ged/dias";
 export const NEST_GED_PRONTUARIOS = NEST_URL + "schedulings/ged/prontuarios";
 export const NEST_GED_ARQUIVOS = NEST_URL + "schedulings/ged/arquivos";
 export const NEST_GED_BATCH = NEST_URL + "schedulings/ged/batch";

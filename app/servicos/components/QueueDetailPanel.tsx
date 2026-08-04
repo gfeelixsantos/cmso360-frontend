@@ -20,12 +20,14 @@ import {
   ChevronDown,
   ChevronRight,
   Braces,
+  RotateCcw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
 import {
   useQueuePeek,
   QUEUE_WORKER_MAP,
+  requeueMessage,
 } from "@/hooks/useQueueMonitor";
 
 const QUEUE_ICONS: Record<string, React.ReactNode> = {
@@ -43,6 +45,14 @@ const QUEUE_ICONS: Record<string, React.ReactNode> = {
 function getQueueIcon(name: string): React.ReactNode {
   return QUEUE_ICONS[name] || <Inbox className="h-5 w-5" />;
 }
+
+const DLQ_TO_ACTIVE_QUEUE: Record<string, string> = {
+  "email-falhas": "email",
+  "ged-batch-falhas": "ged-batch",
+  "aso-enriquecimento-falhas": "aso-enriquecimento",
+  "exames-enriquecimento-falhas": "exames-enriquecimento",
+  "aso-processing-falhas": "aso-processing",
+};
 
 function getFieldLabel(key: string): string {
   const labels: Record<string, string> = {
@@ -352,6 +362,115 @@ interface QueueDetailPanelProps {
   onClose: () => void;
 }
 
+function RequeueModal({
+  queueName,
+  payload,
+  onClose,
+  onSuccess,
+}: {
+  queueName: string;
+  payload: Record<string, unknown> | null;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [editedJson, setEditedJson] = useState(
+    JSON.stringify(payload, null, 2) || "{}"
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const targetQueue = DLQ_TO_ACTIVE_QUEUE[queueName];
+
+  const handleSubmit = async () => {
+    if (!targetQueue) {
+      setError("Fila destino não mapeada");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      const parsedPayload = JSON.parse(editedJson);
+      await requeueMessage(queueName, targetQueue, parsedPayload);
+      onSuccess();
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao reenfileirar");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="w-full max-w-2xl rounded-xl border border-gray-200 bg-white shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-800">
+              Reenfileirar Mensagem
+            </h3>
+            <p className="text-sm text-gray-500">
+              De <span className="font-medium text-red-600">{queueName}</span> para{" "}
+              <span className="font-medium text-green-600">{targetQueue}</span>
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          <label className="mb-2 block text-sm font-medium text-gray-700">
+            Payload (JSON editável)
+          </label>
+          <textarea
+            value={editedJson}
+            onChange={(e) => setEditedJson(e.target.value)}
+            className="h-64 w-full rounded-lg border border-gray-200 bg-gray-900 p-3 font-mono text-xs leading-relaxed text-green-400 focus:border-[#44735E] focus:outline-none focus:ring-1 focus:ring-[#44735E]"
+            spellCheck={false}
+          />
+
+          {error && (
+            <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-5 py-4">
+          <Button variant="light" onPress={onClose} isDisabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button
+            color="primary"
+            onPress={handleSubmit}
+            isLoading={isSubmitting}
+            startContent={!isSubmitting ? <RotateCcw className="h-4 w-4" /> : undefined}
+          >
+            Reenfileirar
+          </Button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 export function QueueDetailPanel({
   queueName,
   messageCount,
@@ -359,6 +478,11 @@ export function QueueDetailPanel({
 }: QueueDetailPanelProps) {
   const { data: peekData, loading: peekLoading, refetch } = useQueuePeek(queueName);
   const workerInfo = QUEUE_WORKER_MAP[queueName];
+  const [requeueTarget, setRequeueTarget] = useState<{
+    payload: Record<string, unknown> | null;
+  } | null>(null);
+
+  const isDlq = queueName in DLQ_TO_ACTIVE_QUEUE;
 
   const formatDate = (dateStr: string) => {
     try {
@@ -501,13 +625,28 @@ export function QueueDetailPanel({
                         <span className="text-[10px] font-medium text-gray-400">
                           {formatDate(msg.insertedOn)}
                         </span>
-                        {msg.dequeueCount > 0 && (
-                          <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600">
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            {msg.dequeueCount} rejeição
-                            {msg.dequeueCount > 1 ? "ões" : ""}
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {msg.dequeueCount > 0 && (
+                            <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600">
+                              <AlertTriangle className="h-2.5 w-2.5" />
+                              {msg.dequeueCount} rejeição
+                              {msg.dequeueCount > 1 ? "ões" : ""}
+                            </span>
+                          )}
+                          {isDlq && (
+                            <Button
+                              size="sm"
+                              variant="flat"
+                              color="primary"
+                              startContent={<RotateCcw className="h-3 w-3" />}
+                              onPress={() =>
+                                setRequeueTarget({ payload: msg.payload })
+                              }
+                            >
+                              Reenfileirar
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <MessagePayload payload={msg.payload} />
                     </motion.div>
@@ -524,6 +663,15 @@ export function QueueDetailPanel({
           </div>
         </div>
       </div>
+
+      {requeueTarget && (
+        <RequeueModal
+          queueName={queueName}
+          payload={requeueTarget.payload}
+          onClose={() => setRequeueTarget(null)}
+          onSuccess={() => refetch()}
+        />
+      )}
     </motion.div>
   );
 }

@@ -10,6 +10,7 @@ import { ToastProvider } from "@heroui/react";
 
 import { AppDataProvider } from "./context/AppDataContext";
 import { GedBatchSocketProvider } from "./context/GedBatchSocketProvider";
+import { PushNotificationProvider } from "./context/PushNotificationProvider";
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -32,7 +33,9 @@ export function Providers({ children, themeProps }: ProvidersProps) {
       <ToastProvider />
       <NextThemesProvider {...themeProps}>
         <AppDataProvider initialData={null}>
-          <GedBatchSocketProvider>{children}</GedBatchSocketProvider>
+          <GedBatchSocketProvider>
+            <PushNotificationProvider>{children}</PushNotificationProvider>
+          </GedBatchSocketProvider>
         </AppDataProvider>
       </NextThemesProvider>
     </HeroUIProvider>

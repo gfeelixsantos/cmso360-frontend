@@ -1,9 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
-import {
-  NEST_AZURE_QUEUES_STATS,
-  NEST_AZURE_QUEUE_PEEK,
-} from "@/config/constants";
+import { NEST_AZURE_QUEUES_STATS, NEST_AZURE_QUEUE_PEEK } from "@/config/constants";
 import { getCurrentUser } from "@/lib/utils";
 
 export interface QueueStat {
@@ -132,7 +129,45 @@ export const QUEUE_WORKER_MAP: Record<string, QueueWorkerInfo> = {
     visibilitySeconds: 0,
     description: "Exames que falharam ao assinar após várias tentativas",
   },
+  "aso-processing-falhas": {
+    label: "ASO Processing (Falhas)",
+    consumer: "Sem Consumidor (DLQ)",
+    concurrency: 0,
+    visibilitySeconds: 0,
+    description: "ASOs que esgotaram 7 tentativas de geração via Puppeteer — requer intervenção manual",
+  },
 };
+
+export async function requeueMessage(
+  sourceQueueName: string,
+  targetQueueName: string,
+  editedPayload?: Record<string, unknown> | null
+) {
+  const currentUser = getCurrentUser();
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (currentUser) {
+    headers["x-auth-user"] = JSON.stringify(currentUser);
+  }
+
+  const res = await fetch(
+    `${NEST_AZURE_QUEUE_PEEK}/${encodeURIComponent(sourceQueueName)}/requeue`,
+    {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        targetQueueName,
+        editedPayload: editedPayload ?? null,
+      }),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: "Erro ao reenfileirar" }));
+    throw new Error(err.message || "Erro ao reenfileirar mensagem");
+  }
+  return res.json();
+}
 
 interface UseQueueMonitorOptions {
   autoRefresh?: boolean;

@@ -4,12 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   NEST_GED_ARQUIVOS,
+  NEST_GED_DIAS,
   NEST_GED_EMPRESAS,
   NEST_GED_PERIODOS,
   NEST_GED_PRONTUARIOS,
 } from "@/config/constants";
 
-export type NavigationLevel = "root" | "periodos" | "prontuarios" | "files";
+export type NavigationLevel =
+  | "root"
+  | "periodos"
+  | "dias"
+  | "prontuarios"
+  | "files";
 
 export interface EmpresaNode {
   codigoEmpresa: string;
@@ -21,6 +27,12 @@ export interface EmpresaNode {
 export interface PeriodoNode {
   ano: string;
   mes: string;
+  totalProntuarios: number;
+  totalArquivos: number;
+}
+
+export interface DiaNode {
+  dia: string;
   totalProntuarios: number;
   totalArquivos: number;
 }
@@ -47,14 +59,17 @@ interface UseBlobExplorerReturn {
   companies: EmpresaNode[];
   filteredCompanies: EmpresaNode[];
   periods: PeriodoNode[];
+  dias: DiaNode[];
   prontuarios: ProntuarioNode[];
   files: FileNode[];
   searchQuery: string;
   selectedEmpresa: EmpresaNode | null;
   selectedPeriodo: PeriodoNode | null;
+  selectedDia: DiaNode | null;
   selectedProntuario: ProntuarioNode | null;
   isLoadingCompanies: boolean;
   isLoadingPeriods: boolean;
+  isLoadingDias: boolean;
   isLoadingProntuarios: boolean;
   isLoadingFiles: boolean;
   error: string | null;
@@ -62,10 +77,12 @@ interface UseBlobExplorerReturn {
   setSearchQuery: (query: string) => void;
   selectEmpresa: (empresa: EmpresaNode) => Promise<void>;
   selectPeriodo: (periodo: PeriodoNode) => Promise<void>;
+  selectDia: (dia: DiaNode) => Promise<void>;
   selectProntuario: (prontuario: ProntuarioNode) => Promise<void>;
   navigateToRoot: () => void;
   navigateToEmpresa: () => void;
   navigateToPeriodo: () => void;
+  navigateToDia: () => void;
   toggleFileSelection: (blobName: string) => void;
   selectAllFiles: () => void;
   clearSelection: () => void;
@@ -114,6 +131,7 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
   const [level, setLevel] = useState<NavigationLevel>("root");
   const [companies, setCompanies] = useState<EmpresaNode[]>([]);
   const [periods, setPeriods] = useState<PeriodoNode[]>([]);
+  const [dias, setDias] = useState<DiaNode[]>([]);
   const [prontuarios, setProntuarios] = useState<ProntuarioNode[]>([]);
   const [files, setFiles] = useState<FileNode[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -123,10 +141,12 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
   const [selectedPeriodo, setSelectedPeriodo] = useState<PeriodoNode | null>(
     null,
   );
+  const [selectedDia, setSelectedDia] = useState<DiaNode | null>(null);
   const [selectedProntuario, setSelectedProntuario] =
     useState<ProntuarioNode | null>(null);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
+  const [isLoadingDias, setIsLoadingDias] = useState(false);
   const [isLoadingProntuarios, setIsLoadingProntuarios] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -223,10 +243,13 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
         return;
       }
 
-      setIsLoadingProntuarios(true);
+      setIsLoadingDias(true);
       setError(null);
       setSelectedPeriodo(periodo);
+      setSelectedDia(null);
       setSelectedProntuario(null);
+      setDias([]);
+      setProntuarios([]);
       setFiles([]);
       setSelectedFiles(new Set());
 
@@ -235,6 +258,53 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
           codigoEmpresa: selectedEmpresa.codigoEmpresa,
           ano: periodo.ano,
           mes: periodo.mes,
+        });
+        const data = await parseJsonResponse<DiaNode[]>(
+          await fetch(`${NEST_GED_DIAS}?${params.toString()}`, {
+            cache: "no-store",
+          }),
+        );
+
+        setDias(data);
+        setLevel("dias");
+      } catch (loadError) {
+        console.error(
+          "[useBlobExplorer] Erro ao carregar dias GED:",
+          loadError,
+        );
+        setDias([]);
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Não foi possível carregar os dias do período.",
+        );
+      } finally {
+        setIsLoadingDias(false);
+      }
+    },
+    [selectedEmpresa],
+  );
+
+  const selectDia = useCallback(
+    async (dia: DiaNode) => {
+      if (!selectedEmpresa || !selectedPeriodo) {
+        return;
+      }
+
+      setIsLoadingProntuarios(true);
+      setError(null);
+      setSelectedDia(dia);
+      setSelectedProntuario(null);
+      setProntuarios([]);
+      setFiles([]);
+      setSelectedFiles(new Set());
+
+      try {
+        const params = new URLSearchParams({
+          codigoEmpresa: selectedEmpresa.codigoEmpresa,
+          ano: selectedPeriodo.ano,
+          mes: selectedPeriodo.mes,
+          dia: dia.dia,
         });
         const data = await parseJsonResponse<ProntuarioNode[]>(
           await fetch(`${NEST_GED_PRONTUARIOS}?${params.toString()}`, {
@@ -253,13 +323,13 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "Não foi possível carregar os prontuários do período.",
+            : "Não foi possível carregar os prontuários do dia.",
         );
       } finally {
         setIsLoadingProntuarios(false);
       }
     },
-    [selectedEmpresa],
+    [selectedEmpresa, selectedPeriodo],
   );
 
   const selectProntuario = useCallback(
@@ -307,8 +377,10 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
     setLevel("root");
     setSelectedEmpresa(null);
     setSelectedPeriodo(null);
+    setSelectedDia(null);
     setSelectedProntuario(null);
     setPeriods([]);
+    setDias([]);
     setProntuarios([]);
     setFiles([]);
     setSelectedFiles(new Set());
@@ -318,7 +390,9 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
   const navigateToEmpresa = useCallback(() => {
     setLevel("periodos");
     setSelectedPeriodo(null);
+    setSelectedDia(null);
     setSelectedProntuario(null);
+    setDias([]);
     setProntuarios([]);
     setFiles([]);
     setSelectedFiles(new Set());
@@ -326,6 +400,16 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
   }, []);
 
   const navigateToPeriodo = useCallback(() => {
+    setLevel("dias");
+    setSelectedDia(null);
+    setSelectedProntuario(null);
+    setProntuarios([]);
+    setFiles([]);
+    setSelectedFiles(new Set());
+    setError(null);
+  }, []);
+
+  const navigateToDia = useCallback(() => {
     setLevel("prontuarios");
     setSelectedProntuario(null);
     setFiles([]);
@@ -360,14 +444,17 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
     companies,
     filteredCompanies,
     periods,
+    dias,
     prontuarios,
     files,
     searchQuery,
     selectedEmpresa,
     selectedPeriodo,
+    selectedDia,
     selectedProntuario,
     isLoadingCompanies,
     isLoadingPeriods,
+    isLoadingDias,
     isLoadingProntuarios,
     isLoadingFiles,
     error,
@@ -375,10 +462,12 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
     setSearchQuery,
     selectEmpresa,
     selectPeriodo,
+    selectDia,
     selectProntuario,
     navigateToRoot,
     navigateToEmpresa,
     navigateToPeriodo,
+    navigateToDia,
     toggleFileSelection,
     selectAllFiles,
     clearSelection,

@@ -12,6 +12,9 @@ import {
 
 const ACTIVE_JOB_KEY = "ged-batch:active-job";
 
+// Deduplicação global entre múltiplas instâncias do hook (FileExplorer em /arquivos e /servicos)
+let _globalTerminalJobId: string | null = null;
+
 function getActiveJobId(): string | null {
   try {
     return localStorage.getItem(ACTIVE_JOB_KEY);
@@ -72,6 +75,10 @@ export function useGedBatchJob({
 
   const handleTerminalJob = useCallback(
     (job: GedBatchJob) => {
+      // Dedup global: se outra instância já processou este job, ignora
+      if (_globalTerminalJobId === job.id) return;
+      _globalTerminalJobId = job.id;
+
       clearActiveJobId();
       if (job.status === "completed" || job.status === "partial") {
         onCompleted?.(job);
@@ -123,6 +130,7 @@ export function useGedBatchJob({
     async (payload: CreateBatchRequest) => {
       setIsCreating(true);
       setError(null);
+      _globalTerminalJobId = null;
 
       try {
         const job = await createBatchJob(payload);

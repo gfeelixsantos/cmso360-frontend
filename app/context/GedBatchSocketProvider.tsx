@@ -1,29 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { addToast } from "@heroui/react";
 
 import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useSocket } from "@/lib/websocket/hooks/useSocket";
 import { GedBatchStatusPayload } from "@/lib/websocket/events/events";
-import { addNotification } from "@/lib/notification-store";
-
-const RECENT_TOAST_MS = 10_000;
-const recentToasts = new Map<string, number>();
-
-function canShowToast(key: string): boolean {
-  const last = recentToasts.get(key);
-  const now = Date.now();
-  if (last && now - last < RECENT_TOAST_MS) return false;
-  recentToasts.set(key, now);
-  return true;
-}
+import { addNotification, clearAllNotifications } from "@/lib/notification-store";
 
 export function GedBatchSocketProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<IUserInfo | null>(null);
-  const { socket, connect, disconnect, registerHandlers } = useSocket();
+  const { socket, connect, disconnect, registerHandlers } = useSocket({ showLifecycleToasts: false });
   const handlersRef = useRef<(() => void) | null>(null);
 
   // Detecta login/logout (sessionStorage não emite eventos na mesma aba)
@@ -47,6 +35,7 @@ export function GedBatchSocketProvider({ children }: { children: React.ReactNode
       handlersRef.current?.();
       handlersRef.current = null;
       disconnect();
+      clearAllNotifications();
       return;
     }
     connect({
@@ -58,18 +47,9 @@ export function GedBatchSocketProvider({ children }: { children: React.ReactNode
 
   // Registra handlers para eventos GED batch
   const handleBatchStatus = useCallback((payload: GedBatchStatusPayload) => {
-    if (!canShowToast(`toast:ged-batch:${payload.jobId}:${payload.status}`)) return;
-
     const dedupeKey = `ged-batch:${payload.jobId}:${payload.status}`;
 
     if (payload.status === "completed") {
-      addToast({
-        title: "Lote concluído",
-        description: "O download em lote foi processado com sucesso.",
-        severity: "success",
-        color: "foreground",
-        variant: "flat",
-      });
       addNotification({
         title: "Lote concluído",
         message: "O download em lote foi processado com sucesso.",
@@ -81,13 +61,6 @@ export function GedBatchSocketProvider({ children }: { children: React.ReactNode
         actionLabel: "Baixar ZIP",
       });
     } else if (payload.status === "partial") {
-      addToast({
-        title: "Lote concluído com pendências",
-        description: "Alguns prontuários não puderam ser gerados. Verifique as notificações.",
-        severity: "warning",
-        color: "foreground",
-        variant: "flat",
-      });
       addNotification({
         title: "Lote concluído com pendências",
         message: `${payload.succeededFuncionarios} de ${payload.totalFuncionarios} prontuário(s) gerados.`,
@@ -99,13 +72,6 @@ export function GedBatchSocketProvider({ children }: { children: React.ReactNode
         actionLabel: "Baixar ZIP",
       });
     } else if (payload.status === "failed") {
-      addToast({
-        title: "Lote falhou",
-        description: "Nenhum prontuário pôde ser gerado.",
-        severity: "danger",
-        color: "foreground",
-        variant: "flat",
-      });
       addNotification({
         title: "Lote falhou",
         message: "Nenhum prontuário pôde ser gerado.",

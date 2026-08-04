@@ -42,7 +42,7 @@ export const QueueMonitor: React.FC = () => {
       });
     }
 
-    return queues;
+    return queues.sort((a, b) => a.name.localeCompare(b.name));
   }, [data, searchQuery]);
 
   const stats = useMemo(() => {

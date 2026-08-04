@@ -105,6 +105,9 @@ export const setCurrentUser = (user: IUserInfo) => {
 export const logout = () => {
   if (typeof window !== "undefined") {
     sessionStorage.removeItem("currentUser");
+    import("@/lib/notification-store").then(({ clearAllNotifications }) => {
+      clearAllNotifications();
+    });
   }
 };
 
