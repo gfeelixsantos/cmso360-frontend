@@ -11,11 +11,13 @@ interface BreadcrumbNavProps {
   selectedEmpresa: string | null;
   selectedAno: string | null;
   selectedMes: string | null;
+  selectedDia: string | null;
   selectedProntuario: string | null;
   razaoSocial: string;
   onNavigateToRoot: () => void;
   onNavigateToEmpresa: () => void;
   onNavigateToPeriodo: () => void;
+  onNavigateToDia?: () => void;
 }
 
 const MES_NOMES: Record<string, string> = {
@@ -38,11 +40,13 @@ const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
   selectedEmpresa,
   selectedAno,
   selectedMes,
+  selectedDia,
   selectedProntuario,
   razaoSocial,
   onNavigateToRoot,
   onNavigateToEmpresa,
   onNavigateToPeriodo,
+  onNavigateToDia,
 }) => {
   const mesNome = selectedMes ? (MES_NOMES[selectedMes] ?? selectedMes) : null;
 
@@ -72,12 +76,12 @@ const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         <>
           <ChevronRight className="h-4 w-4 flex-shrink-0 text-default-400" />
           {level === "periodos" ? (
-            <span className="max-w-[180px] truncate font-semibold text-default-800">
+            <span className="max-w-[280px] truncate font-semibold text-default-800">
               {razaoSocial}
             </span>
           ) : (
             <Button
-              className="h-auto min-w-0 max-w-[180px] truncate px-1 py-0 text-sm font-medium text-primary"
+              className="h-auto min-w-0 max-w-[280px] truncate px-1 py-0 text-sm font-medium text-primary"
               size="sm"
               variant="light"
               onPress={onNavigateToEmpresa}
@@ -88,21 +92,43 @@ const BreadcrumbNav: React.FC<BreadcrumbNavProps> = ({
         </>
       )}
 
-      {(level === "prontuarios" || level === "files") && selectedAno && mesNome && (
+      {(level === "dias" || level === "prontuarios" || level === "files") &&
+        selectedAno &&
+        mesNome && (
+          <>
+            <ChevronRight className="h-4 w-4 flex-shrink-0 text-default-400" />
+            {level === "dias" ? (
+              <span className="font-semibold text-default-800">
+                {mesNome} / {selectedAno}
+              </span>
+            ) : (
+              <Button
+                className="h-auto min-w-0 px-1 py-0 text-sm font-medium text-primary"
+                size="sm"
+                variant="light"
+                onPress={onNavigateToPeriodo}
+              >
+                {mesNome} / {selectedAno}
+              </Button>
+            )}
+          </>
+        )}
+
+      {(level === "prontuarios" || level === "files") && selectedDia && (
         <>
           <ChevronRight className="h-4 w-4 flex-shrink-0 text-default-400" />
           {level === "prontuarios" ? (
             <span className="font-semibold text-default-800">
-              {mesNome} / {selectedAno}
+              Dia {selectedDia}
             </span>
           ) : (
             <Button
               className="h-auto min-w-0 px-1 py-0 text-sm font-medium text-primary"
               size="sm"
               variant="light"
-              onPress={onNavigateToPeriodo}
+              onPress={() => onNavigateToDia?.()}
             >
-              {mesNome} / {selectedAno}
+              Dia {selectedDia}
             </Button>
           )}
         </>

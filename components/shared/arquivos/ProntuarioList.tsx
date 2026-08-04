@@ -14,6 +14,8 @@ interface ProntuarioListProps {
   onDownload?: (codigoProntuario: string, nomeFuncionario: string) => void;
   selectedSet?: Set<string>;
   onToggleSelect?: (codigoProntuario: string) => void;
+  onSelectAll?: () => void;
+  onClearSelection?: () => void;
   onBatchDownload?: (tipo: "prontuario" | "aso") => void;
   currentJob?: GedBatchJob | null;
   isCreatingJob?: boolean;
@@ -34,6 +36,8 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
   onDownload,
   selectedSet = new Set(),
   onToggleSelect,
+  onSelectAll,
+  onClearSelection,
   onBatchDownload,
   currentJob,
   isCreatingJob = false,
@@ -57,40 +61,72 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
   }
 
   const hasSelection = selectedSet.size > 0;
+  const allSelected = prontuarios.length > 0 && selectedSet.size === prontuarios.length;
 
   return (
     <div className="flex flex-col gap-3">
-      {hasSelection && onBatchDownload && (
-        <div className="sticky top-0 z-10 flex items-center justify-between rounded-large border border-brand-primary/20 bg-brand-primary/5 px-4 py-3">
-          <span className="text-sm font-medium text-brand-primary">
-            {selectedSet.size} selecionado(s)
-          </span>
-          <div className="flex items-center gap-2">
+      <div className="sticky top-0 z-10 flex items-center justify-between rounded-large border border-default-200 bg-default-50/80 px-4 py-3">
+        <span className="text-sm font-medium text-default-600">
+          {hasSelection
+            ? `${selectedSet.size} de ${prontuarios.length} selecionado(s)`
+            : `${prontuarios.length} prontuário(s)`}
+        </span>
+        <div className="flex items-center gap-2">
+          {hasSelection && !allSelected && onClearSelection && (
             <Button
               size="sm"
-              className="bg-brand-primary text-white hover:bg-brand-primary-hover"
-              startContent={<FileText className="h-4 w-4" />}
-              onPress={() => onBatchDownload("prontuario")}
+              variant="light"
+              className="text-default-500"
+              onPress={onClearSelection}
             >
-              Baixar Prontuários
+              Limpar seleção
             </Button>
+          )}
+          {onSelectAll && (
             <Button
               size="sm"
-              className="bg-success/15 text-success hover:bg-success/25"
-              startContent={<Download className="h-4 w-4" />}
-              onPress={() => onBatchDownload("aso")}
+              variant={allSelected ? "light" : "flat"}
+              className={
+                allSelected
+                  ? "text-default-500"
+                  : "bg-brand-primary/10 text-brand-primary"
+              }
+              startContent={allSelected ? undefined : <CheckSquare className="h-4 w-4" />}
+              onPress={allSelected ? onClearSelection : onSelectAll}
             >
-              Baixar ASOs
+              {allSelected ? "Limpar seleção" : "Selecionar Todos"}
             </Button>
-          </div>
+          )}
+          {hasSelection && onBatchDownload && (
+            <>
+              <Button
+                size="sm"
+                className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                startContent={<FileText className="h-4 w-4" />}
+                onPress={() => onBatchDownload("prontuario")}
+              >
+                Baixar Prontuários
+              </Button>
+              <Button
+                size="sm"
+                className="bg-success/15 text-success hover:bg-success/25"
+                startContent={<Download className="h-4 w-4" />}
+                onPress={() => onBatchDownload("aso")}
+              >
+                Baixar ASOs
+              </Button>
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <div className="grid auto-rows-fr gap-3 md:grid-cols-2 xl:grid-cols-3">
         {prontuarios.map((prontuario) => {
           const isJobForThisProntuario =
             currentJob?.scope === "prontuario" &&
-            currentJob.items[0]?.codigoProntuario === prontuario.codigoProntuario;
+            currentJob.items.some(
+              (item) => item.codigoProntuario === prontuario.codigoProntuario,
+            );
 
           const jobStatus = isJobForThisProntuario ? currentJob?.status : undefined;
           const isActive =
