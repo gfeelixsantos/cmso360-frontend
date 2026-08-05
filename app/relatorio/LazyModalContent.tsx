@@ -28,7 +28,7 @@ import InformacoesGerais, {
 } from "./components/InformacoesGerais";
 import ExamesTable from "./components/ExamesTable";
 import RiscosFuncionario from "./components/RiscosFuncionario";
-import PareceresComplementares from "./components/PareceresComplementares";
+
 import AnexosUpload from "./components/AnexosUpload";
 
 import {
@@ -686,10 +686,7 @@ const LazyModalContent: React.FC<LazyModalContentProps> = ({
           onSave={handleSaveEmployeeData}
         />
         <RiscosFuncionario atendimento={atendimento} />
-        <PareceresComplementares
-          altura={atendimento.ALTURA_PARECER}
-          confinado={atendimento.CONFINADO_PARECER}
-        />
+
         <Divider className="my-6" />
         <ExamesTable
           atendimento={atendimento}

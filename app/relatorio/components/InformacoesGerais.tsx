@@ -398,6 +398,8 @@ const InformacoesGerais: React.FC<{
           signatureDate={signatureDate}
           signatureLabel={signatureLabel}
           validacaoUrl={validacaoUrl}
+          altura={atendimento.ALTURA_PARECER}
+          confinado={atendimento.CONFINADO_PARECER}
         />
 
         {(atendimento.OBSERVACOES ||

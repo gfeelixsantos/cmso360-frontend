@@ -35,6 +35,8 @@ interface AtendimentoStatusCardProps {
   asoErrorMessage?: string | null;
   autenticacaoAtendimento?: AtendimentoAuthInfo | null;
   employeeNome?: string;
+  altura?: string | null;
+  confinado?: string | null;
 }
 
 const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
@@ -55,6 +57,8 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
   asoErrorMessage,
   autenticacaoAtendimento,
   employeeNome,
+  altura,
+  confinado,
 }) => {
   const metodoAutenticacao = autenticacaoAtendimento?.metodo || "SOC";
   const termoCienciaUrl =
@@ -68,6 +72,14 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
 
   const dataPart = signatureDate?.split(",")[0]?.trim() || "";
   const nomePart = employeeNome || "";
+
+  const formatParecer = (value?: string | null): string | null => {
+    if (!value) return null;
+    return value.replace(/_/g, " ").toUpperCase();
+  };
+
+  const alturaLabel = formatParecer(altura);
+  const confinadoLabel = formatParecer(confinado);
 
   return (
     <div className="mt-2">
@@ -163,6 +175,24 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
               </div>
 
               <div className="space-y-3">
+                {alturaLabel && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block mb-1">
+                      Trabalho em Altura
+                    </label>
+                    <p className="text-sm text-gray-900 uppercase">{alturaLabel}</p>
+                  </div>
+                )}
+
+                {confinadoLabel && (
+                  <div>
+                    <label className="text-sm font-medium text-gray-500 block mb-1">
+                      Espaço Confinado
+                    </label>
+                    <p className="text-sm text-gray-900 uppercase">{confinadoLabel}</p>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm font-medium text-gray-500 block mb-1">
                     Situação
@@ -172,13 +202,6 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                   >
                     {asoStatusLabel}
                   </p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-500 block mb-1">
-                    E-mail
-                  </label>
-                  <p className="text-sm text-gray-900 uppercase">{emailLabel}</p>
                 </div>
               </div>
             </section>
@@ -206,6 +229,12 @@ const AtendimentoStatusCard: React.FC<AtendimentoStatusCardProps> = ({
                   <p className="text-sm text-gray-600">
                     {signatureDate}
                   </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500 block mb-1">
+                    E-mail
+                  </label>
+                  <p className="text-sm text-gray-900 uppercase">{emailLabel}</p>
                 </div>
               </div>
             </section>

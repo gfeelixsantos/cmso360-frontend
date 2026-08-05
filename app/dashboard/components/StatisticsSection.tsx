@@ -308,7 +308,7 @@ const ExamCard = ({
                     ? "Tempo médio desde a emissão do ticket até este exame"
                     : exame.tempoContexto === 'subsequente'
                       ? "Tempo médio desde o exame anterior"
-                      : "Dados insuficientes para calcular o intervalo"
+                      : "Tempo médio de espera para este exame"
                 }
                 placement="top"
                 showArrow
