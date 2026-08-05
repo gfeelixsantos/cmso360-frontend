@@ -856,12 +856,35 @@ export class AudiometriaCalculator {
       return "Plana";
     }
 
+    // Detecção de flutuações que descaracterizam Descendente/Ascendente (Regra da Fonoaudióloga)
+    const valsOrdenados = [
+      get(250),
+      get(500),
+      get(1000),
+      get(2000),
+      get(3000),
+      get(4000),
+      get(6000),
+      get(8000),
+    ].filter((v): v is number => v !== null);
+
+    let temRecuperacao = false; // Melhora de 15 dB ou mais em direção às agudas
+    let temQuedaAbrupta = false; // Piora de 15 dB ou mais em direção às agudas
+    for (let i = 1; i < valsOrdenados.length; i++) {
+      if (valsOrdenados[i] <= valsOrdenados[i - 1] - 15) {
+        temRecuperacao = true;
+      }
+      if (valsOrdenados[i] >= valsOrdenados[i - 1] + 15) {
+        temQuedaAbrupta = true;
+      }
+    }
+
     if (mediaAgudas >= mediaGraves + 15) {
-      return "Descendente";
+      return temRecuperacao ? "Irregular" : "Descendente";
     }
 
     if (mediaGraves >= mediaAgudas + 15) {
-      return "Ascendente";
+      return temQuedaAbrupta ? "Irregular" : "Ascendente";
     }
 
     return "Irregular";
