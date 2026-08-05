@@ -644,7 +644,17 @@ const AtendimentoPage: React.FC = () => {
 
 
   const findSchedulingIndex = useCallback((list: Scheduling[], schedule: Scheduling) =>
-    list.findIndex((item) => (item._id && schedule._id && item._id === schedule._id) || (item.CODIGOPRONTUARIO && schedule.CODIGOPRONTUARIO && item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO)),
+    list.findIndex((item) => {
+      if (item._id && schedule._id && item._id === schedule._id) return true;
+      if (item.CODIGOPRONTUARIO && schedule.CODIGOPRONTUARIO && item.CODIGOPRONTUARIO === schedule.CODIGOPRONTUARIO) return true;
+      // Busca por Empresa + Funcionário (CPF ou Código) para evitar duplicidade de cards
+      const sameCompany = item.CODIGOEMPRESA && schedule.CODIGOEMPRESA && item.CODIGOEMPRESA === schedule.CODIGOEMPRESA;
+      if (sameCompany) {
+        if (item.CPFFUNCIONARIO && schedule.CPFFUNCIONARIO && item.CPFFUNCIONARIO === schedule.CPFFUNCIONARIO) return true;
+        if (item.CODIGO && schedule.CODIGO && item.CODIGO === schedule.CODIGO) return true;
+      }
+      return false;
+    }),
   []);
 
   const matchesSelectedExam = useCallback(
@@ -803,7 +813,24 @@ const AtendimentoPage: React.FC = () => {
       } else {
         setAgendamentosGeral((prev) => {
           const idx = findSchedulingIndex(prev, schedule);
-          if (idx !== -1) { const updated = [...prev]; updated[idx] = schedule; return updated; }
+          if (idx !== -1) {
+            const updated = [...prev];
+            const existing = updated[idx];
+            // Mescla exames preservando os já existentes para evitar sobrescrever
+            const existingExames = Array.isArray(existing.EXAMES) ? existing.EXAMES : [];
+            const incomingExames = Array.isArray(schedule.EXAMES) ? schedule.EXAMES : [];
+            const mergedExamesMap = new Map();
+            existingExames.forEach((e) => mergedExamesMap.set(e.codigoExame || e.grupo || e.nomeExame, e));
+            incomingExames.forEach((e) => mergedExamesMap.set(e.codigoExame || e.grupo || e.nomeExame, e));
+            
+            updated[idx] = {
+              ...existing,
+              ...schedule,
+              TICKET: schedule.TICKET || existing.TICKET,
+              EXAMES: Array.from(mergedExamesMap.values()),
+            };
+            return updated;
+          }
           return [...prev, schedule];
         });
       }
