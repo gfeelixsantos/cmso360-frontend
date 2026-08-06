@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Users,
   ShieldAlert,
@@ -32,6 +32,7 @@ import {
   Chip,
   Tooltip,
   Switch,
+  Pagination,
 } from "@heroui/react";
 import CmsoCircularLoading from "@/components/shared/CmsoCircularLoading";
 
@@ -42,15 +43,14 @@ import { IUserInfo } from "@/lib/user/interfaces/IUser";
 const PERFIS = [
   "ADMINISTRATIVO",
   "ATENDIMENTO",
+  "COMERCIAL",
   "CONVIDADO",
   "ENFERMAGEM",
-  "FONOAUDIOLOGIA",
-  "LABORATÓRIO",
+  "ENGENHARIA",
+  "FONOAUDIOLOGA",
+  "LABORATORIO",
   "MASTER",
   "MÉDICO",
-  "PSICÓLOGO",
-  "RADIOLOGIA",
-  "RECEPÇÃO",
 ];
 
 const UFS = [
@@ -67,6 +67,9 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
   const { users, loading, refetch } = useUsers();
   const [search, setSearch] = useState("");
   const [filterPerfil, setFilterPerfil] = useState<string>("");
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [isCreate, setIsCreate] = useState(false);
@@ -91,14 +94,31 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const filtered = users.filter((u) => {
-    const matchSearch =
-      !search ||
-      u.nome.toLowerCase().includes(search.toLowerCase()) ||
-      u.codigo.includes(search);
-    const matchPerfil = !filterPerfil || u.perfil === filterPerfil;
-    return matchSearch && matchPerfil;
-  });
+  const filtered = useMemo(() => {
+    return users.filter((u) => {
+      const matchSearch =
+        !search ||
+        u.nome.toLowerCase().includes(search.toLowerCase()) ||
+        u.codigo.toLowerCase().includes(search.toLowerCase());
+      const matchPerfil = !filterPerfil || filterPerfil === "ALL" || u.perfil === filterPerfil;
+      return matchSearch && matchPerfil;
+    });
+  }, [users, search, filterPerfil]);
+
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+
+  useEffect(() => {
+    if (currentPage > 1 && currentPage > totalPages) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  const paginated = useMemo(() => {
+    return filtered.slice(
+      (currentPage - 1) * itemsPerPage,
+      currentPage * itemsPerPage
+    );
+  }, [filtered, currentPage]);
 
   function openCreate() {
     setIsCreate(true);
@@ -265,19 +285,61 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
       <Card className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <CardBody className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <ShieldAlert size={28} aria-hidden="true" style={{ color: "#44735e" }} />
-              <h2 className="text-xl font-semibold text-gray-800">Profissionais</h2>
+            <div className="flex items-center gap-3 min-w-0">
+              <Users size={28} aria-hidden="true" style={{ color: "#44735e" }} className="flex-shrink-0" />
+              <h2 className="text-xl font-semibold text-gray-800 whitespace-nowrap">Profissionais</h2>
             </div>
-            {isMaster && (
-              <Button
-                color="primary"
-                onPress={openCreate}
-                style={{ backgroundColor: "#44735e" }}
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Input
+                isClearable
+                className="w-48"
+                classNames={{
+                  base: "h-9",
+                  mainWrapper: "h-9",
+                  inputWrapper: "h-9",
+                }}
+                placeholder="Pesquisar..."
+                size="sm"
+                startContent={<Search size={14} className="text-gray-400" />}
+                value={search}
+                onValueChange={(val) => {
+                  setSearch(val || "");
+                  setCurrentPage(1);
+                }}
+              />
+              <Select
+                aria-label="Filtrar por perfil"
+                className="w-40"
+                classNames={{
+                  base: "h-9",
+                  mainWrapper: "h-9",
+                  trigger: "h-9 min-h-9",
+                }}
+                placeholder="Filtrar Perfil"
+                size="sm"
+                selectedKeys={filterPerfil ? [filterPerfil] : []}
+                onSelectionChange={(keys) => {
+                  const val = Array.from(keys)[0] as string;
+                  setFilterPerfil(val || "");
+                  setCurrentPage(1);
+                }}
               >
-                Novo Profissional
-              </Button>
-            )}
+                {[{ value: "ALL", label: "Todos os perfis" }, ...PERFIS.map(p => ({ value: p, label: p }))].map((p) => (
+                  <SelectItem key={p.value}>{p.label}</SelectItem>
+                ))}
+              </Select>
+              {isMaster && (
+                <Button
+                  color="primary"
+                  onPress={openCreate}
+                  size="sm"
+                  className="h-9 px-4 whitespace-nowrap flex-shrink-0"
+                  style={{ backgroundColor: "#44735e" }}
+                >
+                  Novo Profissional
+                </Button>
+              )}
+            </div>
           </div>
 
           {error && (
@@ -286,29 +348,6 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
               <button className="ml-2 underline" onClick={() => setError(null)}>Fechar</button>
             </div>
           )}
-
-          <div className="flex gap-4 mb-4">
-            <Input
-              placeholder="Buscar por nome ou código..."
-              startContent={<Search size={18} className="text-gray-400" />}
-              value={search}
-              onValueChange={setSearch}
-              className="max-w-xs"
-            />
-            <Select
-              placeholder="Filtrar por perfil"
-              selectedKeys={filterPerfil ? [filterPerfil] : []}
-              onSelectionChange={(keys) => {
-                const val = Array.from(keys)[0] as string;
-                setFilterPerfil(val || "");
-              }}
-              className="max-w-xs"
-            >
-              {PERFIS.map((p) => (
-                <SelectItem key={p}>{p}</SelectItem>
-              ))}
-            </Select>
-          </div>
 
           <Table aria-label="Usuários do sistema">
             <TableHeader>
@@ -321,7 +360,7 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
               <TableColumn>AÇÕES</TableColumn>
             </TableHeader>
             <TableBody emptyContent="Nenhum usuário encontrado">
-              {filtered.map((u) => (
+              {paginated.map((u) => (
                 <TableRow key={u.codigo}>
                   <TableCell className="font-mono text-sm">{u.codigo}</TableCell>
                   <TableCell className="font-medium">{u.nome}</TableCell>
@@ -406,6 +445,18 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
               ))}
             </TableBody>
           </Table>
+
+          {filtered.length > itemsPerPage && (
+            <div className="flex justify-center mt-6">
+              <Pagination
+                showControls
+                color="primary"
+                page={currentPage}
+                total={Math.ceil(filtered.length / itemsPerPage)}
+                onChange={(page) => setCurrentPage(page)}
+              />
+            </div>
+          )}
         </CardBody>
       </Card>
 
