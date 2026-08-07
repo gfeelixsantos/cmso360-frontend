@@ -8,9 +8,21 @@ import { useRouter } from "next/navigation";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { ToastProvider } from "@heroui/react";
 
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+
 import { AppDataProvider } from "./context/AppDataContext";
 import { GedBatchSocketProvider } from "./context/GedBatchSocketProvider";
 import { PushNotificationProvider } from "./context/PushNotificationProvider";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      retry: 1,
+    },
+  },
+});
 
 export interface ProvidersProps {
   children: React.ReactNode;
@@ -31,13 +43,16 @@ export function Providers({ children, themeProps }: ProvidersProps) {
   return (
     <HeroUIProvider navigate={router.push}>
       <ToastProvider />
-      <NextThemesProvider {...themeProps}>
-        <AppDataProvider initialData={null}>
-          <GedBatchSocketProvider>
-            <PushNotificationProvider>{children}</PushNotificationProvider>
-          </GedBatchSocketProvider>
-        </AppDataProvider>
-      </NextThemesProvider>
+      <QueryClientProvider client={queryClient}>
+        <NextThemesProvider {...themeProps}>
+          <AppDataProvider initialData={null}>
+            <GedBatchSocketProvider>
+              <PushNotificationProvider>{children}</PushNotificationProvider>
+            </GedBatchSocketProvider>
+          </AppDataProvider>
+        </NextThemesProvider>
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
     </HeroUIProvider>
   );
 }

@@ -6,8 +6,7 @@ import { Button, Card, CardBody, Input, Spinner } from "@heroui/react";
 
 import type { EmpresaNode } from "@/hooks/useBlobExplorer";
 import type { GedBatchJob } from "@/lib/ged-batch-client";
-
-const ITEMS_PER_PAGE = 20;
+import { VirtualizedGrid } from "./VirtualizedGrid";
 
 interface EmpresaListProps {
   empresas: EmpresaNode[];
@@ -40,14 +39,7 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
   currentJob,
   isCreatingJob = false,
 }) => {
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
-
-  useEffect(() => {
-    setVisibleCount(ITEMS_PER_PAGE);
-  }, [searchQuery]);
-
-  const displayedEmpresas = empresas.slice(0, visibleCount);
-  const remaining = empresas.length - visibleCount;
+  const displayedEmpresas = empresas;
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -77,159 +69,150 @@ const EmpresaList: React.FC<EmpresaListProps> = ({
         </div>
       ) : (
         <>
-          <div className="grid flex-1 auto-rows-fr gap-3 overflow-y-auto pr-1 sm:grid-cols-2 xl:grid-cols-3">
-            {displayedEmpresas.map((empresa, index) => {
-            const isJobForThisEmpresa =
-              currentJob?.scope === "empresa" &&
-              currentJob.empresa.codigoEmpresa === empresa.codigoEmpresa;
+          <div className="flex-1 overflow-hidden pr-1">
+            <VirtualizedGrid
+              items={displayedEmpresas}
+              itemHeight={156} // min-h-[156px]
+              breakpoints={{ sm: 2, xl: 3 }}
+              renderItem={(empresa, index) => {
+                const isJobForThisEmpresa =
+                  currentJob?.scope === "empresa" &&
+                  currentJob.empresa.codigoEmpresa === empresa.codigoEmpresa;
 
-            const jobStatus = isJobForThisEmpresa ? currentJob?.status : undefined;
-            const isActive =
-              isCreatingJob ||
-              (isJobForThisEmpresa &&
-                (jobStatus === "queued" || jobStatus === "processing"));
-            const isTerminal =
-              isJobForThisEmpresa &&
-              (jobStatus === "completed" ||
-                jobStatus === "partial" ||
-                jobStatus === "failed");
-            const zipUrl =
-              isJobForThisEmpresa && isTerminal
-                ? currentJob?.result?.zipUrl
-                : undefined;
+                const jobStatus = isJobForThisEmpresa ? currentJob?.status : undefined;
+                const isActive =
+                  isCreatingJob ||
+                  (isJobForThisEmpresa &&
+                    (jobStatus === "queued" || jobStatus === "processing"));
+                const isTerminal =
+                  isJobForThisEmpresa &&
+                  (jobStatus === "completed" ||
+                    jobStatus === "partial" ||
+                    jobStatus === "failed");
+                const zipUrl =
+                  isJobForThisEmpresa && isTerminal
+                    ? currentJob?.result?.zipUrl
+                    : undefined;
 
-            return (
-              <div
-                key={`${empresa.codigoEmpresa}-${index}`}
-                className="min-h-[136px] cursor-pointer"
-                role="button"
-                tabIndex={0}
-                onClick={() => onSelect(empresa.codigoEmpresa)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    onSelect(empresa.codigoEmpresa);
-                  }
-                }}
-              >
-                <Card className="h-full border border-default-200 bg-white transition-colors duration-150 hover:border-brand-primary/40 hover:shadow-sm">
-                  <CardBody className="p-4">
-                    <div className="flex h-full flex-col justify-between gap-4">
-                      <div className="flex items-start gap-3">
-                        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-medium bg-brand-primary/10 text-brand-primary">
-                          <Building2 className="h-5 w-5" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold text-default-800">
-                            {empresa.razaoSocial}
-                          </p>
-                          <p className="mt-1 text-xs text-default-500">
-                            Cod: {empresa.codigoEmpresa}
-                          </p>
-                          <p className="text-xs text-default-400">
-                            {empresa.totalProntuarios} prontuario(s) disponiveis
-                          </p>
-                        </div>
-                      </div>
+                return (
+                  <div
+                    key={`${empresa.codigoEmpresa}-${index}`}
+                    className="h-[156px] cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelect(empresa.codigoEmpresa)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" || event.key === " ") {
+                        event.preventDefault();
+                        onSelect(empresa.codigoEmpresa);
+                      }
+                    }}
+                  >
+                    <Card className="h-full border border-default-200 bg-white transition-colors duration-150 hover:border-brand-primary/40 hover:shadow-sm">
+                      <CardBody className="p-4">
+                        <div className="flex h-full flex-col justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-medium bg-brand-primary/10 text-brand-primary">
+                              <Building2 className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-semibold text-default-800">
+                                {empresa.razaoSocial}
+                              </p>
+                              <p className="mt-1 text-xs text-default-500">
+                                {empresa.cnpj ? `CNPJ: ${empresa.cnpj}` : `Cod: ${empresa.codigoEmpresa}`}
+                              </p>
+                              <p className="text-xs text-default-400">
+                                {empresa.totalProntuarios} prontuario(s) disponiveis
+                              </p>
+                            </div>
+                          </div>
 
-                      <div
-                        className="flex items-center justify-between border-t border-default-200 pt-3"
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={(e) => e.stopPropagation()}
-                      >
-                        <span className="text-xs text-default-500">Arquivos</span>
-                        <div className="flex items-center gap-2">
-                          {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
-                            <Button
-                              className={
-                                jobStatus === "partial"
-                                  ? "bg-warning/15 text-warning hover:bg-warning/25"
-                                  : "bg-success/15 text-success hover:bg-success/25"
-                              }
-                              size="sm"
-                              as="a"
-                              href={zipUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              startContent={<ExternalLink className="h-3.5 w-3.5" />}
-                            >
-                              Baixar ZIP
-                            </Button>
-                          ) : isActive ? (
-                            <Button
-                              className="bg-brand-primary/15 text-brand-primary"
-                              size="sm"
-                              isDisabled
-                              startContent={
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              }
-                            >
-                              {isCreatingJob
-                                ? "Iniciando…"
-                                : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
-                            </Button>
-                          ) : isTerminal && !zipUrl ? (
-                            <Button
-                              className="bg-danger/15 text-danger hover:bg-danger/25"
-                              size="sm"
-                              startContent={<Download className="h-3.5 w-3.5" />}
-                              onPress={() =>
-                                onDownloadProntuarios?.(empresa.codigoEmpresa, empresa.razaoSocial)
-                              }
-                            >
-                              Tentar novamente
-                            </Button>
-                          ) : (
+                          <div
+                            className="flex items-center justify-between border-t border-default-200 pt-3"
+                            onClick={(e) => e.stopPropagation()}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            <span className="text-xs text-default-500">Arquivos</span>
                             <div className="flex items-center gap-2">
-                              {onDownloadProntuarios && (
+                              {zipUrl && (jobStatus === "completed" || jobStatus === "partial") ? (
                                 <Button
-                                  className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                                  className={
+                                    jobStatus === "partial"
+                                      ? "bg-warning/15 text-warning hover:bg-warning/25"
+                                      : "bg-success/15 text-success hover:bg-success/25"
+                                  }
                                   size="sm"
-                                  startContent={<FileText className="h-3.5 w-3.5" />}
-                                  onPress={() =>
-                                    onDownloadProntuarios(empresa.codigoEmpresa, empresa.razaoSocial)
+                                  as="a"
+                                  href={zipUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  startContent={<ExternalLink className="h-3.5 w-3.5" />}
+                                >
+                                  Baixar ZIP
+                                </Button>
+                              ) : isActive ? (
+                                <Button
+                                  className="bg-brand-primary/15 text-brand-primary"
+                                  size="sm"
+                                  isDisabled
+                                  startContent={
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                   }
                                 >
-                                  Prontuários
+                                  {isCreatingJob
+                                    ? "Iniciando…"
+                                    : (JOB_STATUS_LABEL[jobStatus ?? ""] ?? "Aguarde…")}
                                 </Button>
-                              )}
-                              {onDownloadAsos && (
+                              ) : isTerminal && !zipUrl ? (
                                 <Button
-                                  className="bg-success/15 text-success hover:bg-success/25"
+                                  className="bg-danger/15 text-danger hover:bg-danger/25"
                                   size="sm"
                                   startContent={<Download className="h-3.5 w-3.5" />}
                                   onPress={() =>
-                                    onDownloadAsos(empresa.codigoEmpresa, empresa.razaoSocial)
+                                    onDownloadProntuarios?.(empresa.codigoEmpresa, empresa.razaoSocial)
                                   }
                                 >
-                                  ASOs
+                                  Tentar novamente
                                 </Button>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  {onDownloadProntuarios && (
+                                    <Button
+                                      className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                                      size="sm"
+                                      startContent={<FileText className="h-3.5 w-3.5" />}
+                                      onPress={() =>
+                                        onDownloadProntuarios(empresa.codigoEmpresa, empresa.razaoSocial)
+                                      }
+                                    >
+                                      Prontuários
+                                    </Button>
+                                  )}
+                                  {onDownloadAsos && (
+                                    <Button
+                                      className="bg-success/15 text-success hover:bg-success/25"
+                                      size="sm"
+                                      startContent={<Download className="h-3.5 w-3.5" />}
+                                      onPress={() =>
+                                        onDownloadAsos(empresa.codigoEmpresa, empresa.razaoSocial)
+                                      }
+                                    >
+                                      ASOs
+                                    </Button>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    </div>
-                  </CardBody>
-                </Card>
-              </div>
-            );
-          })}
+                      </CardBody>
+                    </Card>
+                  </div>
+                );
+              }}
+            />
           </div>
-
-          {remaining > 0 && (
-            <div className="flex justify-center pt-2 pb-1">
-              <Button
-                size="sm"
-                variant="flat"
-                color="primary"
-                startContent={<ChevronDown className="h-4 w-4" />}
-                onPress={() => setVisibleCount((prev) => prev + ITEMS_PER_PAGE)}
-              >
-                Carregar mais {Math.min(remaining, ITEMS_PER_PAGE)} de {remaining} empresas
-              </Button>
-            </div>
-          )}
         </>
       )}
     </div>

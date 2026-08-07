@@ -5,6 +5,7 @@ import { Download, Eye, FileText } from "lucide-react";
 import { Button, Card, CardBody, Checkbox } from "@heroui/react";
 
 import type { FileNode } from "@/hooks/useBlobExplorer";
+import { VirtualizedGrid } from "./VirtualizedGrid";
 
 interface FileListProps {
   files: FileNode[];
@@ -66,81 +67,85 @@ const FileList: React.FC<FileListProps> = ({
         )}
       </div>
 
-      <div className="grid flex-1 auto-rows-fr gap-3 overflow-y-auto pr-1 lg:grid-cols-2">
-        {files.map((file) => {
-          const isSelected = selectedFiles.has(file.blobName);
+      <div className="flex-1 overflow-hidden pr-1">
+        <VirtualizedGrid
+          items={files}
+          itemHeight={128}
+          breakpoints={{ sm: 1, lg: 2 }}
+          renderItem={(file) => {
+            const isSelected = selectedFiles.has(file.blobName);
 
-          return (
-            <Card
-              key={file.blobName}
-              className={`border border-default-200 bg-white transition-colors duration-150 ${
-                isSelected
-                  ? "ring-2 ring-brand-primary/60"
-                  : "hover:border-brand-primary/40 hover:shadow-sm"
-              }`}
-            >
-              <CardBody className="p-4">
-                <div className="flex h-full flex-col gap-4">
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      isSelected={isSelected}
-                      size="sm"
-                      onValueChange={() => onToggleSelect(file.blobName)}
-                    />
+            return (
+              <Card
+                className={`h-[128px] border transition-colors duration-150 ${
+                  isSelected
+                    ? "border-2 border-brand-primary/50 bg-brand-primary/5"
+                    : "border-default-200 bg-white hover:border-brand-primary/40 hover:shadow-sm"
+                }`}
+              >
+                <CardBody className="p-4">
+                  <div className="flex h-full flex-col gap-4">
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        isSelected={isSelected}
+                        size="sm"
+                        onValueChange={() => onToggleSelect(file.blobName)}
+                      />
 
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-default-800">
-                        {file.fileName}
-                      </p>
-                      <p className="mt-1 truncate text-xs text-default-500">
-                        {[
-                          file.nomeFuncionario,
-                          file.dataAgendamento,
-                          file.origem.toUpperCase(),
-                        ]
-                          .filter(Boolean)
-                          .join(" \u2022 ")}
-                      </p>
-                      {file.tipoExame && (
-                        <p className="mt-1 truncate text-xs text-default-400">
-                          {file.tipoExame}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-default-800">
+                          {file.fileName}
                         </p>
-                      )}
+                        <p className="mt-1 truncate text-xs text-default-500">
+                          {[
+                            file.nomeFuncionario,
+                            file.dataAgendamento,
+                            file.origem.toUpperCase(),
+                          ]
+                            .filter(Boolean)
+                            .join(" \u2022 ")}
+                        </p>
+                        {file.tipoExame && (
+                          <p className="mt-1 truncate text-xs text-default-400">
+                            {file.tipoExame}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-auto flex items-center justify-between border-t border-default-200 pt-3">
-                    <span className="text-xs text-default-500">
-                      {file.blobName.split("/").slice(0, -1).join("/")}
-                    </span>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        isIconOnly
-                        aria-label="Visualizar arquivo"
-                        size="sm"
-                        title="Visualizar"
-                        variant="light"
-                        onPress={() => onView(file.blobName)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        aria-label="Baixar arquivo"
-                        size="sm"
-                        title="Download"
-                        variant="light"
-                        onPress={() => onDownload(file.blobName, file.fileName)}
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
+                    <div className="mt-auto flex items-center justify-between border-t border-default-200 pt-3">
+                      <span className="text-xs text-default-500">
+                        {file.blobName.split("/").slice(0, -1).join("/")}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          isIconOnly
+                          aria-label="Visualizar arquivo"
+                          size="sm"
+                          title="Visualizar"
+                          variant="light"
+                          onPress={() => onView(file.blobName)}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          isIconOnly
+                          aria-label="Baixar arquivo"
+                          size="sm"
+                          title="Download"
+                          variant="light"
+                          onPress={() => onDownload(file.blobName, file.fileName)}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardBody>
-            </Card>
-          );
-        })}
+                </CardBody>
+              </Card>
+            );
+          }}
+        />
       </div>
     </div>
   );

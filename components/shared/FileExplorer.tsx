@@ -22,6 +22,7 @@ import EmpresaList from "@/components/shared/arquivos/EmpresaList";
 import FileList from "@/components/shared/arquivos/FileList";
 import PeriodoList from "@/components/shared/arquivos/PeriodoList";
 import ProntuarioList from "@/components/shared/arquivos/ProntuarioList";
+import { PdfPreviewModal } from "@/components/shared/arquivos/PdfPreviewModal";
 
 interface FileExplorerProps {
   showHeader?: boolean;
@@ -133,6 +134,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   });
 
   const [selectedProntuarios, setSelectedProntuarios] = useState<Set<string>>(new Set());
+  const [previewModal, setPreviewModal] = useState<{ isOpen: boolean; sasUrl: string | null; fileName: string }>({
+    isOpen: false,
+    sasUrl: null,
+    fileName: "",
+  });
 
   const handleToggleSelectProntuario = useCallback(
     (codigoProntuario: string) => {
@@ -256,7 +262,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
   );
 
   const handleDownloadProntuario = useCallback(
-    (codigoProntuario: string, nomeFuncionario: string) => {
+    (codigoProntuario: string, nomeFuncionario: string, tipo: "prontuario" | "aso" = "prontuario") => {
       if (!selectedEmpresa || !selectedPeriodo) return;
       void startBatch({
         scope: "prontuario",
@@ -272,6 +278,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
             nome: nomeFuncionario,
           },
         ],
+        tipo,
       });
     },
     [selectedEmpresa, selectedPeriodo, startBatch],
@@ -317,11 +324,11 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
       const data: { sasUrl: string } = await res.json();
-      const newWindow = window.open(data.sasUrl, "_blank", "noopener,noreferrer");
-
-      if (!newWindow) {
-        throw new Error("O navegador bloqueou a abertura de uma nova aba.");
-      }
+      setPreviewModal({
+        isOpen: true,
+        sasUrl: data.sasUrl,
+        fileName: blobName.split("/").pop() || "Documento",
+      });
     } catch (err) {
       console.error("[FileExplorer] Erro ao abrir arquivo:", err);
       addToast({
@@ -371,7 +378,7 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         </>
       )}
 
-      <CardBody className="min-h-[460px]">
+      <CardBody className="h-[600px] md:h-[calc(100vh-220px)] min-h-[460px] flex flex-col">
         {error && (
           <div className="mb-4 rounded-medium border border-danger-200 bg-danger-50 px-3 py-2 text-sm text-danger">
             {error}
@@ -584,6 +591,13 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
           </div>
         )}
       </CardBody>
+
+      <PdfPreviewModal
+        isOpen={previewModal.isOpen}
+        onOpenChange={(isOpen) => setPreviewModal((prev) => ({ ...prev, isOpen }))}
+        sasUrl={previewModal.sasUrl}
+        fileName={previewModal.fileName}
+      />
     </Card>
   );
 };

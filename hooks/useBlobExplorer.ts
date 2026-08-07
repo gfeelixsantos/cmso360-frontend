@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 
 import {
   NEST_GED_ARQUIVOS,
@@ -20,6 +21,7 @@ export type NavigationLevel =
 export interface EmpresaNode {
   codigoEmpresa: string;
   razaoSocial: string;
+  cnpj?: string;
   totalProntuarios: number;
   totalArquivos: number;
 }
@@ -40,6 +42,7 @@ export interface DiaNode {
 export interface ProntuarioNode {
   codigoProntuario: string;
   nomeFuncionario: string;
+  cpf?: string;
   tipoExame?: string;
   dataAgendamento?: string;
   totalArquivos: number;
@@ -144,13 +147,53 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
   const [selectedDia, setSelectedDia] = useState<DiaNode | null>(null);
   const [selectedProntuario, setSelectedProntuario] =
     useState<ProntuarioNode | null>(null);
-  const [isLoadingCompanies, setIsLoadingCompanies] = useState(false);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(false);
   const [isLoadingDias, setIsLoadingDias] = useState(false);
   const [isLoadingProntuarios, setIsLoadingProntuarios] = useState(false);
   const [isLoadingFiles, setIsLoadingFiles] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+
+  const {
+    data: fetchedCompanies = [],
+    isLoading: isLoadingCompanies,
+    error: companiesError,
+  } = useQuery({
+    queryKey: ["ged-empresas"],
+    queryFn: async () => {
+      const data = await parseJsonResponse<
+        Array<{
+          codigoEmpresa: string;
+          nomeEmpresa: string;
+          cnpj?: string;
+          totalProntuarios: number;
+          totalArquivos: number;
+        }>
+      >(await fetch(NEST_GED_EMPRESAS));
+
+      return dedupeCompanies(
+        data.map((item) => ({
+          codigoEmpresa: item.codigoEmpresa,
+          razaoSocial: item.nomeEmpresa || item.codigoEmpresa,
+          cnpj: item.cnpj,
+          totalProntuarios: item.totalProntuarios,
+          totalArquivos: item.totalArquivos,
+        }))
+      );
+    },
+  });
+
+  useEffect(() => {
+    if (fetchedCompanies.length > 0) {
+      setCompanies(fetchedCompanies);
+    }
+  }, [fetchedCompanies]);
+
+  useEffect(() => {
+    if (companiesError) {
+      setError("Não foi possível carregar as empresas com arquivos disponíveis.");
+    }
+  }, [companiesError]);
 
   const filteredCompanies = useMemo(() => {
     const normalizedQuery = searchQuery.trim().toLowerCase();
@@ -166,41 +209,7 @@ export function useBlobExplorer(): UseBlobExplorerReturn {
     });
   }, [companies, searchQuery]);
 
-  const loadCompanies = useCallback(async () => {
-    setIsLoadingCompanies(true);
-    setError(null);
 
-    try {
-      const data = await parseJsonResponse<
-        Array<{
-          codigoEmpresa: string;
-          nomeEmpresa: string;
-          totalProntuarios: number;
-          totalArquivos: number;
-        }>
-      >(await fetch(NEST_GED_EMPRESAS, { cache: "no-store" }));
-
-      setCompanies(
-        dedupeCompanies(
-          data.map((item) => ({
-            codigoEmpresa: item.codigoEmpresa,
-            razaoSocial: item.nomeEmpresa || item.codigoEmpresa,
-            totalProntuarios: item.totalProntuarios,
-            totalArquivos: item.totalArquivos,
-          })),
-        ),
-      );
-    } catch (loadError) {
-      console.error("[useBlobExplorer] Erro ao carregar empresas GED:", loadError);
-      setError("Não foi possível carregar as empresas com arquivos disponíveis.");
-    } finally {
-      setIsLoadingCompanies(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void loadCompanies();
-  }, [loadCompanies]);
 
   const selectEmpresa = useCallback(async (empresa: EmpresaNode) => {
     setIsLoadingPeriods(true);

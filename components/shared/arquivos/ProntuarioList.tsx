@@ -6,12 +6,13 @@ import { Button, Card, CardBody, Spinner } from "@heroui/react";
 
 import type { ProntuarioNode } from "@/hooks/useBlobExplorer";
 import type { GedBatchJob } from "@/lib/ged-batch-client";
+import { VirtualizedGrid } from "./VirtualizedGrid";
 
 interface ProntuarioListProps {
   prontuarios: ProntuarioNode[];
   isLoading: boolean;
   onSelect: (prontuario: ProntuarioNode) => void;
-  onDownload?: (codigoProntuario: string, nomeFuncionario: string) => void;
+  onDownload?: (codigoProntuario: string, nomeFuncionario: string, tipo: "prontuario" | "aso") => void;
   selectedSet?: Set<string>;
   onToggleSelect?: (codigoProntuario: string) => void;
   onSelectAll?: () => void;
@@ -64,7 +65,7 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
   const allSelected = prontuarios.length > 0 && selectedSet.size === prontuarios.length;
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex h-full flex-col gap-3">
       <div className="sticky top-0 z-10 flex items-center justify-between rounded-large border border-default-200 bg-default-50/80 px-4 py-3">
         <span className="text-sm font-medium text-default-600">
           {hasSelection
@@ -120,8 +121,12 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
         </div>
       </div>
 
-      <div className="grid auto-rows-fr gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {prontuarios.map((prontuario) => {
+      <div className="flex-1 overflow-hidden pr-1">
+        <VirtualizedGrid
+          items={prontuarios}
+          itemHeight={148}
+          breakpoints={{ sm: 1, md: 2, xl: 3 }}
+          renderItem={(prontuario) => {
           const isJobForThisProntuario =
             currentJob?.scope === "prontuario" &&
             currentJob.items.some(
@@ -150,7 +155,7 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
               key={prontuario.codigoProntuario}
               role="button"
               tabIndex={0}
-              className={`min-h-[148px] cursor-pointer ${isSelected ? "ring-2 ring-brand-primary" : ""}`}
+              className={`min-h-[148px] cursor-pointer`}
               onClick={() => onSelect(prontuario)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -159,7 +164,11 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
                 }
               }}
             >
-              <Card className="min-h-[148px] border border-default-200 bg-white transition-colors duration-150 hover:border-brand-primary/40 hover:shadow-sm">
+              <Card className={`min-h-[148px] border transition-colors duration-150 hover:shadow-sm ${
+                isSelected
+                  ? "border-2 border-brand-primary/50 bg-brand-primary/5"
+                  : "border-default-200 bg-white hover:border-brand-primary/40"
+              }`}>
               <CardBody className="p-4">
                 <div className="flex h-full flex-col justify-between gap-4">
                   <div className="flex items-start gap-3">
@@ -171,7 +180,7 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
                         {prontuario.nomeFuncionario || prontuario.codigoProntuario}
                       </p>
                       <p className="mt-1 truncate text-xs text-default-500">
-                        {prontuario.codigoProntuario}
+                        {prontuario.cpf ? `CPF: ${prontuario.cpf}` : `Cod: ${prontuario.codigoProntuario}`}
                       </p>
                       {prontuario.dataAgendamento && (
                         <p className="text-xs text-default-400">
@@ -250,25 +259,43 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
                                 onDownload(
                                   prontuario.codigoProntuario,
                                   prontuario.nomeFuncionario || prontuario.codigoProntuario,
+                                  "prontuario"
                                 )
                               }
                             >
                               Tentar novamente
                             </Button>
                           ) : (
-                            <Button
-                              className="bg-brand-primary text-white hover:bg-brand-primary-hover"
-                              size="sm"
-                              startContent={<Download className="h-3.5 w-3.5" />}
-                              onPress={() =>
-                                onDownload(
-                                  prontuario.codigoProntuario,
-                                  prontuario.nomeFuncionario || prontuario.codigoProntuario,
-                                )
-                              }
-                            >
-                              Baixar ZIP
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button
+                                className="bg-brand-primary text-white hover:bg-brand-primary-hover"
+                                size="sm"
+                                startContent={<FileText className="h-3.5 w-3.5" />}
+                                onPress={() =>
+                                  onDownload(
+                                    prontuario.codigoProntuario,
+                                    prontuario.nomeFuncionario || prontuario.codigoProntuario,
+                                    "prontuario"
+                                  )
+                                }
+                              >
+                                Prontuário
+                              </Button>
+                              <Button
+                                className="bg-success/15 text-success hover:bg-success/25"
+                                size="sm"
+                                startContent={<Download className="h-3.5 w-3.5" />}
+                                onPress={() =>
+                                  onDownload(
+                                    prontuario.codigoProntuario,
+                                    prontuario.nomeFuncionario || prontuario.codigoProntuario,
+                                    "aso"
+                                  )
+                                }
+                              >
+                                ASO
+                              </Button>
+                            </div>
                           )}
                         </div>
                       )}
@@ -280,7 +307,8 @@ const ProntuarioList: React.FC<ProntuarioListProps> = ({
               </Card>
             </div>
           );
-        })}
+        }}
+        />
       </div>
     </div>
   );

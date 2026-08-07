@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, createContext, useContext } from "react";
 
 import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -8,6 +8,17 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useSocket } from "@/lib/websocket/hooks/useSocket";
 import { GedBatchStatusPayload } from "@/lib/websocket/events/events";
 import { addNotification, clearAllNotifications } from "@/lib/notification-store";
+import { CustomEventMap } from "@/lib/websocket/events/events";
+
+interface GedBatchSocketContextValue {
+  registerHandlers: (handlers: Partial<CustomEventMap>) => (() => void) | undefined;
+}
+
+const GedBatchSocketContext = createContext<GedBatchSocketContextValue>({
+  registerHandlers: () => undefined,
+});
+
+export const useGedBatchSocket = () => useContext(GedBatchSocketContext);
 
 export function GedBatchSocketProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<IUserInfo | null>(null);
@@ -95,5 +106,9 @@ export function GedBatchSocketProvider({ children }: { children: React.ReactNode
     handlersRef.current = unsub;
   }, [socket, registerHandlers, handleBatchStatus]);
 
-  return <>{children}</>;
+  return (
+    <GedBatchSocketContext.Provider value={{ registerHandlers }}>
+      {children}
+    </GedBatchSocketContext.Provider>
+  );
 }

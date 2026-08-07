@@ -1,6 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useGedBatchSocket } from "@/app/context/GedBatchSocketProvider";
+import { GedBatchStatusPayload, GedBatchProgressPayload } from "@/lib/websocket/events/events";
 
 import {
   type CreateBatchRequest,
@@ -39,7 +41,6 @@ interface UseGedBatchJobOptions {
   onCompleted?: (job: GedBatchJob) => void;
   onFailed?: (job: GedBatchJob) => void;
   onFinished?: (job: GedBatchJob) => void;
-  pollInterval?: number;
 }
 
 interface UseGedBatchJobReturn {
@@ -55,39 +56,52 @@ export function useGedBatchJob({
   onCompleted,
   onFailed,
   onFinished,
-  pollInterval = 3000,
 }: UseGedBatchJobOptions = {}): UseGedBatchJobReturn {
   const [currentJob, setCurrentJob] = useState<GedBatchJob | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const onCompletedRef = useRef(onCompleted);
+  const onFailedRef = useRef(onFailed);
+  const onFinishedRef = useRef(onFinished);
+
+  useEffect(() => {
+    onCompletedRef.current = onCompleted;
+    onFailedRef.current = onFailed;
+    onFinishedRef.current = onFinished;
+  }, [onCompleted, onFailed, onFinished]);
+  
+  const { registerHandlers } = useGedBatchSocket();
+  const socketUnsubRef = useRef<(() => void) | null>(null);
 
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const jobIdRef = useRef<string | null>(null);
 
   const stopPolling = useCallback(() => {
-    if (pollingRef.current) {
-      clearInterval(pollingRef.current);
-      pollingRef.current = null;
+    if (socketUnsubRef.current) {
+      socketUnsubRef.current();
+      socketUnsubRef.current = null;
     }
     setIsPolling(false);
   }, []);
 
   const handleTerminalJob = useCallback(
     (job: GedBatchJob) => {
-      // Dedup global: se outra instância já processou este job, ignora
       if (_globalTerminalJobId === job.id) return;
       _globalTerminalJobId = job.id;
 
       clearActiveJobId();
+      stopPolling();
+      
       if (job.status === "completed" || job.status === "partial") {
-        onCompleted?.(job);
+        onCompletedRef.current?.(job);
       } else {
-        onFailed?.(job);
+        onFailedRef.current?.(job);
       }
-      onFinished?.(job);
+      onFinishedRef.current?.(job);
     },
-    [onCompleted, onFailed, onFinished],
+    [stopPolling],
   );
 
   const startPolling = useCallback(
@@ -95,36 +109,72 @@ export function useGedBatchJob({
       stopPolling();
       setIsPolling(true);
 
-      const poll = async () => {
-        try {
-          const job = await getBatchJobStatus(jobId);
-          setCurrentJob(job);
-
-          if (isJobTerminal(job.status)) {
-            stopPolling();
-            handleTerminalJob(job);
-          }
-        } catch {
-          stopPolling();
-          setError("Erro ao consultar status do job.");
-          clearActiveJobId();
+      const unsub = registerHandlers({
+        "ged-batch:status": (payload: GedBatchStatusPayload) => {
+          if (payload.jobId !== jobId) return;
+          
+          setCurrentJob((prev) => {
+            if (!prev) return prev;
+            const updated: GedBatchJob = {
+              ...prev,
+              status: payload.status,
+              processedFuncionarios: payload.processedFuncionarios,
+              succeededFuncionarios: payload.succeededFuncionarios,
+              failedFuncionarios: payload.failedFuncionarios,
+              updatedAt: payload.updatedAt,
+              result: payload.result ? {
+                zipBlobName: payload.result.zipBlobName || "",
+                zipUrl: payload.result.zipUrl,
+              } : undefined,
+            };
+            
+            if (isJobTerminal(payload.status)) {
+              handleTerminalJob(updated);
+            }
+            return updated;
+          });
+        },
+        "ged-batch:progress": (payload: GedBatchProgressPayload) => {
+          if (payload.jobId !== jobId) return;
+          
+          setCurrentJob((prev) => {
+            if (!prev) return prev;
+            return {
+              ...prev,
+              processedFuncionarios: payload.processedFuncionarios,
+              updatedAt: payload.updatedAt,
+            };
+          });
         }
-      };
-
-      void poll();
-      pollingRef.current = setInterval(poll, pollInterval);
+      });
+      
+      if (unsub) {
+        socketUnsubRef.current = unsub;
+      }
     },
-    [handleTerminalJob, pollInterval, stopPolling],
+    [handleTerminalJob, registerHandlers, stopPolling],
   );
 
   // Restaura job ativo do localStorage ao montar
   useEffect(() => {
     const activeJobId = getActiveJobId();
     if (activeJobId) {
-      startPolling(activeJobId);
+      getBatchJobStatus(activeJobId)
+        .then((job) => {
+          setCurrentJob(job);
+          if (isJobTerminal(job.status)) {
+            handleTerminalJob(job);
+          } else {
+            startPolling(activeJobId);
+          }
+        })
+        .catch(() => {
+          clearActiveJobId();
+        });
     }
+    
     return () => stopPolling();
-  }, [startPolling, stopPolling]);
+  }, [startPolling, stopPolling, handleTerminalJob]);
 
   const startBatch = useCallback(
     async (payload: CreateBatchRequest) => {
