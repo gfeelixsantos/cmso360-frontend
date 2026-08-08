@@ -417,6 +417,23 @@ export enum EventType {
   // GED Batch
   GED_BATCH_STATUS = "ged-batch:status",
   GED_BATCH_PROGRESS = "ged-batch:progress",
+
+  // Presença / Conexões Ativas
+  PRESENCE_UPDATED = "presence:updated",
+  PRESENCE_REQUEST = "presence:request",
+}
+
+export interface UserPresencePayload {
+  socketId: string;
+  id?: string;
+  nome: string;
+  unidade: string;
+  sala?: string;
+  type: string;
+  exame?: string;
+  conectadoEm: string;
+  isTeleatendimentoActive: boolean;
+  inviteUrl?: string;
 }
 
 // Mapeamento de eventos para seus payloads
@@ -488,6 +505,10 @@ export interface EventPayloadMap {
   // GED Batch
   [EventType.GED_BATCH_STATUS]: GedBatchStatusPayload;
   [EventType.GED_BATCH_PROGRESS]: GedBatchProgressPayload;
+
+  // Presença / Conexões Ativas
+  [EventType.PRESENCE_UPDATED]: UserPresencePayload[];
+  [EventType.PRESENCE_REQUEST]: { unidade?: string };
 }
 
 // Estender os tipos do Socket.IO para eventos personalizados
@@ -578,6 +599,10 @@ export interface CustomEventMap {
   // GED Batch
   [EventType.GED_BATCH_STATUS]: (payload: GedBatchStatusPayload) => void;
   [EventType.GED_BATCH_PROGRESS]: (payload: GedBatchProgressPayload) => void;
+
+  // Presença / Conexões Ativas
+  [EventType.PRESENCE_UPDATED]: (payload: UserPresencePayload[]) => void;
+  [EventType.PRESENCE_REQUEST]: (payload?: { unidade?: string }) => void;
 }
 
 // Função genérica para emitir eventos tipados

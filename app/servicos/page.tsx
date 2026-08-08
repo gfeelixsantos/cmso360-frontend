@@ -7,6 +7,7 @@ import { FolderOpen, Layers } from "lucide-react";
 
 import { HeaderApp } from "@/components/shared/HeaderApp";
 import { FileExplorer } from "@/components/shared/FileExplorer";
+import { ActiveConnectionsCard } from "@/components/shared/ActiveConnectionsCard";
 import { getCurrentUser, logout } from "@/lib/utils";
 
 import { QueueMonitor } from "./components/QueueMonitor";
@@ -127,11 +128,12 @@ export default function ServicosPage() {
             title={
               <div className="flex items-center gap-2">
                 <Layers className="h-4 w-4" />
-                Filas & Serviços
+                Filas & Conexões
               </div>
             }
           >
-            <div className="mt-4">
+            <div className="mt-4 space-y-6">
+              <ActiveConnectionsCard />
               <QueueMonitor />
             </div>
           </Tab>

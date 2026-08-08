@@ -44,6 +44,7 @@ import {
   resolveTeleatendimentoWsUrl,
 } from "@/config/constants";
 import { TeleatendimentoWebRtcClient } from "@/lib/teleatendimento/webrtc-client";
+import { getCurrentUser } from "@/lib/utils";
 import {
   TeleatendimentoChatMessage,
   listChatMessages,
@@ -312,8 +313,14 @@ const TeleatendimentoPanel = forwardRef<TeleatendimentoPanelHandle, Props>(funct
   // --- Queue socket (profissional idle) ---
   useEffect(() => {
     if (isIdle && role === "PROFESSIONAL" && unidade && sala) {
+      const currentUser = getCurrentUser();
       const socket = io(resolveTeleatendimentoWsUrl(), {
-        auth: { unidade, sala, type: WebsocketType.TELEATENDIMENTO },
+        auth: {
+          unidade,
+          sala,
+          nome: currentUser?.nome || 'Profissional',
+          type: WebsocketType.TELEATENDIMENTO,
+        },
         transports: ["websocket"],
         upgrade: false,
         forceNew: true,
