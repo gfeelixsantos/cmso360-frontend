@@ -11,8 +11,6 @@ import {
   getBatchJobStatus,
   isJobTerminal,
 } from "@/lib/ged-batch-client";
-import { sendLocalNotification } from "@/lib/notifications";
-import { addNotification } from "@/lib/notification-store";
 
 const ACTIVE_JOB_KEY = "ged-batch:active-job";
 
@@ -98,23 +96,8 @@ export function useGedBatchJob({
       
       if (job.status === "completed" || job.status === "partial") {
         onCompletedRef.current?.(job);
-
-        const title = job.status === "completed"
-          ? "✅ Lote de Arquivos Pronto"
-          : "⚠️ Lote Finalizado com Pendências";
-        const body = `Os arquivos da empresa ${job.empresa.razaoSocial} foram processados. Clique para abrir os documentos.`;
-        const url = job.result?.zipUrl || "/servicos";
-
-        sendLocalNotification(title, { body, onClickUrl: url });
-        addNotification({ title, message: body, type: job.status === "completed" ? "success" : "warning", actionUrl: url, actionLabel: "Abrir" });
       } else {
         onFailedRef.current?.(job);
-
-        const title = "❌ Falha no Lote";
-        const body = `Ocorreu um erro crítico no processamento da empresa ${job.empresa.razaoSocial}.`;
-
-        sendLocalNotification(title, { body });
-        addNotification({ title, message: body, type: "error" });
       }
       onFinishedRef.current?.(job);
     },

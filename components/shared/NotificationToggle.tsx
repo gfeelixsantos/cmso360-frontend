@@ -5,7 +5,11 @@ import { Bell, BellOff, BellRing } from "lucide-react";
 import { Button, Tooltip } from "@heroui/react";
 import { hasNotificationPermission, requestNotificationPermission } from "@/lib/notifications";
 
-export const NotificationToggle: React.FC = () => {
+interface NotificationToggleProps {
+  isIconOnly?: boolean;
+}
+
+export const NotificationToggle: React.FC<NotificationToggleProps> = ({ isIconOnly = false }) => {
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
   useEffect(() => {
@@ -16,7 +20,6 @@ export const NotificationToggle: React.FC = () => {
 
   const handleToggle = async () => {
     if (permission === "granted") {
-      // Browsers don't allow "revoking" permission programmatically.
       alert("Para desativar as notificações, altere as configurações no cadeado ao lado da barra de endereços do seu navegador.");
       return;
     }
@@ -31,13 +34,13 @@ export const NotificationToggle: React.FC = () => {
   };
 
   if (typeof window === "undefined" || !("Notification" in window)) {
-    return null; // Not supported
+    return null;
   }
 
   const getIcon = () => {
-    if (permission === "granted") return <BellRing className="h-5 w-5 text-emerald-500" />;
-    if (permission === "denied") return <BellOff className="h-5 w-5 text-gray-400" />;
-    return <Bell className="h-5 w-5 text-amber-500 animate-pulse" />;
+    if (permission === "granted") return <BellRing className="h-4 w-4 text-emerald-500" />;
+    if (permission === "denied") return <BellOff className="h-4 w-4 text-gray-400" />;
+    return <Bell className="h-4 w-4 text-amber-500 animate-pulse" />;
   };
 
   const getTooltip = () => {
@@ -49,13 +52,14 @@ export const NotificationToggle: React.FC = () => {
   return (
     <Tooltip content={getTooltip()} placement="bottom">
       <Button
+        isIconOnly={isIconOnly}
         size="sm"
         variant="light"
-        className="text-gray-600"
+        className={isIconOnly ? "text-gray-500 hover:text-gray-800" : "text-gray-600"}
         onPress={handleToggle}
-        startContent={getIcon()}
+        startContent={isIconOnly ? undefined : getIcon()}
       >
-        {permission === "granted" ? "Alertas Ativos" : "Ativar Alertas"}
+        {isIconOnly ? getIcon() : (permission === "granted" ? "Alertas Ativos" : "Ativar Alertas")}
       </Button>
     </Tooltip>
   );

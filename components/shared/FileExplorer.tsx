@@ -14,7 +14,6 @@ import { Download, Package } from "lucide-react";
 
 import { useBlobExplorer } from "@/hooks/useBlobExplorer";
 import { useGedBatchJob } from "@/hooks/useGedBatchJob";
-import { addNotification } from "@/lib/notification-store";
 import BreadcrumbNav from "@/components/shared/arquivos/BreadcrumbNav";
 import DiaList from "@/components/shared/arquivos/DiaList";
 import DownloadZipButton from "@/components/shared/arquivos/DownloadZipButton";
@@ -86,23 +85,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         color: "foreground",
         variant: "flat",
       });
-
-      addNotification({
-        title:
-          job.status === "partial"
-            ? "Lote concluído com pendências"
-            : "Lote concluído",
-        message: `${job.succeededFuncionarios} prontuário(s) de ${job.empresa.razaoSocial} disponíveis para download.`,
-        type: job.status === "partial" ? "warning" : "success",
-        actionUrl: job.result?.zipUrl || "/servicos",
-        actionLabel: job.result?.zipUrl ? "Baixar lote" : "Ver documentos",
-        dedupeKey: `ged-batch:${job.id}:${job.status}`,
-        metadata: {
-          jobId: job.id,
-          status: job.status,
-          codigoEmpresa: job.empresa.codigoEmpresa,
-        },
-      });
     },
     onFailed: (job) => {
       addToast({
@@ -113,22 +95,6 @@ export const FileExplorer: React.FC<FileExplorerProps> = ({
         severity: "danger",
         color: "foreground",
         variant: "flat",
-      });
-
-      addNotification({
-        title: "Lote com falha",
-        message: job.errors?.length
-          ? `${job.failedFuncionarios} prontuário(s) de ${job.empresa.razaoSocial} apresentaram erro.`
-          : `O processamento do lote de ${job.empresa.razaoSocial} falhou.`,
-        type: "warning",
-        actionUrl: "/servicos",
-        actionLabel: "Ver documentos",
-        dedupeKey: `ged-batch:${job.id}:${job.status}`,
-        metadata: {
-          jobId: job.id,
-          status: job.status,
-          codigoEmpresa: job.empresa.codigoEmpresa,
-        },
       });
     },
   });

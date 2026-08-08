@@ -1,6 +1,6 @@
 "use client";
 
-import { Badge, Button, Link } from "@heroui/react";
+import { Badge, Button, Link, Tooltip } from "@heroui/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
@@ -19,6 +19,7 @@ import {
   Users,
   ChartNoAxesCombined,
   FileText,
+  Trash2,
 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -101,137 +102,118 @@ const getInitials = (nome: string): string => {
   return (names[0][0] + names[names.length - 1][0]).toUpperCase();
 };
 
-const getNotificationIcon = (type: AppNotification["type"]) => {
+function cleanTitle(title: string): string {
+  return title
+    .replace(/^[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{2300}-\u{23FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{1F1E6}-\u{1F1FF}]\s*/u, "")
+    .trim();
+}
+
+const getNotificationIconBadge = (type: AppNotification["type"]) => {
   switch (type) {
     case "warning":
-      return <AlertCircle className="h-5 w-5 text-amber-500" />;
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-600 border border-amber-100 shadow-2xs">
+          <AlertCircle className="h-4 w-4" />
+        </div>
+      );
     case "success":
-      return <CheckCircle className="h-5 w-5 text-emerald-500" />;
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 border border-emerald-100 shadow-2xs">
+          <CheckCircle className="h-4 w-4" />
+        </div>
+      );
     case "error":
-      return <AlertCircle className="h-5 w-5 text-red-500" />;
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600 border border-rose-100 shadow-2xs">
+          <AlertCircle className="h-4 w-4" />
+        </div>
+      );
     default:
-      return <Bell className="h-5 w-5 text-sky-500" />;
+      return (
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-50 text-sky-600 border border-sky-100 shadow-2xs">
+          <Bell className="h-4 w-4" />
+        </div>
+      );
   }
 };
 
 const NotificationsList: React.FC<{
   notifications: AppNotification[];
   onMarkAsRead: (id: string) => void;
-  onMarkAllAsRead: () => void;
-  onClearRead: () => void;
-  onClearAll: () => void;
   onOpenAction: (notification: AppNotification) => void;
 }> = ({
   notifications,
   onMarkAsRead,
-  onMarkAllAsRead,
-  onClearRead,
-  onClearAll,
   onOpenAction,
 }) => {
-  const unreadCount = notifications.filter((n) => !n.read).length;
-  const hasUnread = unreadCount > 0;
-  const hasRead = notifications.some((n) => n.read);
   const recentNotifications = notifications.slice(0, 8);
 
   return (
-    <div className="flex flex-col">
-      <div className="border-b border-gray-100 px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-900">Notificações</h3>
-        <p className="text-xs text-gray-500">
-          {unreadCount} não lida(s) · {notifications.length} total
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          <Button
-            isDisabled={!hasUnread}
-            size="sm"
-            startContent={<CheckCheck className="h-4 w-4" />}
-            variant="light"
-            onPress={onMarkAllAsRead}
-          >
-            Marcar todas
-          </Button>
-          <Button
-            isDisabled={notifications.length === 0}
-            size="sm"
-            startContent={<Inbox className="h-4 w-4" />}
-            variant="light"
-            onPress={onClearAll}
-          >
-            Limpar tudo
-          </Button>
-          <NotificationToggle />
-        </div>
-      </div>
-
-      <div className="max-h-[28rem] overflow-y-auto">
+    <div className="flex flex-col w-full overflow-x-hidden">
+      {/* Notifications List */}
+      <div className="max-h-[26rem] overflow-y-auto divide-y divide-gray-100 overflow-x-hidden">
         {recentNotifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center px-4 py-8 text-center text-gray-500">
-            <Bell className="mb-3 h-8 w-8 text-gray-300" />
-            <p className="text-sm font-medium text-gray-700">
+            <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+              <Bell className="h-4 w-4" />
+            </div>
+            <p className="text-xs font-medium text-gray-700">
               Nenhuma notificação
             </p>
-            <p className="text-xs text-gray-500">
-              Novos eventos aparecerão aqui.
+            <p className="mt-0.5 text-[11px] text-gray-400">
+              Seus avisos aparecerão aqui.
             </p>
           </div>
         ) : (
           recentNotifications.map((notification) => (
             <div
               key={notification.id}
-              className={`border-b border-gray-100 px-4 py-3 transition-colors hover:bg-gray-50 ${
-                notification.read ? "" : "bg-sky-50/60"
+              className={`group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-gray-50/80 ${
+                notification.read ? "bg-white" : "bg-sky-50/30"
               }`}
             >
-              <div className="flex items-start gap-3">
-                <button
-                  aria-label={`Marcar notificação ${notification.title} como lida`}
-                  className="mt-0.5 rounded-full bg-white p-2 shadow-sm ring-1 ring-gray-100"
-                  onClick={() => onMarkAsRead(notification.id)}
-                >
-                  {getNotificationIcon(notification.type)}
-                </button>
+              {getNotificationIconBadge(notification.type)}
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold text-gray-900">
-                        {notification.title}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-600">
-                        {notification.message}
-                      </p>
-                    </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="text-xs font-semibold text-gray-900 leading-tight truncate">
+                    {cleanTitle(notification.title)}
+                  </h4>
+                  <span className="shrink-0 text-[11px] font-normal text-gray-400">
+                    {notification.date.includes(",")
+                      ? notification.date.split(",")[1]?.trim() || notification.date
+                      : notification.date}
+                  </span>
+                </div>
 
-                    {!notification.read && (
-                      <span className="mt-1 h-2.5 w-2.5 shrink-0 rounded-full bg-sky-500" />
-                    )}
-                  </div>
+                <p className="mt-1 text-xs leading-relaxed text-gray-600 break-words">
+                  {notification.message}
+                </p>
 
-                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[11px] text-gray-500">
-                    {notification.date}
-                  </div>
-
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {notification.actionUrl && (
-                      <Button
-                        color="primary"
-                        size="sm"
-                        startContent={<ExternalLink className="h-4 w-4" />}
-                        variant="flat"
-                        onPress={() => onOpenAction(notification)}
-                      >
-                        {notification.actionLabel || "Abrir"}
-                      </Button>
-                    )}
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  {notification.actionUrl ? (
                     <Button
+                      color="primary"
                       size="sm"
-                      variant="light"
-                      onPress={() => onMarkAsRead(notification.id)}
+                      variant="flat"
+                      className="h-6 rounded-md px-2.5 text-[11px] font-medium"
+                      startContent={<ExternalLink className="h-3 w-3" />}
+                      onPress={() => onOpenAction(notification)}
                     >
-                      {notification.read ? "Lida" : "Marcar como lida"}
+                      {notification.actionLabel || "Abrir"}
                     </Button>
-                  </div>
+                  ) : <div />}
+
+                  {!notification.read ? (
+                    <button
+                      className="text-[11px] font-medium text-sky-600 hover:text-sky-800 transition-colors"
+                      onClick={() => onMarkAsRead(notification.id)}
+                    >
+                      Marcar como lida
+                    </button>
+                  ) : (
+                    <span className="text-[11px] text-gray-400">Lida</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -469,38 +451,74 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                       Serviços
                     </button>
 
-                    <button
-                      aria-expanded={view === "notifications"}
-                      className={`flex w-full items-center justify-between px-4 py-2 text-sm text-gray-700 cursor-pointer transition-colors ${getHoverColor(user?.perfil ?? "")}`}
-                      onClick={() =>
-                        setView((current) =>
-                          current === "notifications" ? "menu" : "notifications",
-                        )
-                      }
+                    <div
+                      className={`flex w-full items-center justify-between px-4 py-2 text-sm text-gray-700 transition-colors ${getHoverColor(user?.perfil ?? "")}`}
                     >
-                      <span className="flex items-center">
-                        <Bell className="mr-3 h-4 w-4" />
-                        Notificações
-                      </span>
-                      <span className="flex items-center gap-2">
-                        {unreadNotificationsCount > 0 && (
-                          <Badge
-                            color="danger"
-                            content={unreadNotificationsCount}
-                            shape="circle"
+                      <button
+                        aria-expanded={view === "notifications"}
+                        className="flex flex-1 items-center cursor-pointer py-0.5"
+                        onClick={() =>
+                          setView((current) =>
+                            current === "notifications" ? "menu" : "notifications",
+                          )
+                        }
+                      >
+                        <Bell className="mr-3 h-4 w-4 text-gray-600" />
+                        <span className="font-medium">Notificações</span>
+                      </button>
+
+                      <div className="flex items-center gap-0.5">
+                        <NotificationToggle isIconOnly />
+
+                        <Tooltip content="Marcar todas como lidas" placement="bottom">
+                          <Button
+                            isIconOnly
+                            isDisabled={unreadNotificationsCount === 0}
                             size="sm"
+                            variant="light"
+                            className="h-7 w-7 min-w-7 text-gray-500 hover:text-gray-900"
+                            onPress={markAllAsRead}
                           >
-                            <span className="sr-only">não lidas</span>
-                          </Badge>
+                            <CheckCheck className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+
+                        <Tooltip content="Limpar histórico" placement="bottom">
+                          <Button
+                            isIconOnly
+                            isDisabled={notifications.length === 0}
+                            size="sm"
+                            variant="light"
+                            className="h-7 w-7 min-w-7 text-gray-500 hover:text-rose-600"
+                            onPress={clearAllNotifications}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </Tooltip>
+
+                        {unreadNotificationsCount > 0 && (
+                          <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-bold text-white shadow-2xs">
+                            {unreadNotificationsCount}
+                          </span>
                         )}
-                        <ChevronDown
-                          aria-hidden="true"
-                          className={`h-3.5 w-3.5 text-gray-400 transition-transform ${
-                            view === "notifications" ? "rotate-180" : ""
-                          }`}
-                        />
-                      </span>
-                    </button>
+
+                        <button
+                          className="ml-1 p-1 cursor-pointer"
+                          onClick={() =>
+                            setView((current) =>
+                              current === "notifications" ? "menu" : "notifications",
+                            )
+                          }
+                        >
+                          <ChevronDown
+                            aria-hidden="true"
+                            className={`h-3.5 w-3.5 text-gray-400 transition-transform ${
+                              view === "notifications" ? "rotate-180" : ""
+                            }`}
+                          />
+                        </button>
+                      </div>
+                    </div>
 
                     <AnimatePresence initial={false}>
                       {view === "notifications" && (
@@ -514,9 +532,6 @@ export const HeaderApp: React.FC<HeaderProps> = ({ onLogout, children }) => {
                           <div className="max-h-[28rem] overflow-y-auto">
                             <NotificationsList
                               notifications={notifications}
-                              onClearAll={clearAllNotifications}
-                              onClearRead={clearReadNotifications}
-                              onMarkAllAsRead={markAllAsRead}
                               onMarkAsRead={handleMarkAsRead}
                               onOpenAction={handleOpenAction}
                             />
