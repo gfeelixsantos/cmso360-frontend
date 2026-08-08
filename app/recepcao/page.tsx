@@ -22,6 +22,8 @@ import {
 } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
+import { sendLocalNotification } from "@/lib/notifications";
+import { addNotification } from "@/lib/notification-store";
 import EmptyState from "@/app/recepcao/components/EmptyState";
 import MainContent from "@/app/recepcao/components/MainContent";
 import AtendimentoModal from "@/app/recepcao/components/AtendimentoModal";
@@ -401,7 +403,11 @@ const RecepcaoPage: React.FC = () => {
 
     const unregister = registerHandlers({
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
-      [EventType.TICKET_EMITED]: handleTicketEmitedOrUpdated,
+      [EventType.TICKET_EMITED]: (ticket: Ticket) => {
+        sendLocalNotification("🎫 Novo Ticket Emitido", { body: "Um novo ticket foi gerado na recepção. Clique para visualizar a fila." });
+        addNotification({ title: "🎫 Novo Ticket Emitido", message: "Um novo ticket foi gerado na recepção.", type: "info" });
+        handleTicketEmitedOrUpdated(ticket);
+      },
       [EventType.TICKET_UPDATED]: handleTicketEmitedOrUpdated,
       [EventType.TICKET_ERROR]: handleTicketError,
       [EventType.TICKET_DELETE]: handleDeleteTicket,

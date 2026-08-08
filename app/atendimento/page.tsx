@@ -36,6 +36,8 @@ import {
 import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
+import { sendLocalNotification } from "@/lib/notifications";
+import { addNotification } from "@/lib/notification-store";
 import {
   createAtendimentoLoadFlow,
   mergeSchedulesById,
@@ -811,6 +813,16 @@ const AtendimentoPage: React.FC = () => {
       if (operation === MongoOperationTypes.DELETE) {
         setAgendamentosGeral((prev) => prev.filter((ag) => ag._id !== schedule._id && ag.CODIGOPRONTUARIO !== schedule.CODIGOPRONTUARIO));
       } else {
+        if (schedule.ATENDIMENTOSTATUS === AtendimentoStatus.EM_ATENDIMENTO) {
+          sendLocalNotification("🩺 Novo Paciente na Sala", {
+            body: `O paciente ${schedule.NOME} acabou de entrar em atendimento e aguarda por você.`,
+          });
+          addNotification({
+            title: "🩺 Novo Paciente na Sala",
+            message: `O paciente ${schedule.NOME} acabou de entrar em atendimento e aguarda por você.`,
+            type: "info"
+          });
+        }
         setAgendamentosGeral((prev) => {
           const idx = findSchedulingIndex(prev, schedule);
           if (idx !== -1) {

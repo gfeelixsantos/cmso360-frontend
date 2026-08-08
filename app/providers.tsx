@@ -13,7 +13,6 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 import { AppDataProvider } from "./context/AppDataContext";
 import { GedBatchSocketProvider } from "./context/GedBatchSocketProvider";
-import { PushNotificationProvider } from "./context/PushNotificationProvider";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,7 +46,7 @@ export function Providers({ children, themeProps }: ProvidersProps) {
         <NextThemesProvider {...themeProps}>
           <AppDataProvider initialData={null}>
             <GedBatchSocketProvider>
-              <PushNotificationProvider>{children}</PushNotificationProvider>
+              {children}
             </GedBatchSocketProvider>
           </AppDataProvider>
         </NextThemesProvider>

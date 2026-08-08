@@ -23,6 +23,7 @@ import {
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { NotificationToggle } from "./NotificationToggle";
 
 import { getCurrentUser } from "@/lib/utils";
 import { IUserInfo } from "@/lib/user/interfaces/IUser";
@@ -159,6 +160,7 @@ const NotificationsList: React.FC<{
           >
             Limpar tudo
           </Button>
+          <NotificationToggle />
         </div>
       </div>
 
