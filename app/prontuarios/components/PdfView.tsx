@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Eye } from "lucide-react";
 import { Button, Card, CardBody } from "@heroui/react";
+import { toProxyUrl } from "@/lib/blob/blob-proxy";
 
 import { MedicalRecord } from "../page";
 
@@ -19,7 +20,12 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
   const [zoom, setZoom] = useState<number>(100);
   const [cacheBust, setCacheBust] = useState<number>(Date.now());
 
-  const currentPdfUrl = selectedRecord?.pdfUrls?.[currentPdfIndex]?.url ?? "";
+  const rawUrl = selectedRecord?.pdfUrls?.[currentPdfIndex]?.url ?? "";
+  const currentPdfUrl = useMemo(() => {
+    if (!rawUrl) return "";
+    return toProxyUrl(rawUrl) || rawUrl;
+  }, [rawUrl]);
+  
   const currentPdfTitle =
     selectedRecord?.pdfUrls?.[currentPdfIndex]?.title ?? "";
   const totalPdfs = selectedRecord?.pdfUrls?.length ?? 0;
@@ -87,26 +93,38 @@ const PdfViewer: React.FC<PdfViewerProps> = ({
             </div>
           </div>
 
-          {/* Área do PDF */}
-          <div
-            className="flex-1 flex items-center justify-center p-4 overflow-hidden"
-            id="pdf-viewer"
-          >
-            <iframe
-              className="bg-white shadow-2xl rounded-lg transition-all duration-300"
-              src={iframeSrc}
-              style={{
-                width: `${zoom}%`,
-                height: `${zoom}%`,
-                maxWidth: "100%",
-                maxHeight: "100%",
-                minWidth: "50%",
-                minHeight: "50%",
-                border: 0,
-              }}
-              title={currentPdfTitle}
-            />
-          </div>
+           {/* Área do PDF */}
+           <div
+             className="flex-1 flex items-center justify-center p-4 overflow-hidden"
+             id="pdf-viewer"
+           >
+             {!currentPdfUrl ? (
+               <div className="text-center">
+                 <Eye className="w-12 h-12 mx-auto mb-4 text-default-400" />
+                 <h3 className="text-lg font-light text-default-300">
+                   Sem PDF Disponível
+                 </h3>
+                 <p className="text-sm text-default-500 mt-2">
+                   Nenhum documento foi encontrado para este prontuário.
+                 </p>
+               </div>
+             ) : (
+               <iframe
+                 className="bg-white shadow-2xl rounded-lg transition-all duration-300"
+                 src={iframeSrc}
+                 style={{
+                   width: `${zoom}%`,
+                   height: `${zoom}%`,
+                   maxWidth: "100%",
+                   maxHeight: "100%",
+                   minWidth: "50%",
+                   minHeight: "50%",
+                   border: 0,
+                 }}
+                 title={currentPdfTitle}
+               />
+             )}
+           </div>
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center text-default-400">

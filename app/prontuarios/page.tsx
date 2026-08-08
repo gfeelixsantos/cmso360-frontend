@@ -129,7 +129,7 @@ const mapSchedulingToMedicalRecord = (
 
   if (allPdfUrls.length === 0) {
     allPdfUrls.push({
-      url: "https://google.com.br",
+      url: "",
       title: "Sem PDF Disponível",
       type: "exame",
     });
