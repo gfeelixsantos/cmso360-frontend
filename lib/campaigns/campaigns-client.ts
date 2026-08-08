@@ -77,5 +77,9 @@ export const campaignsClient = {
 
   async getCompanies() {
     return fetchWithAuth(`/soc/empresas`);
+  },
+
+  async getAppUsers() {
+    return fetchWithAuth(`/users`);
   }
 };

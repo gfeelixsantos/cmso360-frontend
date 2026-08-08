@@ -155,13 +155,31 @@ export function CampaignList({ campaigns, onEdit, onView, onClone, onRefresh }: 
                     </Button>
                   </Tooltip>
                 )}
-                {item.status === 'draft' && (
-                  <Tooltip content="Publicar e Iniciar Envio">
-                    <Button isIconOnly size="sm" variant="light" color="success" onPress={() => handlePublish(item.id)}>
-                      <Play className="w-4 h-4" />
-                    </Button>
-                  </Tooltip>
-                )}
+                {item.status === 'draft' && (() => {
+                  const missingName = !item.name || item.name.trim() === '';
+                  const missingSubject = !item.subject || item.subject.trim() === '';
+                  const isIncomplete = missingName || missingSubject;
+                  const tooltipMsg = isIncomplete
+                    ? `Preencha antes de disparar: ${[missingName && 'Nome da campanha', missingSubject && 'Assunto do e-mail'].filter(Boolean).join(' e ')}`
+                    : 'Publicar e Iniciar Envio';
+
+                  return (
+                    <Tooltip content={tooltipMsg} color={isIncomplete ? 'danger' : 'foreground'}>
+                      <span>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          color={isIncomplete ? 'default' : 'success'}
+                          isDisabled={isIncomplete}
+                          onPress={() => handlePublish(item.id)}
+                        >
+                          <Play className={`w-4 h-4 ${isIncomplete ? 'text-default-300' : ''}`} />
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  );
+                })()}
                 {(item.status === 'active' || item.status === 'processing') && (
                   <Tooltip content="Cancelar Envios Restantes">
                     <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => handleCancel(item.id)}>
