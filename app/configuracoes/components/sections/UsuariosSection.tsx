@@ -203,6 +203,17 @@ export function UsuariosSection({ user }: UsuariosSectionProps) {
         body: JSON.stringify(payload),
       });
 
+      // Fire-and-forget auditoria
+      void fetch("/api/audit-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "USUARIO_ATUALIZADO",
+          recursoId: editForm.codigo,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch(() => {});
+
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
         throw new Error(errData?.message || "Erro ao salvar usuário.");

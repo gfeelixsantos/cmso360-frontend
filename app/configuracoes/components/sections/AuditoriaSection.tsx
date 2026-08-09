@@ -112,14 +112,6 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
     return null;
   }
 
-  if (isLoading && records.length === 0) {
-    return (
-      <CmsoCircularLoading
-        fullHeight={false}
-      />
-    );
-  }
-
   return (
     <Card className="bg-white rounded-lg border border-gray-200 shadow-sm">
       <CardHeader className="flex flex-row items-center gap-3 pb-2">
@@ -152,15 +144,29 @@ export function AuditoriaSection({ user }: AuditoriaSectionProps) {
           )}
 
           {/* Empty state - before first search */}
-          {!hasSearched && !error && (
+          {!hasSearched && !error && !isLoading && (
             <div className="text-center py-12 text-gray-400">
               <ShieldCheck size={40} className="mx-auto mb-3 opacity-40" />
               <p className="text-sm">Utilize os filtros acima para buscar registros de auditoria.</p>
             </div>
           )}
 
+          {/* Loading overlay on table */}
+          {hasSearched && isLoading && records.length === 0 && (
+            <div className="text-center py-12 text-gray-400">
+              <CmsoCircularLoading iconSize={40} fullHeight={false} />
+            </div>
+          )}
+
           {/* Table */}
-          {hasSearched && (
+          {hasSearched && !isLoading && (
+            <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <AuditLogsTable records={records} isLoading={isLoading} />
+            </div>
+          )}
+
+          {/* Table loading (shows skeleton while fetching more pages) */}
+          {hasSearched && isLoading && records.length > 0 && (
             <div className="rounded-lg border border-gray-200 overflow-hidden">
               <AuditLogsTable records={records} isLoading={isLoading} />
             </div>

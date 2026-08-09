@@ -107,7 +107,7 @@ export function UnidadesSection() {
       .filter((s, i, arr) => arr.indexOf(s) === i);
   }
 
-  async function handleSave() {
+   async function handleSave() {
     if (!form.nome.trim()) return;
     setSaving(true);
     try {
@@ -116,7 +116,7 @@ export function UnidadesSection() {
         : `${NEST_URL}units`;
       const method = editing ? "PUT" : "POST";
 
-      await fetch(url, {
+      const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -124,6 +124,17 @@ export function UnidadesSection() {
           salas: { recepcao: salasRecepcao, exames: salasExames },
         }),
       });
+
+      // Fire-and-forget auditoria
+      void fetch("/api/audit-log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "CONFIGURACAO_ALTERAR",
+          recursoId: editing ? String(editing.id) : undefined,
+          userAgent: navigator.userAgent,
+        }),
+      }).catch(() => {});
 
       setModalOpen(false);
       refetch();

@@ -109,6 +109,11 @@ export const logout = () => {
       clearAllNotifications();
     });
   }
+  // Registrar logout na auditoria (fire-and-forget)
+  fetch("/api/auth/logout", {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => {});
 };
 
 export const formatCPF = (value: string) => {

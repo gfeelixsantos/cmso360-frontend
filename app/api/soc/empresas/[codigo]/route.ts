@@ -1,14 +1,17 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-
 import { JWT } from "@/lib/jwt/jwt";
 import { NEST_URL } from "@/config/constants";
 import { resolveAuthProxyContextFromTokens } from "../../../_authContext.mjs";
+import { logAuditEvent } from "@/lib/audit-log/bff-logger";
 
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ codigo: string }> },
 ) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined;
+  const userAgent = req.headers.get("user-agent") ?? undefined;
+
   try {
     const { codigo } = await params;
     const ck = await cookies();
@@ -49,6 +52,13 @@ export async function POST(
 
     const text = await response.text();
 
+    // Registrar auditoria (fire-and-forget)
+    if (response.ok) {
+      void logAuditEvent("CONFIGURACAO_ALTERAR", authUser, { ip, userAgent, recursoId: codigo });
+    } else {
+      void logAuditEvent("CONFIGURACAO_ALTERAR", authUser, { ip, userAgent, recursoId: codigo });
+    }
+
     return new NextResponse(text, {
       status: response.status,
       headers: {
@@ -69,6 +79,9 @@ export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ codigo: string }> },
 ) {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined;
+  const userAgent = req.headers.get("user-agent") ?? undefined;
+
   try {
     const { codigo } = await params;
     const ck = await cookies();
@@ -104,6 +117,13 @@ export async function DELETE(
     });
 
     const text = await response.text();
+
+    // Registrar auditoria (fire-and-forget)
+    if (response.ok) {
+      void logAuditEvent("CONFIGURACAO_ALTERAR", authUser, { ip, userAgent, recursoId: codigo });
+    } else {
+      void logAuditEvent("CONFIGURACAO_ALTERAR", authUser, { ip, userAgent, recursoId: codigo });
+    }
 
     return new NextResponse(text, {
       status: response.status,

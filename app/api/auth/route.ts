@@ -12,9 +12,32 @@ import { ZodError } from "zod";
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET!);
 
+async function logUserAction(acao: string, userInfo?: Partial<IUserInfo>, ip?: string, userAgent?: string) {
+  try {
+    await fetch("/api/audit-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        acao,
+        userCodigo: userInfo?.codigo,
+        userNome: userInfo?.nome,
+        userPerfil: userInfo?.perfil,
+        ip,
+        userAgent,
+      }),
+    }).catch(() => {});
+  } catch {
+    // Auditoria não deve interromper fluxo de autenticação
+  }
+}
+
 export async function POST(
   req: NextRequest,
 ): Promise<NextResponse<IApiResponse<IUserInfo>>> {
+  const ip = req.ip ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
+  const userAgent = req.headers.get("user-agent") ?? undefined;
+
   try {
     const body = await req.json();
     const data = userLoginSchema.parse(body);
@@ -59,6 +82,9 @@ export async function POST(
       path: "/",
       maxAge: 7 * 24 * 60 * 60, // 7 dias
     });
+
+    // Registrar login na auditoria (fire-and-forget)
+    void logUserAction("LOGIN", userInfo, ip, userAgent);
 
     return NextResponse.json(
       new ApiResponse(

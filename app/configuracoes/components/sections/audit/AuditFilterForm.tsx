@@ -24,6 +24,10 @@ export function AuditFilterForm({ onFilter, onClear, isLoading }: AuditFilterFor
   const [requestId, setRequestId] = useState("");
 
   function handleSubmit() {
+    if ((dataInicio && !dataFim) || (!dataInicio && dataFim)) {
+      alert("Por favor, preencha ambas as datas (início e fim) ou deixe ambas em branco.");
+      return;
+    }
     onFilter(
       buildAuditFilterParams({
         dataInicio,

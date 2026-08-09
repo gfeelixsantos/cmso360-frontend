@@ -56,17 +56,15 @@ test("Recurso ID não aparece como filtro principal", () => {
   assert.equal("recursoId" in params, false);
 });
 
-test("colunas principais da tabela foram reduzidas", () => {
-  assert.deepEqual(AUDIT_PRIMARY_COLUMNS, [
-    "Data/Hora",
-    "Usuário",
-    "Ação",
-    "Unidade",
-    "Funcionário",
-    "Resultado/Detalhes",
-    "Código de rastreio",
-  ]);
-});
+  test("colunas principais da tabela foram reduzidas", () => {
+    assert.deepEqual(AUDIT_PRIMARY_COLUMNS, [
+      "Data/Hora",
+      "Usuário",
+      "Ação",
+      "Funcionário",
+      "Resultado/Detalhes",
+    ]);
+  });
 
 test("campos técnicos aparecem apenas no detalhe expandido", () => {
   const details = buildAuditExpandedDetails({
@@ -94,11 +92,25 @@ test("campos técnicos aparecem apenas no detalhe expandido", () => {
   assert.equal(hasExpandedAuditDetails(details), true);
 });
 
-test("Código de rastreio usa request_id e não timestamp puro", () => {
-  const a = createAuditRequestId();
-  const b = createAuditRequestId("audit");
+  test("Código de rastreio usa request_id e não timestamp puro", () => {
+    const a = createAuditRequestId();
+    const b = createAuditRequestId("audit");
 
-  assert.match(a, /^audit_\d+_[a-z0-9]{7}$/);
-  assert.match(b, /^audit_\d+_[a-z0-9]{7}$/);
-  assert.notEqual(a, b);
-});
+    assert.match(a, /^audit_\d+_[a-z0-9]{7}$/);
+    assert.match(b, /^audit_\d+_[a-z0-9]{7}$/);
+    assert.notEqual(a, b);
+  });
+
+  test("ações mapeadas correspondem ao backend", () => {
+    const actions = [
+      "USUARIO_ATUALIZADO",
+      "USUARIO_EXCLUIDO",
+    ];
+
+    for (const acao of actions) {
+      const option = AUDIT_ACTION_OPTIONS.find((item) => item.value === acao);
+      if (!option) {
+        throw new Error(`Missing action option for ${acao}`);
+      }
+    }
+  });
