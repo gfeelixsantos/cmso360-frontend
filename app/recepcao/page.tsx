@@ -23,7 +23,6 @@ import {
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
 import { sendLocalNotification } from "@/lib/notifications";
-import { addNotification } from "@/lib/notification-store";
 import EmptyState from "@/app/recepcao/components/EmptyState";
 import MainContent from "@/app/recepcao/components/MainContent";
 import AtendimentoModal from "@/app/recepcao/components/AtendimentoModal";
@@ -63,6 +62,9 @@ const RecepcaoPage: React.FC = () => {
   const [conectado, setConectado] = useState(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const deactivatedTicketsRef = useRef<Set<number>>(new Set());
+  // Refs para consumo seguro dentro de handlers (evita closures desatualizados)
+  const unidadeRef = useRef("");
+  const socketRef = useRef<typeof socket>(null);
   const {
     socket,
     connected,
@@ -77,6 +79,10 @@ const RecepcaoPage: React.FC = () => {
   const [statusSelecionado, setStatusSelecionado] = useState("");
   const [salaSelecionada, setSalaSelecionada] = useState("");
   const [exameSelecionado, setExameSelecionado] = useState("");
+
+  // Mantém refs sincronizados para uso dentro de handlers
+  useEffect(() => { unidadeRef.current = unidadeSelecionada; }, [unidadeSelecionada]);
+  useEffect(() => { socketRef.current = socket; }, [socket]);
 
   // Dados
   const [agendamentos, setAgendamentos] = useState<Scheduling[]>([]);
@@ -210,27 +216,30 @@ const RecepcaoPage: React.FC = () => {
   // Reconexão automática ao mudar contexto (unidade/sala)
   // ---------------------------------------------------------
   useEffect(() => {
+    // Só reconecta se já estava conectado — troca de unidade/sala em runtime
     if (!unidadeSelecionada || !salaSelecionada || !conectado) return;
 
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
     }
 
+    // Debounce de 800ms para absorver mudanças rápidas de estado
     reconnectTimeoutRef.current = setTimeout(() => {
       disconnect();
       setConectado(false);
-
-      setTimeout(() => {
+      // requestAnimationFrame garante que React processou o estado false
+      // antes de disparar o true — elimina a janela de dupla conexão
+      requestAnimationFrame(() => {
         setConectado(true);
-      }, 300);
-    }, 500);
+      });
+    }, 800);
 
     return () => {
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
     };
-  }, [unidadeSelecionada, salaSelecionada]);
+  }, [unidadeSelecionada, salaSelecionada]); // ← conectado propositalmente fora das deps
 
   // ---------------------------------------------------------
   // Carregamento de Dados (independente do socket)
@@ -298,6 +307,9 @@ const RecepcaoPage: React.FC = () => {
   }, [conectado]);
 
   // Registro de handlers de eventos do socket
+  // Depende apenas de [socket]: handlers são re-registrados apenas quando
+  // o socket muda (nova conexão), não a cada mudança de unidade/sala.
+  // Os valores de unidade/sala são lidos via refs para sempre estar atualizados.
   useEffect(() => {
     if (!socket) return;
 
@@ -379,11 +391,12 @@ const RecepcaoPage: React.FC = () => {
           break;
 
         case PreparationRequestTypes.FINISHED:
+          // Lê unidade e socket via ref — sempre atual, sem depender de closure
           executarAcao(
             request.request.ticketId!,
             TicketActionType.PREPARO_OK,
-            unidadeSelecionada,
-            socket,
+            unidadeRef.current,
+            socketRef.current,
           );
           setEmPreparacao((prev) =>
             prev.filter((req) => req.ticketId !== request.request.ticketId),
@@ -405,7 +418,6 @@ const RecepcaoPage: React.FC = () => {
       [EventType.CONNECTION_REQUEST]: handleAtendimentos,
       [EventType.TICKET_EMITED]: (ticket: Ticket) => {
         sendLocalNotification("🎫 Novo Ticket Emitido", { body: "Um novo ticket foi gerado na recepção. Clique para visualizar a fila." });
-        addNotification({ title: "🎫 Novo Ticket Emitido", message: "Um novo ticket foi gerado na recepção.", type: "info" });
         handleTicketEmitedOrUpdated(ticket);
       },
       [EventType.TICKET_UPDATED]: handleTicketEmitedOrUpdated,
@@ -418,7 +430,7 @@ const RecepcaoPage: React.FC = () => {
     return () => {
       unregister();
     };
-  }, [socket, unidadeSelecionada, salaSelecionada]);
+  }, [socket]); // ← apenas socket: handlers não são recriados a cada mudança de unidade/sala
 
   const handleModal = useCallback(() => {
     setModalAtendimentoAberto((prev) => !prev);

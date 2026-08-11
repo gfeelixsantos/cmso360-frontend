@@ -37,7 +37,6 @@ import { WebsocketType } from "@/lib/websocket/enums/websocket.enum";
 import { useEntityManager } from "@/hooks/useEntityManager";
 import { getCurrentUser, logout } from "@/lib/utils";
 import { sendLocalNotification } from "@/lib/notifications";
-import { addNotification } from "@/lib/notification-store";
 import {
   createAtendimentoLoadFlow,
   mergeSchedulesById,
@@ -817,11 +816,6 @@ const AtendimentoPage: React.FC = () => {
           sendLocalNotification("🩺 Novo Paciente na Sala", {
             body: `O paciente ${schedule.NOME} acabou de entrar em atendimento e aguarda por você.`,
           });
-          addNotification({
-            title: "🩺 Novo Paciente na Sala",
-            message: `O paciente ${schedule.NOME} acabou de entrar em atendimento e aguarda por você.`,
-            type: "info"
-          });
         }
         setAgendamentosGeral((prev) => {
           const idx = findSchedulingIndex(prev, schedule);
@@ -903,7 +897,7 @@ const AtendimentoPage: React.FC = () => {
     } as any);
 
     return () => unregister();
-  }, [registerHandlers, clearPendingAction, acknowledgePendingAction, addOrUpdate, remove]);
+  }, [socket]); // ← apenas socket: wrappers estáveis do useSocket garantem valores sempre atualizados via ref
 
   // Carregar dados iniciais e re-carregar após reconexão
   useEffect(() => {

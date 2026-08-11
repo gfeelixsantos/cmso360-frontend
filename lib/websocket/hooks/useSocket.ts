@@ -126,8 +126,28 @@ export function useSocket(options?: UseSocketOptions) {
     hasRegisteredSocketHandlersRef.current = true;
   }, [updateState]);
 
+  // Ref que armazena os wrappers estáveis (um por evento) para re-anexar após reconexão
+  const stableWrappersRef = useRef<Map<string, (...args: any[]) => void>>(new Map());
+  // Ref que guarda o último auth para comparação de idempotência
+  const lastAuthRef = useRef<IUserWebsocket | null>(null);
+
   const connect = useCallback(
     (auth: IUserWebsocket) => {
+      // Guard de idempotência: evita criar nova conexão se já está conectado
+      // com os mesmos parâmetros (unidade + sala + nome)
+      if (
+        socketRef.current?.connected &&
+        stateRef.current === "connected" &&
+        lastAuthRef.current?.unidade === auth.unidade &&
+        lastAuthRef.current?.sala === auth.sala &&
+        lastAuthRef.current?.nome === auth.nome
+      ) {
+        console.debug("[useSocket] Já conectado com o mesmo contexto, ignorando chamada duplicada.");
+        return;
+      }
+
+      lastAuthRef.current = auth;
+
       if (socketRef.current) {
         try {
           socketRef.current.removeAllListeners();
@@ -157,14 +177,11 @@ export function useSocket(options?: UseSocketOptions) {
 
       registerSocketHandlers(s);
 
-      const savedHandlers = handlersRef.current;
-
-      if (Object.keys(savedHandlers).length > 0) {
-        Object.entries(savedHandlers).forEach(([event, fn]) => {
-          if (fn) {
-            s.off(event as any);
-            s.on(event as any, fn as any);
-          }
+      // Re-anexa os wrappers estáveis ao novo socket (sem recriar closures)
+      if (stableWrappersRef.current.size > 0) {
+        stableWrappersRef.current.forEach((wrapper, event) => {
+          s.off(event as any);
+          s.on(event as any, wrapper as any);
         });
       }
     },
@@ -192,26 +209,31 @@ export function useSocket(options?: UseSocketOptions) {
 
   const registerHandlers = useCallback(
     (handlers: Partial<CustomEventMap>) => {
+      // Atualiza a ref com os handlers mais recentes (closures atualizados)
       handlersRef.current = { ...handlers };
 
       if (socketRef.current) {
-        Object.entries(handlers).forEach(([event, fn]) => {
-          if (!fn) return;
+        Object.entries(handlers).forEach(([event]) => {
+          // Cria um wrapper estável apenas uma vez por evento.
+          // O wrapper sempre lê o handler atual via handlersRef, garantindo
+          // que closures nunca fiquem "congelados" após re-renders.
+          if (!stableWrappersRef.current.has(event)) {
+            const wrapper = (...args: any[]) => {
+              const currentFn = handlersRef.current[event as keyof CustomEventMap];
+              if (currentFn) (currentFn as any)(...args);
+            };
+            stableWrappersRef.current.set(event, wrapper);
+          }
+
+          const wrapper = stableWrappersRef.current.get(event)!;
           socketRef.current!.off(event as any);
-          socketRef.current!.on(event as any, fn as any);
+          socketRef.current!.on(event as any, wrapper as any);
         });
       }
 
       return () => {
-        if (socketRef.current) {
-          Object.entries(handlers).forEach(([event, fn]) => {
-            if (!fn) return;
-            try {
-              socketRef.current!.off(event as any, fn as any);
-            } catch {}
-          });
-        }
-
+        // Não remove os wrappers do mapa — eles serão reutilizados na próxima reconexão.
+        // Apenas limpa a ref de handlers para que o wrapper não chame funções obsoletas.
         handlersRef.current = {};
       };
     },
