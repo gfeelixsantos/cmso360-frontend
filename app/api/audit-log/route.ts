@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { NEST_URL } from "@/config/constants";
 import { JWT } from "@/lib/jwt/jwt";
-import { resolveAuthProxyContextFromTokens } from "../../_authContext.mjs";
+import { resolveAuthProxyContextFromTokens } from "../_authContext.mjs";
 
 export async function POST(req: Request): Promise<NextResponse> {
   try {

@@ -3,7 +3,31 @@ import { NextResponse } from "next/server";
 import { JWT } from "@/lib/jwt/jwt";
 import { NEST_URL } from "@/config/constants";
 import { resolveAuthProxyContextFromTokens } from "../../_authContext.mjs";
-import { logAuditEvent } from "@/lib/audit-log/bff-logger";
+
+async function logAuditEvent(
+  acao: string,
+  authUser: any,
+  extra?: Record<string, unknown>,
+) {
+  try {
+    await fetch("/api/audit-log", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        acao,
+        userCodigo: authUser?.codigo,
+        userNome: authUser?.nome,
+        userPerfil: authUser?.perfil,
+        ip: extra?.ip,
+        userAgent: extra?.userAgent,
+        recursoId: extra?.recursoId,
+        unidade: authUser?.unidade ?? "MASTER",
+      }),
+    }).catch(() => {});
+  } catch {
+    // Silenciado - auditoria não deve interromper fluxo
+  }
+}
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? req.headers.get("x-real-ip") ?? undefined;
