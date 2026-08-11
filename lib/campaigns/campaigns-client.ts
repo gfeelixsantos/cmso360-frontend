@@ -1,17 +1,15 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+import { NEST_URL } from '@/config/constants';
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const headers = new Headers(options.headers || {});
-  
-  // Se houver um token guardado no localStorage ou cookie, adicione aqui:
-  // const token = localStorage.getItem('token');
-  // if (token) headers.set('Authorization', `Bearer ${token}`);
-  
+
   if (!headers.has('Content-Type') && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(`${API_URL}${url}`, {
+  // NEST_URL já inclui a barra final — removemos a barra inicial de `url` se houver
+  const baseUrl = NEST_URL.replace(/\/$/, '');
+  const response = await fetch(`${baseUrl}${url}`, {
     ...options,
     headers,
   });
