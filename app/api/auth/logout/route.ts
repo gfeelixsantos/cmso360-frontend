@@ -24,7 +24,7 @@ async function logLogout(userInfo?: Partial<IUserInfo>, ip?: string, userAgent?:
 }
 
 export async function POST(req: NextRequest) {
-  const ip = req.ip ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
+  const ip = req.headers.get("x-real-ip") ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   const ck = await cookies();
