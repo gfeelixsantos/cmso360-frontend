@@ -90,6 +90,7 @@ export const NEST_TICKETS_URL = `${NEST_URL}ticket`;
 export const NEST_TICKET_QUERY = `${NEST_URL}ticket?unidade=`;
 export const NEST_TICKET_DELETE = `${NEST_URL}ticket/delete/`;
 export const NEST_TICKET_CHECK_SCHEDULING = `${NEST_URL}ticket/check-scheduling`;
+export const NEST_TICKETS_ALL_URL = `${NEST_URL}ticket/all`;
 
 export const NEST_DASHBOARD = NEST_URL + "schedulings/dashboard";
 
