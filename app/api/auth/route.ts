@@ -35,7 +35,7 @@ async function logUserAction(acao: string, userInfo?: Partial<IUserInfo>, ip?: s
 export async function POST(
   req: NextRequest,
 ): Promise<NextResponse<IApiResponse<IUserInfo>>> {
-  const ip = req.ip ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
+  const ip = (req as any).ip ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? undefined;
   const userAgent = req.headers.get("user-agent") ?? undefined;
 
   try {

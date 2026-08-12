@@ -29,6 +29,27 @@ function getWeatherIcon(condition: string) {
   return "cloud";
 }
 
+function getWeatherBackground(condition: string) {
+  const type = getWeatherIcon(condition);
+  switch (type) {
+    case "sun":
+      return "bg-gradient-to-br from-[#0c3e25] via-[#2b5e3c] to-[#7fae29]";
+    case "rain":
+      return "bg-gradient-to-br from-[#1a2e3b] via-[#283d4c] to-[#101b24]";
+    case "storm":
+      return "bg-gradient-to-br from-[#131a24] via-[#202936] to-[#0b1017]";
+    case "snow":
+      return "bg-gradient-to-br from-[#2a3c4a] via-[#384c5c] to-[#1d2933]";
+    case "fog":
+      return "bg-gradient-to-br from-[#273a38] via-[#384d4b] to-[#182625]";
+    case "night":
+      return "bg-gradient-to-br from-[#060c15] via-[#0e1d2f] to-[#03070c]";
+    case "cloud":
+    default:
+      return "bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]";
+  }
+}
+
 function WeatherMainIcon({ condition, size = 64 }: { condition: string; size?: number }) {
   const type = getWeatherIcon(condition);
   switch (type) {
@@ -504,7 +525,7 @@ function MuralContent() {
               )}
             </div>
           ) : current.LAYOUTTYPE === "WEATHER" ? (
-            <div className="w-full h-full flex flex-col justify-between p-[3vw] bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white">
+            <div className={`w-full h-full flex flex-col justify-between p-[3vw] ${weatherData ? getWeatherBackground(weatherData.description) : "bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a]"} text-white`}>
               {/* Header compacto */}
               <div className="flex justify-between items-center pb-[1.5vw] border-b border-white/10">
                 <div className="flex items-center gap-[1vw]">

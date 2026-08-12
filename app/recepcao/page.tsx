@@ -392,12 +392,14 @@ const RecepcaoPage: React.FC = () => {
 
         case PreparationRequestTypes.FINISHED:
           // Lê unidade e socket via ref — sempre atual, sem depender de closure
-          executarAcao(
-            request.request.ticketId!,
-            TicketActionType.PREPARO_OK,
-            unidadeRef.current,
-            socketRef.current,
-          );
+          if (socketRef.current) {
+            executarAcao(
+              request.request.ticketId!,
+              TicketActionType.PREPARO_OK,
+              unidadeRef.current,
+              socketRef.current,
+            );
+          }
           setEmPreparacao((prev) =>
             prev.filter((req) => req.ticketId !== request.request.ticketId),
           );

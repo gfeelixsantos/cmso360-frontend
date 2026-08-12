@@ -41,7 +41,6 @@ import {
   ClipboardList,
   Eye,
   UserCheck,
-  AlertCircle,
   CheckCircle2,
   FileText,
   UserLock,
@@ -70,6 +69,12 @@ import {
 } from "@/lib/riscos-config/utils";
 import { RiscosAso } from "@/lib/scheduling/interface/scheduling";
 import { addDaysToISODate, getBrazilDateISO } from "@/lib/utils";
+import {
+  fetchOrientacoesConfig,
+  orientacoesFallbackWithIds,
+  groupOrientacoesByCategoria,
+  IOrientacaoConfig,
+} from "@/lib/orientacoes-config/services/orientacoes-config.service";
 
 // Hook para status de autenticação PSC
 import { usePscAuthStatus } from "@/hooks/usePscAuthStatus";
@@ -98,86 +103,9 @@ export type MedicalOpinionData = {
   altura?: ParecerTrabalhoAltura | null;
   confinado?: ParecerEspaçoConfinado | null;
   examesParaRepetir?: string[];
+  isProgrammed?: boolean | null;
+  orientacaoId?: string | null;
 };
-
-const PREDEFINED_ORIENTACOES = [
-  {
-    category: "Acompanhamento / Retorno",
-    items: [
-      "Orientar acompanhamento com oftalmologista",
-      "Orientar acompanhamento com cardiologista",
-      "Orientar acompanhamento com endocrinologista",
-      "Orientar acompanhamento com ortopedista",
-      "Manter acompanhamento com médico assistente",
-      "Retorno em 30 dias para reavaliação",
-      "Retorno em 60 dias para reavaliação",
-      "Retorno em 90 dias para reavaliação",
-    ],
-  },
-  {
-    category: "Visão / Oftalmologia",
-    items: [
-      "Visão monocular — apto com orientação",
-      "Uso de óculos obrigatório para atividades laborais",
-      "Necessita de avaliação oftalmológica",
-    ],
-  },
-  {
-    category: "Cardiologia",
-    items: [
-      "Controle de pressão arterial com cardiologista",
-      "HAS — manter tratamento e acompanhamento",
-    ],
-  },
-  {
-    category: "Trabalho em Altura",
-    items: [
-      "Inapto para trabalho em altura",
-      "Apto para trabalho em altura — utilizar cinto de segurança",
-      "Encaminhar para avaliação psicológica para trabalho em altura",
-    ],
-  },
-  {
-    category: "PCD / Deficiência",
-    items: [
-      "PCD — deficiência auditiva",
-      "PCD — deficiência visual / monocular",
-      "PCD — deficiência física",
-      "Enquadramento em cota PCD — laudo anexo",
-    ],
-  },
-  {
-    category: "Peso / Obesidade",
-    items: [
-      "Peso excessivo — orientar reeducação alimentar",
-      "Controle de peso com nutricionista / endocrinologista",
-    ],
-  },
-  {
-    category: "Audição",
-    items: [
-      "Perda auditiva — encaminhar a otorrinolaringologista",
-      "Prótese auditiva — manter uso durante expediente",
-    ],
-  },
-  {
-    category: "Diabetes / Glicemia",
-    items: [
-      "Hemoglobina glicada alterada — controle com endocrinologista",
-      "Glicemia — manter acompanhamento e medicação",
-    ],
-  },
-  {
-    category: "Restrições Físicas",
-    items: [
-      "Evitar esforços físicos intensos",
-      "Não carregar peso excessivo",
-      "Alternar posição sentada e em pé",
-      "Evitar movimentos repetitivos com MMSS",
-      "Não elevar braços acima do nível dos ombros",
-    ],
-  },
-];
 
 interface RightPanelProps {
   selectedRecord: MedicalRecord | null;
@@ -343,12 +271,14 @@ const ConfirmacaoParecerModal = memo(
     onConfirm,
     opinion,
     isLoading,
+    orientacoesCatalogo,
   }: {
     isOpen: boolean;
     onClose: () => void;
     onConfirm: () => void;
     opinion: MedicalOpinionData;
     isLoading: boolean;
+    orientacoesCatalogo: IOrientacaoConfig[] | null;
   }) => {
     return (
       <HeroModal
@@ -361,15 +291,25 @@ const ConfirmacaoParecerModal = memo(
       >
         <ModalContent>
           <ModalHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 sm:w-6 sm:h-6 text-warning" />
-              <h3 className="text-base sm:text-lg md:text-xl font-bold">
-                Confirmar Parecer Médico
-              </h3>
-            </div>
+            <h3 className="text-base sm:text-lg md:text-xl font-bold">
+              Confirmar Parecer Médico
+            </h3>
           </ModalHeader>
-          <ModalBody>
+           <ModalBody>
             <div className="space-y-4">
+              {opinion.isProgrammed === true &&
+                (opinion.opinionType === ParecerMedico.APTO ||
+                  opinion.opinionType ===
+                    ParecerMedico.APTO_COM_ORIENTACAO) && (
+                  <Alert
+                    color="success"
+                    description="Orientação programada selecionada. O ASO será liberado normalmente ao cliente (sem envio de PARECER_MEDICO para a equipe interna)."
+                    hideIcon
+                    classNames={{
+                      base: "border border-success-200 bg-success-50",
+                    }}
+                  />
+                )}
               <Card className="border border-default-200">
                 <CardBody className="p-4 space-y-3">
                   <div>
@@ -442,6 +382,97 @@ const ConfirmacaoParecerModal = memo(
                   )}
                 </CardBody>
               </Card>
+
+              {/* Resumo de Fluxo - ASO e Email */}
+              {(() => {
+                const isInapto =
+                  opinion.opinionType === ParecerMedico.INAPTO;
+                const isInaptoTemporariamente =
+                  opinion.opinionType ===
+                  ParecerMedico.INAPTO_TEMPORARIAMENTE;
+                const naoGeraAso = isInapto || isInaptoTemporariamente;
+
+                const orientacaoSelecionada = opinion.orientacaoId
+                  ? orientacoesCatalogo?.find(
+                      (orientacao) =>
+                        orientacao.id === opinion.orientacaoId,
+                    )
+                  : undefined;
+
+                const hasDetalhes = Boolean(
+                  opinion.details?.trim(),
+                );
+
+                // Espelha o roteamento do backend: libera_cliente da
+                // orientação define isProgrammed; APTO livre sem detalhes
+                // sempre libera o ASO ao cliente.
+                const emailParaCliente =
+                  !naoGeraAso &&
+                  (opinion.opinionType === ParecerMedico.APTO
+                    ? !hasDetalhes && !opinion.laudoRestricao
+                    : orientacaoSelecionada
+                      ? orientacaoSelecionada.libera_cliente
+                      : opinion.isProgrammed === true);
+
+                return (
+                  <div className="space-y-3">
+                    <h4 className="text-xs font-semibold text-default-600 uppercase">
+                      Resumo
+                    </h4>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 p-2 bg-default-50 rounded-lg">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            naoGeraAso ? "bg-danger" : "bg-success"
+                          }`}
+                        />
+                        <div>
+                          <p className="text-xs text-default-500">ASO</p>
+                          <p className="text-xs font-medium text-foreground">
+                            {naoGeraAso
+                              ? "NÃO será gerado"
+                              : "Será gerado e assinado"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 p-2 bg-default-50 rounded-lg">
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            emailParaCliente ? "bg-success" : "bg-info"
+                          }`}
+                        />
+                        <div>
+                          <p className="text-xs text-default-500">
+                            Email
+                          </p>
+                          <p className="text-xs font-medium text-foreground">
+                            {emailParaCliente
+                              ? "ASO Liberado (cliente)"
+                              : "PARECER_MEDICO (interno)"}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {naoGeraAso && (
+                      <Alert
+                        color="warning"
+                        description={
+                          isInapto
+                            ? "Parecer INAPTO — ASO não será gerado. Email de PARECER_MEDICO será enviado para a equipe interna."
+                            : "Parecer INAPTO TEMPORARIAMENTE — ASO não será gerado. Email de PARECER_MEDICO será enviado para a equipe interna com as restrições."
+                        }
+                        hideIcon
+                        classNames={{
+                          base: "border border-warning-200 bg-warning-50",
+                        }}
+                      />
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </ModalBody>
           <ModalFooter>
@@ -821,6 +852,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
     altura: null,
     confinado: null,
     examesParaRepetir: [],
+    isProgrammed: null,
+    orientacaoId: null,
   };
 
   const [opinion, setOpinion] = useState<MedicalOpinionData>(initialOpinion);
@@ -864,6 +897,37 @@ const PainelDireita: React.FC<RightPanelProps> = ({
       .then(setRiscosConfigs)
       .catch(() => setRiscosConfigs([]));
   }, []);
+
+  // Carregar catálogo de orientações de parecer da API, com fallback embutido
+  const [orientacoesCatalogo, setOrientacoesCatalogo] = useState<
+    IOrientacaoConfig[] | null
+  >(null);
+
+  useEffect(() => {
+    let active = true;
+    fetchOrientacoesConfig()
+      .then((data) => {
+        if (!active) return;
+        setOrientacoesCatalogo(
+          data && data.length > 0 ? data : orientacoesFallbackWithIds(),
+        );
+      })
+      .catch(() => {
+        if (!active) return;
+        setOrientacoesCatalogo(orientacoesFallbackWithIds());
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const orientacoesDisponiveis = useMemo(() => {
+    const catalogo =
+      orientacoesCatalogo ?? orientacoesFallbackWithIds();
+    return groupOrientacoesByCategoria(
+      catalogo.filter((o) => o.ativo),
+    );
+  }, [orientacoesCatalogo]);
 
   // Polling para detectar sucesso ou fechamento da janela
   useEffect(() => {
@@ -1362,7 +1426,8 @@ const PainelDireita: React.FC<RightPanelProps> = ({
   const opinionHasInvalidAptoDetails = useCallback(
     (op: MedicalOpinionData | null) =>
       op?.opinionType === ParecerMedico.APTO &&
-      Boolean(op.details && op.details.trim() !== ""),
+      Boolean(op.details && op.details.trim() !== "") &&
+      op.isProgrammed !== true,
     [],
   );
 
@@ -1904,20 +1969,36 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     label="Modelo de Orientação"
                     placeholder="Digite para buscar ou clique para selecionar..."
                     size="sm"
-                    defaultItems={PREDEFINED_ORIENTACOES}
+                    defaultItems={orientacoesDisponiveis}
+                    selectedKey={opinion?.orientacaoId ?? null}
                     onSelectionChange={(key) => {
                       if (key) {
+                        const orientacao = orientacoesDisponiveis
+                          .flatMap((group) => group.items)
+                          .find((orientacao) => orientacao.id === key);
+
                         setOpinion((prev) => ({
                           ...(prev || {}),
-                          details: String(key),
+                          details:
+                            orientacao?.texto_tela ?? String(key),
+                          orientacaoId: orientacao?.id ?? null,
+                          isProgrammed: orientacao
+                            ? orientacao.libera_cliente
+                            : true,
                         }));
                       }
                     }}
                   >
                     {(group) => (
-                      <AutocompleteSection key={group.category} title={group.category} showDivider>
-                        {group.items.map((text) => (
-                          <AutocompleteItem key={text}>{text}</AutocompleteItem>
+                      <AutocompleteSection
+                        key={group.categoria}
+                        title={group.categoria}
+                        showDivider
+                      >
+                        {group.items.map((orientacao) => (
+                          <AutocompleteItem key={orientacao.id}>
+                            {orientacao.texto_tela}
+                          </AutocompleteItem>
                         ))}
                       </AutocompleteSection>
                     )}
@@ -1933,12 +2014,14 @@ const PainelDireita: React.FC<RightPanelProps> = ({
                     rows={4}
                     size="sm"
                     value={opinion?.details ?? ""}
-                    onValueChange={(value) =>
-                      setOpinion((prev) => ({
-                        ...(prev || {}),
-                        details: value,
-                      }))
-                    }
+                     onValueChange={(value) =>
+                       setOpinion((prev) => ({
+                         ...(prev || {}),
+                         details: value,
+                         isProgrammed: false,
+                         orientacaoId: null,
+                       }))
+                     }
                   />
 
                   {opinion?.opinionType ===
@@ -2020,6 +2103,7 @@ const PainelDireita: React.FC<RightPanelProps> = ({
         opinion={opinion}
         onClose={() => setConfirmacaoModalOpen(false)}
         onConfirm={saveOpinion}
+        orientacoesCatalogo={orientacoesCatalogo}
       />
 
       <LaudosModal

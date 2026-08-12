@@ -25,6 +25,7 @@ import { UsuarioSection } from "./components/sections/UsuarioSection";
 import { AuditoriaSection } from "./components/sections/AuditoriaSection";
 import { RiscosConfigSection } from "./components/sections/RiscosConfigSection";
 import { EmpresasSection } from "./components/sections/EmpresasSection";
+import { OrientacoesParecerSection } from "./components/sections/OrientacoesParecerSection";
 
 const defaultPscAuthStatus: IPscAuthStatus = {
   status: "NOT_AUTHENTICATED",
@@ -105,6 +106,8 @@ export default function ConfiguracoesPage() {
         return <EmpresasSection user={user!} />;
       case "riscos":
         return <RiscosConfigSection />;
+      case "orientacoes-parecer":
+        return <OrientacoesParecerSection />;
     }
   }
 
