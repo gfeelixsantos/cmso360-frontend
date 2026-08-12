@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { FlaskConical, Plus, Pencil, Trash2, ChevronDown, ChevronRight, FolderPlus, FolderEdit } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { FlaskConical, Plus, Pencil, Trash2, ChevronDown, ChevronRight, FolderPlus, FolderEdit, Search } from "lucide-react";
 import {
   Button, Input, Select, SelectItem, Modal, ModalContent, ModalHeader, ModalBody,
   ModalFooter, Card, CardBody, Chip, Switch, Divider, Textarea,
@@ -73,13 +73,35 @@ export function ExamesSection() {
 
   useEffect(() => { load(); }, [load]);
 
-  const gruposAtivos = grupos.filter((g) => g.ativo);
-  const examesPorGrupo = gruposAtivos.map((g) => ({
-    grupo: g.nome,
-    exames: exames.filter((e) => e.grupo === g.nome),
-  }));
+  const [searchQuery, setSearchQuery] = useState("");
 
+  const gruposAtivos = grupos.filter((g) => g.ativo);
   const gruposInativos = grupos.filter((g) => !g.ativo);
+
+  const filteredExames = useMemo(() => {
+    if (!searchQuery.trim()) return exames;
+    const q = searchQuery.toLowerCase().trim();
+    return exames.filter((e) => e.nome.toLowerCase().includes(q));
+  }, [exames, searchQuery]);
+
+  const examesPorGrupo = useMemo(() => {
+    return gruposAtivos
+      .map((g) => ({
+        grupo: g.nome,
+        exames: filteredExames.filter((e) => e.grupo === g.nome),
+      }))
+      .filter((g) => g.exames.length > 0);
+  }, [gruposAtivos, filteredExames]);
+
+  // Auto-expand groups when searching
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const matchingGroups = new Set(filteredExames.map((e) => e.grupo));
+      setExpandedGrupos(matchingGroups as Set<string>);
+    } else {
+      setExpandedGrupos(new Set(gruposAtivos.map((g) => g.nome)));
+    }
+  }, [searchQuery, filteredExames, gruposAtivos]);
 
   function openCreate() {
     setEditing(null);
@@ -235,13 +257,23 @@ export function ExamesSection() {
     <>
       <Card className="bg-white rounded-lg border border-gray-200 shadow-sm">
         <CardBody className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
             <div className="flex items-center gap-3">
               <FlaskConical size={28} aria-hidden="true" style={{ color: "#44735e" }} />
               <h2 className="text-xl font-semibold text-gray-800">Exames</h2>
               <Chip size="sm" variant="flat">{exames.length} exames</Chip>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                size="sm"
+                placeholder="Buscar exame..."
+                value={searchQuery}
+                onValueChange={setSearchQuery}
+                startContent={<Search size={16} className="text-gray-400" />}
+                isClearable
+                onClear={() => setSearchQuery("")}
+                className="w-full md:w-64"
+              />
               <Button variant="flat" size="sm" onPress={() => toggleExpandedAll(true)}>
                 Expandir Todos
               </Button>
