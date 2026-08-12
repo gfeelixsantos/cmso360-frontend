@@ -1337,11 +1337,11 @@ const AtendimentoModal: React.FC<AtendimentoModalProps> = ({
 
     if (value === true) {
       // Marcar -> remover Exame Clínico
-      setCodigoExames((prev) => prev.filter((g) => g !== "Exame Clínico"));
+      setCodigoExames((prev) => prev.filter((g) => g !== "Exame Clínico" && g !== "Exame Clinico"));
     } else {
       // Desmarcar -> adicionar Exame Clínico novamente, se não existir
       setCodigoExames((prev) => {
-        if (!prev.includes("Exame Clínico")) {
+        if (!prev.includes("Exame Clínico") && !prev.includes("Exame Clinico")) {
           return [...prev, "Exame Clínico"];
         }
 
