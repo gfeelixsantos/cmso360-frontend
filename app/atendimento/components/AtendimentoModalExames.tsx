@@ -224,6 +224,16 @@ const AtendimentoModalExames = ({
       setNotificationModal((prev) => ({ ...prev, isLoading: true }));
 
       try {
+        const codigosParaAtualizar = Array.isArray(data?.examesRealizados)
+          ? funcionarioSelecionado.EXAMES
+              .filter((ex) =>
+                data.examesRealizados.some(
+                  (er: any) => String(er.sequencialResultadoExame || '') === String(ex.sequencialResultadoExame || ''),
+                ),
+              )
+              .map((ex) => ex.codigoExame)
+          : exameParaAtualizar.map((e) => e.codigoExame);
+
         const response = await fetch("/api/schedulings/exame/update", {
           method: "POST",
           headers: {
@@ -231,7 +241,7 @@ const AtendimentoModalExames = ({
           },
           body: JSON.stringify({
             funcionarioId: funcionarioSelecionado._id,
-            codigoExame: exameParaAtualizar.map((e) => e.codigoExame),
+            codigoExame: codigosParaAtualizar,
             formulario: data,
             sala: sala,
             profissional: effectiveUser ?? undefined,
