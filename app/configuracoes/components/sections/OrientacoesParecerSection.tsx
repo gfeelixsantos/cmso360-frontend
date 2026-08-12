@@ -26,15 +26,12 @@ const INITIAL_FORM: IOrientacaoConfigFormData = {
 
 const CATEGORIAS = [
   "Geral",
-  "Acompanhamento / Retorno",
-  "Visão / Oftalmologia",
   "Cardiologia",
+  "Visão / Oftalmologia",
   "Trabalho em Altura",
-  "PCD / Deficiência",
-  "Peso / Obesidade",
-  "Audição",
-  "Diabetes / Glicemia",
   "Restrições Físicas",
+  "Acompanhamento / Retorno",
+  "PCD / Deficiência",
 ];
 
 export function OrientacoesParecerSection() {
@@ -173,14 +170,14 @@ export function OrientacoesParecerSection() {
   }
 
   async function handleDelete({
-    password: _password,
+    password,
     motivo,
   }: {
     password: string;
     motivo: string;
   }) {
     if (!deletingOrientacao) throw new Error("Nenhuma orientação selecionada");
-    await deleteOrientacaoConfig(deletingOrientacao.id, { motivo });
+    await deleteOrientacaoConfig(deletingOrientacao.id, { password, motivo });
   }
 
   async function handleDeleteSuccess() {

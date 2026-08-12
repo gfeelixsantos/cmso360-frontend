@@ -550,9 +550,9 @@ function MuralContent() {
 
               {/* Main Content */}
               {weatherData ? (
-                <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-[4vw] items-center py-[2vw]">
+                <div className="flex-1 grid grid-cols-1 portrait:grid-cols-1 landscape:lg:grid-cols-5 gap-[4vw] portrait:gap-[2vh] items-center py-[2vw] portrait:py-[2vh]">
                   {/* Left: Temp atual & Info */}
-                  <div className="lg:col-span-3 flex flex-col justify-center space-y-[2vw]">
+                  <div className="lg:col-span-3 portrait:col-span-1 flex flex-col justify-center space-y-[2vw] portrait:space-y-[2vh]">
                     {/* Temperatura principal */}
                     <motion.div
                       className="backdrop-blur-xl bg-white/[0.07] rounded-[2vw] border border-white/[0.12] p-[3vw] shadow-[0_8px_32px_rgba(0,0,0,0.4)]"
@@ -628,7 +628,7 @@ function MuralContent() {
                   </div>
 
                   {/* Right: Próximos 3 dias */}
-                  <div className="lg:col-span-2 flex flex-col justify-center space-y-[1.5vw]">
+                  <div className="lg:col-span-2 portrait:col-span-1 flex flex-col justify-center space-y-[1.5vw] portrait:space-y-[1.5vh]">
                     <motion.h2
                       className="text-[1.3vw] font-bold tracking-wider text-white/60 flex items-center gap-[0.6vw] uppercase"
                       initial={{ opacity: 0 }}
@@ -703,7 +703,7 @@ function MuralContent() {
               </div>
             </div>
           ) : (
-            <div className="w-full h-full flex flex-col lg:flex-row">
+            <div className="w-full h-full flex flex-col landscape:lg:flex-row">
               <div className="flex-1 flex flex-col justify-center p-8 md:p-12 lg:p-16 xl:p-24">
                 {current.TITLE && (
                   <h1

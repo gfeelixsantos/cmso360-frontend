@@ -71,19 +71,15 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  req: Request,
+  _req: Request,
   { params }: { params: Promise<{ id: string }> },
 ): Promise<NextResponse> {
   try {
     const { id } = await params;
     const { headers } = await getAuthHeaders();
-    const body = await req
-      .json()
-      .catch(() => ({} as Record<string, unknown>));
     const response = await fetch(`${NEST_URL}orientacoes-config/${id}`, {
       method: "DELETE",
       headers,
-      body: Object.keys(body).length ? JSON.stringify(body) : undefined,
     });
     const text = await response.text();
     return new NextResponse(text, {

@@ -303,14 +303,16 @@ const ConfirmacaoParecerModal = memo(
                     ParecerMedico.APTO_COM_ORIENTACAO) && (
                   <Alert
                     color="success"
-                    description="Orientação programada selecionada. O ASO será liberado normalmente ao cliente (sem envio de PARECER_MEDICO para a equipe interna)."
-                    hideIcon
+                    title="Orientação Programada"
+                    description="O ASO será enviado diretamente ao e-mail do cliente."
                     classNames={{
-                      base: "border border-success-200 bg-success-50",
+                      base: "border border-success-200 bg-success-50/50 rounded-lg py-2 px-3",
+                      title: "text-success-800 font-semibold text-xs",
+                      description: "text-success-600 text-xs",
                     }}
                   />
                 )}
-              <Card className="border border-default-200">
+               <Card className="border border-default-200">
                 <CardBody className="p-4 space-y-3">
                   <div>
                     <p className="text-xs text-default-500">
@@ -320,6 +322,17 @@ const ConfirmacaoParecerModal = memo(
                       {opinion.opinionType?.replace(/_/g, " ")}
                     </p>
                   </div>
+
+                  {opinion.details && (
+                    <div>
+                      <p className="text-xs text-default-500">
+                        Justificativa / Orientação:
+                      </p>
+                      <p className="text-sm font-semibold text-foreground break-words">
+                        {opinion.details}
+                      </p>
+                    </div>
+                  )}
 
                   {opinion.altura && (
                     <div>
@@ -450,7 +463,7 @@ const ConfirmacaoParecerModal = memo(
                           <p className="text-xs font-medium text-foreground">
                             {emailParaCliente
                               ? "ASO Liberado (cliente)"
-                              : "PARECER_MEDICO (interno)"}
+                              : "Parecer Médico (interno)"}
                           </p>
                         </div>
                       </div>

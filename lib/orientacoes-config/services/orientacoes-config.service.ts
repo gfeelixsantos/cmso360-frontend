@@ -174,12 +174,12 @@ export async function updateOrientacaoConfig(
 
 export async function deleteOrientacaoConfig(
   id: string,
-  options?: { motivo?: string },
+  options: { password: string; motivo: string },
 ): Promise<void> {
-  const res = await fetch(`/api/orientacoes-config/${id}`, {
+  const res = await fetch(`/api/orientacoes-config/delete`, {
     method: "DELETE",
-    headers: options?.motivo ? { "Content-Type": "application/json" } : undefined,
-    body: options?.motivo ? JSON.stringify({ motivo: options.motivo }) : undefined,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ id, ...options }),
   });
   if (!res.ok) {
     const err = await res
