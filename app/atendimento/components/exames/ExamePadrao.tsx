@@ -55,7 +55,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
           exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
       ).map((exameItem: any) => ({
         ...exameItem,
-        realizado: true,
+        realizado: exameItem.status !== "NAO_REALIZADO",
       }));
 
       setExamesFiltrados(examesFiltrados);
