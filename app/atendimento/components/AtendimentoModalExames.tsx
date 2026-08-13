@@ -228,7 +228,10 @@ const AtendimentoModalExames = ({
           ? funcionarioSelecionado.EXAMES
               .filter((ex) =>
                 data.examesRealizados.some(
-                  (er: any) => String(er.sequencialResultadoExame || '') === String(ex.sequencialResultadoExame || ''),
+                  (er: any) =>
+                    er.codigoExame === ex.codigoExame ||
+                    (ex.sequencialResultadoExame &&
+                      String(er.sequencialResultadoExame) === String(ex.sequencialResultadoExame)),
                 ),
               )
               .map((ex) => ex.codigoExame)

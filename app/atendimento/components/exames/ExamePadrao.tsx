@@ -68,10 +68,10 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
 
   // Função para atualizar o status de realização do exame
   const handleRealizacaoExameChange = useCallback(
-    (sequencialResultadoExame: string, realizado: boolean) => {
+    (codigoExame: string, realizado: boolean) => {
       setExamesFiltrados((prev) =>
         prev.map((exame) =>
-          exame.sequencialResultadoExame === sequencialResultadoExame
+          exame.codigoExame === codigoExame
             ? { ...exame, realizado }
             : exame,
         ),
@@ -92,6 +92,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
         status: "concluded",
         anotacoes: anotacoesFinais,
         examesRealizados: examesFiltrados.map((exame) => ({
+          codigoExame: exame.codigoExame,
           sequencialResultadoExame: exame.sequencialResultadoExame,
           realizado: exame.realizado,
         })),
@@ -159,7 +160,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
                       value={exameItem.realizado === undefined ? "" : exameItem.realizado ? "sim" : "nao"}
                       onValueChange={(value) =>
                         handleRealizacaoExameChange(
-                          exameItem.sequencialResultadoExame!,
+                          exameItem.codigoExame,
                           value === "sim",
                         )
                       }
