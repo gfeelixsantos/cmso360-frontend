@@ -55,7 +55,10 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
           exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
       ).map((exameItem: any) => ({
         ...exameItem,
-        realizado: exameItem.status !== "NAO_REALIZADO",
+        realizado:
+          exameItem.status === "PENDENTE"
+            ? undefined
+            : exameItem.status !== "NAO_REALIZADO",
       }));
 
       setExamesFiltrados(examesFiltrados);
@@ -113,6 +116,8 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
     </div>
   );
 
+  const todosRespondidos = examesFiltrados.every((exame) => exame.realizado !== undefined);
+
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6 min-h-screen">
       {/* Header */}
@@ -151,7 +156,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
                       color="success"
                       label="Exame realizado?"
                       orientation="horizontal"
-                      value={exameItem.realizado ? "sim" : "nao"}
+                      value={exameItem.realizado === undefined ? "" : exameItem.realizado ? "sim" : "nao"}
                       onValueChange={(value) =>
                         handleRealizacaoExameChange(
                           exameItem.sequencialResultadoExame!,
@@ -198,7 +203,7 @@ const ExamePadrao: React.FC<ExamePadraoProps> = ({
         <Button
           className="px-8 bg-brand-primary text-white shadow-sm hover:bg-brand-primary-hover transition-colors"
           color="primary"
-          isDisabled={loading}
+          isDisabled={loading || !todosRespondidos}
           startContent={loading ? <Spinner size="sm" /> : <FileText className="h-4 w-4" />}
           onPress={handleSave}
         >
