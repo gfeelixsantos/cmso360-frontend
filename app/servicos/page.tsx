@@ -12,6 +12,7 @@ import { getCurrentUser, logout } from "@/lib/utils";
 
 import { QueueMonitor } from "./components/QueueMonitor";
 import { TicketsMonitor } from "./components/TicketsMonitor";
+import { ScheduledJobsMonitor } from "./components/ScheduledJobsMonitor";
 import { CampaignManager } from "./components/campaigns/CampaignManager";
 import { Card, CardBody, CardHeader } from "@heroui/react";
 
@@ -137,6 +138,7 @@ export default function ServicosPage() {
               <ActiveConnectionsCard />
               <QueueMonitor />
               <TicketsMonitor />
+              <ScheduledJobsMonitor />
             </div>
           </Tab>
 
