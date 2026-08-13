@@ -6,18 +6,13 @@ import {
   Search,
   RotateCw,
   RefreshCw,
-  ChevronDown,
-  ChevronUp,
   AlertTriangle,
   Inbox,
-  User,
   Clock,
-  Building,
-  Activity,
   Sparkles,
   HelpCircle,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 import { NEST_TICKETS_ALL_URL, UNIDADES_ATENDIMENTO } from "@/config/constants";
 import { getCurrentUser } from "@/lib/utils";
@@ -53,7 +48,7 @@ export const TicketsMonitor: React.FC = () => {
   const [selectedUnidade, setSelectedUnidade] = useState<string>("ALL");
   const [activityFilter, setActivityFilter] = useState<string>("ACTIVE");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedTicket, setExpandedTicket] = useState<number | null>(null);
+
   
   // Paginação
   const [currentPage, setCurrentPage] = useState(1);
@@ -140,9 +135,7 @@ export const TicketsMonitor: React.FC = () => {
     });
   };
 
-  const toggleTicket = (id: number) => {
-    setExpandedTicket(expandedTicket === id ? null : id);
-  };
+
 
   // Filtragem local baseada na busca e status de atividade
   const filteredTickets = useMemo(() => {
@@ -385,7 +378,6 @@ export const TicketsMonitor: React.FC = () => {
               const selected = Array.from(keys)[0] as string;
               if (selected) {
                 setSelectedUnidade(selected);
-                setExpandedTicket(null);
               }
             }}
             aria-label="Filtrar por unidade"
@@ -408,7 +400,6 @@ export const TicketsMonitor: React.FC = () => {
               const selected = Array.from(keys)[0] as string;
               if (selected) {
                 setActivityFilter(selected);
-                setExpandedTicket(null);
               }
             }}
             aria-label="Filtrar por atividade"
@@ -453,161 +444,53 @@ export const TicketsMonitor: React.FC = () => {
           </div>
         ) : (
           <>
-            <div className="divide-y divide-gray-100">
-              {paginatedTickets.map((ticket, index) => {
-                const isExpanded = expandedTicket === ticket.id;
-                const hasName = !!ticket.nome;
+            {/* 2-column compact grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2">
+              {paginatedTickets.map((ticket, index) => (
+                <motion.div
+                  key={ticket.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.015 }}
+                  className={`flex items-center gap-2 px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50/60 transition-colors text-[11px]
+                    ${index % 2 === 1 ? "sm:border-l border-gray-100" : ""}`}
+                >
+                  {/* Status dot + Senha */}
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className={`h-2 w-2 rounded-full shrink-0 ${getStatusColor(ticket.status, ticket.ativo)}`} />
+                    <span className="font-bold bg-emerald-100 text-emerald-800 rounded px-2 py-0.5 whitespace-nowrap text-[11px]">
+                      {ticket.prefixo || ""}{ticket.numero}
+                    </span>
+                  </span>
 
-                return (
-                  <motion.div
-                    key={ticket.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.02 }}
-                  >
-                    {/* Row Header */}
-                    <div
-                      className={`cursor-pointer transition-all duration-150 p-4 flex items-center justify-between gap-4 ${
-                        isExpanded ? "bg-emerald-50/40" : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => toggleTicket(ticket.id)}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Status Indicator */}
-                        <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${getStatusColor(ticket.status, ticket.ativo)}`} />
+                  {/* Preferencial badge */}
+                  {ticket.preferencial && (
+                    <span className="text-[9px] bg-red-100 text-red-600 font-bold px-1 py-0.5 rounded shrink-0">PREF</span>
+                  )}
 
-                        {/* Ticket Prefix + Number Badge */}
-                        <span className="flex items-center justify-center font-bold text-sm bg-emerald-100 text-emerald-800 rounded-lg px-2.5 py-1 min-w-[50px]">
-                          {ticket.prefixo || ""}{ticket.numero}
-                        </span>
+                  {/* Unidade */}
+                  <span className="text-gray-400 shrink-0 truncate max-w-[80px]">{ticket.unidade}</span>
 
-                        {/* Patient Name / Identification */}
-                        <div className="min-w-0 flex flex-col">
-                          <span className={`text-sm font-semibold truncate ${hasName ? "text-gray-800" : "text-gray-400 italic"}`}>
-                            {ticket.nome || "Não identificado (Totem)"}
-                          </span>
-                          <span className="text-xs text-gray-500 flex items-center gap-1.5 mt-0.5">
-                            <Building className="h-3.5 w-3.5" /> {ticket.unidade}
-                            {ticket.preferencial && (
-                              <span className="text-[10px] bg-red-100 text-red-700 font-bold px-1.5 py-0.2 rounded-sm ml-2">
-                                Preferencial {ticket.preferencialTipo ? `(${ticket.preferencialTipo})` : ""}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      </div>
+                  <span className="h-3 w-px bg-gray-200 shrink-0" />
 
-                      <div className="flex items-center gap-4">
-                        {/* Hour & Status Badge */}
-                        <div className="text-right hidden sm:block">
-                          <span className="text-xs text-gray-400 block">{formatTime(ticket.emissao)}</span>
-                          <span className="text-[10px] font-semibold text-gray-500 mt-1 block">
-                            {getStatusLabel(ticket.status, ticket.ativo)}
-                          </span>
-                        </div>
+                  {/* Status */}
+                  <span className="font-semibold text-gray-600 shrink-0">{getStatusLabel(ticket.status, ticket.ativo)}</span>
 
-                        {/* Chevron */}
-                        <div className="text-gray-400 shrink-0">
-                          {isExpanded ? (
-                            <ChevronUp className="h-5 w-5" />
-                          ) : (
-                            <ChevronDown className="h-5 w-5" />
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                  {/* Sala */}
+                  {ticket.sala && (
+                    <>
+                      <span className="h-3 w-px bg-gray-200 shrink-0" />
+                      <span className="text-gray-500 shrink-0">{ticket.sala}</span>
+                    </>
+                  )}
 
-                    {/* Expanded Detail Panel */}
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className="bg-gray-50/50 border-t border-gray-100 px-6 py-4"
-                        >
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-                            {/* Col 1: Paciente e Documentos */}
-                            <div className="space-y-2">
-                              <h5 className="font-semibold text-[#44735E] border-b border-gray-200 pb-1 flex items-center gap-1.5">
-                                <User className="h-4 w-4" /> Identificação
-                              </h5>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Nome do Paciente</span>
-                                <span className="font-medium text-gray-700">{ticket.nome || "—"}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">CPF</span>
-                                <span className="font-medium text-gray-700">
-                                  {ticket.cpf ? ticket.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") : "—"}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Preferencial</span>
-                                <span className="font-medium text-gray-700">
-                                  {ticket.preferencial ? `Sim (${ticket.preferencialTipo || "Não especificado"})` : "Não"}
-                                </span>
-                              </div>
-                            </div>
+                  {/* Atendente */}
+                  <span className="flex-1 truncate text-gray-400 text-right">{ticket.atendente || ""}</span>
 
-                            {/* Col 2: Atendimento e Status */}
-                            <div className="space-y-2">
-                              <h5 className="font-semibold text-[#44735E] border-b border-gray-200 pb-1 flex items-center gap-1.5">
-                                <Activity className="h-4 w-4" /> Fluxo & Status
-                              </h5>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Status Atual</span>
-                                <span className="font-medium text-gray-700 flex items-center gap-1.5 mt-0.5">
-                                  <span className={`h-2 w-2 rounded-full ${getStatusColor(ticket.status, ticket.ativo)}`} />
-                                  {getStatusLabel(ticket.status, ticket.ativo)}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Sala / Local</span>
-                                <span className="font-medium text-gray-700">{ticket.sala || "—"}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Grupo do Painel</span>
-                                <span className="font-medium text-gray-700">{ticket.grupo || "—"}</span>
-                              </div>
-                            </div>
-
-                            {/* Col 3: Profissional e Horários */}
-                            <div className="space-y-2">
-                              <h5 className="font-semibold text-[#44735E] border-b border-gray-200 pb-1 flex items-center gap-1.5">
-                                <Clock className="h-4 w-4" /> Atendimento & Tempos
-                              </h5>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Operador / Atendente</span>
-                                <span className="font-medium text-gray-700">{ticket.atendente || "—"}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Exame & Especialidade</span>
-                                <span className="font-medium text-gray-700">{ticket.exame || "—"}</span>
-                              </div>
-                              <div>
-                                <span className="text-xs text-gray-400 block">Profissional Clínico</span>
-                                <span className="font-medium text-gray-700">{ticket.profissional || "—"}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 pt-1">
-                                <div>
-                                  <span className="text-[10px] text-gray-400 block">Emissão</span>
-                                  <span className="text-xs font-medium text-gray-600">{formatTime(ticket.emissao)}</span>
-                                </div>
-                                <div>
-                                  <span className="text-[10px] text-gray-400 block">Última Ação</span>
-                                  <span className="text-xs font-medium text-gray-600">{formatTime(ticket.updatedAt || undefined)}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                );
-              })}
+                  {/* Emissão */}
+                  <span className="font-mono text-gray-400 shrink-0 tabular-nums">{formatTime(ticket.emissao)}</span>
+                </motion.div>
+              ))}
             </div>
 
             {/* Pagination Controls */}

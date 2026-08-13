@@ -181,8 +181,7 @@ export const ScheduledJobsMonitor: React.FC = () => {
               <TableHeader>
                 <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">SERVIÇO</TableColumn>
                 <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">CATEGORIA</TableColumn>
-                <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">FREQUÊNCIA (CRON)</TableColumn>
-                <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">PRÓXIMO AGENDAMENTO</TableColumn>
+                <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">AGENDAMENTO</TableColumn>
                 <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100">DESCRIÇÃO</TableColumn>
                 <TableColumn className="bg-white text-gray-400 font-semibold text-xs py-3 border-b border-gray-100 text-right">STATUS</TableColumn>
               </TableHeader>
@@ -205,11 +204,6 @@ export const ScheduledJobsMonitor: React.FC = () => {
                       >
                         {getCategoryLabel(job.category)}
                       </Chip>
-                    </TableCell>
-                    <TableCell className="py-4">
-                      <code className="text-xs bg-default-100 text-default-700 px-2 py-1 rounded font-mono">
-                        {job.expression}
-                      </code>
                     </TableCell>
                     <TableCell className="py-4 text-xs font-semibold text-gray-600">
                       {job.scheduleDescription}
