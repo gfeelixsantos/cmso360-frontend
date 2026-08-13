@@ -7,6 +7,8 @@ import {
   ModalFooter,
   ModalHeader,
   Spinner,
+  Checkbox,
+  Textarea,
 } from "@heroui/react";
 import { Fingerprint } from "lucide-react";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -127,6 +129,8 @@ const AtendimentoModalExames = ({
   }, [isOpen, exameParaAtualizar]);
   const [psicossocial, setPsicossocial] = useState<boolean>(false);
   const [overrideExame, setOverrideExame] = useState<string | null>(null);
+  const [naoRealizadoCheck, setNaoRealizadoCheck] = useState<boolean>(false);
+  const [justificativaNaoRealizado, setJustificativaNaoRealizado] = useState<string>("");
   const [notificationModal, setNotificationModal] =
     useState<NotificationModalState>({
       isOpen: false,
@@ -164,10 +168,12 @@ const AtendimentoModalExames = ({
     [],
   );
 
-  // Efeito para resetar o overrideExame quando o modal fechar
+  // Efeito para resetar o overrideExame e naoRealizadoCheck quando o modal fechar
   useEffect(() => {
     if (!isOpen) {
       setOverrideExame(null);
+      setNaoRealizadoCheck(false);
+      setJustificativaNaoRealizado("");
     }
   }, [isOpen]);
 
@@ -407,6 +413,41 @@ const AtendimentoModalExames = ({
     ],
   );
 
+  const handleSaveNaoRealizado = useCallback(async () => {
+    if (!justificativaNaoRealizado.trim()) {
+      setNotificationModal({
+        isOpen: true,
+        type: "error",
+        title: "✗ Erro",
+        message: "Por favor, insira o motivo da não realização do exame.",
+        showCancel: false,
+        onConfirm: closeNotificationModal,
+      });
+      return;
+    }
+
+    setNotificationModal({
+      isOpen: true,
+      type: "confirm",
+      title: "Confirmar Não Realização",
+      message: "Deseja confirmar que este exame NÃO foi realizado?",
+      showCancel: true,
+      onConfirm: async () => {
+        const payload = {
+          status: "concluded",
+          anotacoes: justificativaNaoRealizado,
+          examesRealizados: exameParaAtualizar.map((ex) => ({
+            codigoExame: ex.codigoExame,
+            sequencialResultadoExame: ex.sequencialResultadoExame,
+            realizado: false,
+          })),
+        };
+        await processarAtualizacaoExame(payload);
+      },
+      onCancel: closeNotificationModal,
+    });
+  }, [justificativaNaoRealizado, exameParaAtualizar, closeNotificationModal, processarAtualizacaoExame]);
+
   const templateKey = useMemo(() => {
     if (
       !exameParaAtualizar ||
@@ -562,6 +603,8 @@ const AtendimentoModalExames = ({
     );
   }
 
+  const isSpecializedForm = Formulario && Formulario !== ExamePadrao;
+
   if (!Formulario) {
     return (
       <>
@@ -599,14 +642,77 @@ const AtendimentoModalExames = ({
         onClose={onClose}
       >
         <ModalContent>
-          <Formulario
-            atendimento={funcionarioSelecionado}
-            exame={overrideExame || exame}
-            formulario={initialFormulario}
-            operationalUser={effectiveUser}
-            onClose={onClose}
-            onSave={handleSaveExam}
-          />
+          {isSpecializedForm && (
+            <div className="bg-amber-50 border-b border-amber-200 p-4 flex justify-between items-center">
+              <Checkbox
+                isSelected={naoRealizadoCheck}
+                onValueChange={setNaoRealizadoCheck}
+                color="danger"
+                classNames={{
+                  label: "text-sm font-semibold text-amber-900",
+                }}
+              >
+                Marcar este exame como NÃO REALIZADO
+              </Checkbox>
+            </div>
+          )}
+
+          {naoRealizadoCheck && isSpecializedForm ? (
+            <div className="flex flex-col min-h-[400px]">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {(overrideExame || exame).toUpperCase()} - NÃO REALIZADO
+                  </h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Paciente: {funcionarioSelecionado?.NOME}
+                  </p>
+                </div>
+              </div>
+
+              {/* Body */}
+              <div className="p-6 flex-1 space-y-4 bg-white">
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 text-sm">
+                  Ao marcar este exame como não realizado, o formulário médico/técnico será desativado e o status do exame será gravado como <strong>NÃO REALIZADO</strong>.
+                </div>
+                <Textarea
+                  label="Justificativa / Motivo da não realização"
+                  placeholder="Descreva detalhadamente o motivo pelo qual o exame não foi realizado..."
+                  minRows={4}
+                  value={justificativaNaoRealizado}
+                  onValueChange={setJustificativaNaoRealizado}
+                  isRequired
+                />
+              </div>
+
+              {/* Footer */}
+              <div className="p-6 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+                <Button
+                  variant="flat"
+                  color="default"
+                  onPress={() => setNaoRealizadoCheck(false)}
+                >
+                  Voltar ao Formulário
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={handleSaveNaoRealizado}
+                >
+                  Confirmar Não Realização
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Formulario
+              atendimento={funcionarioSelecionado}
+              exame={overrideExame || exame}
+              formulario={initialFormulario}
+              operationalUser={effectiveUser}
+              onClose={onClose}
+              onSave={handleSaveExam}
+            />
+          )}
         </ModalContent>
       </Modal>
       {renderNotificationModal()}
