@@ -30,6 +30,7 @@ import {
   Printer,
   Trash,
   Upload,
+  XCircle,
 } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -352,6 +353,8 @@ const ExamesTable: React.FC<{
         return "warning";
       case ExamStatus.AGUARDANDO_RESULTADO:
         return "secondary";
+      case "NAO_REALIZADO":
+        return "danger";
       default:
         return "default";
     }
@@ -365,6 +368,8 @@ const ExamesTable: React.FC<{
         return <Clock size={14} />;
       case ExamStatus.AGUARDANDO_RESULTADO:
         return <AlertCircle size={14} />;
+      case "NAO_REALIZADO":
+        return <XCircle size={14} />;
       default:
         return <Clock size={14} />;
     }
@@ -668,7 +673,7 @@ const ExamesTable: React.FC<{
                       startContent={getExamStatusIcon(exame.status)}
                       variant="flat"
                     >
-                      {exame.status}
+                      {exame.status === "NAO_REALIZADO" ? "NÃO REALIZADO" : exame.status}
                     </Chip>
                   </TableCell>
                   <TableCell>

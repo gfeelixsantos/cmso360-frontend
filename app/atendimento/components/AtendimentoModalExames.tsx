@@ -126,6 +126,7 @@ const AtendimentoModalExames = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, exameParaAtualizar]);
   const [psicossocial, setPsicossocial] = useState<boolean>(false);
+  const [overrideExame, setOverrideExame] = useState<string | null>(null);
   const [notificationModal, setNotificationModal] =
     useState<NotificationModalState>({
       isOpen: false,
@@ -141,18 +142,8 @@ const AtendimentoModalExames = ({
       "Acuidade Visual": AcuidadeVisual,
       Audiometria: AudiometriaOcupacional,
       Dinamometria: Dinamometria,
-      EEG: psicossocial
-        ? !entrevistaPsico
-          ? Psicossocial
-          : ExamePadrao
-        : ExamePadrao,
-
-      ECG: psicossocial
-        ? !entrevistaPsico
-          ? Psicossocial
-          : ExamePadrao
-        : ExamePadrao,
-
+      EEG: ExamePadrao,
+      ECG: ExamePadrao,
       Espirometria: Espirometria,
       "Exame Clínico": FichaClinicaOcupacional,
       Psicossocial: Psicossocial,
@@ -170,18 +161,33 @@ const AtendimentoModalExames = ({
       triagem: FichaClinicaOcupacional,
       ultrassom: Ultrassom,
     }),
-    [entrevistaPsico, psicossocial],
+    [],
   );
+
+  // Efeito para resetar o overrideExame quando o modal fechar
+  useEffect(() => {
+    if (!isOpen) {
+      setOverrideExame(null);
+    }
+  }, [isOpen]);
 
   // Efeito para atualizar o exame a ser preenchido
   useEffect(() => {
     if (!isOpen || !funcionarioSelecionado) return;
 
-    const exameEmAtendimento = funcionarioSelecionado.EXAMES.filter((e) =>
+    let targetExames = funcionarioSelecionado.EXAMES.filter((e) =>
       codigosAtendimento.has(e.codigoExame),
     );
 
-    if (exameEmAtendimento) setExameParaAtualizar(exameEmAtendimento);
+    if (overrideExame === "Psicossocial") {
+      targetExames = funcionarioSelecionado.EXAMES.filter((e) =>
+        e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE,
+      );
+    }
+
+    if (targetExames.length > 0) {
+      setExameParaAtualizar(targetExames);
+    }
 
     const hasPsico = funcionarioSelecionado.EXAMES.find(
       (e) => e.grupo === "Psicossocial" && e.status === ExamStatus.PENDENTE,
@@ -195,7 +201,7 @@ const AtendimentoModalExames = ({
       setPsicossocial(false);
       setEntrevistaPsico(false);
     }
-  }, [codigosAtendimento, funcionarioSelecionado, isOpen]);
+  }, [codigosAtendimento, funcionarioSelecionado, isOpen, overrideExame]);
 
   // Função para fechar o modal de notificação
   const closeNotificationModal = useCallback(() => {
@@ -279,18 +285,40 @@ const AtendimentoModalExames = ({
           ? "Concluído, pode LIBERAR o funcionário."
           : "Funcionário deve AGUARDAR demais exames.";
 
-        setNotificationModal({
-          isOpen: true,
-          type: "success",
-          title: "Exame Concluído",
-          message: successMessage,
-          showCancel: false,
-          isLoading: false,
-          onConfirm: () => {
-            closeNotificationModal();
-            onClose();
-          },
-        });
+        const isEcgOrEeg = exameParaAtualizar.some(
+          (e) => e.codigoExame === "20.01.001-0" || e.codigoExame === "22010017",
+        );
+
+        if (isEcgOrEeg && psicossocial) {
+          setNotificationModal({
+            isOpen: true,
+            type: "confirm",
+            title: "Iniciar Psicossocial?",
+            message: "Exame concluído com sucesso. Este funcionário possui a Avaliação Psicossocial pendente. Deseja preencher o questionário psicossocial agora?",
+            showCancel: true,
+            onConfirm: () => {
+              closeNotificationModal();
+              setOverrideExame("Psicossocial");
+            },
+            onCancel: () => {
+              closeNotificationModal();
+              onClose();
+            },
+          });
+        } else {
+          setNotificationModal({
+            isOpen: true,
+            type: "success",
+            title: "Exame Concluído",
+            message: successMessage,
+            showCancel: false,
+            isLoading: false,
+            onConfirm: () => {
+              closeNotificationModal();
+              onClose();
+            },
+          });
+        }
       } catch (error) {
         setNotificationModal({
           isOpen: true,
@@ -401,7 +429,7 @@ const AtendimentoModalExames = ({
     if (!funcionarioSelecionado) return null;
 
     return AtendimentoRules.resolveFormulario({
-      exame,
+      exame: overrideExame || exame,
       funcionario: funcionarioSelecionado,
       forms: {
         EXAME_FORM_MAP,
@@ -410,7 +438,7 @@ const AtendimentoModalExames = ({
       },
       templateKey,
     });
-  }, [exame, funcionarioSelecionado, EXAME_FORM_MAP, templateKey]);
+  }, [exame, overrideExame, funcionarioSelecionado, EXAME_FORM_MAP, templateKey]);
 
   // Renderiza o modal de notificação
   const renderNotificationModal = () => {
@@ -548,7 +576,7 @@ const AtendimentoModalExames = ({
           <ModalContent>
             <ExamePadrao
               atendimento={funcionarioSelecionado}
-              exame={exame}
+              exame={overrideExame || exame}
               formulario={""}
               onClose={onClose}
               onSave={handleSaveExam}
@@ -573,7 +601,7 @@ const AtendimentoModalExames = ({
         <ModalContent>
           <Formulario
             atendimento={funcionarioSelecionado}
-            exame={exame}
+            exame={overrideExame || exame}
             formulario={initialFormulario}
             operationalUser={effectiveUser}
             onClose={onClose}

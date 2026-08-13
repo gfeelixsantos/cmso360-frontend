@@ -268,15 +268,17 @@ export function ordemAlfabetica(data: string[]) {
 export const getStatusColor = (status: string) => {
   switch (status) {
     case AtendimentoStatus.AGENDADO:
-      return "default";
+      return "default"; // Cinza neutro
     case AtendimentoStatus.EM_ATENDIMENTO:
-      return "danger";
+      return "primary"; // Azul (Em Atendimento - Ativo) - Substituído 'danger'
     case AtendimentoStatus.AGUARDANDO_RESULTADOS:
-      return "secondary";
+      return "secondary"; // Roxo/Índigo (Aguardando exames externos)
     case AtendimentoStatus.AVALIACAO_MEDICA:
-      return "warning";
+      return "warning"; // Âmbar (Aguardando liberação médica)
     case AtendimentoStatus.FINALIZADO:
-      return "success";
+      return "success"; // Verde (Fluxo concluído)
+    case AtendimentoStatus.PENDENTE:
+      return "warning"; // Âmbar/Laranja para consistência com o painel de gestão
     default:
       return "primary";
   }

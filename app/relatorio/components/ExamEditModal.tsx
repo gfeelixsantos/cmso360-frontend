@@ -121,17 +121,8 @@ const ExamEditModal: React.FC<ExamEditModalProps> = ({
       "Acuidade Visual": AcuidadeVisual,
       Audiometria: AudiometriaOcupacional,
       Dinamometria: Dinamometria,
-      EEG: psicossocial
-        ? !entrevistaPsico
-          ? Psicossocial
-          : ExamePadrao
-        : ExamePadrao,
-
-      ECG: psicossocial
-        ? !entrevistaPsico
-          ? Psicossocial
-          : ExamePadrao
-        : ExamePadrao,
+      EEG: ExamePadrao,
+      ECG: ExamePadrao,
 
       Espirometria: Espirometria,
       "Exame Clínico": FichaClinicaOcupacional,

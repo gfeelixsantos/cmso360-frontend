@@ -64,6 +64,8 @@ interface SyncProntuarioPayload {
 
 const formatStatusLabel = (status?: string | null): string => {
   if (!status) return "Não informado";
+  if (status === "NAO_REALIZADO") return "Não Realizado";
+  if (status === "PENDENTE") return "Pendente";
 
   return status
     .replace(/_/g, " ")
@@ -74,15 +76,17 @@ const formatStatusLabel = (status?: string | null): string => {
 const getStatusTextColor = (status: string): string => {
   switch (status) {
     case AtendimentoStatus.FINALIZADO:
-      return "text-emerald-600";
+      return "text-emerald-600"; // Verde esmeralda (Conclusão/Sucesso)
     case AtendimentoStatus.EM_ATENDIMENTO:
-      return "text-red-600";
+      return "text-blue-600"; // Azul calmo (Progresso Ativo)
     case AtendimentoStatus.AGUARDANDO_RESULTADOS:
-      return "text-secondary-600";
+      return "text-indigo-600"; // Índigo (Espera de Exames Externos)
     case AtendimentoStatus.AVALIACAO_MEDICA:
-      return "text-amber-600";
+      return "text-amber-600"; // Âmbar/Dourado (Aguardando Médico)
     case AtendimentoStatus.AGENDADO:
-      return "text-gray-600";
+      return "text-gray-400"; // Cinza sutil (Fase Inicial/Passiva)
+    case AtendimentoStatus.PENDENTE:
+      return "text-orange-500"; // Laranja/Âmbar quente para consistência com o painel de gestão
     default:
       return "text-primary-600";
   }
