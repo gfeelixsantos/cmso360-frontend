@@ -99,14 +99,65 @@ export function CampaignViewDetail({ campaign, onBack }: CampaignViewDetailProps
               )}
 
               <div>
-                <span className="font-semibold block text-default-500 mb-1">Escopo de Envio</span>
-                <div className="flex items-center gap-2">
-                  <Users size={14} className="text-default-400" />
-                  <span>
-                    {campaign.scope === 'all' 
-                      ? 'Todas as Empresas Ativas' 
-                      : `Empresas Selecionadas (${campaign.selected_company_codes?.length || 0})`}
-                  </span>
+                <span className="font-semibold block text-default-500 mb-2">Escopo de Envio</span>
+                <div className="flex flex-col gap-2">
+                  {(() => {
+                    const sources = campaign.target_sources && campaign.target_sources.length > 0
+                      ? campaign.target_sources
+                      : [campaign.scope || 'all'];
+
+                    return sources.map((src: string) => {
+                      if (src === 'all') {
+                        return (
+                          <div key={src} className="flex items-center gap-2 text-xs bg-default-100 dark:bg-default-200 px-2.5 py-1.5 rounded-lg border border-default-200 font-medium">
+                            <Building size={14} className="text-primary" />
+                            <span>Todas as Empresas SOC</span>
+                          </div>
+                        );
+                      }
+                      if (src === 'selected') {
+                        return (
+                          <div key={src} className="flex items-center justify-between text-xs bg-blue-50 dark:bg-blue-950/30 text-blue-800 dark:text-blue-300 px-2.5 py-1.5 rounded-lg border border-blue-100 dark:border-blue-900/50 font-medium">
+                            <div className="flex items-center gap-2">
+                              <Building size={14} className="text-blue-500" />
+                              <span>Empresas Selecionadas</span>
+                            </div>
+                            <Chip size="sm" variant="flat" color="primary" className="h-5 text-[10px] font-bold">
+                              {campaign.selected_company_codes?.length || 0}
+                            </Chip>
+                          </div>
+                        );
+                      }
+                      if (src === 'app_users') {
+                        const totalUsers = campaign.target_app_user_ids?.length;
+                        return (
+                          <div key={src} className="flex items-center justify-between text-xs bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 px-2.5 py-1.5 rounded-lg border border-emerald-100 dark:border-emerald-900/50 font-medium">
+                            <div className="flex items-center gap-2">
+                              <Users size={14} className="text-emerald-500" />
+                              <span>Usuários da Aplicação</span>
+                            </div>
+                            <Chip size="sm" variant="flat" color="success" className="h-5 text-[10px] font-bold">
+                              {totalUsers > 0 ? totalUsers : "Todos"}
+                            </Chip>
+                          </div>
+                        );
+                      }
+                      if (src === 'custom_emails') {
+                        return (
+                          <div key={src} className="flex items-center justify-between text-xs bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 px-2.5 py-1.5 rounded-lg border border-amber-100 dark:border-amber-900/50 font-medium">
+                            <div className="flex items-center gap-2">
+                              <Mail size={14} className="text-amber-500" />
+                              <span>Lista Customizada</span>
+                            </div>
+                            <Chip size="sm" variant="flat" color="warning" className="h-5 text-[10px] font-bold">
+                              {campaign.custom_emails?.length || 0}
+                            </Chip>
+                          </div>
+                        );
+                      }
+                      return null;
+                    });
+                  })()}
                 </div>
               </div>
 
