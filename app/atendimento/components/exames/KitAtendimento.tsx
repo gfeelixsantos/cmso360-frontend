@@ -70,10 +70,10 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
 
   // Função para atualizar o status de realização do exame
   const handleRealizacaoExameChange = useCallback(
-    (sequencialResultadoExame: string, realizado: boolean) => {
+    (codigoExame: string, realizado: boolean) => {
       setExamesFiltrados((prev) =>
         prev.map((exame) =>
-          exame.sequencialResultadoExame === sequencialResultadoExame
+          exame.codigoExame === codigoExame
             ? { ...exame, realizado }
             : exame,
         ),
@@ -96,6 +96,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
         status: "concluded",
         anotacoes: anotacoesFinais,
         examesRealizados: examesFiltrados.map((exame) => ({
+          codigoExame: exame.codigoExame,
           sequencialResultadoExame: exame.sequencialResultadoExame,
           realizado: exame.realizado,
         })),
@@ -152,7 +153,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
           <div className="space-y-4">
             {examesFiltrados.map((exameItem, index) => (
               <div
-                key={exameItem.sequencialResultadoExame || index}
+                key={exameItem.codigoExame || index}
                 className="rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors border border-gray-100"
               >
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
@@ -174,7 +175,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
                       value={exameItem.realizado ? "sim" : "nao"}
                       onValueChange={(value) =>
                         handleRealizacaoExameChange(
-                          exameItem.sequencialResultadoExame!,
+                          exameItem.codigoExame,
                           value === "sim",
                         )
                       }
