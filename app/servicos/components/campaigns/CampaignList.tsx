@@ -31,6 +31,13 @@ const statusLabelMap: Record<string, string> = {
   deleted: "EXCLUÍDA"
 };
 
+const scopeLabelMap: Record<string, string> = {
+  all: "Todas as Empresas",
+  app_users: "Usuários da Aplicação",
+  custom_emails: "Lista Customizada",
+  selected: "Empresas Selecionadas"
+};
+
 export function CampaignList({ campaigns, onEdit, onView, onClone, onRefresh }: CampaignListProps) {
   
   const [confirmModal, setConfirmModal] = useState<{
@@ -132,7 +139,15 @@ export function CampaignList({ campaigns, onEdit, onView, onClone, onRefresh }: 
               </div>
             </TableCell>
             <TableCell>{item.subject}</TableCell>
-            <TableCell>{item.scope === 'all' ? 'Todas as Empresas' : 'Empresas Selecionadas'}</TableCell>
+            <TableCell>
+              {(() => {
+                const sources = item.target_sources && item.target_sources.length > 0
+                  ? item.target_sources
+                  : [item.scope || 'all'];
+
+                return sources.map((src: string) => scopeLabelMap[src] || "Empresas Selecionadas").join(", ");
+              })()}
+            </TableCell>
             <TableCell>
               <Chip color={statusColorMap[item.status]} size="sm" variant="flat">
                 {statusLabelMap[item.status] || item.status.toUpperCase()}
