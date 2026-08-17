@@ -642,20 +642,7 @@ const AtendimentoModalExames = ({
         onClose={onClose}
       >
         <ModalContent>
-          {isSpecializedForm && (
-            <div className="bg-amber-50 border-b border-amber-200 p-4 flex justify-between items-center">
-              <Checkbox
-                isSelected={naoRealizadoCheck}
-                onValueChange={setNaoRealizadoCheck}
-                color="danger"
-                classNames={{
-                  label: "text-sm font-semibold text-amber-900",
-                }}
-              >
-                Marcar este exame como NÃO REALIZADO
-              </Checkbox>
-            </div>
-          )}
+
 
           {naoRealizadoCheck && isSpecializedForm ? (
             <div className="flex flex-col min-h-[400px]">
