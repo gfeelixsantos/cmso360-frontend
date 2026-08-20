@@ -60,7 +60,7 @@ const KitAtendimento: React.FC<KitAtendimentoProps> = ({
           exameItem.grupo?.toLowerCase() === grupoExame.toLowerCase(),
       ).map((exameItem: any) => ({
         ...exameItem,
-        realizado: true, // Inicializa como realizado
+        realizado: false, // Inicializa como não realizado para evitar finalização em massa
       }));
 
       setExamesFiltrados(examesFiltrados);
